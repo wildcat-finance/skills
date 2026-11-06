@@ -1,0 +1,1032 @@
+{
+  "anchors": {
+    "emitter_table": {
+      "path": "docs/kickoff/1962/emitters.json",
+      "sha256": "7fb47cb94b14a851df12406a454810ff3d22620751b78f96fbd53feffcf37cff"
+    },
+    "registry": {
+      "path": "docs/kickoff/1359/targets.json",
+      "row": "wildcat-v1-ethereum-mainnet",
+      "sha256": "2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625"
+    }
+  },
+  "compiler": {
+    "bytecode_hash": "none",
+    "evm_version": "shanghai",
+    "optimizer_runs": 200,
+    "solcjs_sha256": "92d283c545395b91a656fa1ec94d567a464bca55aebcdbb99debf42b43026845",
+    "version": "0.8.22+commit.4fc1097e",
+    "via_ir": true
+  },
+  "contexts": [
+    {
+      "contract": "MarketLens",
+      "input": "MarketLensMixed",
+      "kind": "runtime",
+      "source_path": "src/lens/MarketLens.sol"
+    },
+    {
+      "contract": "WildcatArchController",
+      "input": "WildcatArchController",
+      "kind": "runtime",
+      "source_path": "src/WildcatArchController.sol"
+    },
+    {
+      "contract": "WildcatMarket",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "runtime",
+      "source_path": "src/market/WildcatMarket.sol"
+    },
+    {
+      "contract": "WildcatMarketController",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "runtime",
+      "source_path": "src/WildcatMarketController.sol"
+    },
+    {
+      "contract": "WildcatMarketControllerFactory",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "runtime",
+      "source_path": "src/WildcatMarketControllerFactory.sol"
+    },
+    {
+      "contract": "WildcatSanctionsEscrow",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "creation-target",
+      "source_path": "src/WildcatSanctionsEscrow.sol"
+    },
+    {
+      "contract": "WildcatSanctionsSentinel",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "runtime",
+      "source_path": "src/WildcatSanctionsSentinel.sol"
+    }
+  ],
+  "dependencies": [
+    {
+      "limit": "each market's asset is an arbitrary ERC20 chosen at deployment; its transfers, metadata answers and Transfer events are outside this map",
+      "subject": "underlying ERC20 assets"
+    },
+    {
+      "limit": "the sentinel asks this external oracle at execution time; its answers decide the sanctioned branches and are not recorded here",
+      "subject": "Chainalysis sanctions list"
+    },
+    {
+      "limit": "set at runtime by the SphereX operator; when nonzero it runs before and after guarded functions, may revert them and emits its own events outside this map",
+      "subject": "SphereX engine"
+    },
+    {
+      "limit": "lens queries, resetReserveRatio and escrow creation take addresses from the caller; the map covers only the V1 code those addresses are expected to run",
+      "subject": "controllers and markets named by callers at runtime"
+    }
+  ],
+  "exclusions": [
+    {
+      "reason": "separate subjects; docs/kickoff/1363 maps V2 and stays unchanged",
+      "subject": "Wildcat V2 and unreleased v2.5 sources"
+    },
+    {
+      "reason": "not compiled into any accepted input",
+      "subject": "test/, script/ and scripts/ trees of wildcat-protocol"
+    },
+    {
+      "reason": "the accepted registry at docs/kickoff/1359/targets.json owns the 16 V1 entries; this map counts source contexts only",
+      "subject": "deployed addresses and bytecode identity"
+    },
+    {
+      "reason": "the deployed arch controller does not inherit the interface; docs/kickoff/1962 records the ten unused declarations and four disagreements",
+      "subject": "IWildcatArchController event declarations no contract emits"
+    },
+    {
+      "reason": "the factory deploys two storage contracts that hold creation code; they have no callable surface of their own",
+      "subject": "init-code storage contracts"
+    }
+  ],
+  "inputs": [
+    {
+      "binding_limit": "Verified compiler input; no single exact Git commit covers all 46 in-tree files. Closest commit 488b30d08c73a93be3e4bf99128c774997411d3a matches 40. This partition does not satisfy whole-tree exact-commit acceptance.",
+      "commits": [
+        "488b30d08c73a93be3e4bf99128c774997411d3a"
+      ],
+      "differing_files": [
+        "src/ReentrancyGuard.sol",
+        "src/libraries/FeeMath.sol",
+        "src/libraries/MarketErrors.sol",
+        "src/libraries/MarketEvents.sol",
+        "src/libraries/MathUtils.sol",
+        "src/libraries/SafeCastLib.sol"
+      ],
+      "files": [
+        {
+          "bytes": 12960,
+          "disposition": "support",
+          "lines": 378,
+          "path": "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "a64e5d0e83019d9caa51e6fe6f68ac54b583ac15792b8557cb8e4fab20711b9f"
+        },
+        {
+          "bytes": 10870,
+          "disposition": "support",
+          "lines": 240,
+          "path": "lib/solady/src/auth/Ownable.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "649af487a76855045b4750a69bf4c35ac8930f0c99f485e24992ad95a0e913b9"
+        },
+        {
+          "bytes": 7392,
+          "disposition": "support",
+          "lines": 184,
+          "path": "lib/solady/src/utils/LibBit.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "bb8d4b7b3ef2bf0051100ce7a83048c6c67830959f6d5e7ee72b686651139c32"
+        },
+        {
+          "bytes": 17845,
+          "disposition": "support",
+          "lines": 374,
+          "path": "lib/solady/src/utils/SafeTransferLib.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "8bc560fb921b6b1c5cff7b69f6733146ab8552b5830b88ab5fc7217c4ba8caac"
+        },
+        {
+          "bytes": 2451,
+          "disposition": "support",
+          "lines": 87,
+          "path": "src/ReentrancyGuard.sol",
+          "reason": "reentrancy guard inherited by WildcatMarket; differs from 488b30d0; part of the accepted mixed-source exception",
+          "sha256": "03813938eb3e9cf3527ddf93507dfebfb296f7d1961a8cab5bd83266c50ca7af"
+        },
+        {
+          "bytes": 12707,
+          "disposition": "support",
+          "lines": 386,
+          "path": "src/WildcatArchController.sol",
+          "reason": "imported by this input's contexts; its WildcatArchController context binds to the WildcatArchController input; byte-identical to 488b30d0:src/WildcatArchController.sol",
+          "sha256": "375ca2563f6ffe8c54cf174e9f02e4172f38e6ff2f672e9d72ae42927b050239"
+        },
+        {
+          "bytes": 28833,
+          "disposition": "support",
+          "lines": 788,
+          "path": "src/WildcatMarketController.sol",
+          "reason": "imported by this input's contexts; its WildcatMarketController context binds to the WildcatMarketControllerFactory input; byte-identical to 488b30d0:src/WildcatMarketController.sol",
+          "sha256": "7081c3c638c35efb892ff2182242e27d2b412d12dce9de9288a411a234e5b476"
+        },
+        {
+          "bytes": 15404,
+          "disposition": "support",
+          "lines": 385,
+          "path": "src/WildcatMarketControllerFactory.sol",
+          "reason": "imported by this input's contexts; its WildcatMarketControllerFactory context binds to the WildcatMarketControllerFactory input; byte-identical to 488b30d0:src/WildcatMarketControllerFactory.sol",
+          "sha256": "70500293bcdad15606b228ba4ee140c909d09878b5585e7fc86bc910f02382ac"
+        },
+        {
+          "bytes": 1342,
+          "disposition": "support",
+          "lines": 45,
+          "path": "src/WildcatSanctionsEscrow.sol",
+          "reason": "imported by this input's contexts; its WildcatSanctionsEscrow context binds to the WildcatSanctionsSentinel input; byte-identical to 488b30d0:src/WildcatSanctionsEscrow.sol",
+          "sha256": "eb913872e9f5f10ab6fd2dc4fe09ab2374964d362f7d78fd35b497ef72b5075f"
+        },
+        {
+          "bytes": 6667,
+          "disposition": "support",
+          "lines": 175,
+          "path": "src/WildcatSanctionsSentinel.sol",
+          "reason": "imported by this input's contexts; its WildcatSanctionsSentinel context binds to the WildcatSanctionsSentinel input; byte-identical to 488b30d0:src/WildcatSanctionsSentinel.sol",
+          "sha256": "b878363ff3d48415a5985e0bf25367d88a5f4f3a13b49d62f33b618c583dd82f"
+        },
+        {
+          "bytes": 174,
+          "disposition": "support",
+          "lines": 6,
+          "path": "src/interfaces/IChainalysisSanctionsList.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IChainalysisSanctionsList.sol",
+          "sha256": "081b1b72993d56e4a329ca1048c7c2d9db599ef42e4de1566a8eadebe2d08358"
+        },
+        {
+          "bytes": 910,
+          "disposition": "support",
+          "lines": 23,
+          "path": "src/interfaces/IERC20.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IERC20.sol",
+          "sha256": "185d2ce0d8edd675dfabc7e1d86e86b5d68c6b0dacc5c96a028ddfe06bd05259"
+        },
+        {
+          "bytes": 300,
+          "disposition": "support",
+          "lines": 12,
+          "path": "src/interfaces/IERC20Metadata.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IERC20Metadata.sol",
+          "sha256": "857675108e8f41a6dfd27f1d0b7a9fbc71192a959f98d0be201a01d46b25c796"
+        },
+        {
+          "bytes": 3980,
+          "disposition": "support",
+          "lines": 154,
+          "path": "src/interfaces/IMarketEventsAndErrors.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IMarketEventsAndErrors.sol",
+          "sha256": "3ec62e5b0c9b271e01af448a5709af62b979757358f274c81b99b9f179f40f76"
+        },
+        {
+          "bytes": 512,
+          "disposition": "support",
+          "lines": 16,
+          "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/ISphereXProtectedRegisteredBase.sol",
+          "sha256": "4e80cd0d4980cf8832be8386a356becf7758008b57180612c6bf935d35cbe151"
+        },
+        {
+          "bytes": 5510,
+          "disposition": "support",
+          "lines": 165,
+          "path": "src/interfaces/IWildcatArchController.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IWildcatArchController.sol",
+          "sha256": "e045ba3ea374096187dd71981847da5f832900c3fffc0169e53cae368dd80fc2"
+        },
+        {
+          "bytes": 6507,
+          "disposition": "support",
+          "lines": 189,
+          "path": "src/interfaces/IWildcatMarketController.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IWildcatMarketController.sol",
+          "sha256": "74853026218a871a81d6819fc273452b7b998ac99fee371b2575e35a386dcce4"
+        },
+        {
+          "bytes": 2665,
+          "disposition": "support",
+          "lines": 88,
+          "path": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+          "sha256": "e3f0b4a5d21ecbb96b17a1f259057553cbcaf3409babb6f074661ba314a81f52"
+        },
+        {
+          "bytes": 4916,
+          "disposition": "support",
+          "lines": 144,
+          "path": "src/interfaces/IWildcatMarketControllerFactory.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IWildcatMarketControllerFactory.sol",
+          "sha256": "342af9820836ad0f0f6a1f09d6f6e78078c35338c051d45a33e68b3fb6d46643"
+        },
+        {
+          "bytes": 628,
+          "disposition": "support",
+          "lines": 22,
+          "path": "src/interfaces/IWildcatSanctionsEscrow.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IWildcatSanctionsEscrow.sol",
+          "sha256": "3a9f25bae52181322ad5ee81efa01ba931160d7d13c8b4a775544f1ab01dc8c5"
+        },
+        {
+          "bytes": 2513,
+          "disposition": "support",
+          "lines": 74,
+          "path": "src/interfaces/IWildcatSanctionsSentinel.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/IWildcatSanctionsSentinel.sol",
+          "sha256": "0154c0936d81f0407c1df280554b34321c4ba4cefeaf236cd343a651c0881a9f"
+        },
+        {
+          "bytes": 1749,
+          "disposition": "support",
+          "lines": 69,
+          "path": "src/interfaces/WildcatStructsAndEnums.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 488b30d0:src/interfaces/WildcatStructsAndEnums.sol",
+          "sha256": "0a465fe75e1050166e26416af42994473bcc800209f64b4beee1abd2fb75c0d1"
+        },
+        {
+          "bytes": 1666,
+          "disposition": "support",
+          "lines": 49,
+          "path": "src/lens/ArchControllerData.sol",
+          "reason": "lens data library compiled into MarketLens; byte-identical to 488b30d0:src/lens/ArchControllerData.sol",
+          "sha256": "9eb5dba75023d1335e9e0dae2c6e5b0a4c40f7fc09679122c2b4097356a1225c"
+        },
+        {
+          "bytes": 2582,
+          "disposition": "support",
+          "lines": 78,
+          "path": "src/lens/ControllerData.sol",
+          "reason": "lens data library compiled into MarketLens; byte-identical to 488b30d0:src/lens/ControllerData.sol",
+          "sha256": "6eee0dd72da2162205f9340b1085f5d80b472884f21919b12b69c23d77c518b3"
+        },
+        {
+          "bytes": 11150,
+          "disposition": "support",
+          "lines": 326,
+          "path": "src/lens/MarketData.sol",
+          "reason": "lens data library compiled into MarketLens; byte-identical to 488b30d0:src/lens/MarketData.sol",
+          "sha256": "4b107bb7d250f263ea3ad16f4923a81de5c3e73366771d4ab3e1c05c08b8a5b2"
+        },
+        {
+          "bytes": 10107,
+          "disposition": "context",
+          "lines": 287,
+          "path": "src/lens/MarketLens.sol",
+          "reason": "declares the MarketLens context bound to this input; byte-identical to 488b30d0:src/lens/MarketLens.sol",
+          "sha256": "d2aed3992a49de32d2f21ad4a643bd8d803d072e6f942233ffd824248f994233"
+        },
+        {
+          "bytes": 125,
+          "disposition": "support",
+          "lines": 7,
+          "path": "src/lens/SliceParameters.sol",
+          "reason": "lens data library compiled into MarketLens; byte-identical to 488b30d0:src/lens/SliceParameters.sol",
+          "sha256": "b860e76fa8f254de16a77b11c3cf079462ebc8d1bc9eb909b051dc4f4c37d889"
+        },
+        {
+          "bytes": 929,
+          "disposition": "support",
+          "lines": 36,
+          "path": "src/lens/TokenData.sol",
+          "reason": "lens data library compiled into MarketLens; byte-identical to 488b30d0:src/lens/TokenData.sol",
+          "sha256": "69ab70b934226f49fa780512eb02de5e233b1d86dfd94859831636e630bada89"
+        },
+        {
+          "bytes": 418,
+          "disposition": "support",
+          "lines": 22,
+          "path": "src/libraries/BoolUtils.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/BoolUtils.sol",
+          "sha256": "d187ffac898189fa7358d9b9f98b3ae9a874b2390c17d1dd1731468c005490e5"
+        },
+        {
+          "bytes": 1945,
+          "disposition": "support",
+          "lines": 66,
+          "path": "src/libraries/Errors.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/Errors.sol",
+          "sha256": "7395c3f3f13d5692b05ce37722ba2f1013d84543106766d3ee8505520ea36e48"
+        },
+        {
+          "bytes": 2305,
+          "disposition": "support",
+          "lines": 80,
+          "path": "src/libraries/FIFOQueue.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/FIFOQueue.sol",
+          "sha256": "e073bca6d9c972440a40c1dcd79609438de23c013f8452f681cc0364166c8450"
+        },
+        {
+          "bytes": 6650,
+          "disposition": "support",
+          "lines": 174,
+          "path": "src/libraries/FeeMath.sol",
+          "reason": "library code compiled into the contexts that use it; differs from 488b30d0; part of the accepted mixed-source exception",
+          "sha256": "1cd0cc829cf06d229ab03b986b71d915bfa7ded363902e6fec04f84f2fc92df6"
+        },
+        {
+          "bytes": 4247,
+          "disposition": "support",
+          "lines": 124,
+          "path": "src/libraries/LibStoredInitCode.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/LibStoredInitCode.sol",
+          "sha256": "c1a6865b860730f0e88b2e08450636c7aca52e360b1b7fcc1047c5302ffac81c"
+        },
+        {
+          "bytes": 5198,
+          "disposition": "support",
+          "lines": 242,
+          "path": "src/libraries/MarketErrors.sol",
+          "reason": "library code compiled into the contexts that use it; differs from 488b30d0; part of the accepted mixed-source exception",
+          "sha256": "ceadb56c109ba72b4eb6e14246f33f9166bf97e48ad80d261542ca97d5b5ef12"
+        },
+        {
+          "bytes": 6397,
+          "disposition": "support",
+          "lines": 229,
+          "path": "src/libraries/MarketEvents.sol",
+          "reason": "library code compiled into the contexts that use it; differs from 488b30d0; part of the accepted mixed-source exception",
+          "sha256": "e0be91b21abf2f67fae45b62faab4c1fd82403610c74cf6c8e123eb3ac840935"
+        },
+        {
+          "bytes": 4937,
+          "disposition": "support",
+          "lines": 144,
+          "path": "src/libraries/MarketState.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/MarketState.sol",
+          "sha256": "2c94e0e1974a0c5a751b6a975bf325a1ef5402c5d7e5ad21a585ab65f5e5ae2c"
+        },
+        {
+          "bytes": 6646,
+          "disposition": "support",
+          "lines": 203,
+          "path": "src/libraries/MathUtils.sol",
+          "reason": "library code compiled into the contexts that use it; differs from 488b30d0; part of the accepted mixed-source exception",
+          "sha256": "d55d2ffda4059d79049d90e734b2bbc8b99ff61ae47d61c6817735db1d62d522"
+        },
+        {
+          "bytes": 4074,
+          "disposition": "support",
+          "lines": 140,
+          "path": "src/libraries/SafeCastLib.sol",
+          "reason": "library code compiled into the contexts that use it; differs from 488b30d0; part of the accepted mixed-source exception",
+          "sha256": "844e319a8e2494fa03a74696ffa8b4507205229aa68bf1fb253edc5d6f86645d"
+        },
+        {
+          "bytes": 3753,
+          "disposition": "support",
+          "lines": 117,
+          "path": "src/libraries/StringQuery.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/StringQuery.sol",
+          "sha256": "530e8fc918e25379578d29f9f5c15bae8d67a42f8aea333f540b52d8e3aed201"
+        },
+        {
+          "bytes": 2023,
+          "disposition": "support",
+          "lines": 60,
+          "path": "src/libraries/Withdrawal.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to 488b30d0:src/libraries/Withdrawal.sol",
+          "sha256": "aed65078a7e776749c1ebefa79ed6736852772612e400f239b26a076fa6e1a4a"
+        },
+        {
+          "bytes": 8044,
+          "disposition": "support",
+          "lines": 243,
+          "path": "src/market/WildcatMarket.sol",
+          "reason": "imported by this input's contexts; its WildcatMarket context binds to the WildcatMarketControllerFactory input; byte-identical to 488b30d0:src/market/WildcatMarket.sol",
+          "sha256": "dd69bde5546afa0ca6c3121f634ef8b33fe9ff44b73dafb02be3bf9c43930238"
+        },
+        {
+          "bytes": 24637,
+          "disposition": "support",
+          "lines": 661,
+          "path": "src/market/WildcatMarketBase.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to 488b30d0:src/market/WildcatMarketBase.sol",
+          "sha256": "4c9319022fd0c55ee58f92f71675eb3385404ccde5c0e26b1a7e660eb9b0f2cb"
+        },
+        {
+          "bytes": 7789,
+          "disposition": "support",
+          "lines": 197,
+          "path": "src/market/WildcatMarketConfig.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to 488b30d0:src/market/WildcatMarketConfig.sol",
+          "sha256": "eea02ca3eb3e0b48d242793160c30b464b4beace9b8f97051fb370a7601bbca9"
+        },
+        {
+          "bytes": 2916,
+          "disposition": "support",
+          "lines": 90,
+          "path": "src/market/WildcatMarketToken.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to 488b30d0:src/market/WildcatMarketToken.sol",
+          "sha256": "947ec04a99f194cafddc8d6abbba9d9d8a95be5f11454546e15e790b0e16f6de"
+        },
+        {
+          "bytes": 10357,
+          "disposition": "support",
+          "lines": 286,
+          "path": "src/market/WildcatMarketWithdrawals.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to 488b30d0:src/market/WildcatMarketWithdrawals.sol",
+          "sha256": "f8846e0085e2548ce8323fccb1c44862e2b16011346660a56c1819f1bda78bdd"
+        },
+        {
+          "bytes": 1743,
+          "disposition": "support",
+          "lines": 50,
+          "path": "src/spherex/ISphereXEngine.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to 488b30d0:src/spherex/ISphereXEngine.sol",
+          "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92"
+        },
+        {
+          "bytes": 7681,
+          "disposition": "support",
+          "lines": 192,
+          "path": "src/spherex/SphereXConfig.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to 488b30d0:src/spherex/SphereXConfig.sol",
+          "sha256": "35bb7a0506954ebdd456a1c031019b6cf663d91fc3930d072d406f505753f324"
+        },
+        {
+          "bytes": 643,
+          "disposition": "support",
+          "lines": 37,
+          "path": "src/spherex/SphereXProtectedErrors.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to 488b30d0:src/spherex/SphereXProtectedErrors.sol",
+          "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884"
+        },
+        {
+          "bytes": 1262,
+          "disposition": "support",
+          "lines": 41,
+          "path": "src/spherex/SphereXProtectedEvents.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to 488b30d0:src/spherex/SphereXProtectedEvents.sol",
+          "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63"
+        },
+        {
+          "bytes": 13725,
+          "disposition": "support",
+          "lines": 352,
+          "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to 488b30d0:src/spherex/SphereXProtectedRegisteredBase.sol",
+          "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2"
+        }
+      ],
+      "id": "MarketLensMixed",
+      "partition": "lens-verified-mixed",
+      "sha256": "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377",
+      "source_ref": "https://sourcify.dev/server/v2/contract/1/0xf1d516954f96c1363f8b0ae48d79c8dde6237847?fields=stdJsonInput#sha256=fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377"
+    },
+    {
+      "binding_limit": null,
+      "commits": [
+        "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9",
+        "e9552f0e8a093e214dd69947dc689023df09ff20",
+        "e962bf37866483a3573016a3087331c5de9f0929",
+        "016d0658d6d442b8f42e3bb68f01fae43c150307"
+      ],
+      "differing_files": [],
+      "files": [
+        {
+          "bytes": 12960,
+          "disposition": "support",
+          "lines": 378,
+          "path": "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "a64e5d0e83019d9caa51e6fe6f68ac54b583ac15792b8557cb8e4fab20711b9f"
+        },
+        {
+          "bytes": 10870,
+          "disposition": "support",
+          "lines": 240,
+          "path": "lib/solady/src/auth/Ownable.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "649af487a76855045b4750a69bf4c35ac8930f0c99f485e24992ad95a0e913b9"
+        },
+        {
+          "bytes": 12700,
+          "disposition": "context",
+          "lines": 386,
+          "path": "src/WildcatArchController.sol",
+          "reason": "declares the WildcatArchController context bound to this input; byte-identical to da74452a:src/WildcatArchController.sol",
+          "sha256": "890e4eb4375b03b512395e21047c3c57328bd25f2f58e32e256e2a832432878b"
+        },
+        {
+          "bytes": 512,
+          "disposition": "support",
+          "lines": 16,
+          "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/ISphereXProtectedRegisteredBase.sol",
+          "sha256": "20491e2d3b8aedb1a1d8665d54a5b8368d9b90b95ff0b30f4cffe572fa66db78"
+        },
+        {
+          "bytes": 1943,
+          "disposition": "support",
+          "lines": 66,
+          "path": "src/libraries/Errors.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/Errors.sol",
+          "sha256": "86d9275b17f6d82d28659bb920138eae1b1b1fbe8e4340436e9840239547764d"
+        },
+        {
+          "bytes": 6646,
+          "disposition": "support",
+          "lines": 203,
+          "path": "src/libraries/MathUtils.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/MathUtils.sol",
+          "sha256": "d55d2ffda4059d79049d90e734b2bbc8b99ff61ae47d61c6817735db1d62d522"
+        },
+        {
+          "bytes": 1743,
+          "disposition": "support",
+          "lines": 50,
+          "path": "src/spherex/ISphereXEngine.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/ISphereXEngine.sol",
+          "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92"
+        },
+        {
+          "bytes": 7681,
+          "disposition": "support",
+          "lines": 192,
+          "path": "src/spherex/SphereXConfig.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/SphereXConfig.sol",
+          "sha256": "35bb7a0506954ebdd456a1c031019b6cf663d91fc3930d072d406f505753f324"
+        },
+        {
+          "bytes": 643,
+          "disposition": "support",
+          "lines": 37,
+          "path": "src/spherex/SphereXProtectedErrors.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/SphereXProtectedErrors.sol",
+          "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884"
+        },
+        {
+          "bytes": 1262,
+          "disposition": "support",
+          "lines": 41,
+          "path": "src/spherex/SphereXProtectedEvents.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/SphereXProtectedEvents.sol",
+          "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63"
+        }
+      ],
+      "id": "WildcatArchController",
+      "partition": "core-da74452a",
+      "sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db",
+      "source_ref": "https://github.com/wildcat-finance/wildcat-protocol/tree/da74452aa7d1a0f024d99efd22cc6d950a8116b7"
+    },
+    {
+      "binding_limit": null,
+      "commits": [
+        "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9",
+        "e9552f0e8a093e214dd69947dc689023df09ff20",
+        "e962bf37866483a3573016a3087331c5de9f0929",
+        "016d0658d6d442b8f42e3bb68f01fae43c150307"
+      ],
+      "differing_files": [],
+      "files": [
+        {
+          "bytes": 12960,
+          "disposition": "support",
+          "lines": 378,
+          "path": "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "a64e5d0e83019d9caa51e6fe6f68ac54b583ac15792b8557cb8e4fab20711b9f"
+        },
+        {
+          "bytes": 7392,
+          "disposition": "support",
+          "lines": 184,
+          "path": "lib/solady/src/utils/LibBit.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "bb8d4b7b3ef2bf0051100ce7a83048c6c67830959f6d5e7ee72b686651139c32"
+        },
+        {
+          "bytes": 17845,
+          "disposition": "support",
+          "lines": 374,
+          "path": "lib/solady/src/utils/SafeTransferLib.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "8bc560fb921b6b1c5cff7b69f6733146ab8552b5830b88ab5fc7217c4ba8caac"
+        },
+        {
+          "bytes": 2451,
+          "disposition": "support",
+          "lines": 87,
+          "path": "src/ReentrancyGuard.sol",
+          "reason": "reentrancy guard inherited by WildcatMarket; byte-identical to da74452a:src/ReentrancyGuard.sol",
+          "sha256": "03813938eb3e9cf3527ddf93507dfebfb296f7d1961a8cab5bd83266c50ca7af"
+        },
+        {
+          "bytes": 28826,
+          "disposition": "context",
+          "lines": 788,
+          "path": "src/WildcatMarketController.sol",
+          "reason": "declares the WildcatMarketController context bound to this input; byte-identical to da74452a:src/WildcatMarketController.sol",
+          "sha256": "59ee64ca44fc3605030ab62bb9b18a7adcecd4d4c823facef2a325fe335a14e0"
+        },
+        {
+          "bytes": 15397,
+          "disposition": "context",
+          "lines": 385,
+          "path": "src/WildcatMarketControllerFactory.sol",
+          "reason": "declares the WildcatMarketControllerFactory context bound to this input; byte-identical to da74452a:src/WildcatMarketControllerFactory.sol",
+          "sha256": "3ffc4e6aec03699e0abb373c198a6d7a4c272eb6cbb9c736da7287344b57cb7b"
+        },
+        {
+          "bytes": 1335,
+          "disposition": "support",
+          "lines": 45,
+          "path": "src/WildcatSanctionsEscrow.sol",
+          "reason": "imported by this input's contexts; its WildcatSanctionsEscrow context binds to the WildcatSanctionsSentinel input; byte-identical to da74452a:src/WildcatSanctionsEscrow.sol",
+          "sha256": "19a3ba456c4238d4cbf1103ae97cf270bc705b441065e7a1e48f37dba2785093"
+        },
+        {
+          "bytes": 6660,
+          "disposition": "support",
+          "lines": 175,
+          "path": "src/WildcatSanctionsSentinel.sol",
+          "reason": "imported by this input's contexts; its WildcatSanctionsSentinel context binds to the WildcatSanctionsSentinel input; byte-identical to da74452a:src/WildcatSanctionsSentinel.sol",
+          "sha256": "8106f610cf55bc591807d9006ff21186434872451d019cddfeb7b9d0e1744ff6"
+        },
+        {
+          "bytes": 174,
+          "disposition": "support",
+          "lines": 6,
+          "path": "src/interfaces/IChainalysisSanctionsList.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IChainalysisSanctionsList.sol",
+          "sha256": "961d26966c5875136b1415c628619185be6fbb7ea8fee954eb5a231f25b9c1b4"
+        },
+        {
+          "bytes": 903,
+          "disposition": "support",
+          "lines": 23,
+          "path": "src/interfaces/IERC20.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IERC20.sol",
+          "sha256": "9be1cd0f2af9c956e7006df88cad664e942a6ccb079287e145fbf3af1453d910"
+        },
+        {
+          "bytes": 293,
+          "disposition": "support",
+          "lines": 12,
+          "path": "src/interfaces/IERC20Metadata.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IERC20Metadata.sol",
+          "sha256": "5c0b77b13558bfcc84abd49878e19628c3f4d53e0286db51b742c1beaa6876c0"
+        },
+        {
+          "bytes": 3973,
+          "disposition": "support",
+          "lines": 154,
+          "path": "src/interfaces/IMarketEventsAndErrors.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IMarketEventsAndErrors.sol",
+          "sha256": "a70da020697e141623617155151111cdc8b00c9e7264bca53b554de48e9ffe58"
+        },
+        {
+          "bytes": 5503,
+          "disposition": "support",
+          "lines": 165,
+          "path": "src/interfaces/IWildcatArchController.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IWildcatArchController.sol",
+          "sha256": "f87a7b647177b0993f5920599423df8b6a4494c8ae262743ef0cc333f412cd36"
+        },
+        {
+          "bytes": 6500,
+          "disposition": "support",
+          "lines": 189,
+          "path": "src/interfaces/IWildcatMarketController.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IWildcatMarketController.sol",
+          "sha256": "5e66fa3a49bf5895ba1e623a1dff09dc7678f002f02e3264050827d12bed09c7"
+        },
+        {
+          "bytes": 2658,
+          "disposition": "support",
+          "lines": 88,
+          "path": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+          "sha256": "5a5f07085698e53cf14efe000534c2a347e140f041080c2847fa69d2bf6f3f5f"
+        },
+        {
+          "bytes": 4909,
+          "disposition": "support",
+          "lines": 144,
+          "path": "src/interfaces/IWildcatMarketControllerFactory.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IWildcatMarketControllerFactory.sol",
+          "sha256": "ee7cb39fe15a6395523cfb7052ddf294912d48aeae3e6e632ac170c72d4b423b"
+        },
+        {
+          "bytes": 621,
+          "disposition": "support",
+          "lines": 22,
+          "path": "src/interfaces/IWildcatSanctionsEscrow.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IWildcatSanctionsEscrow.sol",
+          "sha256": "109ed484bf5914a3513a790f31a0c5286a71d630d32c076c87a26e22cb0130af"
+        },
+        {
+          "bytes": 2506,
+          "disposition": "support",
+          "lines": 74,
+          "path": "src/interfaces/IWildcatSanctionsSentinel.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/IWildcatSanctionsSentinel.sol",
+          "sha256": "c1dbda0ffc1b14b3e8c5941f6355ba2f980a3871cf5de9275e9942d5371ee13a"
+        },
+        {
+          "bytes": 1742,
+          "disposition": "support",
+          "lines": 69,
+          "path": "src/interfaces/WildcatStructsAndEnums.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to da74452a:src/interfaces/WildcatStructsAndEnums.sol",
+          "sha256": "1ad7ee0f4787bab87db9f77fd546e039201a55bf92fcfcb56a8785e858839084"
+        },
+        {
+          "bytes": 411,
+          "disposition": "support",
+          "lines": 22,
+          "path": "src/libraries/BoolUtils.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/BoolUtils.sol",
+          "sha256": "b8e5c7e4a38ff68bded5e234b6966cdf9d6e94da9976015f1bcda69e74e18336"
+        },
+        {
+          "bytes": 1943,
+          "disposition": "support",
+          "lines": 66,
+          "path": "src/libraries/Errors.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/Errors.sol",
+          "sha256": "86d9275b17f6d82d28659bb920138eae1b1b1fbe8e4340436e9840239547764d"
+        },
+        {
+          "bytes": 2298,
+          "disposition": "support",
+          "lines": 80,
+          "path": "src/libraries/FIFOQueue.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/FIFOQueue.sol",
+          "sha256": "7805eaa4c77f475ac11d6e055cd5b90c08219fce0d39fdd395a3fa12cb1505a0"
+        },
+        {
+          "bytes": 6650,
+          "disposition": "support",
+          "lines": 174,
+          "path": "src/libraries/FeeMath.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/FeeMath.sol",
+          "sha256": "1cd0cc829cf06d229ab03b986b71d915bfa7ded363902e6fec04f84f2fc92df6"
+        },
+        {
+          "bytes": 4240,
+          "disposition": "support",
+          "lines": 124,
+          "path": "src/libraries/LibStoredInitCode.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/LibStoredInitCode.sol",
+          "sha256": "904aa87e55f9ab5386ab824414141e9965501b1f799d0b933f3bfb51d4ef59d1"
+        },
+        {
+          "bytes": 5159,
+          "disposition": "support",
+          "lines": 241,
+          "path": "src/libraries/MarketErrors.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/MarketErrors.sol",
+          "sha256": "cec79d3df664a6055bc3a834b3073faca3c5db255aeebbec9a18b42b2a757c9f"
+        },
+        {
+          "bytes": 6358,
+          "disposition": "support",
+          "lines": 228,
+          "path": "src/libraries/MarketEvents.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/MarketEvents.sol",
+          "sha256": "d393bdeab6f425d346c6e8b3aeaa54f4fa1f9af9dcbad17ea85b76c3a30faa0f"
+        },
+        {
+          "bytes": 4930,
+          "disposition": "support",
+          "lines": 144,
+          "path": "src/libraries/MarketState.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/MarketState.sol",
+          "sha256": "7c5d2c3ba1508c937dfabc998204bdf2c5955e79bf43d47a932618d7ae5cb6cf"
+        },
+        {
+          "bytes": 6646,
+          "disposition": "support",
+          "lines": 203,
+          "path": "src/libraries/MathUtils.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/MathUtils.sol",
+          "sha256": "d55d2ffda4059d79049d90e734b2bbc8b99ff61ae47d61c6817735db1d62d522"
+        },
+        {
+          "bytes": 4074,
+          "disposition": "support",
+          "lines": 140,
+          "path": "src/libraries/SafeCastLib.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/SafeCastLib.sol",
+          "sha256": "844e319a8e2494fa03a74696ffa8b4507205229aa68bf1fb253edc5d6f86645d"
+        },
+        {
+          "bytes": 3746,
+          "disposition": "support",
+          "lines": 117,
+          "path": "src/libraries/StringQuery.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/StringQuery.sol",
+          "sha256": "b0ff5b2f9b15b15fce9d014bfb882af706234d4a1e3af09059ce5e6f62881417"
+        },
+        {
+          "bytes": 2016,
+          "disposition": "support",
+          "lines": 60,
+          "path": "src/libraries/Withdrawal.sol",
+          "reason": "library code compiled into the contexts that use it; byte-identical to da74452a:src/libraries/Withdrawal.sol",
+          "sha256": "cfec16658fed200fe75f57129139a5d5b448b5a65afbb36edba4877cbeb8b00b"
+        },
+        {
+          "bytes": 8037,
+          "disposition": "context",
+          "lines": 243,
+          "path": "src/market/WildcatMarket.sol",
+          "reason": "declares the WildcatMarket context bound to this input; byte-identical to da74452a:src/market/WildcatMarket.sol",
+          "sha256": "d8d84c73ea010dec8d9e097641d5f972365431018ef083a012c924bdf5665d3f"
+        },
+        {
+          "bytes": 24630,
+          "disposition": "support",
+          "lines": 661,
+          "path": "src/market/WildcatMarketBase.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to da74452a:src/market/WildcatMarketBase.sol",
+          "sha256": "8310b1453ccfe599537df2523c9c9bd62ac5b4b2937fc970d63bc79d4e50330e"
+        },
+        {
+          "bytes": 7782,
+          "disposition": "support",
+          "lines": 197,
+          "path": "src/market/WildcatMarketConfig.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to da74452a:src/market/WildcatMarketConfig.sol",
+          "sha256": "bc10f8f142ddbf90b684740b8db19d75413d5fcc948f82a269dbf2d95adaf2e1"
+        },
+        {
+          "bytes": 2909,
+          "disposition": "support",
+          "lines": 90,
+          "path": "src/market/WildcatMarketToken.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to da74452a:src/market/WildcatMarketToken.sol",
+          "sha256": "cc687fc328237b6beaf0314b14b5b2c8b410a54d669d167ad417bd9bd4511aed"
+        },
+        {
+          "bytes": 10350,
+          "disposition": "support",
+          "lines": 286,
+          "path": "src/market/WildcatMarketWithdrawals.sol",
+          "reason": "abstract market base inherited by WildcatMarket; byte-identical to da74452a:src/market/WildcatMarketWithdrawals.sol",
+          "sha256": "c3192056618fe2167699196180b9fa43b19783b9fce93e03b07a4e2723b22f2a"
+        },
+        {
+          "bytes": 1743,
+          "disposition": "support",
+          "lines": 50,
+          "path": "src/spherex/ISphereXEngine.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/ISphereXEngine.sol",
+          "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92"
+        },
+        {
+          "bytes": 643,
+          "disposition": "support",
+          "lines": 37,
+          "path": "src/spherex/SphereXProtectedErrors.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/SphereXProtectedErrors.sol",
+          "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884"
+        },
+        {
+          "bytes": 1262,
+          "disposition": "support",
+          "lines": 41,
+          "path": "src/spherex/SphereXProtectedEvents.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/SphereXProtectedEvents.sol",
+          "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63"
+        },
+        {
+          "bytes": 13725,
+          "disposition": "support",
+          "lines": 352,
+          "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+          "reason": "SphereX protection code inherited or called by this input's contexts; byte-identical to da74452a:src/spherex/SphereXProtectedRegisteredBase.sol",
+          "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2"
+        }
+      ],
+      "id": "WildcatMarketControllerFactory",
+      "partition": "core-da74452a",
+      "sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706",
+      "source_ref": "https://github.com/wildcat-finance/wildcat-protocol/tree/da74452aa7d1a0f024d99efd22cc6d950a8116b7"
+    },
+    {
+      "binding_limit": null,
+      "commits": [
+        "6164ddd4c75ef6da2181e5623b99795b9829e31c"
+      ],
+      "differing_files": [],
+      "files": [
+        {
+          "bytes": 17845,
+          "disposition": "support",
+          "lines": 374,
+          "path": "lib/solady/src/utils/SafeTransferLib.sol",
+          "reason": "vendored library; byte-identical to the public submodule blob at the gitlink da74452a records",
+          "sha256": "8bc560fb921b6b1c5cff7b69f6733146ab8552b5830b88ab5fc7217c4ba8caac"
+        },
+        {
+          "bytes": 1342,
+          "disposition": "context",
+          "lines": 45,
+          "path": "src/WildcatSanctionsEscrow.sol",
+          "reason": "declares the WildcatSanctionsEscrow context bound to this input; byte-identical to 6164ddd4:src/WildcatSanctionsEscrow.sol",
+          "sha256": "eb913872e9f5f10ab6fd2dc4fe09ab2374964d362f7d78fd35b497ef72b5075f"
+        },
+        {
+          "bytes": 6667,
+          "disposition": "context",
+          "lines": 175,
+          "path": "src/WildcatSanctionsSentinel.sol",
+          "reason": "declares the WildcatSanctionsSentinel context bound to this input; byte-identical to 6164ddd4:src/WildcatSanctionsSentinel.sol",
+          "sha256": "b878363ff3d48415a5985e0bf25367d88a5f4f3a13b49d62f33b618c583dd82f"
+        },
+        {
+          "bytes": 174,
+          "disposition": "support",
+          "lines": 6,
+          "path": "src/interfaces/IChainalysisSanctionsList.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 6164ddd4:src/interfaces/IChainalysisSanctionsList.sol",
+          "sha256": "081b1b72993d56e4a329ca1048c7c2d9db599ef42e4de1566a8eadebe2d08358"
+        },
+        {
+          "bytes": 910,
+          "disposition": "support",
+          "lines": 23,
+          "path": "src/interfaces/IERC20.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 6164ddd4:src/interfaces/IERC20.sol",
+          "sha256": "185d2ce0d8edd675dfabc7e1d86e86b5d68c6b0dacc5c96a028ddfe06bd05259"
+        },
+        {
+          "bytes": 628,
+          "disposition": "support",
+          "lines": 22,
+          "path": "src/interfaces/IWildcatSanctionsEscrow.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 6164ddd4:src/interfaces/IWildcatSanctionsEscrow.sol",
+          "sha256": "3a9f25bae52181322ad5ee81efa01ba931160d7d13c8b4a775544f1ab01dc8c5"
+        },
+        {
+          "bytes": 2513,
+          "disposition": "support",
+          "lines": 74,
+          "path": "src/interfaces/IWildcatSanctionsSentinel.sol",
+          "reason": "interface compiled for types, events and calls; not deployed on its own; byte-identical to 6164ddd4:src/interfaces/IWildcatSanctionsSentinel.sol",
+          "sha256": "0154c0936d81f0407c1df280554b34321c4ba4cefeaf236cd343a651c0881a9f"
+        }
+      ],
+      "id": "WildcatSanctionsSentinel",
+      "partition": "sentinel-6164ddd4",
+      "sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6",
+      "source_ref": "https://github.com/wildcat-finance/wildcat-protocol/tree/6164ddd4c75ef6da2181e5623b99795b9829e31c"
+    }
+  ],
+  "repository": "wildcat-finance/wildcat-protocol",
+  "schema": "issue-1963-sources/v1"
+}

@@ -1,0 +1,20 @@
+from pathlib import Path
+import importlib.util, io, json, sys, tempfile, unittest
+from unittest.mock import patch
+root = Path.cwd()
+p = root / "plugins/hexaemeron/tests/test_imprimatur_family_evidence.py"
+spec=importlib.util.spec_from_file_location("test_imprimatur_family_evidence",p)
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+original=m.FamilyEvidenceCheckerTest.build_fixture
+with tempfile.TemporaryDirectory(prefix="warden-1273-family-collision-") as d:
+    parent=Path(d); occupied=parent/"escaped-schemas"; occupied.mkdir()
+    sentinel=occupied/"other-run";sentinel.write_text("preserve\n")
+    def owned(self,*args,**kwargs):
+        if kwargs.get("root") is None:kwargs["root"]=parent/"fixture"
+        return original(self,*args,**kwargs)
+    suite=unittest.TestSuite([m.FamilyEvidenceCheckerTest("test_refuses_path_outside_the_fixture")])
+    with patch.object(m.FamilyEvidenceCheckerTest,"build_fixture",owned):
+        result=unittest.TextTestRunner(verbosity=2).run(suite)
+    assert sentinel.read_text()=="preserve\n"
+    print(json.dumps({"tests":result.testsRun,"failures":len(result.failures),"errors":len(result.errors),"occupied_sibling_unchanged":True}))
+    sys.exit(not result.wasSuccessful())

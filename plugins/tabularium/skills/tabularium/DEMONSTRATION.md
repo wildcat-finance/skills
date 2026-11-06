@@ -65,3 +65,19 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
 | `tabularium-demo-v0.1.0` | baseline | `canonical-compound-v3-events` | `a2857ce92e63d0a2f5fedb9a02f09a118cb003109cb547f84008b9e48dc0207b` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |
+
+## Public constructed Wildcat specimens
+
+The V1/V2 specimens rebuild and verify offline from checked-in bytes. They keep
+their constructed evidence class. From the repository root:
+
+```bash
+python3 -m unittest discover -s plugins/tabularium/tests \
+  -p test_wildcat_v3_reproduction.py -t plugins/tabularium
+```
+
+These ordinary controls are separate from the saved four-input retained-capture
+admission, which requires bound local custody and refuses when unavailable.
+The [Wildcat guide](../../docs/wildcat-canonical.md) gives that proof path and
+its coverage limits. The registered Aave/Compound declaration and demonstration
+frontier above keep their existing mixed classification.

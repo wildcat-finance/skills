@@ -99,6 +99,48 @@ misstates what happened to the superseded alpha, beta, and Handover milestones.
 That correction needs its own amendment and a decision about whether closed
 issues should carry a Wave at all.
 
+## Amendment: Complete missing filing-contract fields on open issues (2026-09-20)
+
+Issue [#1479](https://github.com/wildcat-finance/skills/issues/1479) recorded
+eleven filed bodies that `init` could not start because they carried no
+`carryover` block and, in five cases, no `Fiat-Required` line. The original
+observation was read at `wildcat-finance/skills@f0ef9266`. A fresh read of the
+live open issue set at `wildcat-finance/skills@d9b984701999622ae72ad89a5373f26a435ad064`
+on 2026-09-20 found ten open bodies still missing `carryover` and four still
+missing `Fiat-Required`: #1176, #1204, #1300 and #1314. #1175 is now closed and
+is not edited.
+
+The filing contract answers routing and carryover shape before `init` creates
+state. Those answers are not filing prose, and an absent answer cannot be
+repaired by making the reader permissive: the reader would still have no value
+to consume. This amendment authorises one bounded completion of an open issue's
+body.
+
+1. If the body carries no valid `Fiat-Required` declaration, append exactly one
+   unfenced `Fiat-Required: 0` or `Fiat-Required: 1` line. The value is a
+   maintainer's routing decision; it is not inferred from a label or from the
+   body by a parser. A body with a malformed or duplicate declaration is not
+   repaired by this amendment.
+2. If the body carries no `carryover` block, append exactly one fenced block
+   with the existing `id | disposition | reference` grammar. A malformed or
+   duplicate block is not repaired by this amendment.
+3. The missing fields are appended after the existing body, in the order
+   `Fiat-Required` then `carryover`. The original body bytes are not rewritten,
+   and only the missing field is appended when the other one already exists.
+4. For the live repair set observed above, the routing decisions are #1176 =
+   `0`, #1204 = `0`, #1300 = `0` and #1314 = `1`. The ten carryover additions
+   use the single row `none | none | The issue's stated work is the complete
+   scope; nothing is carried forward.`
+5. Closed issues, titles, labels, assignees, comments, project membership,
+   status blocks and filing prose remain outside this mutation. This amendment
+   does not change the issue's requirement or decide whether its stated work
+   is correct; it only supplies the two contract fields the filed body omitted.
+
+The repaired bodies must be read back from GitHub and checked against their
+original bytes, title, labels, queue, one routing decision and one carryover
+block. A successful readback establishes the shape of those fields only; it
+does not establish the issue's technical claim or authorise its implementation.
+
 ## Alternatives
 
 - **Patch only the issues added since the previous census.** This would be

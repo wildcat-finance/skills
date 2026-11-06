@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-limit-matched-reader",
+  "command": "python3 .hexaemeron/design/resolve.py set-verify-milliseconds --candidate raised-limit-matched-reader",
+  "criterion": "set-verify-milliseconds",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 3890
+}

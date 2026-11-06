@@ -1,0 +1,8 @@
+{
+  "target": "wildcat-v2-ethereum-mainnet",
+  "generation": "V2",
+  "chain_id": 1,
+  "address": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+  "code_keccak256": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+  "note": "a recorded 730-day FixedTermHooks instance at the 2026-09-18 estate block; expected accepted"
+}

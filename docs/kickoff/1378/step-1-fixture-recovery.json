@@ -1,0 +1,315 @@
+{
+  "checked_evidence": {
+    "all_observation_output_hashes_and_byte_counts_match": true,
+    "all_stdout_native_counters_match_observation_records": true,
+    "controller_sha256_unchanged_across_observations": true,
+    "each_tests_run_matches_executed_ids": true,
+    "fixed_fixture_sha256": "df42f67c30557a402d57c20b8a75a766edfe9ad0c2cbecbc1d1b0f9b9821ac2d"
+  },
+  "controller_path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+  "driver": {
+    "artifact_name": "fiat-1378-fixture-regression-driver.py",
+    "bytes": 3259,
+    "sha256": "03cc7c7fb2fb1234e8f426cebe16e8e9202782a897492b3e0b1ecb5faa929308"
+  },
+  "fixture_path": "plugins/hexaemeron/tests/test_fiat_starting_commit_bindings.py",
+  "implementation_packet_sha256": "56d6b25b4cdbcdd7abe42f29557bb9d5682162c1d8a095ce1c74f5f0a1911fe9",
+  "issue": 1378,
+  "limits": [
+    "This is focused test-fixture recovery evidence; it does not establish a production Elenchus guarded result.",
+    "The full original admission suite totals are unknown because its buffered output was discarded.",
+    "Full required implementation admission and committed-tip Exit remain separate root-owned gates.",
+    "Raw regression output, observation records and the driver remain local; only their digests, byte counts, target identities and measured results are distributed."
+  ],
+  "observations": [
+    {
+      "argv_sha256": "f2c259217935171685dd21381162c20c5f03d5c01aa81d2c6c8ca0bd0bf098fd",
+      "controller_sha256": "d7552d1332286463b9e975aca40ca2b5c4f3d5cdb2410bd65564baa71fbaa8d2",
+      "duration_seconds": 2.299,
+      "environment": "closed",
+      "exit_code": 1,
+      "fixture_sha256": "158ed862d456dd68fd84db2ef0466d74ad128ee24f618013ae1b71c7033b463e",
+      "id": "unfixed-closed",
+      "inherited_git_no_replace_objects": "1",
+      "observation": {
+        "artifact_name": "fiat-1378-fixture-unfixed-closed.json",
+        "bytes": 2192,
+        "schema": "fiat-1378-regression-observation/v1",
+        "sha256": "0c8a78afdd9106c705cec30391f4716eaa6d8f5c235bce391da2a4c71f5ceca4"
+      },
+      "raw_outputs": {
+        "stderr": {
+          "artifact_name": "fiat-1378-fixture-unfixed-closed.stderr",
+          "bytes": 1596,
+          "sha256": "a423337b06a1b2ce1a5b4d5f89a1ffb9cb1649a06a037a1e81d53809cb2fb48a"
+        },
+        "stdout": {
+          "artifact_name": "fiat-1378-fixture-unfixed-closed.stdout",
+          "bytes": 310,
+          "sha256": "cf63ee56cfe61af58e6c764aa3d633c6fa56e3735e75042978763b8c35a9cd12"
+        }
+      },
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "executed": [
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+        ],
+        "expectedFailures": 0,
+        "failures": 1,
+        "skipped": 0,
+        "testsRun": 1,
+        "unexpectedSuccesses": 0
+      },
+      "test_targets": [
+        "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+      ]
+    },
+    {
+      "argv_sha256": "f2c259217935171685dd21381162c20c5f03d5c01aa81d2c6c8ca0bd0bf098fd",
+      "controller_sha256": "d7552d1332286463b9e975aca40ca2b5c4f3d5cdb2410bd65564baa71fbaa8d2",
+      "duration_seconds": 2.735,
+      "environment": "ambient",
+      "exit_code": 0,
+      "fixture_sha256": "158ed862d456dd68fd84db2ef0466d74ad128ee24f618013ae1b71c7033b463e",
+      "id": "unfixed-ambient",
+      "inherited_git_no_replace_objects": null,
+      "observation": {
+        "artifact_name": "fiat-1378-fixture-unfixed-ambient.json",
+        "bytes": 2195,
+        "schema": "fiat-1378-regression-observation/v1",
+        "sha256": "468521906cc845b66f45a32742b3f17d07d3a6608c9044bf3732adce06f2b334"
+      },
+      "raw_outputs": {
+        "stderr": {
+          "artifact_name": "fiat-1378-fixture-unfixed-ambient.stderr",
+          "bytes": 320,
+          "sha256": "361b771ead1935dc9e784cecc59817065a3e2f803e9c26ec1333d5616c0c1059"
+        },
+        "stdout": {
+          "artifact_name": "fiat-1378-fixture-unfixed-ambient.stdout",
+          "bytes": 310,
+          "sha256": "df1b3dd85b9434b7a235c01ebaf97b07a8fe33462d98cfcac85873008e7a4aff"
+        }
+      },
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "executed": [
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+        ],
+        "expectedFailures": 0,
+        "failures": 0,
+        "skipped": 0,
+        "testsRun": 1,
+        "unexpectedSuccesses": 0
+      },
+      "test_targets": [
+        "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+      ]
+    },
+    {
+      "argv_sha256": "f2c259217935171685dd21381162c20c5f03d5c01aa81d2c6c8ca0bd0bf098fd",
+      "controller_sha256": "d7552d1332286463b9e975aca40ca2b5c4f3d5cdb2410bd65564baa71fbaa8d2",
+      "duration_seconds": 3.042,
+      "environment": "closed",
+      "exit_code": 0,
+      "fixture_sha256": "df42f67c30557a402d57c20b8a75a766edfe9ad0c2cbecbc1d1b0f9b9821ac2d",
+      "id": "fixed-closed",
+      "inherited_git_no_replace_objects": "1",
+      "observation": {
+        "artifact_name": "fiat-1378-fixture-fixed-closed.json",
+        "bytes": 2187,
+        "schema": "fiat-1378-regression-observation/v1",
+        "sha256": "27b6bb3da3f772838e8b9d0f62b6c31084aaba744451935679f4af21aad53523"
+      },
+      "raw_outputs": {
+        "stderr": {
+          "artifact_name": "fiat-1378-fixture-fixed-closed.stderr",
+          "bytes": 320,
+          "sha256": "6c99b49d16b6755a09e19b9c0019ec67772fa13c6edf2bf22f8fe20ea3710279"
+        },
+        "stdout": {
+          "artifact_name": "fiat-1378-fixture-fixed-closed.stdout",
+          "bytes": 310,
+          "sha256": "df1b3dd85b9434b7a235c01ebaf97b07a8fe33462d98cfcac85873008e7a4aff"
+        }
+      },
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "executed": [
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+        ],
+        "expectedFailures": 0,
+        "failures": 0,
+        "skipped": 0,
+        "testsRun": 1,
+        "unexpectedSuccesses": 0
+      },
+      "test_targets": [
+        "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+      ]
+    },
+    {
+      "argv_sha256": "f2c259217935171685dd21381162c20c5f03d5c01aa81d2c6c8ca0bd0bf098fd",
+      "controller_sha256": "d7552d1332286463b9e975aca40ca2b5c4f3d5cdb2410bd65564baa71fbaa8d2",
+      "duration_seconds": 3.056,
+      "environment": "ambient",
+      "exit_code": 0,
+      "fixture_sha256": "df42f67c30557a402d57c20b8a75a766edfe9ad0c2cbecbc1d1b0f9b9821ac2d",
+      "id": "fixed-ambient",
+      "inherited_git_no_replace_objects": null,
+      "observation": {
+        "artifact_name": "fiat-1378-fixture-fixed-ambient.json",
+        "bytes": 2191,
+        "schema": "fiat-1378-regression-observation/v1",
+        "sha256": "dacb44a3b66e3f52a76fff1d80578853dd56725c7a5413f53a787f48f8ecd7ec"
+      },
+      "raw_outputs": {
+        "stderr": {
+          "artifact_name": "fiat-1378-fixture-fixed-ambient.stderr",
+          "bytes": 320,
+          "sha256": "d4bc79cb3738089f2105d8202734de3b373e8d10596220f131efc30e7972b15d"
+        },
+        "stdout": {
+          "artifact_name": "fiat-1378-fixture-fixed-ambient.stdout",
+          "bytes": 310,
+          "sha256": "df1b3dd85b9434b7a235c01ebaf97b07a8fe33462d98cfcac85873008e7a4aff"
+        }
+      },
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "executed": [
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+        ],
+        "expectedFailures": 0,
+        "failures": 0,
+        "skipped": 0,
+        "testsRun": 1,
+        "unexpectedSuccesses": 0
+      },
+      "test_targets": [
+        "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+      ]
+    },
+    {
+      "argv_sha256": "e8b42905234e01fec8b8ad3bfc0517b5f89ac9414b55ebfbcc0df480f1ed6c30",
+      "controller_sha256": "d7552d1332286463b9e975aca40ca2b5c4f3d5cdb2410bd65564baa71fbaa8d2",
+      "duration_seconds": 27.214,
+      "environment": "closed",
+      "exit_code": 0,
+      "fixture_sha256": "df42f67c30557a402d57c20b8a75a766edfe9ad0c2cbecbc1d1b0f9b9821ac2d",
+      "id": "fixed-class-closed",
+      "inherited_git_no_replace_objects": "1",
+      "observation": {
+        "artifact_name": "fiat-1378-fixture-fixed-class-closed.json",
+        "bytes": 3798,
+        "schema": "fiat-1378-regression-observation/v1",
+        "sha256": "c0b1e37e13cb9e3a2733ea62b2bc852fa49f7abf6d28b972f40b064e4aa06c26"
+      },
+      "raw_outputs": {
+        "stderr": {
+          "artifact_name": "fiat-1378-fixture-fixed-class-closed.stderr",
+          "bytes": 2620,
+          "sha256": "861a2b820e2992586d650348cf711aea3725780684d9b903ff76ca241ed502f8"
+        },
+        "stdout": {
+          "artifact_name": "fiat-1378-fixture-fixed-class-closed.stdout",
+          "bytes": 1905,
+          "sha256": "a0be77d2a26e4d1743f1086af2a10b0fabbc95a488600ea078c858efc58308a6"
+        }
+      },
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "executed": [
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_absent_base_adapter_keeps_controller_pin_skew_and_a_rewritten_base_writes_nothing",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_adapter_neither_reviewed_nor_the_base_keeps_gate_receipt_drift",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_admitted_provenance_names_every_admitted_module",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_base_pin_disagreeing_with_the_module_keeps_controller_pin_skew",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_criteria_admission_replays_under_the_starting_commit",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_current_run_reads_no_git_for_this_rule",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_edited_module_keeps_module_edited_in_run",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_legacy_run_without_the_marker_stays_legacy",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_run_under_an_older_controller_verifies_and_supersedes_here",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_skew_list_marks_the_module_the_runbook_names",
+          "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests.test_unreadable_base_pins_keep_controller_pin_skew"
+        ],
+        "expectedFailures": 0,
+        "failures": 0,
+        "skipped": 0,
+        "testsRun": 12,
+        "unexpectedSuccesses": 0
+      },
+      "test_targets": [
+        "plugins.hexaemeron.tests.test_fiat_starting_commit_bindings.OlderControllerRunTests"
+      ]
+    },
+    {
+      "argv_sha256": "cf98c4918ae64963fefa0fc6af6b21df78e71ccbcb32eebba352f67b3873f718",
+      "controller_sha256": "d7552d1332286463b9e975aca40ca2b5c4f3d5cdb2410bd65564baa71fbaa8d2",
+      "duration_seconds": 0.103,
+      "environment": "closed",
+      "exit_code": 0,
+      "fixture_sha256": "df42f67c30557a402d57c20b8a75a766edfe9ad0c2cbecbc1d1b0f9b9821ac2d",
+      "id": "fixed-path-closed",
+      "inherited_git_no_replace_objects": "1",
+      "observation": {
+        "artifact_name": "fiat-1378-fixture-fixed-path-closed.json",
+        "bytes": 2081,
+        "schema": "fiat-1378-regression-observation/v1",
+        "sha256": "431daf37124be081f35dcb1429e5d78427acf69cc1d7d23c88efe5067c4d6f18"
+      },
+      "raw_outputs": {
+        "stderr": {
+          "artifact_name": "fiat-1378-fixture-fixed-path-closed.stderr",
+          "bytes": 229,
+          "sha256": "5d7772a83c17d12fc3fadf09f4b160fc98cc424dcae853794735d503272bf43b"
+        },
+        "stdout": {
+          "artifact_name": "fiat-1378-fixture-fixed-path-closed.stdout",
+          "bytes": 252,
+          "sha256": "c82b277e61696b312c81288a8d89370a4936ee8bb0784e52334ffb59583f4e83"
+        }
+      },
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "executed": [
+          "plugins.hexaemeron.tests.test_hexctl.GitHubSignerDiagnosis.test_final_green_path_is_closed"
+        ],
+        "expectedFailures": 0,
+        "failures": 0,
+        "skipped": 0,
+        "testsRun": 1,
+        "unexpectedSuccesses": 0
+      },
+      "test_targets": [
+        "plugins.hexaemeron.tests.test_hexctl.GitHubSignerDiagnosis.test_final_green_path_is_closed"
+      ]
+    }
+  ],
+  "original_failed_admission": {
+    "controller_exit_code": 2,
+    "controller_exit_code_basis": "Root execution observation; the retained refusal log does not encode the controller exit.",
+    "declared_suite": "hexaemeron-suite",
+    "declared_suite_exit_code": 1,
+    "full_native_counter_record": null,
+    "full_suite_output_retained": false,
+    "refusal_log": {
+      "artifact_name": "fiat-1378-step1-done-implement.log",
+      "bytes": 311,
+      "sha256": "10b6c912b4a3cee950423eb8ace1d124b5376975de68fdfe98bae12f1ae74b1c"
+    },
+    "reported_failing_test_count": 1,
+    "reported_failing_test_id": "test_fiat_starting_commit_bindings.OlderControllerRunTests.test_replace_ref_on_the_base_module_blob_never_reaches_admission"
+  },
+  "repair": "The positive-control observation temporarily removes inherited GIT_NO_REPLACE_OBJECTS through mock.patch.dict, then asserts restoration before explicit native-object and controller checks.",
+  "runbook_sha256": "490de2be72348fca47a34e6812f07a3f1a67ff1c653e35ae9d7137f46e365c42",
+  "schema": "fiat-1378-step-1-fixture-recovery/v1",
+  "step": 1,
+  "study_sha256": "e19a7b28c5e37056a3c5015b0444a0661fe0be18b6df46f3a476686f4bd955fc"
+}

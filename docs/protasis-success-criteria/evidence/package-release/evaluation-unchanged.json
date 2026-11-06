@@ -1,0 +1,159 @@
+{
+  "answers_sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855",
+  "changed_fields": [],
+  "commands": [
+    {
+      "after": {
+        "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+        "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+      },
+      "argv": [
+        "python3",
+        "tests/promise_evaluation_driver.py",
+        "emit",
+        "--out",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-packet"
+      ],
+      "before": {
+        "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+        "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+      },
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+      "elapsed_seconds": 0.06913741701282561,
+      "exit": 0,
+      "log": ".hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-emit.log",
+      "log_sha256": "5ffa7740903a72a52d315270b96e612510fd78c4d047159b0c91f9461037b2e4",
+      "started_at": "2026-09-16T13:40:00.137966+00:00"
+    },
+    {
+      "after": {
+        "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+        "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+      },
+      "argv": [
+        "python3",
+        "tests/promise_evaluation_driver.py",
+        "tally",
+        "--packet",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-packet",
+        "--answers",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/docs/promise-machine/obligation-gates/evaluation-answers.json",
+        "--out",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-run.json",
+        "--model",
+        "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
+        "--date",
+        "2026-08-31"
+      ],
+      "before": {
+        "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+        "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+      },
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+      "elapsed_seconds": 0.06588937493506819,
+      "exit": 0,
+      "log": ".hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-tally.log",
+      "log_sha256": "80c9ff0336eb66b3f867d21027f27ff9b6ffbe395ce008cf8b63a145189328e8",
+      "started_at": "2026-09-16T13:40:14.594444+00:00"
+    },
+    {
+      "after": {
+        "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+        "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+      },
+      "argv": [
+        "python3",
+        "tests/promise_evaluation_driver.py",
+        "verify",
+        "--packet",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-packet",
+        "--answers",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/docs/promise-machine/obligation-gates/evaluation-answers.json",
+        "--run",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-run.json"
+      ],
+      "before": {
+        "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+        "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+      },
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+      "elapsed_seconds": 0.06586874998174608,
+      "exit": 0,
+      "log": ".hexaemeron/evidence/warden-step-1-round-2/package-repair/evaluation-verify.log",
+      "log_sha256": "cad2b5a4b074bdb15d741afaf4632b6fed04b9816aa324de2abccabf53d0c4ad",
+      "started_at": "2026-09-16T13:40:14.707838+00:00"
+    }
+  ],
+  "counts": {
+    "answers": 11,
+    "cases": 11,
+    "failed": 0,
+    "outcomes": 55,
+    "passed": 55
+  },
+  "date": "2026-08-31",
+  "manifest_unchanged": true,
+  "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
+  "new_model_observation": false,
+  "producer": "tests/promise_evaluation_driver.py",
+  "producer_sha256": "385add206ab8ace2ed04857213670f7e427079498d8f6e2c404ddd3db3201fd6",
+  "projection_sha256": "416ca056a957560995752979eaa56a2f0b1bfe4e8faca060ef6e3e39c338ed94",
+  "schema": "success-criteria-evaluation-source-check/v1",
+  "unchanged_prompts": [
+    {
+      "bytes": 3061,
+      "case": "hexaemeron-fizz-convert-properties",
+      "sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2"
+    },
+    {
+      "bytes": 3179,
+      "case": "hexaemeron-fizz-harness-campaign",
+      "sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10"
+    },
+    {
+      "bytes": 3222,
+      "case": "hexaemeron-fizz-sync-drift",
+      "sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb"
+    },
+    {
+      "bytes": 3390,
+      "case": "hexaemeron-solidity-audit-report",
+      "sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2"
+    },
+    {
+      "bytes": 5114,
+      "case": "hexaemeron-x-ray-preaudit",
+      "sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48"
+    },
+    {
+      "bytes": 2532,
+      "case": "hypomnema-record-placement",
+      "sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821"
+    },
+    {
+      "bytes": 2993,
+      "case": "kronos-fiat-dispatch",
+      "sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa"
+    },
+    {
+      "bytes": 2219,
+      "case": "sapheneia-deactivation",
+      "sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0"
+    },
+    {
+      "bytes": 3392,
+      "case": "sapheneia-durable-record-shape",
+      "sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385"
+    },
+    {
+      "bytes": 2461,
+      "case": "sapheneia-session-shape",
+      "sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53"
+    },
+    {
+      "bytes": 2496,
+      "case": "vulgate-register-rewrite",
+      "sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463"
+    }
+  ]
+}

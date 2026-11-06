@@ -1,0 +1,241 @@
+{
+  "schema": "wildcat.kickoff-event-sources.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1485",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1372",
+  "repository": {
+    "name": "wildcat-finance/v2-protocol",
+    "url": "https://github.com/wildcat-finance/v2-protocol"
+  },
+  "deployed_source": {
+    "role": "deployed base",
+    "ref": "main",
+    "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+    "committed": "2026-08-19T00:26:43Z",
+    "subject": "Merge pull request #134 from wildcat-finance/horos/reading-boundary",
+    "generation": "Wildcat V2 Ethereum mainnet",
+    "registry_row": "wildcat-v2-ethereum-mainnet",
+    "source_equivalence": "v2.1.0 per docs/kickoff/1359/targets.md; not evidence for every deployed epoch",
+    "files": [
+      {
+        "path": "src/interfaces/IMarketEventsAndErrors.sol",
+        "bytes": 4271,
+        "blob_sha1": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+        "sha256": "b70cdb05567a8e64a3e41f3f5658af93de8d7bc9b869be18b94d144fad9298b5"
+      },
+      {
+        "path": "src/libraries/MarketEvents.sol",
+        "bytes": 6728,
+        "blob_sha1": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+        "sha256": "bffeeebe2e4847a1beebdb40285e94f2838691320cc4f5958e5314d95bc83b57"
+      },
+      {
+        "path": "src/spherex/SphereXProtectedEvents.sol",
+        "bytes": 1262,
+        "blob_sha1": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+        "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63"
+      }
+    ]
+  },
+  "proposed_candidate": {
+    "role": "proposed candidate",
+    "ref": "release/v2.5",
+    "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+    "committed": "2026-09-05T08:19:14Z",
+    "subject": "Merge pull request #166 from wildcat-finance/fix/v2.5-expiry-asset-checkpoint",
+    "selected_by": "Dr Laurence E. Day, 2026-09-17",
+    "files": [
+      {
+        "path": "src/interfaces/IMarketEventsAndErrors.sol",
+        "bytes": 15648,
+        "blob_sha1": "a87af4e0af21c84363996b136016ffa592589598",
+        "sha256": "1e46d2f30f9460c979fc1b124a62fe3a14b0ec30e0eb0f95875eb83245a0688a"
+      },
+      {
+        "path": "src/libraries/MarketEvents.sol",
+        "bytes": 9920,
+        "blob_sha1": "00ea7862fdf590a619721365779618db481f0519",
+        "sha256": "5d82cdf3cb7495f64dc40b23059eba1c3930ecaaa71f8cfc562b6fb3cf3d8d21"
+      },
+      {
+        "path": "src/market/WildcatMarket.sol",
+        "bytes": 12202,
+        "blob_sha1": "07750db13934e8f8d260b57935ec83f41611f051",
+        "sha256": "93bec245b58776c2d5e2a91523ac61ff0df9ae01730ef468d41ccd8660e845b8"
+      },
+      {
+        "path": "src/market/WildcatMarketConfig.sol",
+        "bytes": 11456,
+        "blob_sha1": "9ce11257ebc5cfa1636f2f8c66ce2a8633175fb5",
+        "sha256": "fdd6a907fc34459cf2df130606b3f05ded8ff9e2592f2766bfbf3f5b875819a4"
+      },
+      {
+        "path": "src/market/WildcatMarketBase.sol",
+        "bytes": 46958,
+        "blob_sha1": "d7bbc564a7b13eb2c5d1e7a1e74d764a50efe992",
+        "sha256": "1008026e854b54f4984d50e2dabf4e5b9264eaa2d8fde75b94ecad84bce1e296"
+      },
+      {
+        "path": "src/market/WildcatMarketWithdrawals.sol",
+        "bytes": 16551,
+        "blob_sha1": "c817da849f108d19791750e472e95177b09c1350",
+        "sha256": "d4c145c2eafc25442c3057e23338e2c942356697604291305f2ffc4cc04338a6"
+      },
+      {
+        "path": "docs/integrations/events.md",
+        "bytes": 11775,
+        "blob_sha1": "f89c6a1db98f159adb17b7f5b69ee79523047498",
+        "sha256": "1d58e76d7e9dc4fdbb71e6b92ce7f365b876a557efe0a5ef5407d71a0de5ad0b"
+      },
+      {
+        "path": "src/spherex/SphereXProtectedEvents.sol",
+        "bytes": 1261,
+        "blob_sha1": "5ab41cdff25e22accb1b834ca838eb2d02017365",
+        "sha256": "3853334c3e77e8c86bdfa3e9ea3ebcf0fd58145f4631c1c1a82bbd70f3201852",
+        "note": "differs from the base copy on one line only: pragma solidity ^0.8.20 becomes pragma solidity 0.8.25. Its five emitters are identical."
+      },
+      {
+        "path": "src/market/WildcatMarketRevolving.sol",
+        "bytes": 8433,
+        "blob_sha1": "e51139f9c0a738734af5244b7c6f402cae282fe3",
+        "sha256": "5948dcdb0b1cb63b1ada26e164f1fbc7270773e0041cf53cce69ff2eebc0427b",
+        "note": "holds the sole call site of emit_DrawnAmountUpdated, at :122."
+      },
+      {
+        "path": "src/interfaces/IWildcatMarketRevolving.sol",
+        "bytes": 851,
+        "blob_sha1": "0480bf8d395c9180956a43e6e7e35bf508d97a92",
+        "sha256": "30c04aef41304381dc24f90cae3312ef280a2a439ab7c98781f61991874e1c5b",
+        "note": "declares DrawnAmountUpdated at :9."
+      }
+    ],
+    "build_inputs": {
+      "solc": "0.8.25",
+      "evm_version": "cancun",
+      "optimizer_runs": 44,
+      "via_ir": true,
+      "protocol_version": "2.5.4",
+      "source": {
+        "path": "deployments/sepolia/source-v2-5-4.txt",
+        "bytes": 1071,
+        "blob_sha1": "cc157f1aac46163cb1c479b4f0e8218571e3a713",
+        "sha256": "d0f107685e1e9096bbe8022fe91192b04ac6d6a33aa6f694ff48042b332858bd"
+      }
+    },
+    "testnet_deployment": {
+      "network": "sepolia",
+      "chain_id": 11155111,
+      "release": "v2-5-4",
+      "contract_source_commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+      "matches_selected_commit": true,
+      "record": {
+        "path": "deployments/sepolia/v2-5-4.json",
+        "bytes": 3364,
+        "blob_sha1": "44323f09e5ee766a1cb4dea46569fe84a496b04d",
+        "sha256": "929aa74b9401f82e7b26c612552eb80c029b7c78f5064e2fd47c435311e3727b"
+      },
+      "boundary": "a Sepolia deployment. It is not evidence of an Ethereum mainnet deployment."
+    }
+  },
+  "rejected_candidates": [
+    {
+      "ref": "deploy/sepolia-v2.5.4",
+      "commit": "1263de7ef41ba7f3b4ca2aa6d614640ad31113ef",
+      "committed": "2026-09-07T05:27:41Z",
+      "subject": "deploy: v2.5.4 sepolia",
+      "relation": "descendant of the selected commit by 2 commits",
+      "reason": "its 57 changed paths over the selected commit are all under deployments/, docs/, script/, scripts/ and package.json, so it adds no Solidity; the next ceremony supersedes the branch",
+      "carrier": true,
+      "note": "the latest tip of the seven carriers, at 2026-09-07"
+    },
+    {
+      "ref": "fiat/147-replace-spherex-on-the-events-data-model-gen",
+      "commit": "77ac6f3080628196997281614a3f04532a376e30",
+      "committed": "2026-08-24T10:22:43Z",
+      "subject": "fix: fix the fix fix",
+      "relation": "ancestor of the selected commit by 84 commits",
+      "reason": "introduced the revision but predates the v2.5 natspec and later release fixes",
+      "carrier": true
+    },
+    {
+      "ref": "codex/issue-128-singleton-hook-specialisation",
+      "commit": "e88e799bedd3108feb5ff45b33dc7b62f865b56c",
+      "committed": "2026-08-15T14:07:28Z",
+      "subject": "feat(hooks): include withdrawal expiry in execution hook",
+      "relation": "diverged: 9 ahead, 209 behind the selected commit",
+      "reason": "stacked on feat/v2.5-singleton-role-provider, and unmerged with it",
+      "carrier": true
+    },
+    {
+      "ref": "feat-mv2-adapter",
+      "commit": "a263fe61f4dc791c83dd14c13a28e14a9c592b9a",
+      "committed": "2026-08-25T19:37:14Z",
+      "subject": "feat: adapt to v2.5 part 2",
+      "relation": "diverged: 4 ahead, 74 behind the selected commit",
+      "reason": "an open adapter draft whose pull request targets release/v2.5 rather than the reverse",
+      "carrier": true
+    },
+    {
+      "ref": "release/v2.6",
+      "commit": "dec36d22ba4138d8225de677597742219d6ffd08",
+      "committed": "2026-07-22T14:36:14Z",
+      "subject": "fix: fallback rpc bugs",
+      "relation": "ancestor of the selected commit by 232 commits",
+      "reason": "not a carrier: its indexed-actor signatures match the deployed base, though it does drop SanctionedAccountAssetsSentToEscrow and add WrapperRegistered",
+      "carrier": false
+    },
+    {
+      "ref": "feat/v2.5-singleton-role-provider",
+      "commit": "99bb85840a77a56fa5f64504a60ec126b6047cf5",
+      "committed": "2026-08-15T08:53:39Z",
+      "subject": "docs(hooks): record singleton lineage boundary",
+      "relation": "diverged: 9 ahead, 209 behind the selected commit",
+      "reason": "carries the revision on an unmerged feature branch",
+      "carrier": true
+    },
+    {
+      "ref": "experiment/gas-optimization-sweep",
+      "commit": "f0260b8f0d403dde11e93f2d666252f7e9e61dec",
+      "committed": "2026-08-21T15:47:34Z",
+      "subject": "docs(gas): finalize sweep results",
+      "relation": "diverged: 43 ahead, 174 behind the selected commit",
+      "reason": "carries the revision on a branch its own tip labels an experiment",
+      "carrier": true
+    }
+  ],
+  "consumed_prerequisite": {
+    "issue": "https://github.com/wildcat-finance/skills/issues/1482",
+    "state": "closed 2026-09-13",
+    "approval": "https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034",
+    "records": [
+      {
+        "path": "docs/kickoff/1359/targets.md",
+        "bytes": 53142,
+        "blob_sha1": "9eb2b1c9bdb9fe9e09eddf4b4442aeea459e34f9",
+        "sha256": "4bd599b1967819ac65db95cecce3b05d0c6ef60f4b145eb051a60668d22dc443"
+      },
+      {
+        "path": "docs/kickoff/1359/targets.json",
+        "bytes": 164821,
+        "blob_sha1": "5acb8369ad56f730e6f2249531db335b42c735e6",
+        "sha256": "9e0d3c88c76ec727ea8aabe67fb8ac0648b039ef1fa9836a6a7f2f2ae4d4ca98"
+      }
+    ],
+    "at_commit": "1d131b98a78c888b571f302e5b4c899aa2e47caf",
+    "granted": "the deployed comparison base only; the registry excludes unreleased Wildcat code"
+  },
+  "carrier_survey": {
+    "count": 7,
+    "method": "every branch head of wildcat-finance/v2-protocol was read for 'event Borrow(address indexed borrower, uint256 assetAmount);' in src/interfaces/IMarketEventsAndErrors.sol",
+    "carriers": [
+      "release/v2.5",
+      "deploy/sepolia-v2.5.4",
+      "fiat/147-replace-spherex-on-the-events-data-model-gen",
+      "feat/v2.5-singleton-role-provider",
+      "codex/issue-128-singleton-hook-specialisation",
+      "experiment/gas-optimization-sweep",
+      "feat-mv2-adapter"
+    ],
+    "selected": "release/v2.5",
+    "newest_tip": "deploy/sepolia-v2.5.4 at 2026-09-07; the selected commit is the newest carrier that contributes Solidity of its own"
+  }
+}

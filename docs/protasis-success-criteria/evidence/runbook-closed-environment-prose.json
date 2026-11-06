@@ -1,0 +1,46 @@
+{
+  "operation": "sapheneia-durable-record-shape",
+  "artifact": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/runbook-closed-environment-amendment.md",
+  "candidate_sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+  "prefix_sha256": "0b4534a3903f2d3e093e7b059c429b9e3afd64f5ea0d599e487c40e1fa1fa787",
+  "prefix_preserved": true,
+  "protected_inventory": [
+    "Complete replacement Files and Tests; all other effective fields retained",
+    "Step 1 touched; entry and exit holding verdicts for Steps 1 through 5",
+    "Exact source candidate 84859f22bf3f1d446f6c8c93310757f40b9b42f0; three Hex failures, twenty-nine errors, nine fixture-blocked tests, twelve root failures",
+    "Python 3.9.6 and pinned 3.14.6; causal interpreter, signing-tool and replacement-object observations",
+    "Every existing publication and evidence path, every named fixture and all four new helper/test paths",
+    "Real signing and negative assertions; actual public demonstration observations; original recorded producer argv and workflow shell",
+    "Unchanged production code, fixed source controller and registered commands",
+    "Original evaluation, prompt, answer and outcome preservation; source-only projection procedure and earlier evidence history",
+    "Standing user approval and unchanged selected criteria and feature boundary"
+  ],
+  "sapheneia_review": "Required field structure and protected inventory frozen; connective prose kept to the repair and evidence needed for review.",
+  "imprimatur_before": {
+    "exit_code": 0,
+    "score": 100.0,
+    "defects": 0,
+    "evidence": "Observed tool result on this exact candidate before the Vulgate comparison."
+  },
+  "vulgate": {
+    "input_sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+    "output_sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+    "register": "neutral",
+    "surface_changes": "none needed",
+    "comparison": "Protected inventory compared item by item; candidate facts, qualifications, identifiers, paths, numbers, commands and future obligations retained."
+  },
+  "imprimatur_final": {
+    "command": [
+      "python3",
+      "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/runbook-closed-environment-amendment.md"
+    ],
+    "exit_code": 0,
+    "log_sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b"
+  },
+  "protasis_preflight": {
+    "exit_code": 0,
+    "gate_root": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+    "evidence": "Observed clean result on the byte-identical candidate."
+  }
+}

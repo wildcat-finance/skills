@@ -1,0 +1,1206 @@
+Compiling 217 files with Solc 0.8.25
+Solc 0.8.25 finished in 197.72s
+Compiler run successful!
+
+Ran 8 tests for test/libraries/LibERC20.t.sol:LibERC20Test
+[PASS] test_balanceOf_NoReturnReverts() (gas: 66034)
+[PASS] test_decimals_MissingDecimalsReverts() (gas: 41426)
+[PASS] test_nameAndSymbol_Bytes32Metadata() (gas: 69028)
+[PASS] test_safeTransferAll_BalanceOfNoReturnReverts() (gas: 66053)
+[PASS] test_safeTransferAll_TransferReturningFalseReverts() (gas: 68589)
+[PASS] test_safeTransferFrom_NoReturnData() (gas: 258452)
+[PASS] test_safeTransfer_NoReturnData() (gas: 214722)
+[PASS] test_safeTransfer_ReturningFalseReverts() (gas: 73461)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 1.27ms (273.46µs CPU time)
+
+Ran 1 test for test/market/NukeBatchAveraging.t.sol:NukeBatchAveragingTest
+[PASS] test_nukeFromOrbitMatchesVoluntaryLateBatchEntry() (gas: 25573271)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 2.27ms (1.87ms CPU time)
+
+Ran 15 tests for test/libraries/LibStoredInitCode.t.sol:LibStoredInitCodeTest
+[PASS] test_calculateCreate2Address() (gas: 61692)
+[PASS] test_calculateCreate2Address(uint256,bytes32,uint256) (runs: 1000, μ: 9052, ~: 9052)
+[PASS] test_create2WithStoredInitCode(bytes32) (runs: 1000, μ: 201356, ~: 201356)
+[PASS] test_create2WithStoredInitCodeCD_DeploymentFailed(bytes32) (runs: 1000, μ: 1040434126, ~: 1040434037)
+[PASS] test_create2WithStoredInitCode_DeploymentFailed(bytes32) (runs: 1000, μ: 1040434112, ~: 1040434023)
+[PASS] test_create2WithStoredInitCode_MemoryConstructorArgs(bytes32) (runs: 1000, μ: 200150, ~: 200150)
+[PASS] test_create2WithStoredInitCode_WithValue(bytes32) (runs: 1000, μ: 199240, ~: 199240)
+[PASS] test_createWithStoredInitCode() (gas: 197977)
+[PASS] test_createWithStoredInitCode_DeploymentFailed() (gas: 77328)
+[PASS] test_createWithStoredInitCode_WithValue() (gas: 196640)
+[PASS] test_deployInitCode() (gas: 43150)
+[PASS] test_deployInitCode(bytes) (runs: 1000, μ: 50506, ~: 49029)
+[PASS] test_deployInitCode_InitCodeDeploymentFailed() (gas: 4861732)
+[PASS] test_getCreate2Prefix() (gas: 8454)
+[PASS] test_getCreate2Prefix(address) (runs: 1000, μ: 8798, ~: 8798)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 135.19ms (135.02ms CPU time)
+
+Ran 24 tests for test/providers/ManagedRoleProviders.t.sol:ManagedRoleProvidersTest
+[PASS] testFuzz_merkleGeneratedProofValidatesOnlyItsAccount(address,bytes32[]) (runs: 1000, μ: 435350, ~: 435651)
+[PASS] testFuzz_merkleMalformedCredentialDataFailsClosed(bytes) (runs: 1000, μ: 408152, ~: 408137)
+[PASS] test_accessListHook_LocalBlockAndAttachmentSurviveProviderUpdates() (gas: 3952677)
+[PASS] test_accessListHook_MembershipRemovalRespectsConfiguredTtl() (gas: 7931635)
+[PASS] test_accessList_BatchUpdatesAreAtomic() (gas: 768051)
+[PASS] test_accessList_ConstructorAndCredentialsTrackMembership() (gas: 725727)
+[PASS] test_accessList_ConstructorRejectsInvalidInitialMembers() (gas: 192126)
+[PASS] test_accessList_MemberUpdateErrorsAndAuthority() (gas: 697880)
+[PASS] test_accessList_PaginationClampsAndRejectsInvalidRanges() (gas: 796696)
+[PASS] test_accessList_ProviderInstancesKeepIndependentMembership() (gas: 1327628)
+[PASS] test_accessList_SingleMemberUpdatesEmitAndAffectCredentials() (gas: 713348)
+[PASS] test_managedProviderMatrix_AcceptMovesAuthorityAndPreservesConfiguration() (gas: 1191780)
+[PASS] test_managedProviderMatrix_RejectsZeroAdministrator() (gas: 76314)
+[PASS] test_managedProviderMatrix_RequestReplaceAndCancelTransfer() (gas: 1135539)
+[PASS] test_managedProviderMatrix_TransferErrors() (gas: 1107396)
+[PASS] test_merkleHook_EmptyProofTracksSingleLeafRootUpdates() (gas: 3783624)
+[PASS] test_merkleHook_MalformedDataFailsClosed() (gas: 3699035)
+[PASS] test_merkleHook_RootUpdateRespectsPositiveTtl() (gas: 3743472)
+[PASS] test_merkleHook_ValidProofAllowsMemberAndRejectsNonmember() (gas: 3736115)
+[PASS] test_merkleHook_ZeroTtlUsesSameBlockCredentialThenRequiresFreshProof() (gas: 3743637)
+[PASS] test_merkle_ConstructorAndMembershipSurface() (gas: 421838)
+[PASS] test_merkle_NonCanonicalCredentialEncodingsFailClosed() (gas: 822909)
+[PASS] test_merkle_RootUpdatesEmitAndRequireAdministrator() (gas: 414089)
+[PASS] test_merkle_SingleLeafAcceptsCanonicalEmptyProof() (gas: 411777)
+Suite result: ok. 24 passed; 0 failed; 0 skipped; finished in 224.42ms (224.22ms CPU time)
+
+Ran 7 tests for test/access/MarketConstraintHooks.t.sol:MarketConstraintHooksTest
+[PASS] test_onCreateMarket_EnforcesAndAdvertisesEveryParameterConstraint() (gas: 99455)
+[PASS] test_onSetApr_CalculatesTemporaryReserveRatio(uint16,uint16,uint16,uint16) (runs: 1000, μ: 45577, ~: 47575)
+[PASS] test_onSetApr_CancelsOrExpiresAndRestoresOriginalReserveRatio() (gas: 87272)
+[PASS] test_onSetApr_FurtherReductionAfterExpiryStartsANewWindow() (gas: 63615)
+[PASS] test_onSetApr_IncreaseOrEqualityDoesNotCreateTemporaryState(uint16,uint16,uint16,uint16) (runs: 1000, μ: 21110, ~: 21181)
+[PASS] test_onSetApr_PreservesQuarterBoundaryAndRoundsOnlyAfterComparison() (gas: 73650)
+[PASS] test_onSetApr_UpdatesActiveReductionAndPreservesOrExtendsExpiry() (gas: 118328)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 69.31ms (69.10ms CPU time)
+
+Ran 7 tests for test/libraries/MarketEvents.t.sol:MarketEventsTest
+[PASS] test_emitAnnualInterestAndReserveRatioBipsUpdated_matchesSolidityEncoding() (gas: 13134)
+[PASS] test_emitBorrow_matchesSolidityEncoding() (gas: 11507)
+[PASS] test_emitDrawnAmountUpdated_matchesSolidityEncoding() (gas: 11085)
+[PASS] test_emitFeesCollected_matchesSolidityEncoding() (gas: 12156)
+[PASS] test_emitMarketClosed_matchesSolidityEncoding() (gas: 11507)
+[PASS] test_emitMaxTotalSupplyUpdated_matchesSolidityEncoding() (gas: 12169)
+[PASS] test_emitProtocolFeeBipsUpdated_matchesSolidityEncoding() (gas: 12087)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 148.92µs (40.67µs CPU time)
+
+Ran 7 tests for test/lens/MarketLensAggregator.t.sol:MarketLensAggregatorTest
+[PASS] test_activeFactories_FilterControllersAndAppendValidDefault() (gas: 17855077)
+[PASS] test_aggregatedMarketReads_DedupeStableOrderAndSkipReverts() (gas: 620094)
+[PASS] test_aggregationHelpers_DedupeFirstSeenAndIsolateFactoryFailures() (gas: 429110)
+[PASS] test_directAndFactoryParameterizedReads_PreserveScopeAndFeeData() (gas: 717974)
+[PASS] test_directMarketReads_RespectFactoryAndPagination() (gas: 1182029)
+[PASS] test_discoveredAggregation_ReturnsUnifiedAndFactoryScopedViews() (gas: 611654)
+[PASS] test_templateWideMarketReads_AcceptBytes32UnderlyingMetadata() (gas: 576169)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 8.28ms (6.94ms CPU time)
+
+Ran 6 tests for test/lens/MarketLensCore.t.sol:MarketLensCoreTest
+[PASS] test_lenderAccountReads_MapBalancesApprovalAndDepositBlock() (gas: 701797)
+[PASS] test_periodicMarketRead_MapsTermConfigurationAndClosure() (gas: 13403166)
+[PASS] test_tokenAndMarketReads_AcceptBytes32MetadataInMixedBatches() (gas: 174258)
+[PASS] test_tokenAndMarketReads_MapCanonicalStateAndBatchEndpoints() (gas: 1002551)
+[PASS] test_v2AndLiveReads_TrackRevolvingFieldsAndBorrowerIdentity() (gas: 13350633)
+[PASS] test_withdrawalReads_MapPendingExpiredUnpaidCompleteAndUnknown() (gas: 693747)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 5.59ms (4.82ms CPU time)
+
+Ran 9 tests for test/lens/MarketLensFacade.t.sol:MarketLensFacadeTest
+[PASS] test_aggregationMarketRoutes_AreComplete() (gas: 61410)
+[PASS] test_constructorAndAggregationRoutes_AreComplete() (gas: 66371)
+[PASS] test_coreAndLiveRoutes_AreComplete() (gas: 111038)
+[PASS] test_delegate_BubblesExactHelperRevert() (gas: 980329)
+[PASS] test_getMarketData_BubblesCanonicalNotV2MarketError() (gas: 5076943)
+[PASS] test_hooksConfigData_MapsEveryFlag() (gas: 19301)
+[PASS] test_optionalUintProbe_DistinguishesPresenceFromFallback() (gas: 254590)
+[PASS] test_versionAndHooksKindProbes_HandleValidBoundaries() (gas: 909429)
+[PASS] test_versionAndHooksKindProbes_RejectMalformedDataAndBubbleReverts() (gas: 221924)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 1.67ms (1.43ms CPU time)
+
+Ran 15 tests for test/access/OpenTermHooks.t.sol:OpenTermHooksTest
+[PASS] test_administratorTransfer_PreservesMarketConfigurationAndMovesAuthority() (gas: 165682)
+[PASS] test_constructor_CombinesExistingAndNewProviders(bool,bool,uint32,uint32) (runs: 1000, μ: 3619629, ~: 3629578)
+[PASS] test_constructor_CreatesNewProviders(bool,bool,uint32,uint32) (runs: 1000, μ: 3879295, ~: 3889244)
+[PASS] test_constructor_InitializesExistingProviders(bool,bool,uint32,uint32) (runs: 1000, μ: 3353280, ~: 3363225)
+[PASS] test_constructor_RejectsInvalidProviderFactoryResults() (gas: 183753)
+[PASS] test_metadataConfigAndConstraints_AreCanonical() (gas: 28876)
+[PASS] test_onCreateMarket_AuthenticatesFactoryAndAdministrator() (gas: 16036)
+[PASS] test_onCreateMarket_ConfiguresFlagsAndMarketPolicies() (gas: 240027)
+[PASS] test_onCreateMarket_RejectsInvalidAccessAndMinimumData() (gas: 26485)
+[PASS] test_onDeposit_EnforcesMinimumBlockAndCredentialPolicies() (gas: 344891)
+[PASS] test_onQueueWithdrawal_PreservesKnownAccessAndValidatesUnknownLenders() (gas: 286822)
+[PASS] test_onTransfer_EnforcesDisabledAndCredentialPolicies() (gas: 360627)
+[PASS] test_setMinimumDeposit_EnforcesMarketDispatchAndAuthority() (gas: 112158)
+[PASS] test_unhookedMarketEndpoints_Reject() (gas: 30839)
+[PASS] test_unrestrictedCallbacks_AreNoOpsAndAprDelegates() (gas: 31703)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 494.99ms (494.64ms CPU time)
+
+Ran 15 tests for test/access/FixedTermHooks.t.sol:FixedTermHooksTest
+[PASS] test_administratorTransfer_PreservesMarketConfigurationAndMovesAuthority() (gas: 172430)
+[PASS] test_constructor_InitializesEveryProviderShape(bool,bool,uint32,uint32) (runs: 1000, μ: 11650642, ~: 11670426)
+[PASS] test_constructor_RejectsFailedProviderCreation() (gas: 95501)
+[PASS] test_metadataConfigAndConstraints_AreCanonical() (gas: 31406)
+[PASS] test_onCloseMarket_EnforcesEarlyClosurePolicyAndUpdatesTerm() (gas: 143060)
+[PASS] test_onCreateMarket_AuthenticatesAndValidatesTermData() (gas: 81096)
+[PASS] test_onCreateMarket_ConfigMatrix(bool,bool,bool,uint128,bool,bool,bool) (runs: 1000, μ: 69866, ~: 92956)
+[PASS] test_onDeposit_EnforcesMinimumBlockAndCredentialPolicies() (gas: 353961)
+[PASS] test_onQueueWithdrawal_EnforcesTermAndRequestedAccess() (gas: 330572)
+[PASS] test_onSetApr_BlocksReductionDuringTermAndDelegatesAllowedChanges() (gas: 84572)
+[PASS] test_onTransfer_EnforcesDisabledAndCredentialPolicies() (gas: 373696)
+[PASS] test_setFixedTermEndTime_EnforcesReductionPolicyAndAuthority() (gas: 96368)
+[PASS] test_setMinimumDeposit_EnforcesMarketDispatchAndAuthority() (gas: 120958)
+[PASS] test_unhookedMarketEndpoints_Reject() (gas: 36445)
+[PASS] test_unrestrictedCallbacks_AreNoOps() (gas: 22555)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 537.21ms (536.05ms CPU time)
+
+Ran 72 tests for test/access/BaseAccessControls.t.sol:BaseAccessControlsTest
+[PASS] test_acceptAdministratorTransfer() (gas: 105497)
+[PASS] test_acceptAdministratorTransfer_CallbackFailureRevertsTransfer() (gas: 76437)
+[PASS] test_acceptAdministratorTransfer_OnlyPendingAdministratorCanAccept() (gas: 61376)
+[PASS] test_acceptAdministratorTransfer_PendingAdministratorHasNoAuthority() (gas: 61688)
+[PASS] test_acceptAdministratorTransfer_PreservesAccessState() (gas: 468762)
+[PASS] test_acceptAdministratorTransfer_RevalidatesRegistration() (gas: 51340)
+[PASS] test_addRoleProvider(bool,uint32) (runs: 1000, μ: 166220, ~: 156478)
+[PASS] test_addRoleProvider_CallerNotAdministrator() (gas: 13487)
+[PASS] test_addRoleProvider_NonInterfaceProviderIsPushProvider(uint32) (runs: 1000, μ: 202601, ~: 202601)
+[PASS] test_addRoleProvider_onlyCleanBooleanTrueIsPullProvider() (gas: 703268)
+[PASS] test_addRoleProvider_updateTimeToLive(bool,uint32,uint32) (runs: 1000, μ: 218936, ~: 209347)
+[PASS] test_addRoleProvider_updateTimeToLive(uint32,uint32) (runs: 1000, μ: 228836, ~: 228836)
+[PASS] test_addRoleProvider_updateTimeToLive2(uint32,uint32) (runs: 1000, μ: 209697, ~: 209697)
+[PASS] test_blockFromDeposits(address) (runs: 1000, μ: 43886, ~: 43886)
+[PASS] test_blockFromDeposits_CallerNotAdministrator() (gas: 12652)
+[PASS] test_blockFromDeposits_UnsetsCredential(address) (runs: 1000, μ: 131761, ~: 131761)
+[PASS] test_blockFromDeposits_multiple(address) (runs: 1000, μ: 43821, ~: 43821)
+[PASS] test_blockFromDeposits_multiple_CallerNotAdministrator() (gas: 12765)
+[PASS] test_blockFromDeposits_multiple_UnsetsCredential(address) (runs: 1000, μ: 132306, ~: 132306)
+[PASS] test_cancelAdministratorTransfer() (gas: 49027)
+[PASS] test_cancelAdministratorTransfer_CallerNotAdministrator() (gas: 11263)
+[PASS] test_cancelAdministratorTransfer_NoPendingTransfer() (gas: 13597)
+[PASS] test_constructor_DoesNotAddAdministratorAsProvider() (gas: 22850)
+[PASS] test_createRoleProvider(bool,uint32) (runs: 1000, μ: 440599, ~: 430865)
+[PASS] test_createRoleProvider_CallerNotAdministrator() (gas: 11718)
+[PASS] test_createRoleProvider_CreateRoleProviderFailed(bool,uint32) (runs: 1000, μ: 29177, ~: 29177)
+[PASS] test_fuzz_getOrValidateCredential(uint8) (runs: 1000, μ: 155175, ~: 129869)
+[PASS] test_getLenderStatus_RefreshesExpiredPullProviderCredential() (gas: 168346)
+[PASS] test_getLenderStatus_ZeroTtlPullProviderRefreshesInSameBlock() (gas: 145288)
+[PASS] test_getLenderStatus_loop() (gas: 221238)
+[PASS] test_getLenderStatus_refresh() (gas: 222921)
+[PASS] test_grantRole(address,bool,uint32,uint32) (runs: 1000, μ: 198843, ~: 189246)
+[PASS] test_grantRole_GrantedCredentialExpired(address,bool,uint32,uint32) (runs: 1000, μ: 173335, ~: 163767)
+[PASS] test_grantRole_InvalidCredentialTimestamp_Future(address,bool,uint32) (runs: 1000, μ: 172121, ~: 162361)
+[PASS] test_grantRole_InvalidCredentialTimestamp_Zero(address,bool,uint32) (runs: 1000, μ: 171703, ~: 161943)
+[PASS] test_grantRole_PreservesDepositBlock() (gas: 123292)
+[PASS] test_grantRole_ProviderCanNotReplaceCredential(address,uint32,uint32,uint32) (runs: 1000, μ: 179755, ~: 179661)
+[PASS] test_grantRole_ProviderNotFound(uint32) (runs: 1000, μ: 11738, ~: 11738)
+[PASS] test_grantRole_laterExpiry(address,uint32,uint32,uint32) (runs: 1000, μ: 186203, ~: 186111)
+[PASS] test_grantRole_oldProviderRemoved(address,uint32,uint32,uint32) (runs: 1000, μ: 168685, ~: 168592)
+[PASS] test_grantRoles() (gas: 222899)
+[PASS] test_grantRoles_InvalidArrayLength() (gas: 91918)
+[PASS] test_grantRoles_InvalidCredentialTimestamp() (gas: 122122)
+[PASS] test_grantRoles_ProviderNotFound() (gas: 12428)
+[PASS] test_isMarketTransferRecipientAllowed() (gas: 244876)
+[PASS] test_isMarketTransferRecipientAllowed_OnlyExemptsExactNonzeroRegisteredWrapper() (gas: 122293)
+[PASS] test_refreshRole_PreservesDepositBlock() (gas: 171512)
+[PASS] test_removeRoleProvider(bool,uint32) (runs: 1000, μ: 144866, ~: 137080)
+[PASS] test_removeRoleProvider_CallerNotAdministrator() (gas: 14801)
+[PASS] test_removeRoleProvider_LastPullProvider() (gas: 220457)
+[PASS] test_removeRoleProvider_NotLastPullProvider() (gas: 240576)
+[PASS] test_removeRoleProvider_NotLastPushProvider() (gas: 200835)
+[PASS] test_removeRoleProvider_ProviderNotFound() (gas: 14051)
+[PASS] test_requestAdministratorTransfer() (gas: 66674)
+[PASS] test_requestAdministratorTransfer_CallerNotAdministrator() (gas: 12363)
+[PASS] test_requestAdministratorTransfer_InvalidTargets() (gas: 23519)
+[PASS] test_requestAdministratorTransfer_ReplacesPendingAdministrator() (gas: 91936)
+[PASS] test_revokeRole() (gas: 102750)
+[PASS] test_revokeRole_ProviderCanNotRevokeCredential() (gas: 120616)
+[PASS] test_revokeRoles() (gas: 104157)
+[PASS] test_revokeRoles_ProviderCanNotRevokeCredential() (gas: 121005)
+[PASS] test_setName() (gas: 44852)
+[PASS] test_setName_CallerNotAdministrator() (gas: 12889)
+[PASS] test_tryValidateAccess_HooksDataValidCredentialUpdatesStatus() (gas: 170989)
+[PASS] test_tryValidateAccess_RefreshesExpiredCredentialFromLastProvider() (gas: 176784)
+[PASS] test_tryValidateAccess_SkipsHooksDataPullProviderAfterFailedPull() (gas: 121937)
+[PASS] test_tryValidateAccess_SkipsHooksDataPullProviderAfterFailedValidation() (gas: 123268)
+[PASS] test_tryValidateAccess_ZeroTtlPullProviderRefreshesInSameBlock() (gas: 136766)
+[PASS] test_tryValidateAccess_ZeroTtlPushProviderUsesSameBlockCredential() (gas: 123216)
+[PASS] test_tryValidateAccess_existingCredential(address) (runs: 1000, μ: 121828, ~: 121828)
+[PASS] test_unblockFromDeposits(address) (runs: 1000, μ: 33656, ~: 33648)
+[PASS] test_unblockFromDeposits_CallerNotAdministrator() (gas: 12944)
+Suite result: ok. 72 passed; 0 failed; 0 skipped; finished in 912.95ms (911.76ms CPU time)
+
+Ran 3 tests for test/libraries/BoolUtils.t.sol:BoolUtilsTest
+[PASS] test_and(bool,bool) (runs: 1000, μ: 3204, ~: 3216)
+[PASS] test_or(bool,bool) (runs: 1000, μ: 3226, ~: 3215)
+[PASS] test_xor(bool,bool) (runs: 1000, μ: 3178, ~: 3178)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 12.13ms (12.06ms CPU time)
+
+Ran 4 tests for test/integration/BorrowerAccountCompatibility.t.sol:BorrowerAccountCompatibilityTest
+[PASS] test_accountExecutesCompleteLifecycleAcrossBothMarketTypes() (gas: 54292852)
+[PASS] test_accountExecutionComposesAcrossTheProductionSixCellMatrix() (gas: 89673107)
+[PASS] test_credentialedBorrowTracksAccountAndPrincipalMigrationAcrossFactories() (gas: 98257351)
+[PASS] test_marketSaltIsBoundToTheOperationalAccountAcrossFactories() (gas: 44035484)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 12.79ms (12.65ms CPU time)
+
+Ran 9 tests for test/integration/BorrowerAccountOrigination.t.sol:BorrowerAccountOriginationTest
+[PASS] test_accountCannotOriginateAfterPrincipalRemoval_AcrossFactories() (gas: 24308850)
+[PASS] test_accountCannotUseOtherPrincipalHook_AcrossFactories() (gas: 30968939)
+[PASS] test_accountDeploysHookThenMarket_AcrossFactories() (gas: 40457505)
+[PASS] test_accountDeploysMarketAndHookTogether_AcrossFactories() (gas: 40368061)
+[PASS] test_accountOriginationSurvivesFactoryRemoval_AcrossFactories() (gas: 40309430)
+[PASS] test_accountOriginationUsesCurrentRegistryPrincipal_AcrossFactories() (gas: 40436431)
+[PASS] test_accountPaysOriginationFees_AcrossFactories() (gas: 40481746)
+[PASS] test_accountsForOnePrincipalShareHookNonce_AcrossFactories() (gas: 37536161)
+[PASS] test_accountsForOnePrincipalShareHooks_AcrossFactories() (gas: 49923358)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 12.52ms (12.39ms CPU time)
+
+Ran 18 tests for test/libraries/FIFOQueue.t.sol:FIFOQueueTest
+[PASS] test() (gas: 62435)
+[PASS] testFuzz_matchesReference(uint32[],uint32[],uint256) (runs: 1000, μ: 321483, ~: 319161)
+[PASS] test_at() (gas: 56874)
+[PASS] test_at_OutOfBounds() (gas: 8689)
+[PASS] test_empty() (gas: 55607)
+[PASS] test_first() (gas: 52326)
+[PASS] test_first_OutOfBounds() (gas: 8784)
+[PASS] test_push() (gas: 57480)
+[PASS] test_shift() (gas: 52817)
+[PASS] test_shiftN() (gas: 57251)
+[PASS] test_shiftN_AcrossPackedWords() (gas: 137055)
+[PASS] test_shiftN_EmptyPartialWordCanBeReused() (gas: 61133)
+[PASS] test_shiftN_OutOfBounds() (gas: 51879)
+[PASS] test_shift_AcrossPackedWord() (gas: 92360)
+[PASS] test_shift_ClearsFullWords() (gas: 81051)
+[PASS] test_shift_OutOfBounds() (gas: 54164)
+[PASS] test_values() (gas: 62676)
+[PASS] test_values_AcrossPackedWords() (gas: 103420)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 277.94ms (277.82ms CPU time)
+
+Ran 11 tests for test/libraries/FeeMath.t.sol:FeeMathTest
+[PASS] testUpdateTimeDelinquentAndGetPenaltyTime() (gas: 58855)
+[PASS] test_updateScaleFactorAndFees_AcceptedUint112LimitReverts() (gas: 12283)
+[PASS] test_updateScaleFactorAndFees_NoTimeDelta((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),uint16,uint32) (runs: 1000, μ: 19211, ~: 19261)
+[PASS] test_updateScaleFactorAndFees_Uint112MaxStableAtZeroRate() (gas: 15876)
+[PASS] test_updateScaleFactorAndFees_WithFees() (gas: 17227)
+[PASS] test_updateScaleFactorAndFees_WithFeesAndPenalties() (gas: 17222)
+[PASS] test_updateScaleFactorAndFees_WithoutFeesOrPenalties() (gas: 16277)
+[PASS] test_updateScaleFactorAndFees_WithoutFeesWithPenalties() (gas: 16620)
+[PASS] test_updateScaleFactorAndFees_ZeroDelinquencyFeeAccumulatesTime() (gas: 16980)
+[PASS] test_updateScaleFactorAndFees_ZeroDelinquencyFeeDecaysTime() (gas: 16888)
+[PASS] test_updateTimeDelinquentAndGetPenaltyTime(bool,uint32,uint32,uint32) (runs: 1000, μ: 13590, ~: 13558)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 55.37ms (55.26ms CPU time)
+
+Ran 23 tests for test/access/PeriodicTermHooks.t.sol:PeriodicTermHooksTest
+[PASS] test_administratorTransfer_PreservesConfigurationAndMovesAuthority() (gas: 154938)
+[PASS] test_aprReduction_EnforcesExecutionStateMachine() (gas: 812158)
+[PASS] test_constructor_InitializesEveryProviderShape(bool,bool,uint32,uint32) (runs: 1000, μ: 13283812, ~: 13303629)
+[PASS] test_constructor_RejectsFailedProviderCreation() (gas: 99739)
+[PASS] test_executePendingAnnualInterestBipsReduction_UsesTheSameGates() (gas: 169336)
+[PASS] test_metadataConfigAndConstraints_AreCanonical() (gas: 47262)
+[PASS] test_onCloseMarket_OpensWithdrawalsAndHandlesProposalLifecycle() (gas: 213403)
+[PASS] test_onCreateMarket_AuthenticatesAndRequiresPeriodicData() (gas: 22417)
+[PASS] test_onCreateMarket_ConfigMatrix(bool,bool,bool,uint96,bool) (runs: 1000, μ: 49529, ~: 62045)
+[PASS] test_onCreateMarket_EmitsConfigurationAndBatchesReads() (gas: 113621)
+[PASS] test_onCreateMarket_PreservesPastAndCurrentSchedules() (gas: 85135)
+[PASS] test_onCreateMarket_ValidatesScheduleBounds() (gas: 101663)
+[PASS] test_onDeposit_EnforcesMinimumBlockAndCredentialPolicies() (gas: 350955)
+[PASS] test_onQueueWithdrawal_EnforcesWindowClosedStateAndRequestedAccess(uint256,uint256,bool) (runs: 1000, μ: 53277, ~: 53119)
+[PASS] test_onQueueWithdrawal_ValidatesCredentialsAndPreservesKnownLenders() (gas: 363267)
+[PASS] test_onSetAnnualInterestBips_IncreasesAndEqualityDelegateAndCancelPrecisely() (gas: 207809)
+[PASS] test_onTransfer_EnforcesDisabledCredentialAndKnownLenderPolicies() (gas: 409599)
+[PASS] test_proposalTiming_UsesNextScheduledWindowAndOverwriteEvents(uint256,uint256) (runs: 1000, μ: 184618, ~: 184686)
+[PASS] test_proposeAnnualInterestBips_AuthenticatesAndRejectsInvalidReductions() (gas: 335181)
+[PASS] test_proposeAnnualInterestBips_EnforcesStrictReduction(uint16,uint16) (runs: 1000, μ: 136912, ~: 122814)
+[PASS] test_setMinimumDeposit_EnforcesDispatchWidthMarketAndAuthority() (gas: 103660)
+[PASS] test_unrestrictedCallbacks_AreNoOps() (gas: 24511)
+[PASS] test_withdrawalWindow_TracksEveryBoundaryAndRecurringPeriod(uint256,uint256) (runs: 1000, μ: 63443, ~: 63585)
+Suite result: ok. 23 passed; 0 failed; 0 skipped; finished in 818.58ms (818.11ms CPU time)
+
+Ran 2 tests for test/integration/ProductionEconomics.t.sol:ProductionEconomicsTest
+[PASS] test_largeBalanceDelinquencyLifecycleMatchesOracleAcrossMarketTypes() (gas: 54207826)
+[PASS] test_largeBalanceYieldCrossoverPinsStandardAndRevolvingEconomics() (gas: 86719375)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.06ms (6.89ms CPU time)
+
+Ran 9 tests for test/integration/ProductionMatrixScenarios.t.sol:ProductionMatrixScenariosTest
+[PASS] test_deterministicLifecycleRunsAcrossProductionMatrix() (gas: 92585867)
+[PASS] test_directSanctionsFlowsComposeAcrossProductionMatrix() (gas: 63369519)
+[PASS] test_exactMinimumBoundarySurvivesAccruedScaleAcrossProductionHooks() (gas: 63157264)
+[PASS] test_minimumDepositOrderingAndLiveUpdatesUseProductionComposition() (gas: 54317212)
+[PASS] test_periodicAprExpiryAndCancellationUseProductionMarketState() (gas: 63256180)
+[PASS] test_periodicAprReductionExecutesAcrossProductionMarkets() (gas: 55559589)
+[PASS] test_productionFactoriesDeployCompleteBuiltInMatrix() (gas: 88617631)
+[PASS] test_roundingStrandingWindowsCloseAndDrainThroughProductionFactory() (gas: 53564456)
+[PASS] test_withdrawalGatesHoldAtExactProductionMatrixBoundaries() (gas: 72748719)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 29.81ms (29.54ms CPU time)
+
+Ran 3 tests for test/root/ReentrancyGuard.t.sol:ReentrancyGuardTest
+[PASS] test_guard_AllowsOrdinaryStatefulAndViewCalls() (gas: 200925)
+[PASS] test_guard_RejectsStateChangingReentrancyAndRecovers() (gas: 196681)
+[PASS] test_guard_RejectsViewReentrancyAndRecovers() (gas: 175230)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 174.50µs (90.21µs CPU time)
+
+Ran 6 tests for test/market/RepayExpiryDelinquency.t.sol:RepayExpiryDelinquencyTest
+[PASS] test_checkpointedAssetBalanceUsesPaddingSaturatesAndClears() (gas: 12634620)
+[PASS] test_lateCombinedRepaymentDoesNotRewriteExpiredInterval_AcrossMarketTypes() (gas: 25918219)
+[PASS] test_lateCombinedRepaymentRespectsMaxBatches_AcrossMarketTypes() (gas: 25695658)
+[PASS] test_lateDonationDoesNotRewriteExpiredInterval_AcrossMarketTypes() (gas: 26039102)
+[PASS] test_latePlainRepaymentDoesNotRewriteExpiredInterval_AcrossMarketTypes() (gas: 25949215)
+[PASS] test_repaymentAtExpiryCountsTowardsCurrentBatch_AcrossMarketTypes() (gas: 25513741)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 7.36ms (7.22ms CPU time)
+
+Ran 12 tests for test/types/RoleProvider.t.sol:RoleProviderTest
+[PASS] test_calculateExpiry((address,uint32,uint24,uint24),bool,uint32) (runs: 1000, μ: 4076, ~: 4082)
+[PASS] test_decodeRoleProvider((address,uint32,uint24,uint24),bool) (runs: 1000, μ: 9121, ~: 9116)
+[PASS] test_encodeRoleProvider((address,uint32,uint24,uint24),bool) (runs: 1000, μ: 6178, ~: 6173)
+[PASS] test_eq((address,uint32,uint24,uint24),bool,(address,uint32,uint24,uint24),bool) (runs: 1000, μ: 4531, ~: 4530)
+[PASS] test_isNull((address,uint32,uint24,uint24),bool) (runs: 1000, μ: 4012, ~: 4007)
+[PASS] test_isPullProvider((address,uint32,uint24,uint24),bool) (runs: 1000, μ: 4005, ~: 4000)
+[PASS] test_setNotPullProvider((address,uint32,uint24,uint24),bool) (runs: 1000, μ: 6332, ~: 6327)
+[PASS] test_setProviderAddress((address,uint32,uint24,uint24),bool,address) (runs: 1000, μ: 6667, ~: 6673)
+[PASS] test_setPullProviderIndex((address,uint32,uint24,uint24),bool,uint24) (runs: 1000, μ: 6829, ~: 6826)
+[PASS] test_setPushProviderIndex((address,uint32,uint24,uint24),bool,uint24) (runs: 1000, μ: 6724, ~: 6740)
+[PASS] test_setPushProviderIndex() (gas: 6374)
+[PASS] test_setTimeToLive((address,uint32,uint24,uint24),bool,uint32) (runs: 1000, μ: 6870, ~: 6876)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 114.48ms (114.38ms CPU time)
+
+Ran 18 tests for test/providers/RoleProviderFactories.t.sol:RoleProviderFactoriesTest
+[PASS] testFuzz_typedAccessListFactoryCreatesExpectedProvider(bytes32) (runs: 1000, μ: 716737, ~: 716737)
+[PASS] testFuzz_typedERC1155FactoryCreatesExpectedProvider(uint256,bool,bytes32) (runs: 1000, μ: 212264, ~: 211009)
+[PASS] testFuzz_typedERC20FactoryCreatesExpectedProvider(uint128,bytes32) (runs: 1000, μ: 206564, ~: 206563)
+[PASS] testFuzz_typedERC4626FactoryCreatesExpectedProvider(uint128,bytes32) (runs: 1000, μ: 228038, ~: 228037)
+[PASS] testFuzz_typedERC721FactoryCreatesExpectedProvider(bool,bytes32) (runs: 1000, μ: 185500, ~: 184289)
+[PASS] testFuzz_typedMerkleFactoryCreatesExpectedProvider(address,bytes32,bytes32) (runs: 1000, μ: 429856, ~: 429876)
+[PASS] test_deploymentEvents() (gas: 1948517)
+[PASS] test_duplicateDeploymentsRevert() (gas: 1928377)
+[PASS] test_genericInterfaceCreatesExpectedProviders() (gas: 1960061)
+[PASS] test_hookConstructorsCreateAndAttachProviders() (gas: 21589566)
+[PASS] test_invalidPrimaryAddressesRevert() (gas: 272430)
+[PASS] test_invalidTokenInterfacesRevert() (gas: 100017)
+[PASS] test_malformedGenericInputsRevert() (gas: 38797)
+[PASS] test_merkleFactoryHasNoProviderAuthority() (gas: 419873)
+[PASS] test_merkleZeroRootIsAllowed() (gas: 403133)
+[PASS] test_saltsAreNamespacedByCaller() (gas: 3789867)
+[PASS] test_skippingTokenInterfaceChecksCreatesUsableProviders() (gas: 417148)
+[PASS] test_zeroMinimumsRevert() (gas: 97961)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 337.61ms (337.18ms CPU time)
+
+Ran 9 tests for test/providers/RoleProviderHookIntegration.t.sol:RoleProviderHookIntegrationTest
+[PASS] test_erc4626ConversionFailureAlsoFailsClosed() (gas: 3956768)
+[PASS] test_hookBlockOverridesAnEligibleProvider() (gas: 3954810)
+[PASS] test_pullProviderMatrix_FailedReadsFailClosedAndDoNotMaskLaterProviders() (gas: 18998469)
+[PASS] test_pullProviderMatrix_PositiveTtlDelaysRemoval() (gas: 16011136)
+[PASS] test_pullProviderMatrix_RoutesCurrentCredentialsIntoDeposit() (gas: 16103926)
+[PASS] test_pullProviderMatrix_ZeroTtlRechecksAndFollowsEligibility() (gas: 16336243)
+[PASS] test_pushProviderMatrix_ExpiredCredentialsRequireFreshOwnership() (gas: 8226338)
+[PASS] test_pushProviderMatrix_MalformedCredentialDataFailsClosed() (gas: 7974072)
+[PASS] test_pushProviderMatrix_RoutesPackedCredentialsIntoDeposit() (gas: 8107593)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 4.84ms (4.65ms CPU time)
+
+Ran 18 tests for test/types/HooksConfig.t.sol:HooksConfigTest
+[PASS] testEncode((address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool)) (runs: 1000, μ: 17298, ~: 17309)
+[PASS] test_aprHookRejectsShortReturnData((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)) (runs: 1000, μ: 134270, ~: 134390)
+[PASS] test_configUtilities(uint256,uint256,address,uint256) (runs: 1000, μ: 8192, ~: 8219)
+[PASS] test_encodeHooksDeploymentConfig(((address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool))) (runs: 1000, μ: 8241, ~: 8241)
+[PASS] test_hookRevertBubbles((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)) (runs: 1000, μ: 158050, ~: 158170)
+[PASS] test_mergeFlags((address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),((address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool))) (runs: 1000, μ: 24755, ~: 24751)
+[PASS] test_mergeSharedFlags((address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool)) (runs: 1000, μ: 20690, ~: 20686)
+[PASS] test_onBorrow((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (runs: 1000, μ: 153092, ~: 145257)
+[PASS] test_onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (runs: 1000, μ: 152493, ~: 141018)
+[PASS] test_onDeposit((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (runs: 1000, μ: 151676, ~: 140897)
+[PASS] test_onExecuteWithdrawal((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),(address,uint32,uint128),bytes) (runs: 1000, μ: 153805, ~: 142223)
+[PASS] test_onNukeFromOrbit((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes,address) (runs: 1000, μ: 153141, ~: 164965)
+[PASS] test_onQueueWithdrawal((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),uint256,bytes) (runs: 1000, μ: 154087, ~: 165616)
+[PASS] test_onRepay((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (runs: 1000, μ: 152362, ~: 140885)
+[PASS] test_onSetAnnualInterestAndReserveRatioBips((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes,(uint16,uint16,uint16,uint16)) (runs: 1000, μ: 178069, ~: 167708)
+[PASS] test_onSetMaxTotalSupply((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (runs: 1000, μ: 152516, ~: 144678)
+[PASS] test_onSetProtocolFeeBips((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (runs: 1000, μ: 153376, ~: 165612)
+[PASS] test_onTransfer((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),address,uint256,bytes) (runs: 1000, μ: 152488, ~: 141122)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 693.93ms (693.70ms CPU time)
+
+Ran 27 tests for test/factories/HooksFactories.t.sol:HooksFactoriesTest
+[PASS] test_addTemplate_RejectsEveryInvalidFeeShapeAcrossFactories() (gas: 28072877)
+[PASS] test_addTemplate_RejectsUnauthorizedAndDuplicateAcrossFactories() (gas: 28244661)
+[PASS] test_addTemplate_StoresValidBoundaryConfigurationsAcrossFactories() (gas: 28503504)
+[PASS] test_constructorAndRegistration_AcrossFactories() (gas: 28057353)
+[PASS] test_deployHooksInstance_RecordsIdentityAndProviderSnapshotAcrossFactories() (gas: 35798900)
+[PASS] test_deployHooksInstance_RejectsInvalidPathsAcrossFactories() (gas: 28651716)
+[PASS] test_deployMarketAndHooks_IndexesBothDeploymentsAcrossFactories() (gas: 44399126)
+[PASS] test_deployMarketAndHooks_RejectsIdentityTemplateAndDisableAcrossFactories() (gas: 28393541)
+[PASS] test_deployMarketAndHooks_RejectsSaltAndFeeMismatchAcrossFactories() (gas: 48037026)
+[PASS] test_deployMarket_EnforcesMetadataFeesAndUniqueSaltAcrossFactories() (gas: 44719581)
+[PASS] test_deployMarket_ExistingHookSurvivesTemplateDisableAcrossFactories() (gas: 44334406)
+[PASS] test_deployMarket_PreservesConfigurationHooksAndFeesAcrossFactories() (gas: 44594097)
+[PASS] test_deployMarket_RejectsIdentityHookSaltAndBlacklistAcrossFactories() (gas: 35062113)
+[PASS] test_deployMarket_RejectsStoredInitcodeHashMismatchAcrossFactories() (gas: 51253489)
+[PASS] test_deployMarket_UsesCurrentArchControllerSphereXEngineAcrossFactories() (gas: 44682371)
+[PASS] test_disableTemplate_IsPermanentAndRetainsMetadataAcrossFactories() (gas: 28312741)
+[PASS] test_disableTemplate_RejectsInvalidCallsAcrossFactories() (gas: 28269160)
+[PASS] test_marketIndexesAndPagination_AcrossFactories() (gas: 53815172)
+[PASS] test_pushProtocolFeeBipsUpdates_FullAndPagedAcrossFactories() (gas: 53985178)
+[PASS] test_pushProtocolFeeBipsUpdates_HandlesEmptyAndInvalidRangesAcrossFactories() (gas: 44439446)
+[PASS] test_pushProtocolFeeBipsUpdates_RejectsPositiveFeeForZeroRecipientMarketsAcrossFactories() (gas: 53995874)
+[PASS] test_pushProtocolFeeBipsUpdates_RejectsUnknownTemplateAndFailedMarketAcrossFactories() (gas: 1072977733)
+[PASS] test_revolvingCommitmentFeeGetter_RejectsOutsideDeployment() (gas: 28025345)
+[PASS] test_revolvingMarketData_RejectsInvalidPayloadsBeforeStateChanges() (gas: 31507255)
+[PASS] test_templatePagination_ClampsAndReturnsEmptyRangesAcrossFactories() (gas: 28433258)
+[PASS] test_updateTemplateFees_RejectsInvalidCallsAcrossFactories() (gas: 28302926)
+[PASS] test_updateTemplateFees_UpdatesAllFieldsAcrossFactories() (gas: 28318958)
+Suite result: ok. 27 passed; 0 failed; 0 skipped; finished in 41.55ms (41.25ms CPU time)
+
+Ran 4 tests for test/types/LenderStatus.t.sol:LenderStatusTest
+[PASS] test_credentialExpired(uint32,uint32,uint32) (runs: 1000, μ: 11933, ~: 11934)
+[PASS] test_hasCredential(uint32) (runs: 1000, μ: 9145, ~: 9145)
+[PASS] test_setCredential(bool,bool,address,uint32) (runs: 1000, μ: 12993, ~: 12982)
+[PASS] test_unsetCredential(bool,bool,address,uint32) (runs: 1000, μ: 12663, ~: 12663)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 53.57ms (53.46ms CPU time)
+
+Ran 5 tests for test/integration/HooksAdministratorTransfer.t.sol:HooksAdministratorTransferTest
+[PASS] test_administratorTransfer_UpdatesFactoryAssociationAcrossFactories() (gas: 30075992)
+[PASS] test_administratorTransfer_UpdatesSwapPopIndexAcrossFactories() (gas: 36615250)
+[PASS] test_deploymentNonce_SurvivesAdministratorTransferAcrossFactories() (gas: 36535714)
+[PASS] test_factoryCallback_AuthenticatesHooksAndPendingTransferAcrossFactories() (gas: 29998108)
+[PASS] test_initialAdministratorAssociation_AcrossFactories() (gas: 30023378)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 6.04ms (5.93ms CPU time)
+
+Ran 13 tests for test/spherex/SphereXConfig.t.sol:SphereXConfigTest
+[PASS] test_acceptAdmin_RequiresPendingAdmin() (gas: 522940)
+[PASS] test_addSender_AllowsAdminAndOperator() (gas: 507938)
+[PASS] test_addSender_IsNoOpWhenEngineDisabled() (gas: 479271)
+[PASS] test_addSender_RejectsOutsider() (gas: 494858)
+[PASS] test_changeEngine_AcceptsDisabledAndCompatibleEngines() (gas: 580858)
+[PASS] test_changeEngine_RejectsIncompatibleEngine() (gas: 572274)
+[PASS] test_changeEngine_RequiresOperator() (gas: 494780)
+[PASS] test_changeOperator_EmitsAndRequiresAdmin() (gas: 506733)
+[PASS] test_constructor_StoresInitialConfiguration() (gas: 500403)
+[PASS] test_registeredConfig_UsesControllerAsOperator() (gas: 255557)
+[PASS] test_registeredGuard_AllowsCallWhenEngineDisabled() (gas: 250188)
+[PASS] test_transferAdmin_IsTwoStepAndMovesAuthority() (gas: 519588)
+[PASS] test_transferAdmin_RequiresCurrentAdmin() (gas: 494757)
+Suite result: ok. 13 passed; 0 failed; 0 skipped; finished in 1.04ms (860.88µs CPU time)
+
+Ran 6 tests for test/libraries/StringQuery.t.sol:StringQueryTest
+[PASS] test_bytes32ToString_DoesNotDropHighBitFinalByte() (gas: 3693)
+[PASS] test_name() (gas: 73225)
+[PASS] test_name_AcceptsTrailingReturnData() (gas: 8743)
+[PASS] test_name_RejectsTruncatedDynamicString() (gas: 11235)
+[PASS] test_symbol() (gas: 73394)
+[PASS] test_symbol_RejectsNonCanonicalDynamicStringOffset() (gas: 11257)
+Suite result: ok. 6 passed; 0 failed; 0 skipped; finished in 274.79µs (83.83µs CPU time)
+
+Ran 31 tests for test/libraries/SafeCastLib.t.sol:SafeCastLibTest
+[PASS] test_toUint104(uint256) (runs: 1000, μ: 17933, ~: 17931)
+[PASS] test_toUint112(uint256) (runs: 1000, μ: 17669, ~: 17667)
+[PASS] test_toUint120(uint256) (runs: 1000, μ: 17778, ~: 17777)
+[PASS] test_toUint128(uint256) (runs: 1000, μ: 18174, ~: 18173)
+[PASS] test_toUint136(uint256) (runs: 1000, μ: 18460, ~: 18459)
+[PASS] test_toUint144(uint256) (runs: 1000, μ: 18217, ~: 18217)
+[PASS] test_toUint152(uint256) (runs: 1000, μ: 18454, ~: 18454)
+[PASS] test_toUint16(uint256) (runs: 1000, μ: 18218, ~: 18232)
+[PASS] test_toUint160(uint256) (runs: 1000, μ: 18776, ~: 18777)
+[PASS] test_toUint168(uint256) (runs: 1000, μ: 17996, ~: 17997)
+[PASS] test_toUint176(uint256) (runs: 1000, μ: 16962, ~: 16963)
+[PASS] test_toUint184(uint256) (runs: 1000, μ: 17819, ~: 17821)
+[PASS] test_toUint192(uint256) (runs: 1000, μ: 17929, ~: 17931)
+[PASS] test_toUint200(uint256) (runs: 1000, μ: 17598, ~: 17601)
+[PASS] test_toUint208(uint256) (runs: 1000, μ: 18632, ~: 18635)
+[PASS] test_toUint216(uint256) (runs: 1000, μ: 17883, ~: 17887)
+[PASS] test_toUint224(uint256) (runs: 1000, μ: 17436, ~: 17440)
+[PASS] test_toUint232(uint256) (runs: 1000, μ: 17333, ~: 17337)
+[PASS] test_toUint24(uint256) (runs: 1000, μ: 18415, ~: 18430)
+[PASS] test_toUint240(uint256) (runs: 1000, μ: 17663, ~: 17667)
+[PASS] test_toUint248(uint256) (runs: 1000, μ: 17574, ~: 17579)
+[PASS] test_toUint32(uint256) (runs: 1000, μ: 18222, ~: 18215)
+[PASS] test_toUint40(uint256) (runs: 1000, μ: 18589, ~: 18583)
+[PASS] test_toUint48(uint256) (runs: 1000, μ: 17979, ~: 17973)
+[PASS] test_toUint56(uint256) (runs: 1000, μ: 18462, ~: 18457)
+[PASS] test_toUint64(uint256) (runs: 1000, μ: 17256, ~: 17251)
+[PASS] test_toUint72(uint256) (runs: 1000, μ: 17526, ~: 17527)
+[PASS] test_toUint8(uint256) (runs: 1000, μ: 17410, ~: 17418)
+[PASS] test_toUint80(uint256) (runs: 1000, μ: 18243, ~: 18239)
+[PASS] test_toUint88(uint256) (runs: 1000, μ: 17802, ~: 17799)
+[PASS] test_toUint96(uint256) (runs: 1000, μ: 17340, ~: 17337)
+Suite result: ok. 31 passed; 0 failed; 0 skipped; finished in 512.88ms (512.67ms CPU time)
+
+Ran 21 tests for test/providers/TokenRoleProviders.t.sol:TokenRoleProvidersTest
+[PASS] testFuzz_erc1155CredentialMatchesConfiguredBalance(uint256,uint96) (runs: 1000, μ: 225465, ~: 225866)
+[PASS] testFuzz_erc1155CredentialMovesAndIgnoresOtherIds(uint256,uint96) (runs: 1000, μ: 236463, ~: 236462)
+[PASS] testFuzz_erc20CredentialTracksCurrentBalance(uint96,uint96) (runs: 1000, μ: 220030, ~: 220237)
+[PASS] testFuzz_erc20ExactBoundaryAndBalanceMove(uint96) (runs: 1000, μ: 402636, ~: 402635)
+[PASS] testFuzz_erc4626CredentialMatchesConvertedAssets(uint96,uint96,uint96) (runs: 1000, μ: 249026, ~: 249402)
+[PASS] testFuzz_erc4626ExactBoundaryAndShareMove(uint96,uint96) (runs: 1000, μ: 453502, ~: 453607)
+[PASS] testFuzz_erc5192CredentialFollowsOwnershipAndLock(uint256,bool) (runs: 1000, μ: 281928, ~: 283022)
+[PASS] testFuzz_erc5484CredentialMatchesAllowedBurnAuthorization(uint256,uint8,uint8) (runs: 1000, μ: 267318, ~: 273895)
+[PASS] testFuzz_erc721CredentialTracksCollectionBalance(uint96) (runs: 1000, μ: 210400, ~: 210399)
+[PASS] test_constructorFailsClosedWhenInterfaceReadReverts() (gas: 159897)
+[PASS] test_constructorRejectsAddressesWithoutCode() (gas: 216109)
+[PASS] test_constructorRejectsInvalidERC165Implementations() (gas: 165257)
+[PASS] test_constructorRejectsMissingTokenInterfaces() (gas: 169745)
+[PASS] test_constructorRejectsZeroMinimums() (gas: 80543)
+[PASS] test_erc4626ZeroShareBalanceSkipsConversion() (gas: 217568)
+[PASS] test_erc5192LockedRequirementIsOptional() (gas: 459705)
+[PASS] test_erc5192MalformedDataAndTokenReadFailuresFailClosed() (gas: 285266)
+[PASS] test_erc5484ConstructorRejectsInvalidBurnAuthMasks() (gas: 81889)
+[PASS] test_erc5484CredentialFollowsOwnership() (gas: 256320)
+[PASS] test_erc5484MalformedUndefinedAndReadFailuresFailClosed() (gas: 289709)
+[PASS] test_skippingInterfaceChecksCreatesUsableProviders() (gas: 866215)
+Suite result: ok. 21 passed; 0 failed; 0 skipped; finished in 564.67ms (564.49ms CPU time)
+
+Ran 4 tests for test/types/TransientBytesArray.t.sol:TransientBytesArrayTest
+[PASS] test_largeBytes(uint256,uint256) (runs: 1000, μ: 13414, ~: 13118)
+[PASS] test_nextBytes(uint256,uint256) (runs: 1000, μ: 5714, ~: 5655)
+[PASS] test_read_InvalidShortEncodingLengthReverts() (gas: 96460)
+[PASS] test_smallBytes(uint256,uint256) (runs: 1000, μ: 9063, ~: 9099)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 37.49ms (37.38ms CPU time)
+
+Ran 11 tests for test/sanctions/Sanctions.t.sol:SanctionsTest
+[PASS] testFuzz_escrowTracksAssetAndBalance(address,address,uint256) (runs: 1000, μ: 1787205, ~: 1787763)
+[PASS] testFuzz_getEscrowAddress_MatchesCreate2Formula(address,address,address) (runs: 1000, μ: 1441549, ~: 1441549)
+[PASS] testFuzz_isSanctioned_CombinesListAndBorrowerOverride(address,address,bool,bool) (runs: 1000, μ: 1464165, ~: 1463861)
+[PASS] testFuzz_releaseEscrow_IsPermissionlessAndTransfersFullBalance(address,address,address,uint256) (runs: 1000, μ: 1797472, ~: 1798109)
+[PASS] test_canReleaseEscrow_TracksSanctionAndOverride() (gas: 1783483)
+[PASS] test_chainalysisRead_ValidatesAndBubblesResponse() (gas: 754429)
+[PASS] test_constructor_StoresDependenciesHashAndResetParameters() (gas: 1446199)
+[PASS] test_createEscrow_EmitsInitializesOverridesAndIsIdempotent() (gas: 1745016)
+[PASS] test_overrideLifecycle_EmitsAndRestoresSanction() (gas: 1481363)
+[PASS] test_releaseEscrow_RejectsActiveSanction() (gas: 1804391)
+[PASS] test_releaseEscrow_UsesBorrowerOverride() (gas: 1835564)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 633.47ms (633.34ms CPU time)
+
+Ran 21 tests for test/vault/Wildcat4626Wrapper.t.sol:Wildcat4626WrapperTest
+[PASS] testFuzz_allEntryPointRoundTripsPreserveScaledOwnership(uint96,uint96) (runs: 1000, μ: 13093010, ~: 13093045)
+[PASS] testFuzz_conversionPreviewsAndRatesFollowScaleFactor(uint256,uint256,uint256) (runs: 1000, μ: 3204189, ~: 3204117)
+[PASS] testFuzz_depositAndMintCreateExactScaledBacking(uint96,uint96,uint96) (runs: 1000, μ: 6583046, ~: 6583186)
+[PASS] testFuzz_marketSweepRemovesOnlySurplusAndPreservesEveryShareholder(uint96,uint96) (runs: 1000, μ: 3412422, ~: 3412506)
+[PASS] testFuzz_sweepAuthorityTracksCurrentBorrowerAndValidatesRecipients(uint160,uint96) (runs: 1000, μ: 3308226, ~: 3308224)
+[PASS] testFuzz_withdrawAndRedeemBurnExactScaledBacking(uint96,uint96,uint96) (runs: 1000, μ: 6666696, ~: 6666490)
+[PASS] test_constructorAndMetadataValidateMarketDependencies() (gas: 7165061)
+[PASS] test_donationsCannotInflateLaterDepositorShares() (gas: 3399867)
+[PASS] test_lowLevelReadersValidateWordsAddressesPoliciesAndEscrows() (gas: 3456675)
+[PASS] test_marketSweepMismatchAndEmptyBackingRollBack() (gas: 6380856)
+[PASS] test_maxLimitsFailClosedOnMarketAccountingDependencyFailures() (gas: 3544397)
+[PASS] test_maxLimitsFailClosedOnPrincipalAndSanctionsDependencyFailures() (gas: 3391419)
+[PASS] test_multipleDepositorsAccrueWithoutSocializingDirectTransfers() (gas: 3392384)
+[PASS] test_nukeCoordinatesMarketAndEscrowsSharesAtomically() (gas: 6749614)
+[PASS] test_sanctionsGateLimitsEntryPointsAndShareTransfers() (gas: 3571112)
+[PASS] test_spenderAllowancesCoverExactInfiniteAndInsufficientPaths() (gas: 3447703)
+[PASS] test_spoofedEscrowCannotReleaseSharesToSanctionedAccount() (gas: 3436997)
+[PASS] test_tinyScaleRegressionsKeepMaxWithdrawAndRoundTripsExecutable() (gas: 6533042)
+[PASS] test_transferAccountingMismatchGuardsRollBackEveryPath() (gas: 13209426)
+[PASS] test_wrapperSanctionsAndInsolvencyFailClosedUntilRecovered() (gas: 6614531)
+[PASS] test_zeroInputsAndCapacityBoundariesUseExactErrors() (gas: 19637902)
+Suite result: ok. 21 passed; 0 failed; 0 skipped; finished in 2.78s (2.78s CPU time)
+
+Ran 9 tests for test/vault/Wildcat4626WrapperFactory.t.sol:Wildcat4626WrapperFactoryTest
+[PASS] test_constructorAcceptsZeroOrValidV1AndRejectsMalformedFactory() (gas: 6765612)
+[PASS] test_createRejectsZeroAndUnregisteredMarketsWithoutSideEffects() (gas: 3781150)
+[PASS] test_createValidatesCompleteAndEnabledTransferPolicy() (gas: 11481637)
+[PASS] test_declaredMarketsNeverFallThroughToV1() (gas: 6017483)
+[PASS] test_factoryWithoutV1RejectsLegacyButStillCreatesFloorWrapper() (gas: 9940354)
+[PASS] test_floorCreationDeploysRecordsRegistersAndRejectsDuplicates() (gas: 5982749)
+[PASS] test_legacyCreationAndDiscoveryRouteThroughV1() (gas: 4434798)
+[PASS] test_roundingProbeIsTotalAndRecognizesOnlyFloorMarkets() (gas: 542936944)
+[PASS] test_wrapperCapacityFailsClosedWhenRecipientPolicyBreaksOrDenies() (gas: 5961547)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 6.28ms (6.15ms CPU time)
+
+Ran 15 tests for test/integration/Wildcat4626WrapperIntegration.t.sol:Wildcat4626WrapperIntegrationTest
+[PASS] test_depositAndMintIgnoreLocalBlockForRegisteredWrapperAcrossBuiltInHooks() (gas: 59388120)
+[PASS] test_foreignPrincipalEscrowCannotReleaseSharesToSanctionedHolder() (gas: 19526105)
+[PASS] test_lenderOverridesStayWithThePrincipalAndWrapperReadinessTracksMigration() (gas: 19637076)
+[PASS] test_marketAndWrapperNukesComposeWithoutPuttingBackingAtRisk() (gas: 19919899)
+[PASS] test_precreatedCurrentPrincipalEscrowIsAuthorizedWhenWrapperNukesHolder() (gas: 19540149)
+[PASS] test_redeemAndScaledQueueRemainAtomicAcrossMarketTypes() (gas: 78947249)
+[PASS] test_redeemKeepsOrdinaryRecipientPolicyAcrossEveryBuiltInHook() (gas: 59413932)
+[PASS] test_registrationAndReadinessUseProductionMarketsAndEveryBuiltInHook() (gas: 58310966)
+[PASS] test_wildcatDebtTokenCannotAuthorizeDepositsIntoItsOwnMarket() (gas: 17091265)
+[PASS] test_wildcatDebtTokenInterestCanAuthorizeADifferentMarket() (gas: 22622315)
+[PASS] test_wildcatWrapperInterestCanAuthorizeADifferentMarket() (gas: 24965725)
+[PASS] test_wrapperCoordinatesDirectAndShareQuarantineWithoutFreezingOtherHolders() (gas: 19895813)
+[PASS] test_wrapperEscrowsRemainReleasableInTheirOriginalPrincipalNamespace() (gas: 20048189)
+[PASS] test_wrapperNamespaceAndSweepAuthorityFollowTheLiveBorrowerIdentity() (gas: 20479675)
+[PASS] test_zeroBalanceRepeatAndRevolvingNukesShareTheSameQuarantineRules() (gas: 38875733)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 26.20ms (25.90ms CPU time)
+
+Ran 12 tests for test/root/WildcatArchController.t.sol:WildcatArchControllerTest
+[PASS] testFuzz_updateSphereXEngine_RequiresOperatorOrAdmin(address) (runs: 1000, μ: 1803959, ~: 1803959)
+[PASS] test_registryMatrix_AddEmitsAndRegisters() (gas: 9491024)
+[PASS] test_registryMatrix_AddRejectsDuplicateEntry() (gas: 9476337)
+[PASS] test_registryMatrix_AddRejectsUnauthorizedCaller() (gas: 9127714)
+[PASS] test_registryMatrix_EnumerationPaginationAndSwapPop() (gas: 9652511)
+[PASS] test_registryMatrix_RemoveEmitsAndUnregisters() (gas: 9212824)
+[PASS] test_registryMatrix_RemoveRejectsMissingEntry() (gas: 9136661)
+[PASS] test_registryMatrix_RemoveRequiresOwner() (gas: 9473835)
+[PASS] test_updateSphereXEngine_BubblesRegisteredContractRevert() (gas: 2293978)
+[PASS] test_updateSphereXEngine_NullEngineStillUpdatesRegisteredContracts() (gas: 2690279)
+[PASS] test_updateSphereXEngine_RejectsMissingRegistryEntries() (gas: 1798395)
+[PASS] test_updateSphereXEngine_UpdatesEveryRegistryAndEngineAllowlist() (gas: 2764267)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 81.74ms (81.59ms CPU time)
+
+Ran 32 tests for test/root/WildcatBorrowerIdentityRegistry.t.sol:WildcatBorrowerIdentityRegistryTest
+[PASS] testFuzz_registerAccount_RejectsDuplicateWithoutMutation(address) (runs: 1000, μ: 3209294, ~: 3209294)
+[PASS] test_acceptTransfer_EmitsMovesCurrentEnumerationAndKeepsFactoryHistory() (gas: 3424794)
+[PASS] test_acceptTransfer_RevalidatesTargetAndAccountIdentity() (gas: 6490582)
+[PASS] test_acceptTransfer_SurvivesFactoryOrCurrentPrincipalRemoval() (gas: 6373736)
+[PASS] test_acceptTransfer_UpdatesAuthorityAndSupportsRoundTrip() (gas: 3244804)
+[PASS] test_addAccountFactory_EmitsAndEnumerates() (gas: 3112136)
+[PASS] test_addAccountFactory_FollowsCurrentArchControllerOwner() (gas: 3112763)
+[PASS] test_addAccountFactory_RejectsDuplicate() (gas: 2958064)
+[PASS] test_addAccountFactory_RejectsInvalidAddress() (gas: 2962796)
+[PASS] test_archControllerOwnerRead_ValidatesAndBubblesResponse() (gas: 3114254)
+[PASS] test_cancelTransfer_EmitsAndClearsPendingPrincipal() (gas: 3221668)
+[PASS] test_cancelTransfer_RequiresPrincipalAndPendingTransfer() (gas: 3219966)
+[PASS] test_constructor_RejectsInvalidArchController() (gas: 81433)
+[PASS] test_constructor_StoresArchController() (gas: 2956453)
+[PASS] test_getAccountFactories_PaginatesAndValidatesRange() (gas: 3114021)
+[PASS] test_getBorrowerAccounts_PaginatesPrincipalAndFactoryIndexes() (gas: 3344445)
+[PASS] test_registerAccount_AllowsMultipleAccountsForOnePrincipal() (gas: 3319774)
+[PASS] test_registerAccount_EmitsAndIndexesIdentity() (gas: 3175989)
+[PASS] test_registerAccount_RejectsAmbiguousAccountOrPrincipal() (gas: 6287960)
+[PASS] test_registerAccount_RejectsInvalidAccount() (gas: 3046217)
+[PASS] test_registerAccount_RequiresApprovedFactory() (gas: 2992709)
+[PASS] test_registerAccount_RequiresNonzeroRegisteredPrincipal() (gas: 3035051)
+[PASS] test_registeredBorrowerRead_ValidatesAndBubblesResponse() (gas: 2976810)
+[PASS] test_removeAccountFactory_PreservesRegisteredAccountProvenance() (gas: 3148334)
+[PASS] test_removeAccountFactory_RequiresOwnerAndExistingFactory() (gas: 3061434)
+[PASS] test_requestTransfer_EmitsAndLeavesCurrentPrincipalActive() (gas: 3241306)
+[PASS] test_requestTransfer_RejectsAmbiguousIdentity() (gas: 6637774)
+[PASS] test_requestTransfer_RejectsInvalidOrUnregisteredTarget() (gas: 3170154)
+[PASS] test_requestTransfer_ReplacesPendingPrincipal() (gas: 3293333)
+[PASS] test_requestTransfer_RequiresRegisteredAccountPrincipal() (gas: 3208061)
+[PASS] test_resolveBorrower_HandlesDirectPrincipalAndUnknownAddress() (gas: 2967148)
+[PASS] test_resolveBorrower_RejectsStaleOrAmbiguousIdentity() (gas: 9706810)
+Suite result: ok. 32 passed; 0 failed; 0 skipped; finished in 166.54ms (166.33ms CPU time)
+
+Ran 12 tests for test/market/WildcatMarketBorrowerTransfer.t.sol:WildcatMarketBorrowerTransferTest
+[PASS] testFuzz_replacementAcceptsOnlyLatestTarget(uint160,uint160) (runs: 1000, μ: 13559256, ~: 13559254)
+[PASS] test_acceptPreservesActiveDelinquentAndClosedAccounting() (gas: 41298866)
+[PASS] test_acceptRevalidatesIdentityAndEverySanctionsIdentity() (gas: 84010740)
+[PASS] test_acceptSupportsEveryIdentityTransitionAndRemovedFactory() (gas: 14186206)
+[PASS] test_borrowChecksOperationalBorrowerAndPrincipalRawSanctions() (gas: 13843454)
+[PASS] test_lenderSanctionsNamespaceFollowsBorrowerPrincipal() (gas: 28007403)
+[PASS] test_requestRejectsInvalidIdentityTargets() (gas: 13419387)
+[PASS] test_requestRejectsMalformedRegistryResponses() (gas: 13457704)
+[PASS] test_requestReplacementCancellationAndAuthorization() (gas: 13605078)
+[PASS] test_requestUsesRawSanctionsAndCancellationRemainsAvailable() (gas: 54951909)
+[PASS] test_sameAccountPrincipalMigrationBindsPendingPrincipal() (gas: 13873327)
+[PASS] test_withdrawalEscrowUsesAndRetainsBorrowerPrincipalNamespace() (gas: 28433676)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 549.73ms (549.51ms CPU time)
+
+Ran 1 test for test/libraries/Withdrawal.t.sol:WithdrawalTest
+[PASS] test_availableLiquidityForPendingBatch(uint128,uint104,uint104,uint128,uint96,uint128) (runs: 1000, μ: 11493, ~: 11498)
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 17.75ms (17.67ms CPU time)
+
+Ran 14 tests for test/libraries/MarketState.t.sol:MarketStateTest
+[PASS] test_borrowableAssets(uint104,uint104,uint16,uint128,uint128,uint128) (runs: 1000, μ: 25177, ~: 24356)
+[PASS] test_hasPendingExpiredBatch(uint32,uint32) (runs: 1000, μ: 9455, ~: 9457)
+[PASS] test_liquidityRequired(uint104,uint104,uint16,uint128,uint128) (runs: 1000, μ: 16415, ~: 16499)
+[PASS] test_liquidityRequired_HighScaleReserveRounding() (gas: 29954)
+[PASS] test_liquidityRequired_NormalizedSupplyPartition(uint112,uint104,uint104,uint16,uint128,uint128) (runs: 1000, μ: 28168, ~: 28079)
+[PASS] test_maxScaledSettleableAmount_IsMaximal(uint112,uint256) (runs: 1000, μ: 11639, ~: 12037)
+[PASS] test_maxScaledSettleableAmount_SaturatesBeforeLiquidityOverflow() (gas: 12620)
+[PASS] test_maximumDeposit() (gas: 8951)
+[PASS] test_normalizeAmount(uint112,uint104) (runs: 1000, μ: 9587, ~: 9644)
+[PASS] test_normalizeAmount(uint256,uint256) (runs: 1000, μ: 9819, ~: 9734)
+[PASS] test_scaleAmountDown(uint256,uint256) (runs: 1000, μ: 9559, ~: 9489)
+[PASS] test_totalDebts(uint112,uint104,uint128,uint128) (runs: 1000, μ: 10214, ~: 10271)
+[PASS] test_totalSupply(uint112,uint104) (runs: 1000, μ: 12101, ~: 12158)
+[PASS] test_withdrawableProtocolFees(uint256,uint256,uint256) (runs: 1000, μ: 9386, ~: 9386)
+Suite result: ok. 14 passed; 0 failed; 0 skipped; finished in 226.53ms (226.38ms CPU time)
+
+Ran 18 tests for test/libraries/MathUtils.t.sol:MathUtilsExternalTest
+[PASS] test_bipDiv(uint256,uint256) (runs: 1000, μ: 7098, ~: 6657)
+[PASS] test_bipMul() (gas: 8170)
+[PASS] test_bipMul(uint256,uint256) (runs: 1000, μ: 8881, ~: 6956)
+[PASS] test_bipToRay() (gas: 14381)
+[PASS] test_bipToRay(uint256) (runs: 1000, μ: 7642, ~: 6335)
+[PASS] test_calculateLinearInterestFromBips() (gas: 6779)
+[PASS] test_calculateLinearInterestFromBips(uint256,uint256) (runs: 1000, μ: 7770, ~: 7743)
+[PASS] test_max(uint256,uint256) (runs: 1000, μ: 6722, ~: 6721)
+[PASS] test_mulDiv(uint256,uint256,uint256) (runs: 1000, μ: 6981, ~: 7046)
+[PASS] test_mulDivUp(uint256,uint256,uint256) (runs: 1000, μ: 6850, ~: 6957)
+[PASS] test_rayDiv() (gas: 7755)
+[PASS] test_rayDiv_RevertsOnOverflow() (gas: 13291)
+[PASS] test_rayDiv_RevertsOnZeroDenominator() (gas: 13225)
+[PASS] test_rayMul() (gas: 8146)
+[PASS] test_rayMul(uint256,uint256) (runs: 1000, μ: 8724, ~: 6807)
+[PASS] test_satAdd(uint256,uint256,uint256) (runs: 1000, μ: 6946, ~: 6940)
+[PASS] test_satAdd_OverflowReturnsMaximum() (gas: 6739)
+[PASS] test_satSub(uint256,uint256) (runs: 1000, μ: 6580, ~: 6629)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 84.78ms (84.66ms CPU time)
+
+Ran 16 tests for test/root/MockArchControllerOwner.t.sol:MockArchControllerOwnerTest
+[PASS] test_archControllerSphereXRoles_CanMoveToHelper() (gas: 4287368)
+[PASS] test_authorizationMutation_ValidatesCallerAndAccount() (gas: 4271440)
+[PASS] test_authorizeAndDeauthorizeAccounts_EmitsAndUsesSwapPop() (gas: 4237596)
+[PASS] test_constructor_RecordsExplicitExecutors() (gas: 4270766)
+[PASS] test_constructor_RejectsInvalidInputs() (gas: 2073770)
+[PASS] test_deauthorizeAccount_RejectsFinalExecutor() (gas: 2551296)
+[PASS] test_executeProtocolAction_BubblesTargetRevert() (gas: 4269281)
+[PASS] test_executeProtocolAction_CallsArchController() (gas: 4337043)
+[PASS] test_executeProtocolAction_EmitsForBoundTargetAndReturnsData() (gas: 4316547)
+[PASS] test_executeProtocolAction_RejectsInvalidTargetOrData() (gas: 6205012)
+[PASS] test_executeProtocolAction_RequiresAuthorization() (gas: 4267941)
+[PASS] test_oldAndNewExecutors_OperateConcurrently() (gas: 4321693)
+[PASS] test_registerBorrowerAndBatch_ArePermissionless() (gas: 4430906)
+[PASS] test_returnOwnership_GivesArchControllerToAuthorizedCaller() (gas: 4265746)
+[PASS] test_setProtocolFeeConfiguration_PreservesLegacyCallAndRequiresAuthorization() (gas: 4321463)
+[PASS] test_sphereXEngineRoles_CanMoveToHelper() (gas: 4314130)
+Suite result: ok. 16 passed; 0 failed; 0 skipped; finished in 3.48ms (3.32ms CPU time)
+
+Ran 82 tests for test/market/WildcatMarket.t.sol:WildcatMarketTest
+[PASS] test_accountWithdrawalViewsTrackPartialAndCompleteClaims_AcrossHookKinds() (gas: 25824717)
+[PASS] test_approveStoresExactAllowance_AcrossHookKinds(address,uint256) (runs: 1000, μ: 25152619, ~: 25153296)
+[PASS] test_availableWithdrawalRejectsPendingAndReadsExpiredView_AcrossHookKinds() (gas: 25774761)
+[PASS] test_borrowAppliesLiquidityAuthorityClosureAndSanctions_AcrossHookKinds() (gas: 77359746)
+[PASS] test_borrowerReservedStorageControlsAuthority_AcrossHookKinds() (gas: 25141079)
+[PASS] test_closeMarketBalancesDebtAndExcessAssets_AcrossHookKinds() (gas: 104268695)
+[PASS] test_closeMarketCreatesFreshBatchKeyAtExactExpiry_AcrossHookKinds() (gas: 25615448)
+[PASS] test_closeMarketSettlesPendingAndUnpaidWithdrawalBatches_AcrossHookKinds() (gas: 78913403)
+[PASS] test_closedMarketWithdrawalRejectsFallbackBatchKeyCollision_AcrossHookKinds() (gas: 25943573)
+[PASS] test_closedMarketWithdrawalRejectsFallbackBatchKeyOverflow_AcrossHookKinds() (gas: 25438187)
+[PASS] test_closedMarketWithdrawalUsesFreshFallbackBatchKey_AcrossHookKinds() (gas: 26167151)
+[PASS] test_closedMarketWithdrawalsDrainAcrossFreshBatches_AcrossHookKinds() (gas: 26492159)
+[PASS] test_collectFeesHandlesEmptyAvailableAndUnavailableFees_AcrossHookKinds() (gas: 77176774)
+[PASS] test_configurationGettersAndMaximumDeposit_AcrossHookKinds(uint104) (runs: 1000, μ: 25445738, ~: 25446374)
+[PASS] test_constructorAndInitialState_AcrossHookKinds() (gas: 25299381)
+[PASS] test_constructorPreservesDistinctBorrowerPrincipalAndParameterLayout_AcrossHookKinds() (gas: 34342562)
+[PASS] test_constructorRejectsInvalidIdentityInputs() (gas: 16139695)
+[PASS] test_depositEntrypointsApplyCapacityExactnessAndRounding_AcrossHookKinds() (gas: 131409447)
+[PASS] test_depositEntrypointsEnforceProductionMinimumAcrossHookKinds() (gas: 25317117)
+[PASS] test_executePendingAnnualInterestBipsReductionIsPermissionlessAndUsesHookState() (gas: 9705192)
+[PASS] test_executePendingAnnualInterestBipsReductionRejectsInvalidMarketAndHookStates() (gas: 45157603)
+[PASS] test_executeSanctionedWithdrawalsRouteToEscrow_AcrossHookKinds() (gas: 26006876)
+[PASS] test_executeWithdrawalAllowsClosedMarketBeforeAndAfterExpiry_AcrossHookKinds() (gas: 51503470)
+[PASS] test_executeWithdrawalRejectsPendingAndDuplicateThenPays_AcrossHookKinds() (gas: 25680860)
+[PASS] test_executeWithdrawalsValidatesAndAtomicallyPaysBatches_AcrossHookKinds() (gas: 52234741)
+[PASS] test_expiredBatchSettlementRefreshesDelinquency_AcrossMarketTypes() (gas: 25930284)
+[PASS] test_marketLifecycleEmitsCanonicalIndexerEvents() (gas: 12714368)
+[PASS] test_nukeFromOrbitHandlesEmptyBalancesAndRejectsUnsanctionedAccounts_AcrossHookKinds() (gas: 25294945)
+[PASS] test_nukeFromOrbitPreservesFixedTermWithdrawalRestriction() (gas: 12790632)
+[PASS] test_nukeFromOrbitQueuesEntireSanctionedBalanceAndIsIdempotent_AcrossHookKinds(address) (runs: 1000, μ: 25699690, ~: 25699690)
+[PASS] test_openMarketWithdrawalRejectsExpiryOverflowWithoutMutatingState() (gas: 12500125)
+[PASS] test_pendingBatchUsesIncomingLiquidityBeforeExpiry_AcrossHookKinds() (gas: 25726892)
+[PASS] test_processUnpaidBatchHandlesLargeAndSubScaledLiquidity_AcrossHookKinds() (gas: 51925478)
+[PASS] test_processUnpaidBatchHandlesNoLiquidityAndOneWeiBoundary_AcrossHookKinds() (gas: 51390908)
+[PASS] test_processUnpaidBatchProgressesPartialAndFullPayments_AcrossHookKinds() (gas: 25860148)
+[PASS] test_queueScaledUsesLiveScaleFactorAndMatchesFullWithdrawal_AcrossHookKinds() (gas: 51759729)
+[PASS] test_queueWithdrawalEntrypointsRejectInvalidAmounts_AcrossHookKinds() (gas: 25495836)
+[PASS] test_queueWithdrawalEntrypointsShareAndAccumulateOneBatch_AcrossHookKinds() (gas: 25851987)
+[PASS] test_queueWithdrawalTracksLiquidityShortfall_AcrossHookKinds() (gas: 25644928)
+[PASS] test_registerWrapperAuthenticatesFactoryAndProtectsCanonicalWrapper_AcrossHookKinds() (gas: 25215732)
+[PASS] test_repayAndProcessDrainsLargeFifoQueueInBoundedChunksThenCloses() (gas: 36703449)
+[PASS] test_repayAndProcessHonorsLimitsAndAvailableLiquidity_AcrossHookKinds() (gas: 79422331)
+[PASS] test_repayAndProcessIncludesRepayAndRejectsClosedMarket_AcrossHookKinds() (gas: 51753523)
+[PASS] test_repayHandlesSuccessZeroClosedAndTransferFailure_AcrossHookKinds() (gas: 77193083)
+[PASS] test_rescueTokensAuthenticatesBorrowerAndProtectsMarketAssets_AcrossHookKinds() (gas: 26457429)
+[PASS] test_revolvingAccrualAppliesDelinquencyFee() (gas: 12766661)
+[PASS] test_revolvingAccrualClampsUtilizationAndPreservesDustBoundaries() (gas: 159311413)
+[PASS] test_revolvingAccrualCombinesCommitmentUtilizationAndProtocolFees() (gas: 12715651)
+[PASS] test_revolvingAccrualHandlesFeeOnlyZeroSupplyAndZeroTime() (gas: 38121483)
+[PASS] test_revolvingBorrowDoesNotReclassifyDonationAsPrincipalRepayment() (gas: 12734504)
+[PASS] test_revolvingBorrowerTransferPreservesDrawnAmountAndStorage() (gas: 12751246)
+[PASS] test_revolvingCloseZerosDrawnAndFreezesAccrual() (gas: 12710942)
+[PASS] test_revolvingConstructorValidatesAndStoresCommitmentFee() (gas: 17785933)
+[PASS] test_revolvingDrawnAmountClampsOverRepayDonationAndLargeValues() (gas: 25545752)
+[PASS] test_revolvingDrawnAmountTracksBorrowAndSaturatingRepayment() (gas: 12718925)
+[PASS] test_revolvingFullRepayReturnsToCommitmentOnlyAccrual() (gas: 12728918)
+[PASS] test_revolvingFullyDrawnFirstSegmentMatchesStandardThenDiverges() (gas: 25306672)
+[PASS] test_revolvingRepayConsumesInterestBeforePrincipalAcrossBothEntrypoints() (gas: 25624862)
+[PASS] test_revolvingRepayDoesNotReclassifyDonationAcrossBothEntrypoints() (gas: 25557931)
+[PASS] test_scaleFactorAccruesThroughZeroSupplyAndDelinquencyGrace_AcrossHookKinds() (gas: 25675257)
+[PASS] test_setAnnualInterestAndReserveRatioBipsAppliesProductionConstraints_AcrossHookKinds(uint16,uint16) (runs: 1000, μ: 25180493, ~: 25198485)
+[PASS] test_setAnnualInterestAndReserveRatioBipsEnforcesLiquidityBeforeAndAfterChange() (gas: 32639945)
+[PASS] test_setAprRejectsAuthorityBoundsAndClosure_AcrossHookKinds() (gas: 44913921)
+[PASS] test_setAprRollsBackActiveTemporaryReserveWindowWhenLiquidityCheckReverts() (gas: 12570194)
+[PASS] test_setAprRollsBackMarketAndHookStateWhenPostHookLiquidityCheckReverts() (gas: 12575828)
+[PASS] test_setMaxTotalSupplyAcceptsCapacityAboveAndBelowSupply_AcrossHookKinds(uint104,uint128,uint104) (runs: 1000, μ: 25401938, ~: 25404298)
+[PASS] test_setMaxTotalSupplyRejectsInvalidCallerClosedMarketAndOverflow_AcrossHookKinds() (gas: 50709716)
+[PASS] test_setProtocolFeeBipsRejectsInvalidCallerFeeAndClosedMarket_AcrossHookKinds() (gas: 25194381)
+[PASS] test_setProtocolFeeBipsUpdatesFromFactory_AcrossHookKinds(uint16) (runs: 1000, μ: 25175385, ~: 25175277)
+[PASS] test_stateQueriesReflectAccrualWithoutMutatingPreviousState_AcrossHookKinds() (gas: 25506567)
+[PASS] test_tokenMetadataAndRoundingMarker_AcrossHookKinds() (gas: 25116593)
+[PASS] test_tokenMintAndBurnAccounting_AcrossHookKinds(uint104,uint104) (runs: 1000, μ: 25652219, ~: 25656128)
+[PASS] test_transferFromHandlesFiniteInfiniteAndSelfTransfer_AcrossHookKinds(address,uint104,uint104) (runs: 1000, μ: 51363229, ~: 51364641)
+[PASS] test_transferMovesBalanceAndPreservesSupply_AcrossHookKinds(address,uint104) (runs: 1000, μ: 25455130, ~: 25455128)
+[PASS] test_transfersRejectInsufficientBalancesAndAllowances_AcrossHookKinds(uint104,uint104) (runs: 1000, μ: 77468868, ~: 77468840)
+[PASS] test_updateStatePersistsAccrualAndNoChange_AcrossHookKinds() (gas: 25461070)
+[PASS] test_updateStateProcessesExpiredBatchesWithDistinctAndSameBlockAccrual() (gas: 25297587)
+[PASS] test_withdrawableProtocolFeesRejectsStateChangingReentrancy() (gas: 9866442)
+[PASS] test_withdrawableProtocolFeesRemainCappedAcrossPendingWithdrawals_AcrossHookKinds() (gas: 25712783)
+[PASS] test_withdrawalViewsReflectMissingPendingPaidAndUnpaidBatches_AcrossHookKinds() (gas: 51919068)
+[PASS] test_zeroDelinquencyFeeStillTracksClockAcrossMarketTypes() (gas: 25651445)
+[PASS] test_zeroTransfersAndBlockedRecipientsRevert_AcrossHookKinds() (gas: 77289013)
+Suite result: ok. 82 passed; 0 failed; 0 skipped; finished in 170.33s (342.16s CPU time)
+
+Ran 12 tests for test/integration/HookDispatch.t.sol:HookDispatchTest
+[PASS] test_borrow_DispatchesExactCalldata(bytes) (runs: 1000, μ: 15665363, ~: 15664300)
+[PASS] test_closeMarket_DispatchesExactCalldata(bytes) (runs: 1000, μ: 15344652, ~: 15343589)
+[PASS] test_depositEntrypoints_DispatchExactCalldata(bytes) (runs: 1000, μ: 15954151, ~: 15952042)
+[PASS] test_executeWithdrawal_DispatchesExactCalldata(bytes) (runs: 1000, μ: 15799814, ~: 15798750)
+[PASS] test_executeWithdrawals_DispatchesEachEntryWithoutBatchExtraData(bytes) (runs: 1000, μ: 9205613, ~: 9205599)
+[PASS] test_nukeFromOrbit_DispatchesEnabledCallbacksAndIsolatesQueueExtraData(bytes) (runs: 1000, μ: 32471555, ~: 32469380)
+[PASS] test_queueWithdrawalEntrypoints_DispatchExactCalldata(bytes) (runs: 1000, μ: 16863334, ~: 16860176)
+[PASS] test_repayEntrypoints_DispatchExactCalldata(bytes) (runs: 1000, μ: 15935836, ~: 15933727)
+[PASS] test_setAnnualInterestAndReserveRatioBips_UsesHookReturnValues(bytes) (runs: 1000, μ: 15415567, ~: 15414502)
+[PASS] test_setMaxTotalSupply_DispatchesExactCalldata(bytes) (runs: 1000, μ: 15354787, ~: 15353724)
+[PASS] test_setProtocolFeeBips_DispatchesExactCalldata(bytes) (runs: 1000, μ: 15363057, ~: 15361994)
+[PASS] test_transferEntrypoints_DispatchExactCallerAndCalldata(bytes) (runs: 1000, μ: 16151426, ~: 16149317)
+Suite result: ok. 12 passed; 0 failed; 0 skipped; finished in 175.47s (9.59s CPU time)
+
+Ran 9 tests for test/invariants/MarketMatrixInvariant.t.sol:MarketMatrixInvariantTest
+[PASS] invariant_drawnPrincipalFollowsRevolvingRules() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_protocolFeesAreConservedAcrossTheMatrix() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_revolvingUtilizationInterestMatchesTheFormula() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_sanctionsAndExpectedActionsRemainSafe() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_scaleFactorsNeverDecreaseAcrossTheMatrix() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_scaledSupplyIsConservedAcrossTheMatrix() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_underwaterAndRandomizedPathsDoNotPanic() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_withdrawalGatesAreEnforcedAcrossTheMatrix() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+[PASS] invariant_withdrawalLiabilitiesAreConservedAcrossTheMatrix() (runs: 2000, calls: 60000, reverts: 0)
+
+╭---------------------+-----------------------+-------+---------+----------╮
+| Contract            | Selector              | Calls | Reverts | Discards |
++==========================================================================+
+| MarketMatrixHandler | borrow                | 3552  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | collectFees           | 3512  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | deposit               | 3488  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeAprReduction   | 3501  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | executeWithdrawal     | 3493  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | nukeFromOrbit         | 3510  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | proposeAprReduction   | 3645  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueFullWithdrawal   | 3483  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawal       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | queueWithdrawalScaled | 3463  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repay                 | 3722  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | repayAndProcess       | 3575  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionBorrower      | 3555  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | sanctionLender        | 3465  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | transfer              | 3521  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | updateState           | 3498  | 0       | 0        |
+|---------------------+-----------------------+-------+---------+----------|
+| MarketMatrixHandler | warp                  | 3442  | 0       | 0        |
+╰---------------------+-----------------------+-------+---------+----------╯
+
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 175.56s (532.58s CPU time)
+
+Ran 48 test suites in 176.01s (531.93s CPU time): 706 tests passed, 0 failed, 0 skipped (706 total tests)

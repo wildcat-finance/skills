@@ -1,0 +1,9 @@
+{
+  "candidate": "plan-sized-releases",
+  "command": "python3 .hexaemeron/design/resolve.py edit-sites --candidate plan-sized-releases",
+  "criterion": "edit-sites",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

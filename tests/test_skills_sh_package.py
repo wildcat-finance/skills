@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,7 +12,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from unittest import mock
 
 
 # The model proxy's receipt path refuses symlinked components by design.
@@ -144,20 +147,107 @@ CONTRACT = "promise-machine/v1"
 # now measures 26,408,839 bytes, 100.7% of the 25 MiB the CLI allows, against
 # 26,272,101 one paragraph above. Nothing here buys margin against it, and
 # framework-109 owns it.
-MAX_FILES = 1_500
+# Issue #1538 adopts the reviewed decorative-portrait omission and reference
+# repair, retaining the original byte cap and reserving five MiB below it.
+# Every generated manifest must satisfy that margin as well as the cap.
+#
+# Another raise, again without a nineteenth plugin, during the venue-agnostic
+# interval capture delivery (issue #1731, step 1). This one measures 1,519
+# files against the 1,500 cap, 30 above the 1,489-file prior baseline, all of
+# it the delivery's own share: a preserved study, runbook and design record
+# for a two-venue interval-capture design, the 24 selection reports its cells
+# name, and the model generator with its observations, all under
+# plugins/alexandria/docs/wildcat-interval/. Those are evidence a reader
+# reruns -- the reports recompute byte-identically from the committed
+# generator -- they ship like every other preserved design record under
+# docs/, and the reasoning above holds unchanged: the pressure is
+# repository-wide, no per-plugin trim closes it, and shipped package content
+# is not trimmed to hold a file count.
+#
+# The byte cap is not under pressure from this delivery. The payload measures
+# 20,365,653 bytes, 77.7% of the 25 MiB the CLI allows, with 5,848,747 bytes of
+# headroom above the 5 MiB minimum this file also checks.
+#
+# 2026-09-20: step 6 of the same delivery (issue #1731) met the byte ceiling
+# that note did not expect. At signed commit
+# 1fd0abdad1acfdac6f560ba80d5667f6df00e7a0 the complete package measured 1,533
+# files and 20,971,411 bytes; its runtime held 1,526 files and 20,500,639
+# bytes. That left 109 bytes beyond the 5 MiB reserve, after the step's audit
+# had shortened prose in packaged files to fit, and restoring that prose made
+# 20,973,160 bytes, 1,640 over. Omitting the six duplicate Lazarus payloads
+# under adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime, which
+# origin/main already carries, gives a complete package of 1,527 files and
+# 19,987,263 bytes whose runtime holds 1,520 files and 19,516,852 bytes, with
+# 984,257 bytes beyond the reserve. With the prose restored in the same commit
+# the package is 19,989,012 bytes and the runtime 19,518,601, with 982,508
+# bytes beyond the reserve and 73 files below the tripwire. These counts
+# belong to that tree; later changes require fresh measurement. The cap,
+# reserve, tripwire and every other omission rule stay unchanged.
+# A sixth raise records the checkpoint authority corpus: 1,534 files,
+# 20,219,205 bytes and 5,995,195 bytes of headroom. The local file tripwire
+# moves to 1,600; the 25 MiB byte cap and five MiB reserve stay unchanged.
+# Required shipped content, omission rules and source bindings stay intact.
+# This does not make the 1,000-file archive and download routes compatible.
+# 2026-09-18: Step 4 of issue #1676 measured 21,187,330 package bytes, 215,810
+# over the maximum the reserve leaves. Omitting the checkpoint authority
+# conformance corpora (`checkpoint-authority/fixtures/**` and
+# `native-fixture/**`, read only by reporters the package already omits) under
+# adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime
+# gives a complete package of 1,510 files and 20,855,576 bytes (5,358,824 bytes
+# below the cap) whose runtime manifest records 1,503 files and 20,392,692
+# total_bytes; the cap, reserve and file tripwire stay unchanged.
+# 2026-09-19: Step 5 of issue #1676 adds the released verifier, its command
+# line and the release manifest. The `checkpoint-authority/fixtures/**`
+# omission already covers the new interoperability corpus. At signed commit
+# 4c45438d562ffecdfe9ca97385a8b00c583c837e the complete package measured
+# 1,517 files and 20,968,483 bytes; its runtime held 1,510 files and 20,503,519
+# bytes. That left 3,037 bytes beyond the 5 MiB reserve and 83 files below the
+# tripwire. These counts belong to that commit; later changes require fresh
+# owner regeneration. The cap, reserve, tripwire and omission rules stay fixed.
+# 2026-10-04: a seventh raise, without a nineteenth plugin, at the integration
+# of issue #1872 with a base that had advanced 425 commits. Each parent fits:
+# the run's runtime holds 1,553 files and the base's 1,556. Composed, the
+# runtime holds 1,611 files and 19,273,663 bytes, 1,697,857 bytes beyond the
+# 5 MiB reserve. The run's share is 55 files, 52 of them the Aave V3 design
+# record and the selection and conformance reports its cells name under
+# plugins/alexandria/docs/aave-v3-interval/. Those are evidence a reader reruns,
+# and the reasoning above holds unchanged: shipped content is not trimmed to
+# hold a file count. The tripwire moves to 1,700; the 25 MiB byte cap and the
+# 5 MiB reserve stay unchanged.
+MAX_FILES = 1_700
 MAX_BYTES = 25 * 1024 * 1024
+MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/ariadne/examples/wildcat-datasets-v0/** (except README.md)",
+    "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
+    "assets/characters/*.{png,webp}",
+    "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
+    "plugins/anamnesis/docs/source-rights/**",
     "plugins/anamnesis/specimens/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
     "plugins/*/tests/**",
-    "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
-    "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
-    "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
+    "plugins/*/examples/**",
+}
+EXAMPLE_CLASS_EXCEPTIONS = {
+    "**/*.md",
+    "plugins/lazarus/examples/aave-v4-spoke-v1-release/**",
 }
 PORTABLE_TEST_FILES = {
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/hostile-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-body.txt",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-source.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-title.txt",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/queue-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/rejection-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/runtime-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/valid-request.json",
     "plugins/alexandria/tests/test_release.py",
     "plugins/ariadne/tests/test_examples.py",
     "plugins/ariadne/tests/test_gates.py",
@@ -192,7 +282,56 @@ def load_manifest():
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
+def load_generator():
+    spec = importlib.util.spec_from_file_location("portable_package_test", GENERATOR)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class SkillsShPackageTests(unittest.TestCase):
+    def test_wildcat_demo_payloads_require_full_source_checkout(self):
+        for venue in ("v1", "v2"):
+            relative = Path(f"plugins/alexandria/examples/wildcat-{venue}-interval-v0")
+            source = ROOT / relative
+            installed = RUNTIME / relative
+            self.assertEqual((source / "README.md").read_bytes(), (installed / "README.md").read_bytes())
+            self.assertTrue((source / "demo.py").is_file())
+            self.assertFalse((installed / "demo.py").exists())
+            self.assertTrue((source / "plan.json").is_file())
+            self.assertTrue((source / "expected.json").is_file())
+            self.assertEqual(list(installed.glob("*.json")), [])
+            self.assertFalse((installed / "pre-plan-probes").exists())
+        portable = (ROOT / ".agents/skills/promise-machine/PORTABLE.md").read_text()
+        self.assertIn("Wildcat V1 and V2 interval demonstration payloads", portable)
+        self.assertIn("verify-preserved", portable)
+
+    def test_lazarus_keeps_the_complete_release_and_one_payload_copy(self):
+        generator = load_generator()
+        source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
+        release = Path("plugins/lazarus/examples/aave-v4-spoke-v1-release")
+        for original in (ROOT / release).rglob("*"):
+            if original.is_file():
+                self.assertEqual(
+                    original.read_bytes(),
+                    (RUNTIME / original.relative_to(ROOT)).read_bytes(),
+                )
+        for name in generator.DUPLICATE_LAZARUS_PAYLOADS:
+            self.assertFalse((RUNTIME / source / name).exists())
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / release / "fixture" / name).read_bytes(),
+            )
+        # demo.py is the one non-release payload a packaged document links
+        # (plugins/lazarus/skills/lazarus/EVOLUTION.md), so the example class
+        # keeps it; manifest.json is not linked and leaves with the rest of
+        # the class (docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md).
+        self.assertEqual(
+            (ROOT / source / "demo.py").read_bytes(),
+            (RUNTIME / source / "demo.py").read_bytes(),
+        )
+        self.assertFalse((RUNTIME / source / "manifest.json").exists())
+
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
         self.assertEqual(manifest["schema"], SCHEMA)
@@ -200,6 +339,11 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(manifest["file_count"], len(manifest["files"]))
         self.assertLess(manifest["file_count"], MAX_FILES)
         self.assertLess(manifest["total_bytes"], MAX_BYTES)
+        self.assertGreaterEqual(MAX_BYTES - manifest["total_bytes"], MIN_HEADROOM)
+        self.assertEqual(manifest["byte_budget"], {
+            "cap": MAX_BYTES, "minimum_headroom": MIN_HEADROOM,
+            "headroom": MAX_BYTES - manifest["total_bytes"],
+        })
         self.assertEqual(
             {entry["pattern"] for entry in manifest["omissions"]},
             EXPECTED_OMISSIONS,
@@ -210,6 +354,28 @@ class SkillsShPackageTests(unittest.TestCase):
             if entry["pattern"] == "plugins/*/tests/**"
         )
         self.assertEqual(set(tests_omission["exceptions"]), PORTABLE_TEST_FILES)
+        examples_omission = next(
+            entry
+            for entry in manifest["omissions"]
+            if entry["pattern"] == "plugins/*/examples/**"
+        )
+        example_exceptions = set(examples_omission["exceptions"])
+        self.assertTrue(EXAMPLE_CLASS_EXCEPTIONS.issubset(example_exceptions))
+        linked_paths = {row["path"] for row in manifest["kept_by_link"]}
+        self.assertTrue(linked_paths)
+        self.assertEqual(
+            example_exceptions - EXAMPLE_CLASS_EXCEPTIONS, linked_paths,
+        )
+        for row in manifest["kept_by_link"]:
+            with self.subTest(path=row["path"]):
+                self.assertTrue(row["path"].startswith("plugins/"))
+                self.assertFalse(row["path"].endswith(".md"))
+                self.assertFalse(row["path"].startswith(
+                    "plugins/lazarus/examples/aave-v4-spoke-v1-release/"
+                ))
+                self.assertEqual(
+                    row["bytes"], (RUNTIME / row["path"]).stat().st_size,
+                )
 
         expected = {"MANIFEST.json"}
         total = 0
@@ -231,7 +397,35 @@ class SkillsShPackageTests(unittest.TestCase):
                 else:
                     source = ROOT / row["source"]
                     self.assertTrue(source.is_file())
-                    self.assertEqual(data, source.read_bytes())
+                    original = source.read_bytes()
+                    if "transform" in row:
+                        self.assertEqual(row["source_bytes"], len(original))
+                        self.assertEqual(row["source_sha256"], hashlib.sha256(original).hexdigest())
+                    if row.get("transform") == "replay-unchanged-evaluation-prompts/v1":
+                        self.assertEqual(row["path"], "docs/promise-machine/obligation-gates/evaluation-run.json")
+                        source_run, derived_run = json.loads(original), json.loads(data)
+                        self.assertNotEqual(source_run["tree_sha256"], derived_run["tree_sha256"])
+                        source_run.pop("tree_sha256")
+                        derived_run.pop("tree_sha256")
+                        self.assertEqual(source_run, derived_run)
+                    elif "transform" in row:
+                        self.assertEqual(row["transform"], "remove-decorative-portrait-images/v1")
+                        cursor = 0
+                        pieces = []
+                        omitted = {item["path"] for item in manifest["omitted_files"]}
+                        for span in row["removed_images"]:
+                            self.assertGreaterEqual(span["start"], cursor)
+                            self.assertGreater(span["end"], span["start"])
+                            self.assertLessEqual(span["end"], len(original))
+                            self.assertIn(span["target"], omitted)
+                            image = original[span["start"]:span["end"]]
+                            self.assertTrue(image.startswith((b"![", b"<img")))
+                            pieces.append(original[cursor:span["start"]])
+                            cursor = span["end"]
+                        pieces.append(original[cursor:])
+                        self.assertEqual(data, b"".join(pieces))
+                    else:
+                        self.assertEqual(data, original)
                 self.assertEqual(row["bytes"], len(data))
                 self.assertEqual(row["sha256"], hashlib.sha256(data).hexdigest())
             total += row["bytes"]
@@ -254,6 +448,112 @@ class SkillsShPackageTests(unittest.TestCase):
             ).read_bytes(),
             (PACKAGE / "SKILL.md").read_bytes(),
         )
+
+    def test_portrait_omission_inventory_preserves_every_source(self):
+        manifest = load_manifest()
+        self.assertIn("omitted_files", manifest)
+        rows = manifest["omitted_files"]
+        self.assertTrue(rows)
+        self.assertEqual(len(rows), len({row["path"] for row in rows}))
+        packaged = {row["path"] for row in manifest["files"]}
+        for row in rows:
+            with self.subTest(path=row["path"]):
+                self.assertNotIn(row["path"], packaged)
+                self.assertFalse((RUNTIME / row["path"]).exists())
+                original = (ROOT / row["path"]).read_bytes()
+                self.assertEqual(row["bytes"], len(original))
+                self.assertEqual(row["sha256"], hashlib.sha256(original).hexdigest())
+        self.assertIn("plugins/anamnesis/assets/characters/anamnesis.webp", {row["path"] for row in rows})
+        for document in RUNTIME.rglob("*.md"):
+            text = document.read_text(encoding="utf-8")
+            images = re.findall(r'!\[[^\]]*\]\(([^)]+)\)|<img\b[^>]*\bsrc=[\"\x27]([^\"\x27]+)', text)
+            for markdown, html in images:
+                target = (document.parent / (markdown or html)).resolve()
+                self.assertNotIn(target, {(RUNTIME / row["path"]).resolve() for row in rows})
+
+    def test_portrait_class_does_not_capture_other_assets(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "decorative_portrait"))
+        for path in ("assets/characters/new.png", "plugins/future/assets/characters/new.webp"):
+            self.assertTrue(generator.decorative_portrait(Path(path)), path)
+        for path in ("assets/diagram.png", "plugins/future/examples/characters/new.png", "plugins/future/assets/characters/nested/new.png", "plugins/future/assets/characters/proof.json", "plugins/future/assets/characters/code.py", "plugins/future/assets/characters/new.svg"):
+            self.assertFalse(generator.decorative_portrait(Path(path)), path)
+
+    def test_only_inline_images_of_omitted_portraits_are_transformed(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "transform_portrait_images"))
+        path = Path("plugins/example/skills/example/SKILL.md")
+        omitted = {"plugins/example/assets/characters/face.png", "plugins/example/assets/characters/face.webp"}
+        images = (b'![Face](../../assets/characters/face.png)', b'<img alt="a > b" width="1200" src="../../assets/characters/face.webp">')
+        untouched = b'[law](../../PROMISE_MACHINE.md)\n[portrait](../../assets/characters/face.png)\n![diagram](../../assets/diagram.png)\n<img src="https://example.org/face.png">\n<img data-src="../../assets/characters/face.png" src="../../assets/diagram.png">\n'
+        untouched += b'<img alt="example src=\'../../assets/characters/face.png\'" src="../../assets/diagram.png">\n'
+        original = b"before\n" + images[0] + b"\nbetween\n" + images[1] + b"\nafter\n" + untouched
+        transformed, spans = generator.transform_portrait_images(path, original, omitted)
+        self.assertEqual(transformed, b"before\n\nbetween\n\nafter\n" + untouched)
+        self.assertEqual([original[span["start"]:span["end"]] for span in spans], list(images))
+        self.assertEqual(generator.transform_portrait_images(Path("specimen.json"), original, omitted), (original, []))
+
+    def test_runtime_refuses_the_first_byte_inside_reserved_headroom(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "require_byte_headroom"))
+        self.assertEqual(generator.MAX_RUNTIME_BYTES, MAX_BYTES)
+        self.assertEqual(generator.MIN_BYTE_HEADROOM, MIN_HEADROOM)
+        line = MAX_BYTES - MIN_HEADROOM
+        generator.require_byte_headroom(line)
+        with self.assertRaises(generator.PackageError) as caught:
+            generator.require_byte_headroom(line + 1)
+        message = str(caught.exception)
+        self.assertIn(str(line + 1), message)
+        self.assertIn(str(line), message)
+        self.assertIn("margin", message)
+        self.assertIn("measure", message)
+
+    def test_file_tripwire_matches_the_generator_constant(self):
+        generator = load_generator()
+        self.assertEqual(generator.FILE_TRIPWIRE, MAX_FILES)
+
+    def test_complete_package_reserves_headroom_for_manifest_and_outer_files(self):
+        total = sum(path.stat().st_size for path in GENERATED.rglob("*") if path.is_file())
+        self.assertGreater(total, load_manifest()["total_bytes"])
+        self.assertGreaterEqual(MAX_BYTES - total, MIN_HEADROOM)
+        generator = load_generator()
+        at_boundary = {"probe.txt": b"x" * (MAX_BYTES - MIN_HEADROOM)}
+        with mock.patch.object(generator, "expected_files", return_value=(at_boundary, b"{}\n")):
+            with self.assertRaises(generator.PackageError) as caught:
+                generator._package_bytes(ROOT, "a" * 40)
+        message = str(caught.exception)
+        self.assertIn("margin", message)
+        self.assertIn("measure", message)
+
+    def test_isolated_runtime_evaluation_accepts_derived_record(self):
+        completed = subprocess.run(  # phylax: allow subprocess: fixed isolated runtime checker argv
+            [sys.executable, str(RUNTIME / "scripts/promise_machine.py"),
+             "check", "--root", str(RUNTIME), "--only", "evaluation", "--json"],
+            cwd=GENERATED, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        report = json.loads(completed.stdout)
+        self.assertEqual(report["findings"], [])
+        self.assertEqual(report["counts"]["evaluation_cases"], 11)
+        self.assertEqual(report["counts"]["evaluation_outcomes"], 55)
+        row = next(row for row in load_manifest()["files"]
+                   if row["path"] == "docs/promise-machine/obligation-gates/evaluation-run.json")
+        self.assertEqual(row["generated_by"], "tests/promise_evaluation_driver.py")
+        self.assertIs(row["new_model_observation"], False)
+        self.assertEqual(len(row["unchanged_prompts"]), 11)
+        self.assertEqual(len({p["case"] for p in row["unchanged_prompts"]}), 11)
+
+    def test_packaging_refuses_replay_when_a_model_prompt_changes(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "derive_portable_evaluation"))
+        payload = {row["path"]: (RUNTIME / row["path"]).read_bytes()
+                   for row in load_manifest()["files"]}
+        path = "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+        original = payload[path]
+        payload[path] = original.replace(b"- Promise: A completed", b"- Promise: An altered", 1)
+        self.assertNotEqual(original, payload[path])
+        with self.assertRaisesRegex(generator.PackageError, "prompts changed"):
+            generator.derive_portable_evaluation(ROOT, payload)
 
     def test_runtime_contracts_reach_every_copied_canonical_skill(self):
         plugins = RUNTIME / "plugins"
@@ -298,6 +598,8 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_declared_omissions_are_absent(self):
+        self.assertTrue((ROOT / "plugins/anamnesis/docs/source-rights/results.md").is_file())
+        self.assertFalse((RUNTIME / "plugins/anamnesis/docs/source-rights").exists())
         for plugin in sorted((RUNTIME / "plugins").iterdir()):
             if not plugin.is_dir():
                 continue
@@ -334,11 +636,34 @@ class SkillsShPackageTests(unittest.TestCase):
                 if name.startswith("plugins/hexaemeron/tests/")
             },
         )
+        # The example-payload-class omission (docs/decisions/drafts/
+        # omit-example-payloads-from-the-portable-runtime.md) replaces the
+        # five patterns above: every non-Markdown file under
+        # plugins/*/examples/ leaves unless a packaged document links it or
+        # it sits inside the retained Lazarus release. Alexandria's Compound
+        # v3 Phase 0 trace keeps only its Markdown; nothing links rebuild.py.
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())
-        self.assertTrue((example / "rebuild.py").is_file())
+        self.assertFalse((example / "rebuild.py").exists())
         for omitted in ("input", "release", "source"):
             self.assertFalse((example / omitted).exists())
+        # Tabularium's v1 releases are built from their v0 releases' own
+        # source bytes, so the class drops both raw payloads: shipping either
+        # would carry the same evidence the router never reads. Each
+        # release's two Markdown documents stay; no packaged document links
+        # an individual data file in either.
+        for release in (
+            "aave-v4-v0", "aave-v4-v1", "euler-v1-v0", "euler-v1-v1",
+            "euler-v2-v0", "euler-v2-v1",
+        ):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            self.assertTrue((directory / "README.md").is_file(), release)
+            self.assertTrue((directory / "DATA-DICTIONARY.md").is_file(), release)
+            for omitted in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertFalse((directory / omitted).exists(), release)
 
     def test_selected_directory_works_as_an_isolated_copy(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -604,6 +929,150 @@ class SkillsShPackageTests(unittest.TestCase):
             for line in text.splitlines():
                 if "npx skills add" in line:
                     self.assertIn("wildcat-finance/skills-runtime", line, document.name)
+
+    def test_example_class_predicate_leaves_named_surfaces_alone(self):
+        """The class matches only a non-Markdown file under plugins/*/examples/.
+
+        Skills, scripts, schemas, plugin docs/, and example Markdown are all
+        untouched by it, whatever kind of file they are (study risk
+        class-overreach). A plain, unlinked example payload is the contrast:
+        that one the class does reach.
+        """
+        generator = load_generator()
+        untouched = (
+            "plugins/example/skills/example/SKILL.md",
+            "plugins/example/scripts/run.py",
+            "plugins/example/schemas/thing-v1.schema.json",
+            "plugins/example/docs/decisions/ADR-001-example.md",
+            "plugins/example/docs/notes.txt",
+            "plugins/example/examples/README.md",
+            "plugins/example/examples/nested/GUIDE.md",
+            "plugins/example/tests/test_thing.py",
+        )
+        for relative in untouched:
+            with self.subTest(path=relative):
+                self.assertFalse(generator._example_class_matches(Path(relative)))
+        reached = (
+            "plugins/example/examples/payload.json",
+            "plugins/example/examples/nested/payload.jsonl",
+            "plugins/example/examples/demo.py",
+        )
+        for relative in reached:
+            with self.subTest(path=relative):
+                self.assertTrue(generator._example_class_matches(Path(relative)))
+        # tests/ has its own, older omission rule; the class predicate itself
+        # does not need to reach it to make _omitted true.
+        self.assertFalse(
+            generator._example_class_matches(Path("plugins/example/tests/test_thing.py"))
+        )
+
+    def test_no_nonmarkdown_example_file_ships_unless_linked_or_lazarus_retained(self):
+        """A global sweep of the built runtime: the class leaks nothing."""
+        manifest = load_manifest()
+        linked = {row["path"] for row in manifest["kept_by_link"]}
+        retained = "plugins/lazarus/examples/aave-v4-spoke-v1-release/"
+        checked = 0
+        for plugin in sorted((RUNTIME / "plugins").iterdir()):
+            examples = plugin / "examples"
+            if not examples.is_dir():
+                continue
+            for path in examples.rglob("*"):
+                if not path.is_file():
+                    continue
+                relative = path.relative_to(RUNTIME).as_posix()
+                checked += 1
+                with self.subTest(path=relative):
+                    self.assertTrue(
+                        relative.endswith(".md")
+                        or relative.startswith(retained)
+                        or relative in linked,
+                        relative,
+                    )
+        self.assertGreater(checked, 0)
+
+    def test_directory_link_without_an_already_kept_file_pulls_back_the_smallest_tracked_file(self):
+        """A directory-shaped example link must still resolve inside the package.
+
+        `plugins/horos/skills/horos/SKILL.md` links `../../examples/fixture/`
+        and no file under it is Markdown or otherwise linked, so the class
+        would otherwise drop the whole tree and leave that link dangling.
+        `plugins/lazarus/README.md` and `docs/chain-anchors.md` do the same for
+        `examples/multi-provider-anchor-v0`. Both keep exactly their smallest
+        tracked file, `.hexaemeron/design/resolve.py`'s own tie-break.
+        """
+        cases = {
+            "plugins/horos/examples/fixture": "plugins/horos/examples/fixture/lib/dep.py",
+            "plugins/lazarus/examples/multi-provider-anchor-v0": (
+                "plugins/lazarus/examples/multi-provider-anchor-v0/rpc.jsonl"
+            ),
+        }
+        for directory, expected in cases.items():
+            with self.subTest(directory=directory):
+                sized = sorted(
+                    (path.stat().st_size, path.relative_to(ROOT).as_posix())
+                    for path in (ROOT / directory).rglob("*")
+                    if path.is_file()
+                )
+                self.assertEqual(sized[0][1], expected)
+                kept = RUNTIME / expected
+                self.assertTrue(kept.is_file())
+                self.assertEqual(kept.read_bytes(), (ROOT / expected).read_bytes())
+                siblings = [
+                    path for path in (RUNTIME / directory).rglob("*") if path.is_file()
+                ] if (RUNTIME / directory).is_dir() else []
+                self.assertEqual([p.relative_to(RUNTIME).as_posix() for p in siblings], [expected])
+
+    def test_oversized_or_hostile_markdown_link_scan_completes_quickly(self):
+        """The link scan is one linear pattern; a hostile document stays bounded.
+
+        Builds an adversarial multi-megabyte Markdown file -- deeply nested and
+        unmatched brackets and parens, the classic shape that makes a
+        backtracking regex blow up -- and confirms the scan still finishes in
+        low single-digit seconds, not a hang.
+        """
+        generator = load_generator()
+        newline = chr(10)
+        junk = ("[" * 50_000) + ("(" * 50_000) + newline + newline
+        junk += ("[x](y" * 200_000) + newline + newline
+        junk += newline.join(
+            f"[a{i}](../../examples/no-such-plugin-{i}.json)" for i in range(2_000)
+        )
+        hostile = junk.encode("utf-8")
+        self.assertGreater(len(hostile), 1_000_000)
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            relative = Path("plugins/hostile/skills/hostile/HOSTILE.md")
+            target = root / relative
+            target.parent.mkdir(parents=True)
+            target.write_bytes(hostile)
+            started = time.monotonic()
+            found = generator._link_kept_examples(root, {relative}, [relative])
+            elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 15.0, elapsed)
+        # The 2,000 well-formed links at the end are still found correctly;
+        # only their sheer count and the surrounding hostile bracket noise
+        # must not blow up the scan's running time.
+        self.assertEqual(len(found), 2_000)
+        self.assertEqual(
+            found,
+            {Path(f"plugins/hostile/examples/no-such-plugin-{i}.json") for i in range(2_000)},
+        )
+
+    def test_portable_md_names_the_class_and_full_checkout_direction(self):
+        portable = (ROOT / ".agents/skills/promise-machine/PORTABLE.md").read_text(encoding="utf-8")
+        self.assertEqual(portable.count("example-payload-class"), 1)
+        self.assertIn("full checkout", portable)
+        self.assertIn("kept_by_link", portable)
+        self.assertIn("adr/omit-example-payloads-from-the-portable-runtime", portable)
+        # Cited the same way the file already cites the Lazarus draft.
+        self.assertIn("adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime", portable)
+        # The corrected sentence: Tabularium's v0 payload leaves too now.
+        self.assertNotIn("the v0 evidence remain", portable)
+        self.assertIn("Tabularium's v0 and superseding v1 payloads", portable)
+        # Lazarus's non-release manifest.json no longer ships; the paragraph
+        # must not claim it does.
+        self.assertNotIn("Its manifest and", portable)
+        self.assertNotIn("rebuild entrypoint remain present", portable)
 
 
 if __name__ == "__main__":

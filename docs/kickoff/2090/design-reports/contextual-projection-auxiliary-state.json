@@ -1,0 +1,9 @@
+{
+  "candidate": "contextual-projection",
+  "command": "python3 .hexaemeron/design/selection_probe.py --candidate contextual-projection --criterion auxiliary-state --report .hexaemeron/design-reports/contextual-projection-auxiliary-state.json",
+  "criterion": "auxiliary-state",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

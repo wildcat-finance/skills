@@ -1,0 +1,352 @@
+{
+  "issue": "https://github.com/wildcat-finance/skills/issues/1495",
+  "date": "2026-09-28",
+  "inputs": [
+    {
+      "id": "v2@a70f297f:src/HooksFactory.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/HooksFactory.sol",
+      "sha256": "f3a2ca3b4f9f239a07eb924ea1e4db73eeb44867a782ca48e4d59c157b8eada9",
+      "bytes": 24468,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/HooksFactory.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/access/BaseAccessControls.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/access/BaseAccessControls.sol",
+      "sha256": "9850505ebbc026be35e45a3426c52298be2c5a823f4bc6e27ed8fc581e240fa4",
+      "bytes": 30742,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/BaseAccessControls.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/access/FixedTermHooks.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/access/FixedTermHooks.sol",
+      "sha256": "03436e22b1585d82ade2e418ea25e72d717d4f64e247130edc7c1d02db0e1502",
+      "bytes": 17366,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/FixedTermHooks.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/access/IHooks.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/access/IHooks.sol",
+      "sha256": "b7c2028d5670c62fbbe43805f36576b638e6cced3507e773b8d158e66dcc193c",
+      "bytes": 3169,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/IHooks.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/access/OpenTermHooks.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/access/OpenTermHooks.sol",
+      "sha256": "abe128fa4fddc24a44eb05e93b404fe1d18f973b0f1f4587313b13592d057b89",
+      "bytes": 14212,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/OpenTermHooks.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/market/WildcatMarket.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/market/WildcatMarket.sol",
+      "sha256": "e208fce7c2d9126df9a400f4d4aee7e47f0a767a710826a3b679f924c923d39f",
+      "bytes": 11010,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarket.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/market/WildcatMarketBase.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/market/WildcatMarketBase.sol",
+      "sha256": "f84d6137bccb554b25e9563362d5a0155579f89e4f9073d95df80b14a318353a",
+      "bytes": 29065,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarketBase.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/market/WildcatMarketConfig.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/market/WildcatMarketConfig.sol",
+      "sha256": "4249e124541a9abbb8e6d0dac3342c0b68f3c8a9530ce944ebece84335f858d0",
+      "bytes": 7126,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarketConfig.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/market/WildcatMarketWithdrawals.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "sha256": "f1428b3eb479bba19b6b332c75953ed8d236ef72abb2d17f4c0bc933b73c22d4",
+      "bytes": 12472,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarketWithdrawals.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/spherex/SphereXProtectedRegisteredBase.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2",
+      "bytes": 13725,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/spherex/SphereXProtectedRegisteredBase.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@a70f297f:src/types/HooksConfig.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/types/HooksConfig.sol",
+      "sha256": "ed5734a684ca96f502294930de30885c2fa9d924948a4a1a75aa628b5b3512e2",
+      "bytes": 36475,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/types/HooksConfig.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@5838b2f3:src/OpenAccessRoleProvider.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "path": "src/OpenAccessRoleProvider.sol",
+      "sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f",
+      "bytes": 786,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa/src/OpenAccessRoleProvider.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "id": "v2@5838b2f3:src/access/FixedTermHooks.sol",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "path": "src/access/FixedTermHooks.sol",
+      "sha256": "3e1e34ceee0ac324c3367f6590ed37544cb53f867efafb3a4978e6946f262772",
+      "bytes": 17366,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa/src/access/FixedTermHooks.sol",
+      "kind": "original-host-source"
+    },
+    {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/libraries/Withdrawal.sol",
+      "sha256": "a116c5d96e2bdd5739c460410356ced92bc1b3ea07e15ab4e85b525231c1cb5c",
+      "bytes": 1938,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/libraries/Withdrawal.sol",
+      "kind": "review-host-source"
+    },
+    {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/libraries/MarketState.sol",
+      "sha256": "1aa122075f0c45098599aff3df10fe86744d168a8bbe61a12570116739a67b8c",
+      "bytes": 4938,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/libraries/MarketState.sol",
+      "kind": "review-host-source"
+    },
+    {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/libraries/MathUtils.sol",
+      "sha256": "6d75952ae99e472d73706d2f9277ead1fb77b8c6adc374c47491ccba1ad9c843",
+      "bytes": 6984,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/libraries/MathUtils.sol",
+      "kind": "review-host-source"
+    },
+    {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/types/LenderStatus.sol",
+      "sha256": "ef09bcf403273d4f7c3e7088d8e07169b28e7f7a8e9811a1c797ad51f14915fb",
+      "bytes": 2464,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/types/LenderStatus.sol",
+      "kind": "review-host-source"
+    },
+    {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "path": "src/types/RoleProvider.sol",
+      "sha256": "f562a23fd737795428b5dcd190993505b51f4abf4ebaf2dc499ca5ea9133715f",
+      "bytes": 5628,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/types/RoleProvider.sol",
+      "kind": "review-host-source"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/janus/AGENTS.md",
+      "sha256": "f63db3f75f3944af00a14e5f2ddef6cc4329d1512e9e4a5ea6ac5fe1dde35286",
+      "bytes": 4354,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/janus/AGENTS.md"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/janus/skills/janus/SKILL.md",
+      "sha256": "b26dd837c4d209a91daac1091f4ec124ff0cc6fa6a10d625267d558894a8138c",
+      "bytes": 11847,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/janus/skills/janus/SKILL.md"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/janus/harness/manifests/wildcat-open-term.json",
+      "sha256": "a9a24ee02c6d4b1fcae41a8d0f0a8b6503fa177bf8b328ca4ed56d191b941695",
+      "bytes": 3344,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/janus/harness/manifests/wildcat-open-term.json"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/janus/harness/src/wildcat/WildcatHostModel.sol",
+      "sha256": "7a4ccc0b78c4a4d72f416c0712debac906a9eb72afe7352a505b65e05f31f9fb",
+      "bytes": 8534,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/janus/harness/src/wildcat/WildcatHostModel.sol"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+      "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
+      "bytes": 19853,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/janus/harness/test/WildcatConformance.t.sol"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/AGENTS.md",
+      "sha256": "8509fca99138f56386fc328ba948a9c67cfc87ce6c886177c442452a16702cbd",
+      "bytes": 5104,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/AGENTS.md"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/skills/pandects/SKILL.md",
+      "sha256": "51cb0b93f67c3a3bcc98e740bd6877375c66daa3c71270ead83d966007b83b7c",
+      "bytes": 16699,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/skills/pandects/SKILL.md"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/catalogue/pandects.json",
+      "sha256": "0bdca07560610ab4b237499db1ae7b85be8c07fd7ddf7aa22617e17c5161c725",
+      "bytes": 11518,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/catalogue/pandects.json"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/integrations/wildcat/APPLICABILITY.md",
+      "sha256": "6839c9d5194712f3b06dfb4448f843fbb3d6e5db1de861c537c84388f92df9d9",
+      "bytes": 9005,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/integrations/wildcat/APPLICABILITY.md"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+      "sha256": "5f8908a0ebe22333da38a170ec3a381c586391fd9b222cefa73d8eb574301eb3",
+      "bytes": 2297,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/src/IWithdrawalQueueObservables.sol"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/src/laws/RecordedClaimNeverShrinks.sol",
+      "sha256": "2468e215a0a41648f01ac4d5c66e13022a2d91f5d87083daa4c53e2d58e8f5ee",
+      "bytes": 3196,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/src/laws/RecordedClaimNeverShrinks.sol"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/src/laws/QueueOrderPreserved.sol",
+      "sha256": "bb559f90b310638524f6fdd87d5d1e36744b4373edd8e057288b49c0b87f1d11",
+      "bytes": 3091,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/src/laws/QueueOrderPreserved.sol"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/src/laws/ReservesCoverPayableClaims.sol",
+      "sha256": "cfe2b8f0a605eaf7eecf98f59aa45d8236d69b7d750efeec4962fc6868849af2",
+      "bytes": 4201,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/src/laws/ReservesCoverPayableClaims.sol"
+    },
+    {
+      "kind": "suite-reference",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "51241ad9d9925d96ec527d00854adbe35ccc3836",
+      "path": "plugins/pandects/src/laws/PooledClaimsCoverOpenBatches.sol",
+      "sha256": "2aa1d9bde39f61c62ac06699df8e5456ce4edbdc28f28fe2218d6f74941b7137",
+      "bytes": 4876,
+      "url": "https://github.com/wildcat-finance/skills/blob/51241ad9d9925d96ec527d00854adbe35ccc3836/plugins/pandects/src/laws/PooledClaimsCoverOpenBatches.sol"
+    },
+    {
+      "kind": "original-record",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "2dbfe40e08ee41429c521e0089a31ed872a1890d",
+      "path": "docs/kickoff/1401/exitpolicy.md",
+      "sha256": "665d6067af5fbdd3e1bb6ea7eb250fcaec00db880e004ed33e14efca0dab3ce1",
+      "bytes": 13924,
+      "url": "https://github.com/wildcat-finance/skills/blob/2dbfe40e08ee41429c521e0089a31ed872a1890d/docs/kickoff/1401/exitpolicy.md"
+    },
+    {
+      "kind": "original-record",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "2dbfe40e08ee41429c521e0089a31ed872a1890d",
+      "path": "docs/kickoff/1401/evidence/sources.json",
+      "sha256": "f65da5a0784f9336bfa02bc4286ace9450ba6dc90c6f571376e9323623cd8bfc",
+      "bytes": 6017,
+      "url": "https://github.com/wildcat-finance/skills/blob/2dbfe40e08ee41429c521e0089a31ed872a1890d/docs/kickoff/1401/evidence/sources.json"
+    },
+    {
+      "kind": "review-host-source",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "revision": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "path": "src/OpenAccessRoleProvider.sol",
+      "sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f",
+      "bytes": 786,
+      "url": "https://github.com/wildcat-finance/v2-protocol/blob/e1f77540fef65736374de6c847743d8ca2233fb4/src/OpenAccessRoleProvider.sol"
+    },
+    {
+      "kind": "merged-source-correction",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "bdcf124b933a37a820d89e29e1d7b81413488150",
+      "path": "docs/kickoff/1401/exitpolicy.md",
+      "sha256": "daa9530f640907889cf2798fee3511556feea91f6eebe83f308f5db69a858f50",
+      "bytes": 14019,
+      "url": "https://github.com/wildcat-finance/skills/blob/bdcf124b933a37a820d89e29e1d7b81413488150/docs/kickoff/1401/exitpolicy.md"
+    },
+    {
+      "kind": "merged-source-correction",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "revision": "bdcf124b933a37a820d89e29e1d7b81413488150",
+      "path": "docs/kickoff/1359/targets.json",
+      "sha256": "45e4c19e14f2e5aec2073b5764b97274910d307e465754acc8127bdef80a0a4e",
+      "bytes": 403548,
+      "url": "https://github.com/wildcat-finance/skills/blob/bdcf124b933a37a820d89e29e1d7b81413488150/docs/kickoff/1359/targets.json"
+    }
+  ]
+}

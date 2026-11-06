@@ -1,0 +1,33 @@
+Compiling 15 files with Solc 0.8.25
+Solc 0.8.25 finished in 97.17ms
+Compiler run successful!
+Analysing contracts...
+Running tests...
+
+Ran 11 tests for test/sanctions/Sanctions.t.sol:SanctionsTest
+[PASS] testFuzz_escrowTracksAssetAndBalance(address,address,uint256) (runs: 32, μ: 3092799, ~: 3092799)
+[PASS] testFuzz_getEscrowAddress_MatchesCreate2Formula(address,address,address) (runs: 32, μ: 2623573, ~: 2623573)
+[PASS] testFuzz_isSanctioned_CombinesListAndBorrowerOverride(address,address,bool,bool) (runs: 32, μ: 2644972, ~: 2644982)
+[PASS] testFuzz_releaseEscrow_IsPermissionlessAndTransfersFullBalance(address,address,address,uint256) (runs: 32, μ: 3101125, ~: 3103613)
+[PASS] test_canReleaseEscrow_TracksSanctionAndOverride() (gas: 3086167)
+[PASS] test_chainalysisRead_ValidatesAndBubblesResponse() (gas: 1262501)
+[PASS] test_constructor_StoresDependenciesHashAndResetParameters() (gas: 2628928)
+[PASS] test_createEscrow_EmitsInitializesOverridesAndIsIdempotent() (gas: 3050167)
+[PASS] test_overrideLifecycle_EmitsAndRestoresSanction() (gas: 2666579)
+[PASS] test_releaseEscrow_RejectsActiveSanction() (gas: 3105593)
+[PASS] test_releaseEscrow_UsesBorrowerOverride() (gas: 3138917)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 23.26ms (73.83ms CPU time)
+
+Ran 1 test suite in 27.39ms (23.26ms CPU time): 11 tests passed, 0 failed, 0 skipped (11 total tests)
+
+╭----------------------------------+-----------------+-----------------+---------------+----------------╮
+| File                             | % Lines         | % Statements    | % Branches    | % Funcs        |
++=======================================================================================================+
+| src/WildcatSanctionsEscrow.sol   | 100.00% (16/16) | 100.00% (15/15) | 100.00% (1/1) | 100.00% (5/5)  |
+|----------------------------------+-----------------+-----------------+---------------+----------------|
+| src/WildcatSanctionsSentinel.sol | 100.00% (53/53) | 100.00% (49/49) | 100.00% (4/4) | 100.00% (9/9)  |
+|----------------------------------+-----------------+-----------------+---------------+----------------|
+| src/libraries/LibERC20.sol       | 12.24% (6/49)   | 11.36% (5/44)   | 0.00% (0/6)   | 14.29% (1/7)   |
+|----------------------------------+-----------------+-----------------+---------------+----------------|
+| Total                            | 63.56% (75/118) | 63.89% (69/108) | 45.45% (5/11) | 71.43% (15/21) |
+╰----------------------------------+-----------------+-----------------+---------------+----------------╯

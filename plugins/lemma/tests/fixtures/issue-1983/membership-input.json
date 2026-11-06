@@ -1,0 +1,20 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "EventProbe.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity >=0.8.10 <0.9.0;\ninterface IBase { event Ping(address indexed actor); }\nabstract contract Base is IBase { event Seen(uint n) anonymous; }\nlibrary Lib { event FromLibrary(address indexed sender); function f() internal { emit FromLibrary(msg.sender); } }\ncontract Derived is Base { event Ping(uint indexed n); event Changed(uint first, address indexed second); function f() public { emit Ping(msg.sender); Lib.f(); } }\n"
+    }
+  },
+  "settings": {
+    "outputSelection": {
+      "*": {
+        "": [
+          "ast"
+        ],
+        "*": [
+          "abi"
+        ]
+      }
+    }
+  }
+}

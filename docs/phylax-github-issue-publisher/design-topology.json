@@ -1,0 +1,40 @@
+{
+  "schema": "fiat-925-design-topology/v1",
+  "base": "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
+  "issue": "https://github.com/wildcat-finance/skills/issues/925",
+  "source": "Study item 4 classifies declared topologies against the issue's credential-isolation and one-shot-publication requirements; these values are selection evidence, not implementation conformance.",
+  "candidates": [
+    {
+      "id": "inline-helper-gates",
+      "credential-unavailable-to-agent": false,
+      "all-agent-routes-gated": false,
+      "indeterminate-create-no-retry": true,
+      "privileged-deployment-actions": 0,
+      "trusted-runtime-processes": 0
+    },
+    {
+      "id": "watched-file-gate",
+      "credential-unavailable-to-agent": false,
+      "all-agent-routes-gated": false,
+      "indeterminate-create-no-retry": false,
+      "privileged-deployment-actions": 0,
+      "trusted-runtime-processes": 1
+    },
+    {
+      "id": "same-uid-broker",
+      "credential-unavailable-to-agent": false,
+      "all-agent-routes-gated": false,
+      "indeterminate-create-no-retry": true,
+      "privileged-deployment-actions": 0,
+      "trusted-runtime-processes": 1
+    },
+    {
+      "id": "isolated-publisher",
+      "credential-unavailable-to-agent": true,
+      "all-agent-routes-gated": true,
+      "indeterminate-create-no-retry": true,
+      "privileged-deployment-actions": 4,
+      "trusted-runtime-processes": 1
+    }
+  ]
+}

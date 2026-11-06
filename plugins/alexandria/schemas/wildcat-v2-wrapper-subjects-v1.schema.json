@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/wildcat-v2-wrapper-subjects-v1.schema.json",
+  "title": "Alexandria Wildcat V2 wrapper subjects v1",
+  "description": "The wrapper-subjects component of a release whose plan declares wildcat_v2_wrappers. It names the registry's wrapper factory, the WrapperDeployed(address,address) topic, the discovery window, which is the plan's interval, and every wrapper that a preserved WrapperDeployed log from that factory names inside the window, in ascending address order. Each row gives the wrapper, the market its log names, the log's block, transaction hash, transaction index and log index, and whether the plan declared the wrapper. Its bytes are the canonical JSON that wildcat_wrappers.wrapper_subjects derives from the plan, the preserved logs and the registry. Whether every wrapper comes from this one factory, and whether a wrapper's runtime code can change, are not established.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "factory",
+    "topic",
+    "window",
+    "wrappers"
+  ],
+  "properties": {
+    "format": {
+      "const": "alexandria-wildcat-v2-wrapper-subjects/v1"
+    },
+    "factory": {
+      "$ref": "#/$defs/address"
+    },
+    "topic": {
+      "const": "0x317d343bad96f4924450e809267dcfa70e37270e3bb036b5d6d04e3befd47a64"
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/block"
+        },
+        "end": {
+          "$ref": "#/$defs/block"
+        }
+      }
+    },
+    "wrappers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/wrapper"
+      }
+    }
+  },
+  "$defs": {
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{40}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "block": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+    },
+    "wrapper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wrapper",
+        "market",
+        "deployment",
+        "declared"
+      ],
+      "properties": {
+        "wrapper": {
+          "$ref": "#/$defs/address"
+        },
+        "market": {
+          "$ref": "#/$defs/address"
+        },
+        "deployment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "block_number",
+            "transaction_hash",
+            "transaction_index",
+            "log_index"
+          ],
+          "properties": {
+            "block_number": {
+              "$ref": "#/$defs/block"
+            },
+            "transaction_hash": {
+              "$ref": "#/$defs/hash"
+            },
+            "transaction_index": {
+              "$ref": "#/$defs/index"
+            },
+            "log_index": {
+              "$ref": "#/$defs/index"
+            }
+          }
+        },
+        "declared": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

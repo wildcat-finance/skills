@@ -1,0 +1,91 @@
+{
+  "brevitas": "completeness-oriented specification excluded by canonical skill",
+  "candidate": ".hexaemeron/runbook.md",
+  "candidate_sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+  "protasis_checklist": {
+    "conditional_limits": "Fallback audit read condition did not arise after whole-set synopsis currency passed. Topic decomposition and governed version relations are not required for this one v1 repair.",
+    "failures": [],
+    "satisfied": 21,
+    "total": 21
+  },
+  "protected": {
+    "criteria": [
+      "v1 retained;3 fixtures15 bindings",
+      "complete accepted baseline and all affected sibling fixtures",
+      "unique unchanged source relocation; no semantic re-review",
+      "staged checker admission before live write",
+      "journal intent before publication and third-version refusal",
+      "real fresh local demonstration measurement and parity",
+      "unchanged profile authority; preserve refused attempts",
+      "existing600s,1MiB,256targets,32MiB limits",
+      "fixed cap26214400 reserve5242880",
+      "active staged gate before signed commit; full35 on clean HEAD after",
+      "1192 remains separate;1467 verify after;1513 closure and controller retirement"
+    ],
+    "exact_tokens": [
+      ".elenchus/agent-instruction-reconciliation.json",
+      ".githooks/greenlight",
+      ".hexaemeron/",
+      ".hexaemeron/design-evidence.json",
+      ".horos/boundary.json",
+      ".horos/census.json",
+      "Closes wildcat-finance/skills#1513",
+      "agent-instruction-reconciliation-verification/v1",
+      "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
+      "branch",
+      "branch_from",
+      "check",
+      "demonstration-evidence.md",
+      "demonstration-run.json",
+      "docs/agent-instruction-reconciliation/",
+      "docs/decisions/drafts/stage-reviewed-corpus-reconciliation.md",
+      "docs/promise-machine/obligation-gates/evaluation-run.json",
+      "elenchus.unittest.v1",
+      "issue/16777233-521985670",
+      "measure",
+      "parity",
+      "python3",
+      "python3 scripts/prove_agent_instruction_reconciliation.py demonstrate --root . --verify docs/agent-instruction-reconciliation/demonstration.json",
+      "python3 scripts/run_checks.py --full --jobs 12 --format json --report .hexaemeron/step-1-checks.json",
+      "python3 scripts/run_checks.py --full --jobs 12 --format json --report .hexaemeron/step-2-checks.json",
+      "python3 tests/emit_agent_instruction_reconciliation_report.py {report}",
+      "scripts/agent_instruction_reconciliation.py",
+      "scripts/prove_agent_instruction_reconciliation.py",
+      "staged-general-v1",
+      "tests.test_agent_instruction",
+      "tests.test_agent_instruction_corpus",
+      "tests/check-map-v1.json",
+      "tests/emit_agent_instruction_reconciliation_report.py",
+      "tests/fixtures/agent-instruction-v1/",
+      "tests/promise_machine_coverage.json",
+      "tests/test_agent_instruction_reconciliation.py",
+      "unittest-json-v1",
+      "uv run --no-project --python 3.14.6 python"
+    ],
+    "fields": [
+      "Goal",
+      "Entry",
+      "Exit",
+      "Files",
+      "Tests",
+      "Disciplines"
+    ],
+    "headings": [
+      "# Reviewed corpus reconciliation runbook",
+      "## Step 1: Scaffold the reconciliation contract and runner",
+      "## Step 2: Implement and demonstrate staged reconciliation"
+    ]
+  },
+  "sapheneia": {
+    "checks_completed": 5,
+    "mismatches": []
+  },
+  "schema": "issue1513-runbook-prose-proof/v1",
+  "source": ".hexaemeron/runbook-prose-source.md",
+  "source_sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+  "vulgate": {
+    "checks_completed": 6,
+    "content_comparison": "exact source/candidate bytes equal after sentence and protected-inventory review; no surface changes needed",
+    "register": "neutral"
+  }
+}

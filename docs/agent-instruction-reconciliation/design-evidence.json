@@ -1,0 +1,321 @@
+{
+  "candidates": [
+    {
+      "id": "fixed-live-v1",
+      "summary": "Keep the current one-fixture live repair and manual recovery."
+    },
+    {
+      "id": "sequential-general-v1",
+      "summary": "Relocate each selected fixture through the existing v1 passes, then publish sequentially."
+    },
+    {
+      "id": "staged-general-v1",
+      "summary": "Prepare exact v1 derivatives, admit current evidence, and publish with a recoverable journal."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "fixture-placements",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 6,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-v1",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "recover-preimage",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "prepare-p95",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "staging-bytes",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "boundary-conformance",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "complete-demonstration",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "final-currency",
+      "kind": "gate",
+      "owner": "hypomnema",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "fixed-live-v1",
+      "criterion": "fixture-placements",
+      "report": {
+        "path": "reports/fixed-live-v1-fixture-placements.json",
+        "sha256": "2db54ebc6b6ff1557f55159ec6a002dc509251394ca41657b002c5551f8151ef"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "fixed-live-v1",
+      "criterion": "legacy-v1",
+      "report": {
+        "path": "reports/fixed-live-v1-legacy-v1.json",
+        "sha256": "a2678f12c9c672d04f4c1ccee404800b867c7b27f7f77bab2ddb5b47ccf0af6d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "fixed-live-v1",
+      "criterion": "recover-preimage",
+      "report": {
+        "path": "reports/fixed-live-v1-recover-preimage.json",
+        "sha256": "3169f0054f4438ed0cfa65737ea3aae4d3a580caabdd82b2757016e4b637af6c"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "fixed-live-v1",
+      "criterion": "prepare-p95",
+      "report": {
+        "path": "reports/fixed-live-v1-prepare-p95.json",
+        "sha256": "3ce40b8c464b81c60887f4f1c245187896cfae1811bfa2e8569a4e7f92799538"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "fixed-live-v1",
+      "criterion": "staging-bytes",
+      "report": {
+        "path": "reports/fixed-live-v1-staging-bytes.json",
+        "sha256": "4082e8ddf961839bfd955ad143c6e5a610e61c0221f205fe32d26aa89c2f439c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "fixed-live-v1",
+      "criterion": "boundary-conformance",
+      "report": "reports/fixed-live-v1-boundary-conformance.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate fixed-live-v1 --criterion boundary-conformance",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "fixed-live-v1",
+      "criterion": "complete-demonstration",
+      "report": "reports/fixed-live-v1-complete-demonstration.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate fixed-live-v1 --criterion complete-demonstration",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "fixed-live-v1",
+      "criterion": "final-currency",
+      "report": "reports/fixed-live-v1-final-currency.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate fixed-live-v1 --criterion final-currency",
+      "state": "pending"
+    },
+    {
+      "candidate": "sequential-general-v1",
+      "criterion": "fixture-placements",
+      "report": {
+        "path": "reports/sequential-general-v1-fixture-placements.json",
+        "sha256": "2a49d90fb2aec9f92a5f9bde49c75b0748a21ae79118d4df821c2fc87cfa5ac2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sequential-general-v1",
+      "criterion": "legacy-v1",
+      "report": {
+        "path": "reports/sequential-general-v1-legacy-v1.json",
+        "sha256": "de36eafc660bb3cdf38b80b5653c9c1e181136c7d70ad2d4c08047f876fdf42e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sequential-general-v1",
+      "criterion": "recover-preimage",
+      "report": {
+        "path": "reports/sequential-general-v1-recover-preimage.json",
+        "sha256": "2f8aedcdcf200f31622e947d19999b21399d44b56688697c7f33ab0644da2e5c"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "sequential-general-v1",
+      "criterion": "prepare-p95",
+      "report": {
+        "path": "reports/sequential-general-v1-prepare-p95.json",
+        "sha256": "b39239ae4ce7a35fed02fed2fd94dcb6bb89c2cbacc89a5fa5345b1130552faa"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "sequential-general-v1",
+      "criterion": "staging-bytes",
+      "report": {
+        "path": "reports/sequential-general-v1-staging-bytes.json",
+        "sha256": "2b072ca2f7c23a8fd45593b7d3fa7f4f99396c616d64251c922390b5892b1a4d"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "sequential-general-v1",
+      "criterion": "boundary-conformance",
+      "report": "reports/sequential-general-v1-boundary-conformance.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate sequential-general-v1 --criterion boundary-conformance",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "sequential-general-v1",
+      "criterion": "complete-demonstration",
+      "report": "reports/sequential-general-v1-complete-demonstration.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate sequential-general-v1 --criterion complete-demonstration",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "sequential-general-v1",
+      "criterion": "final-currency",
+      "report": "reports/sequential-general-v1-final-currency.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate sequential-general-v1 --criterion final-currency",
+      "state": "pending"
+    },
+    {
+      "candidate": "staged-general-v1",
+      "criterion": "fixture-placements",
+      "report": {
+        "path": "reports/staged-general-v1-fixture-placements.json",
+        "sha256": "ac3e4a6eda4f89feccfa1828099306bad0475824c718851625c4dd600485a6a4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "staged-general-v1",
+      "criterion": "legacy-v1",
+      "report": {
+        "path": "reports/staged-general-v1-legacy-v1.json",
+        "sha256": "a92c11672c7d860c0e5982129f70ff0bcce905868a1655066bbbb29d5b23887f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "staged-general-v1",
+      "criterion": "recover-preimage",
+      "report": {
+        "path": "reports/staged-general-v1-recover-preimage.json",
+        "sha256": "b242aba670ba646ef5d7528c81e7d7f3e30f5288fb8811f6a7e5dabac99d7a15"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "staged-general-v1",
+      "criterion": "prepare-p95",
+      "report": {
+        "path": "reports/staged-general-v1-prepare-p95.json",
+        "sha256": "04bcefabf515a618def89e388ffd1b335d1d2d1691f515b2acb41402032b14c8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "staged-general-v1",
+      "criterion": "staging-bytes",
+      "report": {
+        "path": "reports/staged-general-v1-staging-bytes.json",
+        "sha256": "309360ab791ab75199d047813d33cd4a7c0970f2c42ca65010ea86d99a75ee4a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "staged-general-v1",
+      "criterion": "boundary-conformance",
+      "report": "reports/staged-general-v1-boundary-conformance.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate staged-general-v1 --criterion boundary-conformance",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "staged-general-v1",
+      "criterion": "complete-demonstration",
+      "report": "reports/staged-general-v1-complete-demonstration.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate staged-general-v1 --criterion complete-demonstration",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "staged-general-v1",
+      "criterion": "final-currency",
+      "report": "reports/staged-general-v1-final-currency.json",
+      "resolver": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/resolve_reconciliation_conformance.py --candidate staged-general-v1 --criterion final-currency",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "staged-general-v1",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

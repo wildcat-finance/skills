@@ -13,7 +13,7 @@
             "id": "promise-owner:lazarus-preservation-release",
             "reference": {
               "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-              "sha256": "6c3b54566007139a9fe909af7ed558ac5696f15e0d13224de6668771de99c669"
+              "sha256": "42512cf107b2728ae0c7c2aa1ead23ca19d0b0c883062cc609efb95381649c41"
             }
           },
           "evidence": {
@@ -69,7 +69,7 @@
           "id": "promise-owner:lazarus-preservation-release",
           "reference": {
             "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-            "sha256": "6c3b54566007139a9fe909af7ed558ac5696f15e0d13224de6668771de99c669"
+            "sha256": "42512cf107b2728ae0c7c2aa1ead23ca19d0b0c883062cc609efb95381649c41"
           }
         },
         "evidence_classes": [
@@ -132,7 +132,7 @@
             "id": "promise-owner:lazarus-preservation-release",
             "reference": {
               "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-              "sha256": "6c3b54566007139a9fe909af7ed558ac5696f15e0d13224de6668771de99c669"
+              "sha256": "42512cf107b2728ae0c7c2aa1ead23ca19d0b0c883062cc609efb95381649c41"
             }
           },
           "evidence": {
@@ -188,7 +188,7 @@
           "id": "promise-owner:lazarus-preservation-release",
           "reference": {
             "path": "plugins/lazarus/skills/lazarus/EVOLUTION.md",
-            "sha256": "6c3b54566007139a9fe909af7ed558ac5696f15e0d13224de6668771de99c669"
+            "sha256": "42512cf107b2728ae0c7c2aa1ead23ca19d0b0c883062cc609efb95381649c41"
           }
         },
         "evidence_classes": [

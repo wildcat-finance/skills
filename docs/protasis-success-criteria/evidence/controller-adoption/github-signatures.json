@@ -1,0 +1,23 @@
+[
+  {
+    "commit": "cabfe4399ac044537316c3cf591015f1afc977d3",
+    "verified": true,
+    "reason": "valid",
+    "author": "laurenceday",
+    "committer": "laurenceday"
+  },
+  {
+    "commit": "9ffa9f588f7852d638c4abf3aa74105c91347cff",
+    "verified": true,
+    "reason": "valid",
+    "author": "laurenceday",
+    "committer": "laurenceday"
+  },
+  {
+    "commit": "c572009b7922b4b7b9400893c5adc6d4df641a72",
+    "verified": true,
+    "reason": "valid",
+    "author": "laurenceday",
+    "committer": "laurenceday"
+  }
+]

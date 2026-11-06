@@ -1,0 +1,275 @@
+{
+  "candidates": [
+    {
+      "id": "block-only",
+      "summary": "Executable model using block-only attribution."
+    },
+    {
+      "id": "position-boundary",
+      "summary": "Executable model using position-boundary attribution."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "before-and-after-model",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "ambiguous-emission-model",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "preserved-inputs-retained",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "extra-rpc-methods",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "extra-release-components",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "production-attribution",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-release-identity",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "offline-rederivation",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "resume-and-refusal",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "block-only",
+      "criterion": "before-and-after-model",
+      "report": {
+        "path": "reports/selection/block-only-before-and-after-model.json",
+        "sha256": "e62c8353df0a429e30e6f48e122573446dfaab10d6c6dbd54283d28a3380b130"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "block-only",
+      "criterion": "ambiguous-emission-model",
+      "report": {
+        "path": "reports/selection/block-only-ambiguous-emission-model.json",
+        "sha256": "292b71b3e51f32cd34191cf814e0e94eb8ea4fe8260bdc25ea3ee412495aabf5"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "block-only",
+      "criterion": "preserved-inputs-retained",
+      "report": {
+        "path": "reports/selection/block-only-preserved-inputs-retained.json",
+        "sha256": "c8978fd6f4558d1498d42bfeb6e653dbd25986e4dee922a4bac8342365672295"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "block-only",
+      "criterion": "extra-rpc-methods",
+      "report": {
+        "path": "reports/selection/block-only-extra-rpc-methods.json",
+        "sha256": "0bc03b3e80df5497ecece01598f967ebdb053e77dfc07d61a19ed91974a6dd85"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "block-only",
+      "criterion": "extra-release-components",
+      "report": {
+        "path": "reports/selection/block-only-extra-release-components.json",
+        "sha256": "08df7b5e519b6d240773ebba579355b1f214ce0969a66e75b31d0b28fe1c4960"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "block-only",
+      "criterion": "production-attribution",
+      "report": "reports/conformance/block-only-production-attribution.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py production-attribution",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "block-only",
+      "criterion": "legacy-release-identity",
+      "report": "reports/conformance/block-only-legacy-release-identity.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py legacy-release-identity",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "block-only",
+      "criterion": "offline-rederivation",
+      "report": "reports/conformance/block-only-offline-rederivation.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py offline-rederivation",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "block-only",
+      "criterion": "resume-and-refusal",
+      "report": "reports/conformance/block-only-resume-and-refusal.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py resume-and-refusal",
+      "state": "pending"
+    },
+    {
+      "candidate": "position-boundary",
+      "criterion": "before-and-after-model",
+      "report": {
+        "path": "reports/selection/position-boundary-before-and-after-model.json",
+        "sha256": "e2c53a0098ca27b3f5bed785275994281accfe3ecbd0c7f34b01e4d32de86e71"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "position-boundary",
+      "criterion": "ambiguous-emission-model",
+      "report": {
+        "path": "reports/selection/position-boundary-ambiguous-emission-model.json",
+        "sha256": "ce9cd36ad720468195babb24312147b6a3b436e6f58f6de35854f0ec6b687c18"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "position-boundary",
+      "criterion": "preserved-inputs-retained",
+      "report": {
+        "path": "reports/selection/position-boundary-preserved-inputs-retained.json",
+        "sha256": "8935655c0a817e0e5f3dede4548c48b42222331c01fc128b14330c8fb4d1608c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "position-boundary",
+      "criterion": "extra-rpc-methods",
+      "report": {
+        "path": "reports/selection/position-boundary-extra-rpc-methods.json",
+        "sha256": "cd8fb0804f1739488f0ba211d25d88b30bc07b14ec56d2ffd6d9960753643903"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "position-boundary",
+      "criterion": "extra-release-components",
+      "report": {
+        "path": "reports/selection/position-boundary-extra-release-components.json",
+        "sha256": "c0927e2b254ad82ff3e26576a381fc09b345659e9a6c9e7942642d5bc2d2606c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "position-boundary",
+      "criterion": "production-attribution",
+      "report": "reports/conformance/position-boundary-production-attribution.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py production-attribution",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "position-boundary",
+      "criterion": "legacy-release-identity",
+      "report": "reports/conformance/position-boundary-legacy-release-identity.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py legacy-release-identity",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "position-boundary",
+      "criterion": "offline-rederivation",
+      "report": "reports/conformance/position-boundary-offline-rederivation.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py offline-rederivation",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "position-boundary",
+      "criterion": "resume-and-refusal",
+      "report": "reports/conformance/position-boundary-resume-and-refusal.json",
+      "resolver": "python3.14 .hexaemeron/design/conformance.py resume-and-refusal",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "position-boundary",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

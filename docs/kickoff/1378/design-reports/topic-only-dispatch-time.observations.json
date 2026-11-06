@@ -1,0 +1,192 @@
+{
+  "contexts": [
+    [
+      "wildcat-v1",
+      "market",
+      "Borrow(uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "DebtRepaid(address,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "Deposit(address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "MarketClosed(uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "Transfer(address,address,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "WithdrawalExecuted(uint256,address,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "WithdrawalQueued(uint256,address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "Borrow(uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "DebtRepaid(address,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "Deposit(address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "MarketClosed(uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "Transfer(address,address,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "WithdrawalExecuted(uint256,address,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "WithdrawalQueued(uint256,address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "wrapper",
+      "Deposit(address,address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "wrapper",
+      "Transfer(address,address,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "wrapper",
+      "Withdraw(address,address,address,uint256,uint256)"
+    ]
+  ],
+  "dispatch": {
+    "Borrow(uint256)": [
+      "wildcat-v2",
+      "market",
+      "Borrow(uint256)"
+    ],
+    "DebtRepaid(address,uint256)": [
+      "wildcat-v2",
+      "market",
+      "DebtRepaid(address,uint256)"
+    ],
+    "Deposit(address,address,uint256,uint256)": [
+      "wildcat-v2",
+      "wrapper",
+      "Deposit(address,address,uint256,uint256)"
+    ],
+    "Deposit(address,uint256,uint256)": [
+      "wildcat-v2",
+      "market",
+      "Deposit(address,uint256,uint256)"
+    ],
+    "MarketClosed(uint256)": [
+      "wildcat-v2",
+      "market",
+      "MarketClosed(uint256)"
+    ],
+    "Transfer(address,address,uint256)": [
+      "wildcat-v2",
+      "wrapper",
+      "Transfer(address,address,uint256)"
+    ],
+    "Withdraw(address,address,address,uint256,uint256)": [
+      "wildcat-v2",
+      "wrapper",
+      "Withdraw(address,address,address,uint256,uint256)"
+    ],
+    "WithdrawalExecuted(uint256,address,uint256)": [
+      "wildcat-v2",
+      "market",
+      "WithdrawalExecuted(uint256,address,uint256)"
+    ],
+    "WithdrawalQueued(uint256,address,uint256,uint256)": [
+      "wildcat-v2",
+      "market",
+      "WithdrawalQueued(uint256,address,uint256,uint256)"
+    ]
+  },
+  "elapsed_nanoseconds": 10124667,
+  "hits": 170000,
+  "inputs": [
+    {
+      "path": "docs/kickoff/1963/linkage.json",
+      "sha256": "599ddca6f2c8eb01b956f0ba5cc8113d9cac886e7f46789c52eba3531874230a"
+    },
+    {
+      "path": "docs/kickoff/1363/linkage.json",
+      "sha256": "910a6ec1cb3732b67c7c04b35fedd219fe951cf9ae1081310d7c355d6b78e226"
+    }
+  ],
+  "misses": [],
+  "queries": 170000,
+  "role_or_generation_mismatches": [
+    [
+      "wildcat-v1",
+      "market",
+      "Borrow(uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "DebtRepaid(address,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "Deposit(address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "MarketClosed(uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "Transfer(address,address,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "WithdrawalExecuted(uint256,address,uint256)"
+    ],
+    [
+      "wildcat-v1",
+      "market",
+      "WithdrawalQueued(uint256,address,uint256,uint256)"
+    ],
+    [
+      "wildcat-v2",
+      "market",
+      "Transfer(address,address,uint256)"
+    ]
+  ]
+}

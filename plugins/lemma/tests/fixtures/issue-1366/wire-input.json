@@ -1,0 +1,23 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "src/WireProbe.sol": {
+      "content": "// SPDX-License-Identifier: Apache-2.0\npragma solidity >=0.8.22 <0.9.0;\nimport \"../lib/Types.sol\";\ncontract WireProbe is Base {\n    uint256 constant SIZE = 1 + 2;\n    event Complex(Outer data, Price price, Peer peer, Choice choice, function(uint256) external returns(bool) callback, bytes32[SIZE][] grid);\n    event Changed(address indexed who, uint256 value);\n    event Changed(uint32 indexed who, bytes32 value);\n    event Hidden(uint256 indexed id, address value) anonymous;\n    function emitAll() external { emit Left.Same(1); emit Right.Same(2); emit Left.Remote(msg.sender, 3); }\n}\nabstract contract AbstractEvents { event AbstractOnly(uint8 value); }\ninterface InterfaceEvents { event InterfaceOnly(bool value); }\nlibrary LibraryEvents { event LibraryOnly(bytes value); }\ncontract EmptyEvents {}\n"
+    },
+    "lib/Types.sol": {
+      "content": "// SPDX-License-Identifier: Apache-2.0\npragma solidity >=0.8.22 <0.9.0;\nlibrary Left { event Same(uint256 value); event Remote(address indexed actor, uint32 value); }\nlibrary Right { event Same(uint256 value); }\ninterface Base { event Inherited(bytes32 indexed key); }\ncontract Peer {}\ntype Price is uint128;\nenum Choice { First, Second, Third }\nstruct Inner { uint32 count; string note; }\nstruct Outer { Inner inner; Inner[2][] list; }\n"
+    }
+  },
+  "settings": {
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    }
+  }
+}

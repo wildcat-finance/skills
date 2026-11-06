@@ -2,8 +2,10 @@
 """Build and verify deterministic Tabularium credit-event releases."""
 
 import argparse
+import json
 import sys
 
+from tabularium_lib import CURRENT_EVENT_SCHEMA, SUPPORTED_EVENT_SCHEMAS
 from tabularium_lib.builder import build
 from tabularium_lib.core import TabulariumError
 from tabularium_lib.verifier import verify
@@ -11,6 +13,9 @@ from tabularium_lib.compound_witness import (
     build_compound_witness,
     verify_compound_witness,
 )
+from tabularium_lib.wildcat_view import build_wildcat_view, verify_wildcat_view
+from tabularium_lib.wildcat_release import build_wildcat_canonical
+from tabularium_lib.wildcat_parameters import ADAPTER_VERSION, SUPPORTED_VERSIONS
 
 
 def make_parser():
@@ -19,7 +24,6 @@ def make_parser():
     )
     subcommands = parser.add_subparsers(
         dest="command",
-        metavar="{build,verify,compound-witness,verify-compound-witness}",
     )
     build_parser = subcommands.add_parser(
         "build", help="build canonical venue-qualified credit-event JSONL"
@@ -39,6 +43,16 @@ def make_parser():
         "--manifest", required=True, help="coverage manifest output"
     )
     build_parser.add_argument("--release", required=True, help="release identifier")
+    # The flag exists so a published schema 2 release can be rebuilt from its
+    # own preserved bytes; without it every build writes the current schema.
+    build_parser.add_argument(
+        "--event-schema",
+        type=int,
+        default=CURRENT_EVENT_SCHEMA,
+        choices=sorted(SUPPORTED_EVENT_SCHEMAS),
+        help="canonical event schema version to write (default: %d)"
+        % CURRENT_EVENT_SCHEMA,
+    )
     verify_parser = subcommands.add_parser(
         "verify",
         help="verify a release offline from its coverage manifest",
@@ -59,6 +73,15 @@ def make_parser():
     compound_verify.add_argument("--alexandria-release", required=True)
     compound_verify.add_argument("--facts", required=True)
     compound_verify.add_argument("--manifest", required=True)
+    for command in ("wildcat-view", "verify-wildcat-view"):
+        wildcat = subcommands.add_parser(command, help="rebuild bounded Wildcat archive facts offline")
+        wildcat.add_argument("--alexandria-release", required=True)
+        wildcat.add_argument("--out", required=True, help="view JSON outside the preserved release")
+    canonical = subcommands.add_parser("wildcat-canonical", help="build a self-contained Wildcat canonical release offline")
+    canonical.add_argument("--adapter-version", choices=SUPPORTED_VERSIONS, default=ADAPTER_VERSION)
+    canonical.add_argument("--alexandria-release", required=True)
+    canonical.add_argument("--release", required=True)
+    canonical.add_argument("--out", required=True, help="fresh release directory")
     return parser
 
 
@@ -68,15 +91,42 @@ def main(argv=None):
     if args.command is None:
         parser.print_help(sys.stderr)
         return 2
+    if args.command == "wildcat-canonical":
+        try:
+            report = build_wildcat_canonical(args.alexandria_release, args.out, args.release, args.adapter_version)
+        except (OSError, TabulariumError) as error:
+            print(json.dumps({"event": "wildcat-canonical-refused", "release": args.release,
+                              "error_class": type(error).__name__, "reason": str(error)}, sort_keys=True), file=sys.stderr)
+            return 1
+        print(json.dumps({"event": "wildcat-canonical-built", "release": args.release,
+                          "rows": report.rows, "families": report.families,
+                          "unsupported_counts": report.unmapped_counts, "canonical_sha256": report.sha256,
+                          "coverage_sha256": report.manifest_sha256}, sort_keys=True))
+        return 0
+    if args.command in ("wildcat-view", "verify-wildcat-view"):
+        try:
+            operation = build_wildcat_view if args.command == "wildcat-view" else verify_wildcat_view
+            report = operation(args.alexandria_release, args.out)
+        except (OSError, TabulariumError) as error:
+            print(f"tabularium: Wildcat view failed: {error}", file=sys.stderr)
+            return 1
+        print(f"verified Wildcat view offline: {report['records']} record(s), {report['sha256']}")
+        return 0
     if args.command == "verify":
         try:
             report = verify(args.manifest)
         except (OSError, TabulariumError) as error:
             print("tabularium: verification failed: %s" % error, file=sys.stderr)
             return 1
+        if report.adapter in ("wildcat-v1", "wildcat-v2"):
+            print(json.dumps({"event": "wildcat-canonical-verified", "release": report.release,
+                              "adapter": report.adapter, "rows": report.rows,
+                              "schema_version": report.schema_version,
+                              "canonical_sha256": report.sha256}, sort_keys=True))
+            return 0
         print(
-            "verified %s offline: %d event(s), sha256 %s"
-            % (report.release, report.rows, report.sha256)
+            "verified %s offline: %d event(s), schema %d, sha256 %s"
+            % (report.release, report.rows, report.schema_version, report.sha256)
         )
         return 0
     if args.command in ("compound-witness", "verify-compound-witness"):
@@ -105,6 +155,7 @@ def main(argv=None):
             args.manifest,
             args.release,
             args.adapter,
+            args.event_schema,
         )
     except (OSError, TabulariumError) as error:
         print("tabularium: %s" % error, file=sys.stderr)

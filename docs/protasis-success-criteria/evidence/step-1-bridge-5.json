@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/opt/homebrew/bin/python3",
+    "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+    "--study",
+    "docs/protasis-success-criteria/study.md",
+    "--design-evidence",
+    "docs/protasis-success-criteria/design-evidence.json",
+    "--repo-root",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde"
+  ],
+  "exit": 0,
+  "seconds": 0.13329579099081457,
+  "log_sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d"
+}

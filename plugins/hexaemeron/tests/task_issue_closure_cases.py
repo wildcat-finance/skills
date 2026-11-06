@@ -8,7 +8,7 @@ class TaskIssueClosureCases:
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
 
-    def test_task_issue_integrate_requires_a_recognised_pr_closing_reference(self):
+    def test_integrate_requires_recognised_pr_closing_reference(self):
         issue = "https://github.com/wildcat-finance/example/issues/74"
         self.to_prose(task_issue=issue)
         self.run_ctl(
@@ -77,7 +77,7 @@ class TaskIssueClosureCases:
         )
         self.assertEqual(len(receipt["closing_issue"]["body_sha256"]), 64)
 
-    def test_closing_reference_ignores_examples_and_accepts_github_syntax(self):
+    def test_closing_reference_ignores_examples_accepts_github(self):
         module = hexctl_module()
         issue = "https://github.com/wildcat-finance/example/issues/74"
         repository = "wildcat-finance/example"
@@ -114,6 +114,61 @@ class TaskIssueClosureCases:
                 "Closes wildcat-finance/skills#74", other_issue, repository
             )
         )
+
+    def test_closing_reference_accepts_sentence_punctuation(self):
+        # Issue 1906: GitHub closed #1888 on `Closes #1888.`, and done
+        # integrate refused the same body after the merge.
+        module = hexctl_module()
+        issue = "https://github.com/wildcat-finance/example/issues/74"
+        repository = "wildcat-finance/example"
+        for body in (
+            "Closes #74.",
+            "Closes wildcat-finance/example#74.",
+            "Fixes #74, which the audit found.",
+            "Resolves #74; nothing is carried.",
+            "Closes #74: the bound is fixed.",
+            "Closes #74!",
+            "Closes #74?",
+            "(Closes #74)",
+            "Closes #74.\n\nMore prose.",
+        ):
+            with self.subTest(body=body):
+                found = module.pull_request_closing_reference(
+                    body, issue, repository
+                )
+                self.assertIsNotNone(found)
+        for body in (
+            "Closes #740",
+            "Closes #74/x",
+            "Closes #74.5",
+            "Closes #74.x",
+            "Closes #74#2",
+            "Closes #74-b",
+            "Closes wildcat-finance/other#74.",
+        ):
+            with self.subTest(body=body):
+                self.assertIsNone(
+                    module.pull_request_closing_reference(body, issue, repository)
+                )
+
+    def test_closing_reference_refusal_names_the_line_it_read(self):
+        module = hexctl_module()
+        references = ("#74", "wildcat-finance/example#74")
+        message = module.closing_reference_refusal(
+            "Summary.\n\nCloses #74/x\n", references
+        )
+        self.assertIn("no recognised closing reference", message)
+        self.assertIn("'Closes #74/x'", message)
+        self.assertIn("'/x'", message)
+        self.assertIn("names another issue or a path", message)
+        self.assertIn("Closes wildcat-finance/example#74", message)
+
+        message = module.closing_reference_refusal(
+            "Issue #74 is complete.\n\n`Closes #74`\n", references
+        )
+        self.assertIn("no line outside code, quotations and comments", message)
+        self.assertIn("'#74' or 'wildcat-finance/example#74'", message)
+        self.assertIn("Closes wildcat-finance/example#74", message)
 
 
 def build_task_issue_closure_tests(context):

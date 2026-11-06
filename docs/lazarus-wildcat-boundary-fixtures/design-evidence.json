@@ -1,0 +1,539 @@
+{
+ "schema": "protasis-design-evidence/v1",
+ "candidates": [
+  {
+   "id": "full-map-r2-handoff",
+   "summary": "One plan-v3 fixture per estate proving every mapped storage word, every subject's code and one scoped receipt witness; the value-map calls recorded byte for byte; fixture and release archives handed to Miskatonic R2 through a handoff pull request, with generator, boundary inputs, digests and relation report committed in skills."
+  },
+  {
+   "id": "full-map-archive-repo",
+   "summary": "The same two fixtures and releases, with their archives committed to the private archive repository beside the interval captures and only digests, generator, boundary inputs and relation report in skills."
+  },
+  {
+   "id": "full-map-in-tree",
+   "summary": "The same two fixtures and releases committed under plugins/lazarus/examples/ as the Aave v4 example is."
+  },
+  {
+   "id": "state-words-in-tree",
+   "summary": "A reduced fixture per estate proving only the four market state words, the unpaid-queue head and every subject's code, with account, batch, status and asset-balance numbers left as recorded calls, committed under plugins/lazarus/examples/."
+  }
+ ],
+ "criteria": [
+  {
+   "id": "mapped-words-proved",
+   "concern": "correctness",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "lazarus",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "unexplained-getter-mismatches",
+   "concern": "correctness",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "lazarus",
+   "unit": "count",
+   "comparator": "equals",
+   "threshold": 0,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "capture-route-serves-boundary",
+   "concern": "compatibility",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "lazarus",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "plan-validates",
+   "concern": "compatibility",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "lazarus",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "no-provider-coordinate-in-plan",
+   "concern": "compatibility",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "phylax",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "projected-capture-milliseconds",
+   "concern": "time",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "metron",
+   "unit": "milliseconds",
+   "comparator": "at-most",
+   "threshold": 86400000,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "in-tree-bytes-within-margin",
+   "concern": "space",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "metron",
+   "unit": "bytes",
+   "comparator": "at-most",
+   "threshold": 2256023,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "in-tree-bytes",
+   "concern": "space",
+   "kind": "metric",
+   "stage": "selection",
+   "owner": "metron",
+   "unit": "bytes",
+   "comparator": "minimise",
+   "threshold": null,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "interrupted-capture-leaves-nothing",
+   "concern": "recovery",
+   "kind": "gate",
+   "stage": "selection",
+   "owner": "elenchus",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "design-lock"
+  },
+  {
+   "id": "altered-bytes-refused",
+   "concern": "recovery",
+   "kind": "gate",
+   "stage": "conformance",
+   "owner": "elenchus",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "integration"
+  },
+  {
+   "id": "state-fixture-v2-binds",
+   "concern": "compatibility",
+   "kind": "gate",
+   "stage": "conformance",
+   "owner": "ariadne",
+   "unit": "boolean",
+   "comparator": "equals",
+   "threshold": true,
+   "blocks": "integration"
+  }
+ ],
+ "results": [
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "mapped-words-proved",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-mapped-words-proved.json",
+    "sha256": "a0eaff88474f97b99bab6a8b50e8e564e5ae6837fd93944628804cd946fe2090"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "unexplained-getter-mismatches",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-unexplained-getter-mismatches.json",
+    "sha256": "1e96252cc9234b6c7015a024640dd24cb210298f58a678e9958e6a414de39531"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "capture-route-serves-boundary",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-capture-route-serves-boundary.json",
+    "sha256": "2fcd508c56a2af4f8ab30c05a3fa3f0b8cbd80ae23fdd7d38bfff5090800b191"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "plan-validates",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-plan-validates.json",
+    "sha256": "5923772307505875f67f3e33eb89a80e505970256aa87178df4b4ce5132aa605"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "no-provider-coordinate-in-plan",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-no-provider-coordinate-in-plan.json",
+    "sha256": "9e6aa2527656f08fe1765b075625d935bce2f9ca767465f7786aba61bfcea882"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "projected-capture-milliseconds",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-projected-capture-milliseconds.json",
+    "sha256": "48d2b96703f79e3d588f75d98ecd99fa1833f1219b0c6136d6640467af583fa4"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "in-tree-bytes-within-margin",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-in-tree-bytes-within-margin.json",
+    "sha256": "519f5f4e4656c97c6404e0b6e710d05aeb5535efe417393383063ba5c7e1931e"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "in-tree-bytes",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-in-tree-bytes.json",
+    "sha256": "bd0b864ba65e356394a2862083eeed77ed3b85b389d7f52ed1dccd2df58f1625"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "interrupted-capture-leaves-nothing",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-r2-handoff-interrupted-capture-leaves-nothing.json",
+    "sha256": "4615403bd6c46a759630789b70ea1e4f16cccd9c76f7c7b4213762ff3c757898"
+   }
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "altered-bytes-refused",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate full-map-r2-handoff --criterion altered-bytes-refused --report .hexaemeron/design/reports/full-map-r2-handoff-altered-bytes-refused.json",
+   "report": "design/reports/full-map-r2-handoff-altered-bytes-refused.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "full-map-r2-handoff",
+   "criterion": "state-fixture-v2-binds",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate full-map-r2-handoff --criterion state-fixture-v2-binds --report .hexaemeron/design/reports/full-map-r2-handoff-state-fixture-v2-binds.json",
+   "report": "design/reports/full-map-r2-handoff-state-fixture-v2-binds.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "mapped-words-proved",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-mapped-words-proved.json",
+    "sha256": "d2eccf7fdc8b9519f1f31afdf3945a4000ddc322cfbae34583dbd29d5e93f354"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "unexplained-getter-mismatches",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-unexplained-getter-mismatches.json",
+    "sha256": "1902f23ed3be1e7b2eba414e0c85d35c95b3a188f8702cae72a7c24081b8bc89"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "capture-route-serves-boundary",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-capture-route-serves-boundary.json",
+    "sha256": "bd204ea704a0addc9f8c501bdbcd229e9d5c0819f2a77acdc9e36f21717280f2"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "plan-validates",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-plan-validates.json",
+    "sha256": "45d41a7d4dbc4b6f878bc607a64164fad65ad1d1701ed9371a5bb5101b6ff530"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "no-provider-coordinate-in-plan",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-no-provider-coordinate-in-plan.json",
+    "sha256": "14983a14ba607a133236c0eb172e05f0c9b49ed886441a8e46f39a86a18ac972"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "projected-capture-milliseconds",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-projected-capture-milliseconds.json",
+    "sha256": "26c08be4adfb145ab8c41e84dd2bccedf79d9e0dfd1e5acfe2c460ca75432467"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "in-tree-bytes-within-margin",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-in-tree-bytes-within-margin.json",
+    "sha256": "6c5e40a943864f9e6d14d9838c744c27a4d57b02d470ba412568679b9a8ef7c0"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "in-tree-bytes",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-in-tree-bytes.json",
+    "sha256": "dc109feb71e74f8ab7188e8aa57ae797c64778be666eb4109f2439a20ebd1202"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "interrupted-capture-leaves-nothing",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-archive-repo-interrupted-capture-leaves-nothing.json",
+    "sha256": "432f9ef9e2260ebeb38164d68551596f413aedbdd60272e80d9d3bcbc2066c5b"
+   }
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "altered-bytes-refused",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate full-map-archive-repo --criterion altered-bytes-refused --report .hexaemeron/design/reports/full-map-archive-repo-altered-bytes-refused.json",
+   "report": "design/reports/full-map-archive-repo-altered-bytes-refused.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "full-map-archive-repo",
+   "criterion": "state-fixture-v2-binds",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate full-map-archive-repo --criterion state-fixture-v2-binds --report .hexaemeron/design/reports/full-map-archive-repo-state-fixture-v2-binds.json",
+   "report": "design/reports/full-map-archive-repo-state-fixture-v2-binds.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "mapped-words-proved",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-mapped-words-proved.json",
+    "sha256": "b274bc5d4239fcd1ab4a3bf6ba5d80747c6d61b04e404910d5c5e565eb36dbd6"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "unexplained-getter-mismatches",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-unexplained-getter-mismatches.json",
+    "sha256": "00a0160a23f76870ce1bf1dfbc9803752eb45cb54bb43bc5107a6fad1977a365"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "capture-route-serves-boundary",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-capture-route-serves-boundary.json",
+    "sha256": "9a475541e12869654c7ecfbc40b1e91aa2663adad36f451f99f6611e1597f883"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "plan-validates",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-plan-validates.json",
+    "sha256": "1858f7a6f22368303fc6497dbdb0e66b8a29e54201145be3c8013d73b0523eeb"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "no-provider-coordinate-in-plan",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-no-provider-coordinate-in-plan.json",
+    "sha256": "092db09083aefe95cf4791c4b65a61e98c0ce2a82a18741b1138d99a71fc11e5"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "projected-capture-milliseconds",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-projected-capture-milliseconds.json",
+    "sha256": "68729d1d540d52e8019416800ba73821751f3d7b92666156f2d203973c8f98bb"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "in-tree-bytes-within-margin",
+   "state": "fail",
+   "report": {
+    "path": "design/reports/full-map-in-tree-in-tree-bytes-within-margin.json",
+    "sha256": "a6e5ddff6f364b5ca0d434975e7d76a2fbec0e856aac135eec85cb7d5eafcc47"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "in-tree-bytes",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-in-tree-bytes.json",
+    "sha256": "67525047330edd52ad57d0e649dc6dd19fb3ae5fba968349e814d873e1583dd8"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "interrupted-capture-leaves-nothing",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/full-map-in-tree-interrupted-capture-leaves-nothing.json",
+    "sha256": "3632a9ab91d6b07b7e9b70114b57f6c418d68a7372dfff81f89bff23b7a1b8b9"
+   }
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "altered-bytes-refused",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate full-map-in-tree --criterion altered-bytes-refused --report .hexaemeron/design/reports/full-map-in-tree-altered-bytes-refused.json",
+   "report": "design/reports/full-map-in-tree-altered-bytes-refused.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "full-map-in-tree",
+   "criterion": "state-fixture-v2-binds",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate full-map-in-tree --criterion state-fixture-v2-binds --report .hexaemeron/design/reports/full-map-in-tree-state-fixture-v2-binds.json",
+   "report": "design/reports/full-map-in-tree-state-fixture-v2-binds.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "mapped-words-proved",
+   "state": "fail",
+   "report": {
+    "path": "design/reports/state-words-in-tree-mapped-words-proved.json",
+    "sha256": "87b992e26a1de1009b96335fd7d1c80931ea262b078d1e8df681f09fdd24a057"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "unexplained-getter-mismatches",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-unexplained-getter-mismatches.json",
+    "sha256": "809e7c0be3e5b65772c2c7a3ea3e188c5040ec2b5dacba09d08e694710b00b88"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "capture-route-serves-boundary",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-capture-route-serves-boundary.json",
+    "sha256": "e4c2a5cd29ff986286ea3b2148eed747e9a37b3c2be4cb849e95502a6c209403"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "plan-validates",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-plan-validates.json",
+    "sha256": "e65244c5d11b7e1e7e0a22f07821b0fe386605c932ec29d662f4c1db12101758"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "no-provider-coordinate-in-plan",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-no-provider-coordinate-in-plan.json",
+    "sha256": "bbe59aefd29106796c8dd1bd62f26689a20ad675cfe78ca0beb5adcea40234e3"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "projected-capture-milliseconds",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-projected-capture-milliseconds.json",
+    "sha256": "7cf72e8a19e96df767dccefb446bb42972748debe7bf67f8b0b57a18f9f42f75"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "in-tree-bytes-within-margin",
+   "state": "fail",
+   "report": {
+    "path": "design/reports/state-words-in-tree-in-tree-bytes-within-margin.json",
+    "sha256": "a0a34425a5cbfac4651f57aef6b73c0b57717f30b15a9c68688b2c33d116e85b"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "in-tree-bytes",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-in-tree-bytes.json",
+    "sha256": "766ed691489b8daba9e8d98c31f140940da5ddf298fc2b62bb6592eb8cab67af"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "interrupted-capture-leaves-nothing",
+   "state": "pass",
+   "report": {
+    "path": "design/reports/state-words-in-tree-interrupted-capture-leaves-nothing.json",
+    "sha256": "bf23fadb49b248b5abad4e771917573d7a0040958ff56be1f6425b0a2a022b11"
+   }
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "altered-bytes-refused",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate state-words-in-tree --criterion altered-bytes-refused --report .hexaemeron/design/reports/state-words-in-tree-altered-bytes-refused.json",
+   "report": "design/reports/state-words-in-tree-altered-bytes-refused.json",
+   "blocks": "integration"
+  },
+  {
+   "candidate": "state-words-in-tree",
+   "criterion": "state-fixture-v2-binds",
+   "state": "pending",
+   "resolver": "python3 .hexaemeron/design/resolve.py --candidate state-words-in-tree --criterion state-fixture-v2-binds --report .hexaemeron/design/reports/state-words-in-tree-state-fixture-v2-binds.json",
+   "report": "design/reports/state-words-in-tree-state-fixture-v2-binds.json",
+   "blocks": "integration"
+  }
+ ],
+ "selection": {
+  "candidate": "full-map-r2-handoff",
+  "rule": "user-policy",
+  "policy_ref": "Maintainer ruling of 2026-09-26 on the skills#1924 run, recorded in that run's runbook amendment to Step 5: Wildcat fixture custody is Miskatonic and its R2 buckets, reached through a handoff pull request under storage/r2/handoffs/ and Miskatonic's own custody tooling after the operator accepts the source-register row by digest, rather than the private archive repository that holds the interval captures. Confirmed for skills#1384 by the maintainer on 2026-09-27, who also declined a public copy."
+ }
+}

@@ -1,0 +1,10 @@
+{
+  "git": "2.55.0",
+  "platform": "macOS",
+  "events": 14588,
+  "maintenance_child_starts": 100,
+  "uncompressed_bytes": 3459300,
+  "uncompressed_sha256": "80eb1e738c71f567b52b8045ec1d5241cfa872244a5eea38177bcc06fa8cd4ef",
+  "compressed_sha256": "a7b49fd4611dde2c054c99e2d766719dd3c87800eb58128126f357a15f3de6da",
+  "cause_established": false
+}

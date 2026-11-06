@@ -1,0 +1,275 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "eager-index",
+      "summary": "Decode and retain all journal bodies before replaying one complete ordered head."
+    },
+    {
+      "id": "ordered-replay",
+      "summary": "Replay one bounded journal body at a time while retaining the same decision index."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "model-correctness",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "decode-work",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "resident-memory",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "same-projection",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "rollback-limit",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "records-and-signatures",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "native-boundary-coverage",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "authority-replay",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:5"
+    },
+    {
+      "id": "released-interoperability",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "eager-index",
+      "criterion": "model-correctness",
+      "state": "pass",
+      "report": {
+        "path": "reports/eager-index-model-correctness.json",
+        "sha256": "aa6466e976868248dc4143bf48a56362872c36348dbbb5c4e80a1fb2958d842b"
+      }
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "decode-work",
+      "state": "pass",
+      "report": {
+        "path": "reports/eager-index-decode-work.json",
+        "sha256": "b4b7b4ed89e04fcab373ac43cd54cc79b8dd9e25ff32a659ba4ed0aa720fcac8"
+      }
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "resident-memory",
+      "state": "pass",
+      "report": {
+        "path": "reports/eager-index-resident-memory.json",
+        "sha256": "b8d9d794846ac832e9f35aa9e7ce0359708b5e1e0af3be7608222b1183e294d5"
+      }
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "same-projection",
+      "state": "pass",
+      "report": {
+        "path": "reports/eager-index-same-projection.json",
+        "sha256": "546286e2303abdca6ce5f5b97451769bc4f4f0c81eaea46c874cb0fab4c1c9b0"
+      }
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "rollback-limit",
+      "state": "pass",
+      "report": {
+        "path": "reports/eager-index-rollback-limit.json",
+        "sha256": "b8a81486e8d63ecba6a5a200918723705992d701f7fe6ae065be78b8c6f21219"
+      }
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "records-and-signatures",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate eager-index --criterion records-and-signatures --report .hexaemeron/reports/eager-index-records-and-signatures.json",
+      "report": "reports/eager-index-records-and-signatures.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "native-boundary-coverage",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate eager-index --criterion native-boundary-coverage --report .hexaemeron/reports/eager-index-native-boundary-coverage.json",
+      "report": "reports/eager-index-native-boundary-coverage.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "authority-replay",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate eager-index --criterion authority-replay --report .hexaemeron/reports/eager-index-authority-replay.json",
+      "report": "reports/eager-index-authority-replay.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "eager-index",
+      "criterion": "released-interoperability",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate eager-index --criterion released-interoperability --report .hexaemeron/reports/eager-index-released-interoperability.json",
+      "report": "reports/eager-index-released-interoperability.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "model-correctness",
+      "state": "pass",
+      "report": {
+        "path": "reports/ordered-replay-model-correctness.json",
+        "sha256": "c7a3716771c55f6ab4c3c48696d6dfc049bdf8652080c9805223a5823becfd22"
+      }
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "decode-work",
+      "state": "pass",
+      "report": {
+        "path": "reports/ordered-replay-decode-work.json",
+        "sha256": "e3f82474fe5dca350c8bebe0b95d6fdadbf2e847a22cc3942918273ad2fda51d"
+      }
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "resident-memory",
+      "state": "pass",
+      "report": {
+        "path": "reports/ordered-replay-resident-memory.json",
+        "sha256": "5b0519ee35a865ea52ff55d9174f76cb6df0062ff9d6c26d14620f55309a9dba"
+      }
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "same-projection",
+      "state": "pass",
+      "report": {
+        "path": "reports/ordered-replay-same-projection.json",
+        "sha256": "f80735fdd91113425b546749016fba2b6dd5ef30cc7bd1e4beeb728b089ad628"
+      }
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "rollback-limit",
+      "state": "pass",
+      "report": {
+        "path": "reports/ordered-replay-rollback-limit.json",
+        "sha256": "78212febbcb0cde2ad89ae5fbad2664bc242c18eb24777043cacc4d0ffcbc62a"
+      }
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "records-and-signatures",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate ordered-replay --criterion records-and-signatures --report .hexaemeron/reports/ordered-replay-records-and-signatures.json",
+      "report": "reports/ordered-replay-records-and-signatures.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "native-boundary-coverage",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate ordered-replay --criterion native-boundary-coverage --report .hexaemeron/reports/ordered-replay-native-boundary-coverage.json",
+      "report": "reports/ordered-replay-native-boundary-coverage.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "authority-replay",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate ordered-replay --criterion authority-replay --report .hexaemeron/reports/ordered-replay-authority-replay.json",
+      "report": "reports/ordered-replay-authority-replay.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "ordered-replay",
+      "criterion": "released-interoperability",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate ordered-replay --criterion released-interoperability --report .hexaemeron/reports/ordered-replay-released-interoperability.json",
+      "report": "reports/ordered-replay-released-interoperability.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "ordered-replay",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

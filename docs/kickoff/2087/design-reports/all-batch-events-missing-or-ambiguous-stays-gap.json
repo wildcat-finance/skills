@@ -1,0 +1,9 @@
+{
+  "candidate": "all-batch-events",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate all-batch-events --criterion missing-or-ambiguous-stays-gap --report .hexaemeron/design-reports/all-batch-events-missing-or-ambiguous-stays-gap.json",
+  "criterion": "missing-or-ambiguous-stays-gap",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

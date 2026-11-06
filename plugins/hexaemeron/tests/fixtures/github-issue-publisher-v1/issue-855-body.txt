@@ -1,0 +1,80 @@
+Pull requests opened by the `shoggoth-wildcat-labs` App receive no workflow
+runs. GitHub does not fire `pull_request` events for actions taken with an App
+installation token — the recursion guard that also covers `GITHUB_TOKEN`. So
+every PR the App opens is mergeable with no checks, and nothing says so.
+
+This is now load-bearing. The `shoggoth-wildcat` account is flagged, everything
+it authors returns 404 to everyone but itself, and the App is the only route
+left for publishing an issue or a PR anyone can read. That route silently drops
+CI.
+
+## What it looks like
+
+wildcat-finance/skills#853, opened by the App:
+
+```
+$ gh pr checks 853 --repo wildcat-finance/skills
+no checks reported on the 'fix/receipt-sha-length' branch
+
+$ gh api repos/wildcat-finance/skills/pulls/853 --jq .mergeable_state
+clean
+```
+
+`mergeable_state: clean` with zero checks. Nothing distinguishes "all gates
+passed" from "no gate ever ran". For comparison, #813 on the same repository,
+opened by `shoggoth-wildcat` before the account lost push, reported six checks.
+
+The polling shape most callers reach for makes it worse:
+
+```bash
+while true; do
+  s=$(gh pr checks "$n" --json name,bucket)
+  echo "$s" | jq -e 'all(.bucket!="pending")' && break
+  sleep 20
+done
+```
+
+`all` over an empty array is `true` in jq, so a naive version exits immediately
+and reports success; a version that guards on empty output spins until its
+timeout. Neither tells the caller that checks are structurally absent.
+
+## Why it matters beyond one PR
+
+Fiat's push phase is written around waiting for a step's gates and merging only
+once they are green. `references/push-discipline.md`: "Wait for its gates but
+leave it open". A delivery path where gates never appear does not fail that
+instruction, it vacates it — the same shape as a permitted set that silently
+lost its entries, which this repository has now recorded several times.
+
+#853 was merged after running every CI job by hand against the exact merged
+tree: `repo.yml` 495 passed, `janus.yml` 14 passed, `janus-forge.yml` 0 build
+errors and 112 tests, `pandects.yml` 117 passed and `pandects.py check` exit 0,
+`synkrisis.yml` one failure that reproduces on a clean clone of `origin/main`
+and is unrelated. That was a deliberate substitution, and it is not something a
+caller should have to remember.
+
+## Options, none chosen
+
+- **Push the branch as a person, open the PR as the App.** A human `git push`
+  fires `push`-triggered workflows. Only helps for workflows keyed on `push`;
+  the ones here are keyed on `pull_request`.
+- **`workflow_dispatch` after opening**, with the App's `actions: write`
+  permission, and treat the dispatched run as the gate. Costs a mapping from
+  PR to run.
+- **Have the controller refuse a zero-check PR** rather than reading absence as
+  success, and require an explicit recorded waiver naming what was run instead.
+  This is the one that fails closed.
+- **Publish through a human account.** Removes the problem and the App.
+
+## What should not happen
+
+`shoggoth-wildcat-labs[bot]` must not be added to `HOST_PR_LOGINS` in
+`hexctl.py`. Membership there is a refusal, and it would reject every pull
+request the App opens. The login is a delivery agent, not a runtime host.
+`GITHUB_LOGIN_RE` already accepts a `[bot]` login.
+
+## Related
+
+wildcat-finance/skills#796 and its fix are the other half of the same theme:
+a check that reads a receipt as evidence when the receipt cannot carry it.
+Here the receipt would record a merge whose gates were never evaluated.

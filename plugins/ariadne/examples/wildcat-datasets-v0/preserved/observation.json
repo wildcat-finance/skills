@@ -1,0 +1,5 @@
+{
+  "boundary": "Python socket construction and connection helpers were denied during this local adapter execution; zero attempted calls were observed. This is not an operating-system sandbox, syscall trace or claim about native code, other processes, archive access or the original collection.",
+  "schema": "wildcat-dataset-observation/v1",
+  "socket_attempts": 0
+}

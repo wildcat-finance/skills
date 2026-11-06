@@ -1,6 +1,11 @@
 {
   "manifestVersion": "1",
   "host": "wildcat-v2.5",
+  "hostSource": {
+    "status": "bound",
+    "repository": "https://github.com/wildcat-finance/v2-protocol",
+    "revision": "9716e78e345a84fa1491c794aa5ae162790ce378"
+  },
   "hook": "OpenTermHooks-shaped honest access-control hook",
   "rollbackRule": "full",
   "thresholds": [],

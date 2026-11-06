@@ -15,6 +15,28 @@ def worktree_root():
     return Path(__file__).resolve(strict=True).parents[3]
 
 
+def absolute_report_parts(supplied, root):
+    """Keep the lexical path below any alias that names the bound root.
+
+    ``root`` is canonical and ``supplied`` is not, so comparing the two as text
+    refuses a report reached through a symlinked prefix such as the macOS
+    ``/var`` and ``/tmp`` aliases that Elenchus builds its overlay under. Each
+    ancestor is canonicalised instead, and the outermost one that names the
+    root anchors the relative path, so a symlink below the root stays in that
+    path for the ``lstat`` walk to refuse.
+    """
+    anchor = None
+    for ancestor in supplied.parents:
+        try:
+            if ancestor.resolve(strict=True) == root:
+                anchor = ancestor
+        except (OSError, RuntimeError):
+            continue
+    if anchor is None:
+        raise ValueError("report path is outside the worktree")
+    return supplied.relative_to(anchor)
+
+
 def report_target(argv):
     """Parse one fresh report path and bind its worktree identity."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -40,7 +62,9 @@ def report_target(argv):
     try:
         root = worktree_root().resolve(strict=True)
         relative = (
-            supplied.relative_to(root) if supplied.is_absolute() else supplied
+            absolute_report_parts(supplied, root)
+            if supplied.is_absolute()
+            else supplied
         )
         target = root.joinpath(*relative.parts)
     except (OSError, RuntimeError, ValueError):

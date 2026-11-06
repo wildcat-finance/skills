@@ -1,0 +1,21 @@
+test_fixture_reads_the_actual_numbered_home_after_assignment (tests.test_success_criteria_scaffold.SuccessCriteriaScaffoldTests.test_fixture_reads_the_actual_numbered_home_after_assignment) ... ERROR
+
+======================================================================
+ERROR: test_fixture_reads_the_actual_numbered_home_after_assignment (tests.test_success_criteria_scaffold.SuccessCriteriaScaffoldTests.test_fixture_reads_the_actual_numbered_home_after_assignment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_success_criteria_scaffold.py", line 153, in test_fixture_reads_the_actual_numbered_home_after_assignment
+    nested.setUp()
+    ~~~~~~~~~~~~^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_success_criteria_scaffold.py", line 37, in setUp
+    shutil.copyfile(ROOT / relative, destination)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/shutil.py", line 313, in copyfile
+    with open(src, 'rb') as fsrc:
+         ~~~~^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/criteria-scaffold-test-1urtcouc/docs/decisions/drafts/settle-study-criteria-from-recorded-execution.md'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.040s
+
+FAILED (errors=1)

@@ -1,0 +1,9 @@
+{
+  "candidate": "declare-only",
+  "command": "python3 resolve.py --candidate declare-only --criterion check-latency-ms",
+  "criterion": "check-latency-ms",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 0
+}

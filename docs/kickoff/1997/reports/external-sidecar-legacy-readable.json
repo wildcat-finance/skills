@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "external-sidecar",
+  "criterion": "legacy-readable",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate external-sidecar --criterion legacy-readable --report .hexaemeron/reports/external-sidecar-legacy-readable.json",
+  "exit": 0
+}

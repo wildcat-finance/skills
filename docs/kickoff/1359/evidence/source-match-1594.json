@@ -1,0 +1,3065 @@
+{
+ "schema": "wildcat.kickoff-targets.source-match-1594.v1",
+ "observed_on": "2026-09-28",
+ "recovery_issue": "https://github.com/wildcat-finance/skills/issues/1594",
+ "parent_issue": "https://github.com/wildcat-finance/skills/issues/1482",
+ "target": [
+  "centrifuge-v3"
+ ],
+ "producer": "Claude Code as Surveyor under Protasis",
+ "method": {
+  "commit_match": "blob: the target's git blob is in an indexed repository and the chosen commit holds the most of the set's files; closest: the target is in no repository and the commit holding the most set files is recorded; built: the searched commit's build reproduces the contract. Among equivalent commits a branch or tag reaches (all when none does), the chosen one is the earliest carrying a tag, else the latest",
+  "creation_blocks": "eth_getCode is empty at block b-1 and non-empty at block b; the transaction is Blockscout's creation transaction",
+  "epochs": "V3 contracts are not proxies; each holds one code from its creation block to the pinned block, and V3 replaces a contract by deploying a new one",
+  "solc_reproduction": "the verified input with outputSelection narrowed to the target, compiled by the solc linux-amd64 build of its version; immutable ranges zeroed on both sides. exact: equal; sans-cbor: equal once the trailing CBOR metadata is removed from both",
+  "source_sets": "one compilation from Blockscout's verified record, else Sourcify's; a subject without its own record joins the set whose compiled runtime best equals its code, else its creator's set compiled with every contract selected, else a build of the centrifuge/protocol commit a search of its history finds",
+  "subject_set": "the seed closed over V3's wiring events (Rely, Deny, File, the managers, dependencies, valuations and the factories' deploy logs), each share token's hook and each subject's EIP-1967 slot; a named contract is a subject when Centrifuge wrote it and V3 runs it, and is excluded with its class otherwise; see c_registry.py"
+ },
+ "tools": {
+  "git": "git version 2.43.0",
+  "keccak": "pycryptodome Crypto.Hash.keccak",
+  "python": "the interpreter .python-version pins, urllib JSON-RPC",
+  "solc": {
+   "solc-linux-amd64-v0.8.26+commit.8a97fa7a": {
+    "sha256": "d5f23436f443edb85d8e76906d12f0a86ce0490e7663a9e608efeb7a93f149ef",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.26+commit.8a97fa7a"
+   },
+   "solc-linux-amd64-v0.8.28+commit.7893614a": {
+    "sha256": "9a0fb7e0db2c0641dbae1c5cc645dc686820c83af516226abb1c0a2f76636f25",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.28+commit.7893614a"
+   }
+  }
+ },
+ "repositories_indexed": [
+  {
+   "repository": "https://github.com/centrifuge/create3-gate",
+   "commits_indexed": 71
+  },
+  {
+   "repository": "https://github.com/centrifuge/liquidity-pools",
+   "commits_indexed": 3435
+  },
+  {
+   "repository": "https://github.com/centrifuge/protocol",
+   "commits_indexed": 6962
+  },
+  {
+   "repository": "https://github.com/centrifuge/protocol-v3",
+   "commits_indexed": 2587
+  }
+ ],
+ "repositories_not_public": [],
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "9025dd850097b8a3310e71f97c98298c18f53cf9",
+  "path": "evidence/centrifuge-ethereum-source-map-2026-09-28/source-match-1594.json",
+  "sha256": "0f987c79ca352dea06737be428d196c73351a7fa2492d8aedcb047800a38b6fc",
+  "bytes": 996973
+ },
+ "summary": {
+  "commit_basis_by_address": {
+   "blob": 264,
+   "built": 1,
+   "closest": 4,
+   "no-reproduction": 2
+  },
+  "commit_basis_by_set": {
+   "blob": 125,
+   "built": 1,
+   "closest": 4
+  },
+  "compilers": {
+   "0.8.26+commit.8a97fa7a": 1,
+   "0.8.28+commit.7893614a": 129
+  },
+  "no_reproduction": 2,
+  "pairing_by_address": {
+   "compiled runtime": 4,
+   "creator set": 16,
+   "repository search": 1,
+   "verified record": 248
+  },
+  "reproduced_subjects": 269,
+  "reproduction_by_address": {
+   "exact": 239,
+   "sans-cbor": 30
+  },
+  "source_sets": 130,
+  "subjects": 271
+ },
+ "source_state_gaps": {
+  "chosen_commit_on_a_pull_request_only": [
+   {
+    "commit": "e31a8c7b9d7b4bf13f0dfbe317b4f205ed091338",
+    "compilation_target": "src-ir/OnchainPM.sol:OnchainPM",
+    "source_set": "set-003"
+   },
+   {
+    "commit": "e31a8c7b9d7b4bf13f0dfbe317b4f205ed091338",
+    "compilation_target": "src-ir/OnchainPM.sol:OnchainPMFactory",
+    "source_set": "set-004"
+   }
+  ],
+  "no_reproduction": [
+   {
+    "address": "0x21bf2544b5a0b03c8566a16592ba1b3b192b50bc",
+    "family": "v3.0",
+    "name": null,
+    "note": "no verifier holds it, no compiled set or creator set reproduces it, and no centrifuge/protocol commit in the 60 days before its creation builds it; the nearest build, v3.0.1's with the settings of the verified factories, is 19 bytes short, and optimizer and via-IR variants move further away",
+    "roles": [
+     "syncDepositVaultFactory"
+    ]
+   },
+   {
+    "address": "0xed9d489bb79c7cb58c522f36fc6944eaa95ce385",
+    "family": "v3.0",
+    "name": null,
+    "note": "no verifier holds it, no compiled set or creator set reproduces it, and no centrifuge/protocol commit in the 60 days before its creation builds it; the nearest build, v3.0.1's with the settings of the verified factories, is 19 bytes short, and optimizer and via-IR variants move further away",
+    "roles": [
+     "asyncVaultFactory"
+    ]
+   }
+  ],
+  "target_text_at_no_public_commit": [
+   {
+    "commit_basis": "closest",
+    "compilation_target": "src/core/spoke/BalanceSheet.sol:BalanceSheet",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 43,
+     "chosen_commit": {
+      "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+      "date": "2026-06-08T14:49:05+02:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "f2821f488000cadc2d958779752e2302ad907425",
+      "date": "2026-02-26T15:53:07+01:00"
+     },
+     "equivalent_commit_count": 100,
+     "files_located_in_repository": 44,
+     "in_repository_files_not_at_chosen_commit": [
+      "lib/forge-std/src/interfaces/IERC165.sol"
+     ],
+     "latest": {
+      "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+      "date": "2026-06-08T14:49:05+02:00"
+     },
+     "repository": "https://github.com/centrifuge/protocol",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-035"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "src/spell/AddChainlinkPharosEthSpell.sol:AddChainlinkPharosEthSpell",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 14,
+     "chosen_commit": {
+      "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+      "date": "2026-04-27T13:14:37+02:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "deploy-testnet-v3.2-41e1997"
+      ]
+     },
+     "earliest": {
+      "commit": "f2821f488000cadc2d958779752e2302ad907425",
+      "date": "2026-02-26T15:53:07+01:00"
+     },
+     "equivalent_commit_count": 222,
+     "files_located_in_repository": 14,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "036f907a52a761d62548c2987e373a8501e0ffc2",
+      "date": "2026-08-10T01:26:55+05:30"
+     },
+     "repository": "https://github.com/centrifuge/protocol",
+     "tags_at_equivalent_commits": [
+      "deploy-testnet-v3.2-41e1997"
+     ]
+    },
+    "source_set": "set-088"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "src/spell/AddChainlinkPlumeEthSpell.sol:AddChainlinkPlumeEthSpell",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 14,
+     "chosen_commit": {
+      "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+      "date": "2026-04-27T13:14:37+02:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "deploy-testnet-v3.2-41e1997"
+      ]
+     },
+     "earliest": {
+      "commit": "f2821f488000cadc2d958779752e2302ad907425",
+      "date": "2026-02-26T15:53:07+01:00"
+     },
+     "equivalent_commit_count": 222,
+     "files_located_in_repository": 14,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "036f907a52a761d62548c2987e373a8501e0ffc2",
+      "date": "2026-08-10T01:26:55+05:30"
+     },
+     "repository": "https://github.com/centrifuge/protocol",
+     "tags_at_equivalent_commits": [
+      "deploy-testnet-v3.2-41e1997"
+     ]
+    },
+    "source_set": "set-089"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "test/spell/VaultPermissionSpellEthereum.sol:VaultPermissionSpellEthereum",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 41,
+     "chosen_commit": {
+      "commit": "7ca5819788f6d28d8481932b237951c1ffb7ff3b",
+      "date": "2025-08-05T16:22:48+02:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "v3.0.1"
+      ]
+     },
+     "earliest": {
+      "commit": "256ce72b19373415bd7c3c70be46f4eaf5e11beb",
+      "date": "2025-07-30T13:48:20+02:00"
+     },
+     "equivalent_commit_count": 29,
+     "files_located_in_repository": 42,
+     "in_repository_files_not_at_chosen_commit": [
+      "lib/forge-std/src/interfaces/IERC165.sol"
+     ],
+     "latest": {
+      "commit": "3ce68b95c89bf9ce240c036c785509379c2d67c2",
+      "date": "2025-09-01T09:38:40+02:00"
+     },
+     "repository": "https://github.com/centrifuge/protocol",
+     "tags_at_equivalent_commits": [
+      "v3.0.1"
+     ]
+    },
+    "source_set": "set-129"
+   }
+  ]
+ },
+ "documentation": [
+  {
+   "anchor": "0x9c8454a506263549f07c80698e276e3622077098",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "covers": "v3.0",
+   "date": "2025-07-15T18:05:32+02:00",
+   "paths": {
+    "README.md": {
+     "id": "5462e402be396697657b417fc860e1c6cd4ca226",
+     "kind": "blob",
+     "text": {
+      "README.md": "5462e402be396697657b417fc860e1c6cd4ca226"
+     }
+    },
+    "docs": {
+     "id": "9165a97ab18013199ae76be950ab4d832880775f",
+     "kind": "tree",
+     "text": {
+      "docs/architecture/common.puml": "724bec02d4cde18b6f7f86be95e5d42e2c2fb57d",
+      "docs/architecture/deployers.puml": "6fe9173d0af06b2d9273f0587843dca76d5332ec",
+      "docs/architecture/hub.puml": "9f943e3ff019e82510cc196a7200d2d63a9f524a",
+      "docs/architecture/messaging.puml": "b144eb73acd603276d15fe1e162a0b90d5d4ea55",
+      "docs/architecture/spoke.puml": "f27f65ff579a9b2ba509cf2781dd2e4859084a89",
+      "docs/architecture/vaults/managers.puml": "32cfd620cc6cafb4e625143ecae81fe6c16552a0",
+      "docs/architecture/vaults/vaults.puml": "699a35d395ddf31f7abd54473443eca7a1e00325",
+      "docs/audits/2023-09-Code4rena.md": "da9538dc05e807d5e7a2b19106e0fa3398b13732"
+     }
+    },
+    "src": {
+     "id": "93c8746e9a9d1135bc120b61090417c8cf2b1e9a",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/centrifuge/protocol",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ]
+  },
+  {
+   "anchor": "0xa4a7bb3831958463b3fe3e27a6a160f764341953",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "covers": "v3.1",
+   "date": "2026-01-13T16:05:20+01:00",
+   "paths": {
+    "README.md": {
+     "id": "adca5148ee8a6900ec2ab83b8817f9f44da0189c",
+     "kind": "blob",
+     "text": {
+      "README.md": "adca5148ee8a6900ec2ab83b8817f9f44da0189c"
+     }
+    },
+    "docs": {
+     "id": "acd9b714516c0994a90eb5aab874391356bf4c25",
+     "kind": "tree",
+     "text": {
+      "docs/architecture/admin.puml": "cf0a068235ee4405a8951f589708a207a7527398",
+      "docs/architecture/core/hub.puml": "925664602bc950030d1c8374ccb5cb22695f31d2",
+      "docs/architecture/core/messaging.puml": "e39ee95be9801cacf1d1495e9c491b1a67084573",
+      "docs/architecture/core/spoke.puml": "ab3c4333ed0080edee7fa41b2ad9105521bedfc8",
+      "docs/architecture/core/spoke/balance-sheet.puml": "1cf2319188e70ee52c17a283a5c825507a5c2062",
+      "docs/architecture/deployers.puml": "84373ed2df8c6311743b312f236cfe4e9918d813",
+      "docs/architecture/hooks.puml": "96cccb77f6c8283abc7b804fe11a45d0cec6bc75",
+      "docs/architecture/managers/hub-managers.puml": "6490a7d5a9d170c41acbd23785ca4c1969f36663",
+      "docs/architecture/managers/spoke-managers.puml": "c2e24d70a850c0550cc872ee3c68e460b47f679c",
+      "docs/architecture/vaults/flow-of-funds.puml": "c5db240bf1a9054ff8032ca0eb922b22a1319e0c",
+      "docs/architecture/vaults/request-managers.puml": "8e735919b675e892068f5020faa3832cfa148991",
+      "docs/architecture/vaults/vaults.puml": "9902006adc9ead720c1e485e4dd89199731a384c",
+      "docs/audits/2023-09-Code4rena.md": "da9538dc05e807d5e7a2b19106e0fa3398b13732"
+     }
+    },
+    "src": {
+     "id": "865f1b3a4960557eb4ecbc525afa48ac2f0722d4",
+     "kind": "tree",
+     "text": {
+      "src/README.md": "a21baf61a45be647b65f2c939bec422cfbd54b7d",
+      "src/adapters/README.md": "1c136f0114597926d04ce1cb729ea75d8e8b7806",
+      "src/admin/README.md": "d6acc9d6fb56b002d22c7a2248cd31db090eb0ca",
+      "src/core/hub/README.md": "f3c3641106987f1af08d0a270d9dc18b7ead3d1a",
+      "src/core/messaging/README.md": "13ceb2731a910b65ad969bcf7627fa3ec18f2031",
+      "src/core/spoke/README.md": "4139e096f1d09922a3c99f827e1a8fdc3bb44220",
+      "src/hooks/README.md": "14f6d73cea7b93adc3ce9fecd913615ad0be00a0",
+      "src/managers/hub/README.md": "e84ac8520461268e19bd6ac81cb61cb75e3d9ef6",
+      "src/managers/spoke/README.md": "c47e50a700ea0ec7a8d54bc1fa51c7666f3cf22d",
+      "src/valuations/README.md": "b916ba66474f12a362cf60d75df0a7729d4af437",
+      "src/vaults/README.md": "7dc62a0540e5ac2207a94e2565d259b110c3c41f"
+     }
+    }
+   },
+   "repository": "https://github.com/centrifuge/protocol",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v3.1.0"
+   ]
+  },
+  {
+   "anchor": "0x916bf6cdbe63ac01f4a9a4bb0f0f97cc212733f6",
+   "commit": "e31a8c7b9d7b4bf13f0dfbe317b4f205ed091338",
+   "covers": "v3.2",
+   "date": "2026-04-27T11:33:12+02:00",
+   "paths": {
+    "README.md": {
+     "id": "f76263d5c5673f6eccc8693ac718f1a2a5fad44e",
+     "kind": "blob",
+     "text": {
+      "README.md": "f76263d5c5673f6eccc8693ac718f1a2a5fad44e"
+     }
+    },
+    "docs": {
+     "id": "61e6c8900abd90bbae6dcc2588d93ddc6b9237b9",
+     "kind": "tree",
+     "text": {
+      "docs/architecture/admin.puml": "cf0a068235ee4405a8951f589708a207a7527398",
+      "docs/architecture/core/hub.puml": "925664602bc950030d1c8374ccb5cb22695f31d2",
+      "docs/architecture/core/messaging.puml": "e39ee95be9801cacf1d1495e9c491b1a67084573",
+      "docs/architecture/core/spoke.puml": "ab3c4333ed0080edee7fa41b2ad9105521bedfc8",
+      "docs/architecture/core/spoke/balance-sheet.puml": "1cf2319188e70ee52c17a283a5c825507a5c2062",
+      "docs/architecture/deployers.puml": "84373ed2df8c6311743b312f236cfe4e9918d813",
+      "docs/architecture/hooks.puml": "96cccb77f6c8283abc7b804fe11a45d0cec6bc75",
+      "docs/architecture/managers/hub-managers.puml": "6490a7d5a9d170c41acbd23785ca4c1969f36663",
+      "docs/architecture/managers/spoke-managers.puml": "4b864883af7b32e6427326171cc4877faa5920d1",
+      "docs/architecture/vaults/flow-of-funds.puml": "c5db240bf1a9054ff8032ca0eb922b22a1319e0c",
+      "docs/architecture/vaults/request-managers.puml": "8e735919b675e892068f5020faa3832cfa148991",
+      "docs/architecture/vaults/vaults.puml": "9902006adc9ead720c1e485e4dd89199731a384c",
+      "docs/audits/2023-09-Code4rena.md": "da9538dc05e807d5e7a2b19106e0fa3398b13732"
+     }
+    },
+    "src": {
+     "id": "7eae316dc4c547064079a08300e9c49e8b7698d8",
+     "kind": "tree",
+     "text": {
+      "src/README.md": "d68e2afb6fb2e662f4baee7f3a534447e0f6d5ef",
+      "src/adapters/README.md": "1c136f0114597926d04ce1cb729ea75d8e8b7806",
+      "src/admin/README.md": "d6acc9d6fb56b002d22c7a2248cd31db090eb0ca",
+      "src/core/hub/README.md": "f3c3641106987f1af08d0a270d9dc18b7ead3d1a",
+      "src/core/messaging/README.md": "13ceb2731a910b65ad969bcf7627fa3ec18f2031",
+      "src/core/spoke/README.md": "4139e096f1d09922a3c99f827e1a8fdc3bb44220",
+      "src/hooks/README.md": "14f6d73cea7b93adc3ce9fecd913615ad0be00a0",
+      "src/managers/hub/README.md": "e84ac8520461268e19bd6ac81cb61cb75e3d9ef6",
+      "src/managers/spoke/README.md": "e2bf02ab643940a829bc6336ecb2099037519508",
+      "src/valuations/README.md": "b916ba66474f12a362cf60d75df0a7729d4af437",
+      "src/vaults/README.md": "7dc62a0540e5ac2207a94e2565d259b110c3c41f"
+     }
+    }
+   },
+   "repository": "https://github.com/centrifuge/protocol",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": []
+  },
+  {
+   "anchor": "0x5a0f93d040de44e78f251b03c43be9cf317dcf64",
+   "commit": "109ba1560a0aa80e906e462147ac295d31e75b73",
+   "covers": "v2 share tokens",
+   "date": "2024-08-06T11:03:10+02:00",
+   "paths": {
+    "README.md": {
+     "id": "1c0aea82f8886c04989ea3de9acc1aee3c0b411e",
+     "kind": "blob",
+     "text": {
+      "README.md": "1c0aea82f8886c04989ea3de9acc1aee3c0b411e"
+     }
+    }
+   },
+   "repository": "https://github.com/centrifuge/liquidity-pools",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "release-v2.0"
+   ]
+  }
+ ],
+ "source_sets": [
+  {
+   "id": "search-LinkShareTokenEth-4ddd6121e45c",
+   "compilation_target": "test/spell/LinkShareTokenEth.sol:LinkShareTokenEth",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "built from a searched commit; no verifier holds this contract at 0xc418002c3d7e6b9ae1f79d8740080c808c300c81",
+   "build_input_sha256": "3f780a939f225e464ef0e125e4bbc2057024a623ba135f04e16eaf7a52fda1fe",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x134d1766284a3871f725d7000e750a26fe182aef7d12bf86620898930662b835",
+    "listed_members": [
+     "0xc418002c3d7e6b9ae1f79d8740080c808c300c81"
+    ],
+    "member_count": 1
+   },
+   "source_files": 19,
+   "commit_basis": "built",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "4ddd6121e45cc19b09d92847ad41586a305d5508",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-001",
+   "compilation_target": "script/FullDeployer.s.sol:FullActionBatcher",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x5f3f8ea3b54bff7795de7754866e0eac52e0881d",
+   "build_input_sha256": "0e92e1394715da248a9e2c5f64026b8664b6de3c9cc0c6f481c3463c1915f7fb",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6930a952bed1b2ed70cf6440ef8f6fc425e6315c14ad3c564d158194cb5dfc75",
+    "listed_members": [
+     "0x5f3f8ea3b54bff7795de7754866e0eac52e0881d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 166,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-002",
+   "compilation_target": "script/FullDeployer.s.sol:FullActionBatcher",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xb3c086db30c1be6e40d8775607c3662ab160bda5",
+   "build_input_sha256": "0409435467d679b1037c07d627d05a65bdb3ab0418bc142e61a4dbb4bcd35007",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xae37794ffecfdce472b03adda154f72f7331730224956832fcb2ec53acf4a386",
+    "listed_members": [
+     "0xb3c086db30c1be6e40d8775607c3662ab160bda5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 191,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "c4dcd1aedfd37e067ec42ebee00a294e8bee3168",
+   "commit_tags": [
+    "deploy-mainnet-v3.1-c4dcd1a"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-004",
+   "compilation_target": "src-ir/OnchainPM.sol:OnchainPMFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x916bf6cdbe63ac01f4a9a4bb0f0f97cc212733f6",
+   "build_input_sha256": "751ab3d70abab712371ab7acf02ae4c3cb2724c5c103348ea86d02a44fc7ab31",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6de6d3e413d775a7692e44c0e254d07bcd90a87329118c391f55eae912b05685",
+    "listed_members": [
+     "0x916bf6cdbe63ac01f4a9a4bb0f0f97cc212733f6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 47,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "e31a8c7b9d7b4bf13f0dfbe317b4f205ed091338",
+   "commit_tags": [],
+   "reachable_from": "pull request head only"
+  },
+  {
+   "id": "set-005",
+   "compilation_target": "src/adapters/AxelarAdapter.sol:AxelarAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x34e904237341c3de02d4447c3ff0ca8880ca6484",
+   "build_input_sha256": "922ec46d72c95301653148ff842128b2f8f762f4650973a4cf86b66c9e9630f9",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7931b2e58388595424c92a364889bc9781ddc4cdbb27f6db1f28344a739c391f",
+    "listed_members": [
+     "0x34e904237341c3de02d4447c3ff0ca8880ca6484"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-006",
+   "compilation_target": "src/adapters/ChainlinkAdapter.sol:ChainlinkAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x39cf679eb0ac9075cfb5f94930a367ba1557d955",
+   "build_input_sha256": "3e9f403dbdcc5c28e1233930e81b902073ef30d12ac2b57f354fc486515aaf96",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x39f1e5f71522d07c2874533f114cd28704ab9cf5e14ebf812edf45d8116a4c93",
+    "listed_members": [
+     "0x39cf679eb0ac9075cfb5f94930a367ba1557d955"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-007",
+   "compilation_target": "src/adapters/LayerZeroAdapter.sol:LayerZeroAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xd517bc7ba17271a8d87be7355b2523bf5c750295",
+   "build_input_sha256": "38bff5d3b7e42f4ce4bb750aed24b8fae98b92207bac0c86f3d7acc941733c71",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x833a93add50602c1751ff7590415e4af10573590ab3e34afc61465ddfc327ad8",
+    "listed_members": [
+     "0xd517bc7ba17271a8d87be7355b2523bf5c750295"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-008",
+   "compilation_target": "src/adapters/WormholeAdapter.sol:WormholeAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x4be430401760075315e931dd34b892dfdfc706a7",
+   "build_input_sha256": "9b60808eb9c42aa8ea9bef8751f716002c390be1270da2596c106c007fbfd5bd",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe160eccfd621bc52c25ac7580b64e27ddb1059d6ae1e6bcdf0f5b02688f15864",
+    "listed_members": [
+     "0x4be430401760075315e931dd34b892dfdfc706a7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-009",
+   "compilation_target": "src/admin/OpsGuardian.sol:OpsGuardian",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x055589229506ee89645ef08ebe9b9a863486d0de",
+   "build_input_sha256": "0d44ebee8f4f80ec28c24d95d4307d1ae7362a2952c8ecb96cb572dbf2946a99",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xacb873ebf78b2c18d37fa8ab5cb494b1d16826ffe7617a9711ba917e01b89469",
+    "listed_members": [
+     "0x055589229506ee89645ef08ebe9b9a863486d0de"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "1f49b190b3b3a5a59c336932aa2146f117f38247",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-010",
+   "compilation_target": "src/admin/ProtocolGuardian.sol:ProtocolGuardian",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xceb7ed5d5b3bad3088f6a1697738b60d829635c6",
+   "build_input_sha256": "42ff0748873ec44fe1b31100ca34b387704f704bf4ef12d1dc4c01a28537e85a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x47d3b74a5759a554da828dae9fba4129670ca9163b407d469fb6afd622dd8cd9",
+    "listed_members": [
+     "0xceb7ed5d5b3bad3088f6a1697738b60d829635c6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 19,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-011",
+   "compilation_target": "src/admin/TokenRecoverer.sol:TokenRecoverer",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x1e70530e9555711f8df4838ab940b97c039b4037",
+   "build_input_sha256": "54557f134f40ae068be790e24f909e32f3c1b90dc09e283bf21bf0b75ef840af",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa320137de36a4e1c3633c1422bc7969c119185a5dbf3d7a1b6f7a3d4f3e1f110",
+    "listed_members": [
+     "0x1e70530e9555711f8df4838ab940b97c039b4037"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-012",
+   "compilation_target": "src/common/GasService.sol:GasService",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x295262f96186505ce67c67b9d29e36ad1f9eae88",
+   "build_input_sha256": "b6f10045424bed94420655717c949bac28d5e6ee9914c6f00bb96604a24d5029",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9fa82ba9294e62948423e08c68b5c4c600f9142ff31b07ed30b2c16e449fe89c",
+    "listed_members": [
+     "0x295262f96186505ce67c67b9d29e36ad1f9eae88"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-013",
+   "compilation_target": "src/common/Gateway.sol:Gateway",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x51ea340b3fe9059b48f935d5a80e127d587b6f89",
+   "build_input_sha256": "a5259ca1cc7b420a7b1d93df6ed07a48f8bb3e0241c0f9db6d6b0e4da2dfda61",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0f118478d5bf7a77dd4c4f158b160b43418eb2e51ad37dc238c24045c082b082",
+    "listed_members": [
+     "0x51ea340b3fe9059b48f935d5a80e127d587b6f89"
+    ],
+    "member_count": 1
+   },
+   "source_files": 24,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-014",
+   "compilation_target": "src/common/Guardian.sol:Guardian",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xfee13c017693a4706391d516acabf6789d5c3157",
+   "build_input_sha256": "4a7ca2295e721d79d08ac5d63ab58fd86ae6f575f1e0c67d9dc544b1d06d1629",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3b5f09ce80713e75db4e63a1e41b3eb0d2514a3509352753c11471106c08bd72",
+    "listed_members": [
+     "0xfee13c017693a4706391d516acabf6789d5c3157"
+    ],
+    "member_count": 1
+   },
+   "source_files": 19,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-015",
+   "compilation_target": "src/common/MessageDispatcher.sol:MessageDispatcher",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x21af0c29611cfaaff9271c8a3f84f2bc31d59132",
+   "build_input_sha256": "f66c1f5cbf3d449794f29ccbe4e1d2f66d7ecc634e3fedfdbece7246b79a3413",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x94d435dfdb60cbf6c1ea70e1f53510e779361f6ff6ea48feb9176039a0ba6ad6",
+    "listed_members": [
+     "0x21af0c29611cfaaff9271c8a3f84f2bc31d59132"
+    ],
+    "member_count": 1
+   },
+   "source_files": 20,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-016",
+   "compilation_target": "src/common/MessageProcessor.sol:MessageProcessor",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xe994149c6d00fe8708f843dc73973d1e7205530d",
+   "build_input_sha256": "70b1156c9ca46902f01681d7dee8c0f6c69585e7934b2e85b2fab4ea788040c1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4937c7bf6a19b6836d5127ab982ba217202f6a6f59a0fb4ec02101436228e994",
+    "listed_members": [
+     "0xe994149c6d00fe8708f843dc73973d1e7205530d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 18,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-018",
+   "compilation_target": "src/common/Root.sol:Root",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x7ed48c31f2fdc40d37407cbabf0870b2b688368f",
+   "build_input_sha256": "d472f0b5312cfb60c7fe51bc696265c0493aa273d201a04fe758384dee098a24",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4c52ecbbb2915e51e056c8061997658d56bd4644233350617f11586423c6c42e",
+    "listed_members": [
+     "0x7ed48c31f2fdc40d37407cbabf0870b2b688368f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-019",
+   "compilation_target": "src/common/TokenRecoverer.sol:TokenRecoverer",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x94269dbaba605b63321221679df1356be0c00e63",
+   "build_input_sha256": "b00ca98ef5fd297530cc835f0a474fdb1589a501d7ad83774291a5f7a9b36fe5",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf722bb61a8ad2161c7d49fd71030042fbe289bec05fe58e07edb5e6dee7570e8",
+    "listed_members": [
+     "0x94269dbaba605b63321221679df1356be0c00e63"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-020",
+   "compilation_target": "src/common/adapters/AxelarAdapter.sol:AxelarAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x52271c9a29d0f97c350bbe32b3377cdd26026d0a",
+   "build_input_sha256": "be355f091fc279e0189ac135951ee59b63ea5deed76fa473d72eae2362cb4d22",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x153c9b3238960b238e412f4f6f5199c9df65e5d47cdb328dff6822622aae4975",
+    "listed_members": [
+     "0x52271c9a29d0f97c350bbe32b3377cdd26026d0a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-021",
+   "compilation_target": "src/common/adapters/MultiAdapter.sol:MultiAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x457c91384c984b1659157160e8543adb12bc5317",
+   "build_input_sha256": "a81c0a466765fdb77847f80bbfb7153cd89188eee18efc600cb9131a58ae4458",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd8475b3d2b26a7b7d14959677ae9291f869576f93805e0107b1be730355e65b0",
+    "listed_members": [
+     "0x457c91384c984b1659157160e8543adb12bc5317"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-022",
+   "compilation_target": "src/common/adapters/WormholeAdapter.sol:WormholeAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x6b98679eec5b5de3a803dc801b2f12adddcd39ec",
+   "build_input_sha256": "80ccdaba41442dc75a6a4dc9dbd36357b3a3569432c98623b79d74ac948d5453",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb2fbac7c5ce3450169cc97aa881784879762602329d6425049ec3e4389ba1cd8",
+    "listed_members": [
+     "0x6b98679eec5b5de3a803dc801b2f12adddcd39ec"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-023",
+   "compilation_target": "src/common/factories/PoolEscrowFactory.sol:PoolEscrowFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xd166b3210edbeedea73c7b2e8ab64bdd30c980e9",
+   "build_input_sha256": "cf16bf689be7ed6ef6cf412f770553ebb2781c7f2ce45a921a9b128a12e59c00",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xdfb9aba663ed40a7b7fb111fb180e1d7cba24358fd55f2a487e86abeb5b177b9",
+    "listed_members": [
+     "0xd166b3210edbeedea73c7b2e8ab64bdd30c980e9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 18,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-024",
+   "compilation_target": "src/core/hub/Accounting.sol:Accounting",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x050206c38f06e4710c4a37d39f75ddc5c16a7396",
+   "build_input_sha256": "ad09693435b88f3c69a773977bc7390c61fa437bab4f9347b64fd05dd48a2f74",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x467a9ea281af64ec36f53c12d5e2a014b943572a2fe8e38ab5e9a3487cc83455",
+    "listed_members": [
+     "0x050206c38f06e4710c4a37d39f75ddc5c16a7396"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-025",
+   "compilation_target": "src/core/hub/Holdings.sol:Holdings",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x3f0c8d8d2637881c3f6d8531f51a47c2094c918d",
+   "build_input_sha256": "37706373d1a73b0d55154ec842aa90abc4a35cc28ff454e6f7bd616dd05d396e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd38c11c8fa8e526046a62d6f98bec724ad0a9aa54b42bba4c14875890c19bf79",
+    "listed_members": [
+     "0x3f0c8d8d2637881c3f6d8531f51a47c2094c918d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 19,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-026",
+   "compilation_target": "src/core/hub/Hub.sol:Hub",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xa4a7bb3831958463b3fe3e27a6a160f764341953",
+   "build_input_sha256": "afc8c4121e26c30ef983e0a4c31cb306a66142a0a023a3715b162b85e04432a8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x41e637b14249606ff50e4652bb6d0b9f6e101b758bd1abf912ef325523b5dfc2",
+    "listed_members": [
+     "0xa4a7bb3831958463b3fe3e27a6a160f764341953"
+    ],
+    "member_count": 1
+   },
+   "source_files": 42,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-027",
+   "compilation_target": "src/core/hub/HubHandler.sol:HubHandler",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x0defb429b1663698da4bae3278393f6844c3392c",
+   "build_input_sha256": "73ecbe93d286c80471b5b8d86d7a0108c20e32efae9c5d6e5d31f570e26baf46",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xda3d572406aa1900dba480d6b5b98782c650de1a281397862ff67c3a94ccd8ef",
+    "listed_members": [
+     "0x0defb429b1663698da4bae3278393f6844c3392c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 36,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-028",
+   "compilation_target": "src/core/hub/HubRegistry.sol:HubRegistry",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x19f46d8130e610c6c0f0116ea40fb781defade93",
+   "build_input_sha256": "568a93184f9dc2b125dc06b56c9580430ec3815287abc7532500c071f57fa175",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x30660cdc1e7ba7b3a111d67bf5da5b41baa9bfa3220fb03808d71dfb02aee83c",
+    "listed_members": [
+     "0x19f46d8130e610c6c0f0116ea40fb781defade93"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-029",
+   "compilation_target": "src/core/hub/ShareClassManager.sol:ShareClassManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xaffc269c8fe18ee9c7ddb22301ac2c2507d69bef",
+   "build_input_sha256": "bab39a77da2d9cbfec6e4a1d689b4bf78a21355396815d6ce8c2dde8b5fb7779",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb394df936664acfd16e5daa4d50c02e2317d33917cee65c3a4201195f6e37641",
+    "listed_members": [
+     "0xaffc269c8fe18ee9c7ddb22301ac2c2507d69bef"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-030",
+   "compilation_target": "src/core/messaging/GasService.sol:GasService",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xbebef21d686a957dececce6a58455fa0f16754be",
+   "build_input_sha256": "63d83c0bc29e6cf5cc350727f29439a475c7f386af07279f5dda60cc821057eb",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2bdcfd9e6d1dd2fa0660fbf683ccec9c3eede739c094c4480bb110f15e1d75a4",
+    "listed_members": [
+     "0xbebef21d686a957dececce6a58455fa0f16754be"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-031",
+   "compilation_target": "src/core/messaging/Gateway.sol:Gateway",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x19a524d03aa94ecee41a80341537bcfcb47d3172",
+   "build_input_sha256": "c64a49c4a0bb0fd25a1fdb8ed5309452d6cd38d93231a00ac56edf686b9ccb2e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5b0f679f89def36a92ba27d296ed1fe8ad467ee6bd0c0dccfd398b854c3f8fe6",
+    "listed_members": [
+     "0x19a524d03aa94ecee41a80341537bcfcb47d3172"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-032",
+   "compilation_target": "src/core/messaging/MessageDispatcher.sol:MessageDispatcher",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xf837a22883e004f705e0d7e1dee08e295df30b27",
+   "build_input_sha256": "6a3eb7eded9de87b4cd3a9dece7a08cdd28d170d6a00d9b0e51e4e85282fe78e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3458bb3110f512bcb0c4dc2bb79b8dd66e9a44c33aa8ee05c276f14a420ad554",
+    "listed_members": [
+     "0xf837a22883e004f705e0d7e1dee08e295df30b27"
+    ],
+    "member_count": 1
+   },
+   "source_files": 26,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-033",
+   "compilation_target": "src/core/messaging/MessageProcessor.sol:MessageProcessor",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x97cc7e9dafdd725cc23b25eebc93c4384b4fe30a",
+   "build_input_sha256": "e93dc82420a4918cbd6c7c00919f953be38e314b5ccaf50bb637330c39503c95",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa162ad9f9ba1f9b36d703cc0be05a32c343ec8da88b8f23e2d8051deb592718e",
+    "listed_members": [
+     "0x97cc7e9dafdd725cc23b25eebc93c4384b4fe30a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 25,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-034",
+   "compilation_target": "src/core/messaging/MultiAdapter.sol:MultiAdapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x35c837f0a54b715a23d193e1476bfc9bc30073be",
+   "build_input_sha256": "8e5e1ed01c189086332643027eae7056a689defc97bfbb1a16aa62a201a530ea",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2355096f88dae70a0883e5fe6312d2f62ea00e024d3a423ef58f5167a8bae2b5",
+    "listed_members": [
+     "0x35c837f0a54b715a23d193e1476bfc9bc30073be"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-035",
+   "compilation_target": "src/core/spoke/BalanceSheet.sol:BalanceSheet",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x12a110ce5f0fc871cc72bc7ecaf35cf39dd0f43e",
+   "build_input_sha256": "18124d96cca2bcc1a6cce21f7b9c3d1d25207a101ab8a328239886e7ecaba3d5",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xae70c02f0dc9a1b53e304684ad69601404fd503e441d7d5e7dff59ee097af850",
+    "listed_members": [
+     "0x12a110ce5f0fc871cc72bc7ecaf35cf39dd0f43e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 45,
+   "commit_basis": "closest",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-039",
+   "compilation_target": "src/core/spoke/Spoke.sol:Spoke",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xec3582fcdc34078a4b7a8c75a5a3ae46f48525ab",
+   "build_input_sha256": "f4f38d852b9828ec0dfa436757a71dd05ddd7c53e503a6b80c1f8ff3be1e20d4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4f768fa27d964dd8447a8eb3dcfdb3e28462feeb74a7f40b8535480094941b42",
+    "listed_members": [
+     "0xec3582fcdc34078a4b7a8c75a5a3ae46f48525ab"
+    ],
+    "member_count": 1
+   },
+   "source_files": 36,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-040",
+   "compilation_target": "src/core/spoke/VaultRegistry.sol:VaultRegistry",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xd9531ac47928c3386346f82d9a2478960bf2ca7b",
+   "build_input_sha256": "889588d8c7e44436601714d09728e6a3f36c83f48e695583ddce0d12091c9d71",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1f0d48eaee2eeb84da24073deb6d1a265e7cc587cfef82f20292d0d6a8973f52",
+    "listed_members": [
+     "0xd9531ac47928c3386346f82d9a2478960bf2ca7b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 38,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-041",
+   "compilation_target": "src/core/spoke/factories/PoolEscrowFactory.sol:PoolEscrowFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x5187a505c485e22f0b8a5fbdf69ef1c29c478ce3",
+   "build_input_sha256": "5acc1bceb7c4257919c807a602c2a57822873142db90edeabeba3de6d35b80ea",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x21b18c41381a9a0d81cfb7ed1ec009378dea601c71b2dee3845dc1beabb76ba1",
+    "listed_members": [
+     "0x5187a505c485e22f0b8a5fbdf69ef1c29c478ce3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 18,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-042",
+   "compilation_target": "src/core/spoke/factories/TokenFactory.sol:TokenFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xce1616505f93215751fbb41efac618b631997c38",
+   "build_input_sha256": "097b83d35508af2a729fb459f9627dc7fc368dcf3a2c549248ae890836749c0d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x535c5f521cc475961856aa5a359ee21344a0da264ebd15b4f979396ac333b35d",
+    "listed_members": [
+     "0xce1616505f93215751fbb41efac618b631997c38"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "0ea141dc46cd6c490fce90ae94e834c832a9a393",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-043",
+   "compilation_target": "src/core/utils/ContractUpdater.sol:ContractUpdater",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x3b150b19245d2c366bc8f18c775b725dfb298f71",
+   "build_input_sha256": "ce1340da62d0224eb20e8352be0dc603a1f91b4e2faf97e1b583b8f5df475fc4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc4f9fc1362c028186eff86963ce5b29353ffc832e954a1004ee58c97c2bcb91c",
+    "listed_members": [
+     "0x3b150b19245d2c366bc8f18c775b725dfb298f71"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-044",
+   "compilation_target": "src/hooks/FreelyTransferable.sol:FreelyTransferable",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xbce8c1f411484c28a64f7a6e3fa63c56b6f3ddde",
+   "build_input_sha256": "e4fd5cd2f4d1acc730d6d642e5e3388bc7883f0c62f4f12891d260dd4f587acf",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xed1bd2df2fd5ef449333d92af6ce909e15b48683fac20d2b00bffc5bbc8c16ad",
+    "listed_members": [
+     "0xbce8c1f411484c28a64f7a6e3fa63c56b6f3ddde"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-046",
+   "compilation_target": "src/hooks/FreelyTransferable.sol:FreelyTransferable",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x2a9b9c14851baf7ad19f26607c9171ca1e7a1a61",
+   "build_input_sha256": "e69a70f9d5616c7b555f418fda73736892073f3d4f83da5e0dced46e97c4c563",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbf05beb9b50ff366917a82ebb113d18c350568e0e425dafb0111dbe264b739c8",
+    "listed_members": [
+     "0x2a9b9c14851baf7ad19f26607c9171ca1e7a1a61"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "c4a130f6c4d00886f218a1e36ac7b67731756c06",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-047",
+   "compilation_target": "src/hooks/FreezeOnly.sol:FreezeOnly",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xd5b243f05b2906f1f6c80c6096945faada0731c1",
+   "build_input_sha256": "fcf39d3996747eb20a4bb3970f51b3c583f4d80f375f78158ac96dd72d9ec910",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9c7c12d77f365736b29086476e6e66959f01ef1a7f1abbe93530e8f68c4e7143",
+    "listed_members": [
+     "0xd5b243f05b2906f1f6c80c6096945faada0731c1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "c4a130f6c4d00886f218a1e36ac7b67731756c06",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-048",
+   "compilation_target": "src/hooks/FreezeOnly.sol:FreezeOnly",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xbb7abfb0e62dfb36e02ceecda59adfd71f50c88e",
+   "build_input_sha256": "9784878ec22b2adcaf2b27f6c43e5e299f89c8ed62e988933549aa1d1a1393b0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x34741d88a61aef94759a8067948a2cf166129fba6dd0b2828f788d600b0e5a58",
+    "listed_members": [
+     "0xbb7abfb0e62dfb36e02ceecda59adfd71f50c88e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-050",
+   "compilation_target": "src/hooks/FullRestrictions.sol:FullRestrictions",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x21cdcc686fecd9fb0d3ee300e555c06497b55ecc",
+   "build_input_sha256": "0a85b7a478bf689439c003bf14bb11b1a78abebae863bc6596504e13423fc49e",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x1b7ef1258f3ace76ce3ed0dcf4b1fc13f40162de00223b9e79b039dffbfc7790",
+    "listed_members": [
+     "0x21cdcc686fecd9fb0d3ee300e555c06497b55ecc",
+     "0x3c5e7b28c4ff6f0bc8d9a9587992e96401e680a7"
+    ],
+    "member_count": 2
+   },
+   "source_files": 49,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-051",
+   "compilation_target": "src/hooks/FullRestrictions.sol:FullRestrictions",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x8e680873b4c77e6088b4ba0abd59d100c3d224a4",
+   "build_input_sha256": "110ec86958e079b8ad220935978fd4d61e10b66a1cc4cf90d6b89e9c2a5fd583",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1b7ef1258f3ace76ce3ed0dcf4b1fc13f40162de00223b9e79b039dffbfc7790",
+    "listed_members": [
+     "0x8e680873b4c77e6088b4ba0abd59d100c3d224a4"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-052",
+   "compilation_target": "src/hooks/FullRestrictions.sol:FullRestrictions",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xa2c98f0f76da0c97039688ca6280d082942d0b48",
+   "build_input_sha256": "cbe6926908a880b8cae0fd30345db8ac45a575be3f67ab543b6d1dfced263ca6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x41bea0d882fa28c3dfe097458b405b4e3216de1bcd423c2102b15e34225012fc",
+    "listed_members": [
+     "0xa2c98f0f76da0c97039688ca6280d082942d0b48"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-053",
+   "compilation_target": "src/hooks/RedemptionRestrictions.sol:RedemptionRestrictions",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xf0c36efd5f6465d18b9679ee1407a3fc9a2955dd",
+   "build_input_sha256": "b13e0d1082e16080e0b5fbce7e4ebe4d5669d05de785b80ef8f545fdae83f88f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x72b4f12576a3d9ee8b3ce28991392ea2d73283d40d52b28dbeb0f12ac6c0d38c",
+    "listed_members": [
+     "0xf0c36efd5f6465d18b9679ee1407a3fc9a2955dd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-054",
+   "compilation_target": "src/hooks/RedemptionRestrictions.sol:RedemptionRestrictions",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xe5423ed8602fa0f263e17b6212d88efe42317f06",
+   "build_input_sha256": "4ee2b71f6fd42e093bce8468ab9271e84742dde3157f19eaafac6529d52d8fad",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7caed61aa59cd40af71b5c210c1478a33ba9b31e15649ebf7c20370ce7abd9db",
+    "listed_members": [
+     "0xe5423ed8602fa0f263e17b6212d88efe42317f06"
+    ],
+    "member_count": 1
+   },
+   "source_files": 49,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-055",
+   "compilation_target": "src/hub/Accounting.sol:Accounting",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xe999a426d92c30fee4f074b3a53071a6e935419f",
+   "build_input_sha256": "4e627cc94094b36b61486b15718e31bbb47296865156256a99550ffb418f9c52",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb74a73bb747d6bc885391a799e63757dd46560e1cf721165318dd79150902f3f",
+    "listed_members": [
+     "0xe999a426d92c30fee4f074b3a53071a6e935419f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-056",
+   "compilation_target": "src/hub/Holdings.sol:Holdings",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x0261fa29b3f2784af17874428b58d971b6652c47",
+   "build_input_sha256": "67d2cf26cfc22d9b2de76f479f4d28566a91f28e9979686d908374d20638760f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd1cfd6cadcc95654df95c5f5a3de3f04a389f6ebe0db2d20f07b3c751bde6f76",
+    "listed_members": [
+     "0x0261fa29b3f2784af17874428b58d971b6652c47"
+    ],
+    "member_count": 1
+   },
+   "source_files": 17,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-057",
+   "compilation_target": "src/hub/Hub.sol:Hub",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x9c8454a506263549f07c80698e276e3622077098",
+   "build_input_sha256": "e28343af087716814baeb1b337f5e964e1a96eb6b7d7ef9032a2cfc9b342049d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x53580fb1d81f56f3bba7943c447501a6f9350a782784405fbb5402fdf9aa576a",
+    "listed_members": [
+     "0x9c8454a506263549f07c80698e276e3622077098"
+    ],
+    "member_count": 1
+   },
+   "source_files": 40,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-058",
+   "compilation_target": "src/hub/HubHelpers.sol:HubHelpers",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xa30d9e76a80675a719d835a74d09683ad2cb71ee",
+   "build_input_sha256": "8fefdf6f9dcc7a85534c6d56462aa5e567c0f322651567071aa5374b1dea68b2",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x75251d0117da7c9451bcd4eafda93befce086225cc14a8cdb71324ad781be242",
+    "listed_members": [
+     "0xa30d9e76a80675a719d835a74d09683ad2cb71ee"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-059",
+   "compilation_target": "src/hub/HubRegistry.sol:HubRegistry",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x12044ef361cc3446cb7d36541c8411ee4e6f52cb",
+   "build_input_sha256": "18e13e30bd4f1453e25d60d787f7aa9a2c5423a76b795ed510b4d95cd57bfa51",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8802450ca679d9fb3e9a80127ed5d04127333c63444b49daa172e455fbe7c313",
+    "listed_members": [
+     "0x12044ef361cc3446cb7d36541c8411ee4e6f52cb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-060",
+   "compilation_target": "src/hub/ShareClassManager.sol:ShareClassManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xe88e712d60bfd23048dbc677feb44e2145f2cdf4",
+   "build_input_sha256": "9819987daa2edf29e330a9452594eba78cdcbba1b69a9f6c714f1b6460b514f5",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfac541fb8e9075d3b278c6fe690825fa773505273b34901b223e30918a52df4f",
+    "listed_members": [
+     "0xe88e712d60bfd23048dbc677feb44e2145f2cdf4"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-061",
+   "compilation_target": "src/managers/MerkleProofManager.sol:MerkleProofManagerFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xabd3cdc17c15a9e7771876ce24ab10a8e722781d",
+   "build_input_sha256": "8c278b1d37ce64fb571d2182bc4b844b6ab4bb08031c7dcdcbb6907a2c3561de",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4a6abec25a26e8e9c2436ae5e2e4a1de0e9d707ba013e20f50e17c0ed2281202",
+    "listed_members": [
+     "0xabd3cdc17c15a9e7771876ce24ab10a8e722781d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 38,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-064",
+   "compilation_target": "src/managers/OnOfframpManager.sol:OnOfframpManagerFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xcb084f79e8ae54e1373130f4f7119214fce972a9",
+   "build_input_sha256": "d4183fb0456fa509926f08d5bd27b6c0c7a238ae51af26377be50a3e05088f6e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4d4bbd9217d68200e7ad86d065af0b5449c7826bf9a8ece8386eb63f9ef71e4d",
+    "listed_members": [
+     "0xcb084f79e8ae54e1373130f4f7119214fce972a9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 38,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-065",
+   "compilation_target": "src/managers/decoders/CircleDecoder.sol:CircleDecoder",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x6fce63e718fed6e20baa8179e313c24cbf2eda24",
+   "build_input_sha256": "9a2f4a0a129271f6a7f13fb7bfebb7055b40eb0c0c0e49b66b2eaf24e398c6d6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x02eddf2da52ae284972b8b8cb9ce63febfcd236d4fae60aa7221993a6d6cdf5c",
+    "listed_members": [
+     "0x6fce63e718fed6e20baa8179e313c24cbf2eda24"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-066",
+   "compilation_target": "src/managers/decoders/VaultDecoder.sol:VaultDecoder",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x72b188c37bd8eb002d0d9c63ccd77f2ff71d272e",
+   "build_input_sha256": "8ad7a521d6b37b8edffeead6c72d3b2684381f36376bc1f4f0ceb3dab1d11bfa",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x39ddefbf9a5337c04fe9f2946fcb7e83bd584b4a25b1097e2973e64b4020e57c",
+    "listed_members": [
+     "0x72b188c37bd8eb002d0d9c63ccd77f2ff71d272e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-067",
+   "compilation_target": "src/managers/hub/NAVManager.sol:NAVManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x493b6c8ccc7bfd43c5a20c4f2c648701f74e9130",
+   "build_input_sha256": "2d471b762a24cecf2d9e43042ee447a498dc9f67af5c4ebfbc5abcfbd217172b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5057ad47bfba1e96eb40f76562b87bc2058c43569a1b1e2f95c5336741fbdaa9",
+    "listed_members": [
+     "0x493b6c8ccc7bfd43c5a20c4f2c648701f74e9130"
+    ],
+    "member_count": 1
+   },
+   "source_files": 28,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "19e808a6863184926970bdf625e36f30910f24fb",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-068",
+   "compilation_target": "src/managers/hub/SimplePriceManager.sol:SimplePriceManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x280c94eb440a8a75c2f8f6ca8c6faff907000823",
+   "build_input_sha256": "d2043c8330fca2cfab0a52c3283715f01143de2cbf13ae52597480010c4c69ae",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd26e5f549e766ea740be166e5f1d811022bec9463ce3b1d029ab479f8083a5bb",
+    "listed_members": [
+     "0x280c94eb440a8a75c2f8f6ca8c6faff907000823"
+    ],
+    "member_count": 1
+   },
+   "source_files": 33,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-069",
+   "compilation_target": "src/managers/spoke/AccountingToken.sol:AccountingToken",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x15a5d180a4b8da06268260b7b4f89ee7d239b6c5",
+   "build_input_sha256": "032d2bdcb97a3ee5f9e3409a0d68cf8963b456f78c558164bf8bca8e64196fed",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc9877ebab146b08a490e6c38fa5fb07187db1b7ed212a3bba261541dd757685b",
+    "listed_members": [
+     "0x15a5d180a4b8da06268260b7b4f89ee7d239b6c5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 10,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "0691df84720c2ec67d9f23768d2eb65e44243ad7",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-070",
+   "compilation_target": "src/managers/spoke/FlashLoanHelper.sol:FlashLoanHelper",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x0ea533edfb5e837f40756ff3b0a8654f062c6f3e",
+   "build_input_sha256": "c1fa061d9b45dc2988eab4b17a2da39851c9e106ee885a41409e918d2cfd8aff",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x45a5884bbbb67308edec0880c2d01fbf4ab6c23d199bc64d9b6c30aaad53ea12",
+    "listed_members": [
+     "0x0ea533edfb5e837f40756ff3b0a8654f062c6f3e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 40,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "87c358fa52bea91017fc3a848bc07db815eed91c",
+   "commit_tags": [
+    "v3.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-073",
+   "compilation_target": "src/managers/spoke/MerkleProofManager.sol:MerkleProofManagerFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xc5243bdea2d86ea7541ac69084df3eddc137a18b",
+   "build_input_sha256": "4d7ce1cf04b807e65087040232bdc9f45d004aa0f6f41637a0c15fdf1626eb25",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbb4200e57ccf2fa68b19e3a637142073f9966c7dbfb68c8ce1ac7f6cfc547dc4",
+    "listed_members": [
+     "0xc5243bdea2d86ea7541ac69084df3eddc137a18b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 43,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-074",
+   "compilation_target": "src/managers/spoke/OnOffRamp.sol:OnOffRampFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x22e2f679669d69b6b6f22cc9c1731035a3fa0296",
+   "build_input_sha256": "d328b8b00517efc04ee7d81f79d6a9fd48d0469061a12e1e3221b367ec565145",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0d432b5fc92509a310ce60c8dfc41c095dd7a50a8f05cf7368f0bcb62b966ff6",
+    "listed_members": [
+     "0x22e2f679669d69b6b6f22cc9c1731035a3fa0296"
+    ],
+    "member_count": 1
+   },
+   "source_files": 40,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "87c358fa52bea91017fc3a848bc07db815eed91c",
+   "commit_tags": [
+    "v3.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-078",
+   "compilation_target": "src/managers/spoke/OnOfframpManager.sol:OnOfframpManagerFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x2539e60b0b50d7bd004a09e9d2b7e8c86eb0aaf6",
+   "build_input_sha256": "7e10f78fa6b02a39c879e4e378bc956dd57587aa2494b5d885e3f9e61ccacc64",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x365087ad71cbb82dbe3a62a67e7054914aefa8299a06fcd1af804fb503993793",
+    "listed_members": [
+     "0x2539e60b0b50d7bd004a09e9d2b7e8c86eb0aaf6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 43,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-079",
+   "compilation_target": "src/managers/spoke/QueueManager.sol:QueueManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x971aca9b4ab4895f400ba042fd10a31c7918d220",
+   "build_input_sha256": "9b445b49a8c333fe557d5028d93b16eec8baa295c750baef27c2a82fbd9a224f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x67de1504d8aa86017a74949e717a36d423ca64dc82e04c55fbc90737cfc62c25",
+    "listed_members": [
+     "0x971aca9b4ab4895f400ba042fd10a31c7918d220"
+    ],
+    "member_count": 1
+   },
+   "source_files": 39,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "c4a130f6c4d00886f218a1e36ac7b67731756c06",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-080",
+   "compilation_target": "src/managers/spoke/ScriptHelpers.sol:ScriptHelpers",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x052bb2c1f1551d7cc5373c39c3bc00dcd1f2154c",
+   "build_input_sha256": "3a45da79ba31c147186241e998f650bece0d75ffcea3bacb2813aa38c17c960f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6fe5173ecb02792ca4ea1dfc2cbab70d12672bc2dcf57a22afe001567ae9e593",
+    "listed_members": [
+     "0x052bb2c1f1551d7cc5373c39c3bc00dcd1f2154c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "87c358fa52bea91017fc3a848bc07db815eed91c",
+   "commit_tags": [
+    "v3.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-081",
+   "compilation_target": "src/managers/spoke/decoders/CircleDecoder.sol:CircleDecoder",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xd40871a6336fd19a25a7bd96c0c0dd66ed60931d",
+   "build_input_sha256": "4047464c029efcf6e12b099784bc48be7c404916b439c4a82d853f6d4e5d2abd",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbc7f48d5ec8cabe728025ea805507d1e6152d3f77f81613bf5d052e380424599",
+    "listed_members": [
+     "0xd40871a6336fd19a25a7bd96c0c0dd66ed60931d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-082",
+   "compilation_target": "src/managers/spoke/decoders/VaultDecoder.sol:VaultDecoder",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x8ca5372a5613a6df75fd5fbc43216e68c1be6d38",
+   "build_input_sha256": "05bc96b7545dfb359295c99242ef953b63cc4496facb8a2286df997bdf9c5fbd",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe384ecd3939ebbde47cfdf2517aabf1d57aa0acd4afbdc14086b714aa72adad3",
+    "listed_members": [
+     "0x8ca5372a5613a6df75fd5fbc43216e68c1be6d38"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-083",
+   "compilation_target": "src/managers/spoke/guards/ApprovalGuard.sol:ApprovalGuard",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x06522ca52ad905b025b2863f84bf433672d65820",
+   "build_input_sha256": "2aa94dabc52cc34a6ea258f012744b0e0ed812353bf2632c5f2a9a856e6746dc",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x40b58b0e0c63293d5bdf78a55661f0bcd58991f0d593d722d931827d4c9d2df8",
+    "listed_members": [
+     "0x06522ca52ad905b025b2863f84bf433672d65820"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "87c358fa52bea91017fc3a848bc07db815eed91c",
+   "commit_tags": [
+    "v3.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-084",
+   "compilation_target": "src/managers/spoke/guards/CircuitBreakerGuard.sol:CircuitBreakerGuard",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x6466899918602f6fc5bf5c010ddef417df7057ea",
+   "build_input_sha256": "576ce65691cb2d0b4927b87bc6efc3c4b003055f67246b5f3cfa0002225216a4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb12643e0292ebab4182b24f934f435760581aae578a52442973419167b74115c",
+    "listed_members": [
+     "0x6466899918602f6fc5bf5c010ddef417df7057ea"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "87c358fa52bea91017fc3a848bc07db815eed91c",
+   "commit_tags": [
+    "v3.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-085",
+   "compilation_target": "src/managers/spoke/guards/SlippageGuard.sol:SlippageGuard",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x069385b688b1764b15e39e93adfe12b768c8bf95",
+   "build_input_sha256": "0cccfafcd1653c7a10da4ae2821cd76a2307d2dc19b4c07979cfc4617e7952c8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xab2834e7a69a3da252e79dcc693116eeac56f99f64f23b69c736010a6f60b491",
+    "listed_members": [
+     "0x069385b688b1764b15e39e93adfe12b768c8bf95"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-086",
+   "compilation_target": "src/misc/Escrow.sol:Escrow",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x43d51be0b6de2199a2396ba604114d24383f91e9",
+   "build_input_sha256": "1c26142ceed0d33ddb233c753979ec9a9e453ccdd9c45c6dc6db8796bfd57b35",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0xdb5ad24f0d476c612e59183b88940bddab8512f189bb2299ddd0de9dd879baad",
+    "listed_members": [
+     "0x43d51be0b6de2199a2396ba604114d24383f91e9",
+     "0xb86b6ae94e6d05aac086665534a73fee557ee9f6"
+    ],
+    "member_count": 2
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-087",
+   "compilation_target": "src/misc/IdentityValuation.sol:IdentityValuation",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x3b8fae903a6511f9707a2f45747a0de3b747711f",
+   "build_input_sha256": "2b11fc52348214687f24723035155ba64b4885400fba69341c92998e5ec09d39",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf2aaeaaf8e85551d14cfcf64fb20e0a143548f4354ea08f60c8a68fd67556238",
+    "listed_members": [
+     "0x3b8fae903a6511f9707a2f45747a0de3b747711f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-088",
+   "compilation_target": "src/spell/AddChainlinkPharosEthSpell.sol:AddChainlinkPharosEthSpell",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x11fe6d540a31267904fc21756dad824eae63541b",
+   "build_input_sha256": "ec61b7a87f44bf29ba6c50cc03c6c0ea180acf843df80e2dc0c6cc76b5033352",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd74fd42bf064fc7cdb20267a5b50432514de098b0e85a7c7a557e5ab574fefd7",
+    "listed_members": [
+     "0x11fe6d540a31267904fc21756dad824eae63541b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "closest",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-089",
+   "compilation_target": "src/spell/AddChainlinkPlumeEthSpell.sol:AddChainlinkPlumeEthSpell",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xdb357215df52308cf55ea30755db7e0fb124052b",
+   "build_input_sha256": "5065be5c33a71121d0aeb29c5ae633e56f82f43a6b8b551fbe01c2bd5012727d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3a5352022a6d0344c59003b091c4221676ed22075096c3cc492158f467b6fb94",
+    "listed_members": [
+     "0xdb357215df52308cf55ea30755db7e0fb124052b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "closest",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-090",
+   "compilation_target": "src/spell/V2CleaningsSpell.sol:V2CleaningsSpell",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x9f10617b39438c4da5afc6f41e30080ebf6653fe",
+   "build_input_sha256": "5f1e080bc1c20de11845ebc1aa8ad31c60b006c174e7abde678126e8c0bd4057",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x08ce2d414bb3265af6b2630ef9191a942005269a7701697b628e592f1def6373",
+    "listed_members": [
+     "0x9f10617b39438c4da5afc6f41e30080ebf6653fe"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "2c087514a095ca284386d870f2732bcfbcf94bc3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-091",
+   "compilation_target": "src/spell/migration_v3.1/MigrationSpell.sol:MigrationSpell",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xe97ac43a22b8df15d53503cf8001f12c6b349327",
+   "build_input_sha256": "6437b25301bedcdd14717237effe31705e8178a7abb40b5f465718b43aa17765",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x821806b11b0b74f700b0fbcfcb70109021edd4ae4df20f80cbcd45d82e6883f5",
+    "listed_members": [
+     "0xa1f32b0baa71e1cc4adc71a59d1bd82df116b6b3",
+     "0xe97ac43a22b8df15d53503cf8001f12c6b349327"
+    ],
+    "member_count": 2
+   },
+   "source_files": 112,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "c4dcd1aedfd37e067ec42ebee00a294e8bee3168",
+   "commit_tags": [
+    "deploy-mainnet-v3.1-c4dcd1a"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-092",
+   "compilation_target": "src/spoke/BalanceSheet.sol:BalanceSheet",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xbcc8d02d409e439d98453c0b1ffa398dffb31fda",
+   "build_input_sha256": "5fc91efaba2263b24d2a4684f62ff543bae56d174a0875cfa035ab969d8a58b6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbe71d3c9b0f1cab1e4cfb25cd18519028e1c3eb18bfee9b899c757f3205e5141",
+    "listed_members": [
+     "0xbcc8d02d409e439d98453c0b1ffa398dffb31fda"
+    ],
+    "member_count": 1
+   },
+   "source_files": 41,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-093",
+   "compilation_target": "src/spoke/ContractUpdater.sol:ContractUpdater",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x8dd5a3d4e9ec54388dad23b8a1f3b2159b2f2d85",
+   "build_input_sha256": "0d561201e13d8dddb62e88c5020e718e55ec1c35245f5f59a5cb2527e0670721",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf343a8173a3a07e575ae3b2406fd2deb25f944bc25ba691d0d0ea2ae4fb107da",
+    "listed_members": [
+     "0x8dd5a3d4e9ec54388dad23b8a1f3b2159b2f2d85"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-097",
+   "compilation_target": "src/spoke/Spoke.sol:Spoke",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xd30da1d7f964e5f6c2d9fe2aaa97517f6b23fa2b",
+   "build_input_sha256": "0d848eb3d76919cc99068a50afd45127e3ac72d7a70a9a081b2c40f90a3dae6d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3b6464a302d10950c231b7c9ad72ec2c0e0eda721140458ed994ef9ae89e7957",
+    "listed_members": [
+     "0xd30da1d7f964e5f6c2d9fe2aaa97517f6b23fa2b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 38,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-098",
+   "compilation_target": "src/spoke/factories/TokenFactory.sol:TokenFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xc8edca090b772c48bce5ae14eb7dd517cd70a32c",
+   "build_input_sha256": "158f91611cb67252d61859b1ac0e14da97fe96aec1460fbe3d0def287f5859f6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb7b28f5174553dd15f17d7abc7686398dd14872b2bec6b0c9a557477413c152c",
+    "listed_members": [
+     "0xc8edca090b772c48bce5ae14eb7dd517cd70a32c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-099",
+   "compilation_target": "src/token/Tranche.sol:Tranche",
+   "compiler": "0.8.26+commit.8a97fa7a",
+   "verification": "blockscout:bytecode-db at 0x5a0f93d040de44e78f251b03c43be9cf317dcf64",
+   "build_input_sha256": "9f27f400127b175fd7dd96f900d1ee76fc626a9575dfcaa812aa93527162d795",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x6b1fa9871963238049aaf4bae193a7f41feb6c8286352f06dd236417e89f9eca",
+    "listed_members": [
+     "0x5a0f93d040de44e78f251b03c43be9cf317dcf64",
+     "0x8c213ee79581ff4984583c6a801e5263418c4b86"
+    ],
+    "member_count": 2
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/liquidity-pools",
+   "commit": "109ba1560a0aa80e906e462147ac295d31e75b73",
+   "commit_tags": [
+    "release-v2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-100",
+   "compilation_target": "src/utils/RefundEscrowFactory.sol:RefundEscrowFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xc4f9a1dcf2e05eb55abb30baa7070838d3fd3d5b",
+   "build_input_sha256": "7d76b32b47bc404ddd2ebbc473a72ae0ed3d45c984720f984f80103f34c5689f",
+   "reproduction": {
+    "by_member": {
+     "exact": 16
+    },
+    "compiled_runtime_masked_keccak256": "0xc89550a9f5300883195d5c28c397458fb54823f1a0d8b0ea8529ec8a945b775f",
+    "listed_members": [
+     "0xc4f9a1dcf2e05eb55abb30baa7070838d3fd3d5b"
+    ],
+    "member_count": 16
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-101",
+   "compilation_target": "src/utils/SubsidyManager.sol:SubsidyManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xbfc7b60684880457030c08acee2e675cbcb9d646",
+   "build_input_sha256": "a0df1a81a309fd53c4df5eead577715ab34232a0dabe23aab4e68f1f2b56de24",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2ed543b8b269394a3dda43659eadb38478058c1ae0672a263538b13d2d57afae",
+    "listed_members": [
+     "0xbfc7b60684880457030c08acee2e675cbcb9d646"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-102",
+   "compilation_target": "src/valuations/IdentityValuation.sol:IdentityValuation",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x05e22c20b21c1314a0c93d34855358b9b96133cf",
+   "build_input_sha256": "dbf7ca4e5e1b378bc20045a120d5fc62fc6a43c8cdcad52239c88dac66bf75ed",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0488618ce8662597053abdcd75a79bc6f20a3b6462e30c4047e3f12eef3f9cf4",
+    "listed_members": [
+     "0x05e22c20b21c1314a0c93d34855358b9b96133cf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-103",
+   "compilation_target": "src/valuations/OracleValuation.sol:OracleValuation",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x8c3e9f3cf2dd057d6a2ea33d979faa0061b42c12",
+   "build_input_sha256": "9b165c4ad23df50d49276076d31575d1b3910512207983f0b9fb22c31d701c0f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x98ddd7fa25645a50e32b1dbe2265e3944f2cb1ea0d9796157d9fb54a97b167bf",
+    "listed_members": [
+     "0x8c3e9f3cf2dd057d6a2ea33d979faa0061b42c12"
+    ],
+    "member_count": 1
+   },
+   "source_files": 35,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "41e19975946ac60927f3db7087f6c0b67bf752bb",
+   "commit_tags": [
+    "deploy-testnet-v3.2-41e1997"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-104",
+   "compilation_target": "src/valuations/OracleValuation.sol:OracleValuation",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xcbdb6effc9b954d05df89c747ecaa8a143c26e6d",
+   "build_input_sha256": "5556a69899f12b2b6020260ee4a7329e38e8e59a68ec23ea3a846a34bac67586",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0e5f4a8a62b33dc4e4203b4bedbc3c3dad3940deb15d4eda3998edfc0268517b",
+    "listed_members": [
+     "0xcbdb6effc9b954d05df89c747ecaa8a143c26e6d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 34,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-105",
+   "compilation_target": "src/vaults/AsyncRequestManager.sol:AsyncRequestManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xf48256abddf96ecddc4b3dbd23e8c1921f9761ae",
+   "build_input_sha256": "fb31a0a244786b95d4e6465a29521ddfd659f946357b850adac75339fdd741fa",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0eb36583eaf6a81afb33039e0512ea3e57dd9079b63eeb1f99009ef2546e730d",
+    "listed_members": [
+     "0xf48256abddf96ecddc4b3dbd23e8c1921f9761ae"
+    ],
+    "member_count": 1
+   },
+   "source_files": 47,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9ef021e5e54513c36acb111cf5f48a29ac3d72f4",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-106",
+   "compilation_target": "src/vaults/AsyncRequestManager.sol:AsyncRequestManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x58d57896ebbf000c293327adf33689d0a7fd3d9a",
+   "build_input_sha256": "6603ab5c2d1993c60b9f593c2a63a338acfa38037faca1bee5f5c2af2b2892db",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x283e0907b7145ca7b6e0990786ade2d6b25369b5b55856dbcdcc16f55ca734c5",
+    "listed_members": [
+     "0x58d57896ebbf000c293327adf33689d0a7fd3d9a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 43,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-107",
+   "compilation_target": "src/vaults/AsyncRequestManager.sol:AsyncRequestManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xf06f89a1b6c601235729a689595571b7455dd433",
+   "build_input_sha256": "f688c09af7bc3fcdd8cddeff8a8f617c4585074a8508f90323748b524a8e7171",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa29b007cc6fcd18b73f3246a666fde5bef17cf668eb70128c11aa1b2c67a8ce5",
+    "listed_members": [
+     "0xf06f89a1b6c601235729a689595571b7455dd433"
+    ],
+    "member_count": 1
+   },
+   "source_files": 43,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "7ca5819788f6d28d8481932b237951c1ffb7ff3b",
+   "commit_tags": [
+    "v3.0.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-114",
+   "compilation_target": "src/vaults/BatchRequestManager.sol:BatchRequestManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xc52bd1bdfa0135147d3f01a0b6d6cd0a831dfe77",
+   "build_input_sha256": "1108dcc3bf1ca37519de7d5a21860dfd463f13e6b1f0d73cb82c854b134b1df8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xdaa39a1c960827d7f7a80ff6588d42d5ec38a8ee6bc6e4fef2277f2cab84d88d",
+    "listed_members": [
+     "0xc52bd1bdfa0135147d3f01a0b6d6cd0a831dfe77"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-116",
+   "compilation_target": "src/vaults/SyncManager.sol:SyncManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xff8ed1862f6ac3a8e89b81c75507c225e36e273d",
+   "build_input_sha256": "a3d458578062e9d8ded8e9da7187d8fe0c760a8080371952ec0aae42a405b6b0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9da7a915e21e575b664762691b586a5f5780049d51fdeb5dd0f62f5d36fd1e58",
+    "listed_members": [
+     "0xff8ed1862f6ac3a8e89b81c75507c225e36e273d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 51,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-117",
+   "compilation_target": "src/vaults/SyncManager.sol:SyncManager",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x0d82d9fa76cfcd6f4cc59f053b2458665c6ce773",
+   "build_input_sha256": "99b06f9e751e8ceb50697585772f89a3d41e44d37bccd39dd4fadc6f6c58759e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9d42f1b6567e46da7dd77d0dc5f1979102f6f24bc30ea9d2ace91c8ddfa0ef88",
+    "listed_members": [
+     "0x0d82d9fa76cfcd6f4cc59f053b2458665c6ce773"
+    ],
+    "member_count": 1
+   },
+   "source_files": 40,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-118",
+   "compilation_target": "src/vaults/VaultRouter.sol:VaultRouter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xdbccee499563d4ac2d3788ded3acb14fb92b175d",
+   "build_input_sha256": "6b653142cbe38b22e474a68cd812cc9c4a2bbceb7a2e5ef0693d84b084c4db62",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd320286dd9d4f90ee7ce46fb9c3b22194ea4d38ced98143d92da7f39c7dd2708",
+    "listed_members": [
+     "0xdbccee499563d4ac2d3788ded3acb14fb92b175d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 44,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-119",
+   "compilation_target": "src/vaults/VaultRouter.sol:VaultRouter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xf684014771c01e50b8b526968b3a1e33acda63f6",
+   "build_input_sha256": "ba4217855b055d3aabd2159173da3e42de1375121595a0b0a807cc5835f72834",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3a498805573268df46e6f855ebf779423a926e765ea7da7c244fb38795d37896",
+    "listed_members": [
+     "0xf684014771c01e50b8b526968b3a1e33acda63f6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 48,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "6b9d36eabee48728486f377ea2766a5cd233c555",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-120",
+   "compilation_target": "src/vaults/factories/AsyncVaultFactory.sol:AsyncVaultFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x55cde53b7dbc24336e34ffe233af8df10f72f0be",
+   "build_input_sha256": "09dc9ac7755c3e33d2f9e867be97e63488eca3b6f5ceb0e21f152652d6150832",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc1bf52e9cee3f5b867eec90641883f81d702f6f416f9b6690b64a9a82f4998b2",
+    "listed_members": [
+     "0x55cde53b7dbc24336e34ffe233af8df10f72f0be"
+    ],
+    "member_count": 1
+   },
+   "source_files": 55,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-121",
+   "compilation_target": "src/vaults/factories/AsyncVaultFactory.sol:AsyncVaultFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0xe01ce2e604cce985a06fa4f4bcd17f1f08417bf3",
+   "build_input_sha256": "cfc27b8f88cef6806b6df2329b65e2e277a04db1652bc25f6f19d61b97a1f12d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2132c56139694cb5cedb9b4cd21263bfccca44db20b0fa6ef2295ca08efb871a",
+    "listed_members": [
+     "0xe01ce2e604cce985a06fa4f4bcd17f1f08417bf3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-122",
+   "compilation_target": "src/vaults/factories/AsyncVaultFactory.sol:AsyncVaultFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xb47e57b4d477ff80c42db8b02cb5cb1a74b5d20a",
+   "build_input_sha256": "9ef4a5af77ef68102c9b1ad5fe6acb1eeb274a88ccc315afb5d94e427114f075",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x07f8bf0431ab31e141f7903b9c39e1b05216afec7b4c4af83df55d6c988cfc4c",
+    "listed_members": [
+     "0xb47e57b4d477ff80c42db8b02cb5cb1a74b5d20a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "64215de4b98c95c97de1b6decd88a3c1cd21933b",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-123",
+   "compilation_target": "src/vaults/factories/SyncDepositVaultFactory.sol:SyncDepositVaultFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x00e3c7ee9bbc98b9cb4cc2c06fb211c1bb199ee5",
+   "build_input_sha256": "2b1dee410f7fc89b2af266dfdd3e570809b601b82f7b6bafdfd652ccc28d38e9",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe6880f781f9b190d4d56db1332fb32863d848b53287eb9e95d0e0c0133c78dd9",
+    "listed_members": [
+     "0x00e3c7ee9bbc98b9cb4cc2c06fb211c1bb199ee5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "64215de4b98c95c97de1b6decd88a3c1cd21933b",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-124",
+   "compilation_target": "src/vaults/factories/SyncDepositVaultFactory.sol:SyncDepositVaultFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xdb9c27762045addd713182521c0580c68bdf700a",
+   "build_input_sha256": "fbd4d8481a85708c0c440e4337d48aa01ca47b4f2b248ee65230ef30bd847521",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc94c4133645995773be33d73ce1432a84f29cf7ff62ba0506336b9c877505bd1",
+    "listed_members": [
+     "0xdb9c27762045addd713182521c0580c68bdf700a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 55,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "bf6c5ff0f9a35a26c88dd559f8858f2ccd42b963",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-125",
+   "compilation_target": "src/vaults/factories/SyncDepositVaultFactory.sol:SyncDepositVaultFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x3568184784e8accaacf51a7f710a3de0144e4f29",
+   "build_input_sha256": "b66355184217fb52ec0699258bd411e26493ff439e79f21384771ce4fc6544aa",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x188eea827a6a837345940a6ce56a0cfd35730f300831361fdfbc825ccf98dd9f",
+    "listed_members": [
+     "0x3568184784e8accaacf51a7f710a3de0144e4f29"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "9706a861e0a6c29a9e76c307069f29ca3e7d8390",
+   "commit_tags": [
+    "deploy-mainnet-3-9706a86",
+    "deploy-mainnet-v3.1-9706a86"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-126",
+   "compilation_target": "test/spell/Create2VaultFactorySpellEthereum.sol:Create2VaultFactorySpellEthereum",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x37271f54911a22156b39ab08e9f9738cc9bf55e4",
+   "build_input_sha256": "9a1199113da3bed9875318d0cbd54b50b8480242dd77b93f02d3b0a10618fd43",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1d05054cee0ab5775f6a2a64f96b7aa018483ef1c8b684c8a895331953dac913",
+    "listed_members": [
+     "0x37271f54911a22156b39ab08e9f9738cc9bf55e4"
+    ],
+    "member_count": 1
+   },
+   "source_files": 38,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "55cf463275b18cbcab64b71cbf230757bd3f7da3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-127",
+   "compilation_target": "test/spell/DisableV2Eth.sol:DisableV2Eth",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x1e860a8108c95be344f49ad1501fb281d8b6bfbb",
+   "build_input_sha256": "242e9d1bcf68088fe0c87ac13092d5febedfdccc60514ec1e19e099d47d0f82c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6081890be2cc3be189685207203afa098749db604792f1be091b6ce3b530e55c",
+    "listed_members": [
+     "0x1e860a8108c95be344f49ad1501fb281d8b6bfbb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 21,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "07d145e300c2d46a760df33b4b584cc597dbbd2a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-128",
+   "compilation_target": "test/spell/RelinkV2Eth.sol:RelinkV2Eth",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x5a110bc4fdd01b193fdadddd38231dd098274a06",
+   "build_input_sha256": "3d3cd6ba16fc071cc7362ab6168258fd7acbb86d06bc144e94342cfab7d27a89",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa65cd19a61046c329c7383031af77556f942ef32abca6903c454a89ab529186a",
+    "listed_members": [
+     "0x5a110bc4fdd01b193fdadddd38231dd098274a06"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "a492340926952dd2becfa1f81116f8f769c40480",
+   "commit_tags": [
+    "spell-002_v3.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-129",
+   "compilation_target": "test/spell/VaultPermissionSpellEthereum.sol:VaultPermissionSpellEthereum",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x21dbc1add7a52e47652e4a74dec4f28a77086bbd",
+   "build_input_sha256": "dc431b138fa76eadaea5386a752be74121382a6a37ec28451087f5167793519c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfb397e3f9e2a88303849df530488cc71da0b2a3baeda454ccabb86336def3d98",
+    "listed_members": [
+     "0x21dbc1add7a52e47652e4a74dec4f28a77086bbd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 44,
+   "commit_basis": "closest",
+   "repository": "https://github.com/centrifuge/protocol",
+   "commit": "7ca5819788f6d28d8481932b237951c1ffb7ff3b",
+   "commit_tags": [
+    "v3.0.1"
+   ],
+   "reachable_from": "branch or tag"
+  }
+ ],
+ "source_sets_note": "the 106 sets whose members include a contract the Centrifuge row lists; all 130 sets, with their file blobs and every member's result, are in the full record"
+}

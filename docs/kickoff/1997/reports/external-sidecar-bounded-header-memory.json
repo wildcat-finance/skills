@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "external-sidecar",
+  "criterion": "bounded-header-memory",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate external-sidecar --criterion bounded-header-memory --report .hexaemeron/reports/external-sidecar-bounded-header-memory.json",
+  "exit": 0
+}

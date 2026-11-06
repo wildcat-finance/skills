@@ -362,6 +362,7 @@ def admit_source(entry, root, cap, seen, events, policy_version, policy_digest):
         "bytes": observed,
         "basis": basis,
         "disclosure": disclosure,
+        "rights_sha256": hashlib.sha256(canonical(entry["rights"])).hexdigest(),
         "producer": entry["producer"],
         "path": entry["path"],
     }
@@ -410,7 +411,7 @@ def validate_records(policy, known, events, version, policy_digest):
 def check_scope(policy, admitted, record_count):
     """Hold an admission result to the scope the curation policy declares.
 
-    The scope lives in the curation policy because that policy is a release
+    The curation policy declares the scope because that policy is a release
     component and the release id already hashes it, so a corpus cannot change
     what it preserves without changing its id. The bounds are read from the
     policy and never from this file.
@@ -1084,7 +1085,10 @@ def release_id(policy, admitted, graph):
     digest = hashlib.sha256()
     digest.update(canonical(policy))
     for source in sorted(admitted, key=lambda s: s["id"]):
-        digest.update(f"{source['id']}:{source['sha256']}:{source['bytes']}".encode("utf-8"))
+        digest.update(
+            f"{source['id']}:{source['sha256']}:{source['bytes']}:"
+            f"{source['disclosure']}:{source['basis']}:{source['rights_sha256']}".encode("utf-8")
+        )
     for key in ("engagements", "assertions", "relations", "quarantine", "unknowns"):
         digest.update(canonical(graph[key]))
     return digest.hexdigest()
@@ -1131,6 +1135,8 @@ def build_release(out, policy, admitted, graph):
     only once every component is written, so a killed run leaves nothing that
     could be mistaken for a release.
     """
+    for source in admitted:
+        check_retained_rights(source)
     if os.path.exists(out):
         raise Refusal("A100", f"release destination already exists: {quote(out)}")
     staging = f"{out}.{os.getpid()}.{secrets.token_hex(8)}.staging"
@@ -1153,7 +1159,8 @@ def build_release(out, policy, admitted, graph):
             "policy": policy,
             "sources": [
                 {"id": s["id"], "sha256": s["sha256"], "bytes": s["bytes"],
-                 "disclosure": s["disclosure"]}
+                 "disclosure": s["disclosure"], "basis": s["basis"],
+                 "rights_sha256": s["rights_sha256"]}
                 for s in sorted(admitted, key=lambda s: s["id"])
             ],
             "components": sorted(components, key=lambda c: c["path"]),
@@ -1190,7 +1197,34 @@ MANIFEST_KEYS = {
     "unknowns": True,
 }
 COMPONENT_KEYS = {"path": True, "sha256": True, "bytes": True}
-MANIFEST_SOURCE_KEYS = {"id": True, "sha256": True, "bytes": True, "disclosure": True}
+MANIFEST_SOURCE_KEYS = {
+    "id": True, "sha256": True, "bytes": True, "disclosure": True,
+    "basis": True, "rights_sha256": True,
+}
+
+
+def check_retained_rights(source):
+    """Refuse legacy or malformed rows: their identity did not bind rights.
+
+    Build accepts admission records with extra private execution fields; only
+    this checked basis, disclosure and digest travel into the manifest.
+    """
+    if not isinstance(source, dict):
+        raise Refusal("A138", "release source rights row is not an object")
+    source_id = source.get("id")
+    basis = source.get("basis")
+    disclosure = source.get("disclosure")
+    digest = source.get("rights_sha256")
+    if not isinstance(basis, str) or basis not in RIGHTS_BASES:
+        raise Refusal("A030", "release source rights basis is absent or unrecognised", source_id)
+    if not isinstance(disclosure, str) or disclosure not in DISCLOSURES:
+        raise Refusal("A031", "release source disclosure is absent or unrecognised", source_id)
+    if disclosure == "embargoed":
+        raise Refusal("A032", "embargoed source cannot enter a release", source_id)
+    if basis == "digest-only" and disclosure == "public":
+        raise Refusal("A033", "digest-only source cannot disclose public text", source_id)
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        raise Refusal("A138", "release source rights digest is absent or malformed", source_id)
 
 
 def check_manifest_shape(manifest):
@@ -1211,6 +1245,8 @@ def check_manifest_shape(manifest):
         seen = set()
         for entry in entries:
             closed_object(entry, keys, f"release manifest {name} entry")
+            if name == "sources":
+                check_retained_rights(entry)
             key = entry["path"] if name == "components" else entry["id"]
             if not isinstance(key, str) or not key:
                 raise Refusal("A132", f"release manifest {name} entry has no name")

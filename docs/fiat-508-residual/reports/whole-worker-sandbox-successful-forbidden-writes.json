@@ -1,0 +1,9 @@
+{
+  "candidate": "whole-worker-sandbox",
+  "command": "python3 /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/design-probe.py --output-dir /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports",
+  "criterion": "successful-forbidden-writes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

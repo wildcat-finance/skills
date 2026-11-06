@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-attribution-rows",
+  "command": "python3 .hexaemeron/design/resolve.py aave-interval-in-one-release --candidate compact-attribution-rows",
+  "criterion": "aave-interval-in-one-release",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 71
+}

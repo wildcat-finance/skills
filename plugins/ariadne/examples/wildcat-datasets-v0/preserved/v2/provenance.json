@@ -1,0 +1,252 @@
+{
+  "boundary": "Observed offline rebuild provenance; historical collection remains separate.",
+  "estate": {
+    "archive": {
+      "availability": "external; access is required separately",
+      "bytes": 37920375,
+      "format": "tar+zstd",
+      "location": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step9-repair-20260921/replacement-staging.tar.zst",
+      "sha256": "0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a"
+    },
+    "components": 127,
+    "estate": "v2",
+    "expected": {
+      "bytes": 16498,
+      "encoded_bytes": 8783,
+      "encoded_sha256": "3b782199663f84c3def9ac5e14690b91c6ff51792a42e98ec0346e962886703a",
+      "encoding": "gzip",
+      "path": "inputs/v2/expected.json.gz",
+      "sha256": "3d30fc07e9d1edc67b588a51f88262c9e1f6e7d7da6d6a06e64060161e0c4124"
+    },
+    "interval": {
+      "end": "26022093",
+      "start": "21866550"
+    },
+    "manifest": {
+      "bytes": 222159,
+      "encoded_bytes": 19034,
+      "encoded_sha256": "ed3e78cd8d65ed69f9f4ac2b2638336e3433ac1235aaeff13fb692013f5c6798",
+      "encoding": "gzip",
+      "path": "inputs/v2/manifest.json.gz",
+      "sha256": "219d72f940b667c829b04f232bbebf7ee83020139faadc1ac88883c7241156f7"
+    },
+    "observed_rebuild": {
+      "argv": [
+        "python3",
+        "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
+        "build",
+        "--output",
+        "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v2-rebuild"
+      ],
+      "environment": {
+        "ALEXANDRIA_WILDCAT_V2_STAGING": "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v2-staging"
+      },
+      "exit": 0,
+      "python": "3.14.6",
+      "record": "inputs/observations/rebuild-recovery.json",
+      "report": "inputs/observations/v2-rebuild-restored.txt",
+      "runtime_commit": "104f6f82c390003fb61039d3023d07c1abe05086"
+    },
+    "original_collection": {
+      "argv_status": "not established by the preserved collection record",
+      "evidence": {
+        "bytes": 15701,
+        "encoded_bytes": 4777,
+        "encoded_sha256": "f1445a38fcd086bf613f6dd6a7a50e7fd90b322d794dfbb820fe7829b334ca2d",
+        "encoding": "gzip",
+        "path": "inputs/v2/rebuild-record.json.gz",
+        "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
+      },
+      "registry": {
+        "bytes": 64890,
+        "encoded_bytes": 13811,
+        "encoded_sha256": "2dced3361e7268994a12f555bc9e2deeba857fcd1efac55e50880a4a8a618598",
+        "encoding": "gzip",
+        "path": "inputs/v2/registry.json.gz",
+        "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
+      }
+    },
+    "plan": {
+      "bytes": 168366,
+      "encoded_bytes": 31498,
+      "encoded_sha256": "19fb25cf26e65c14b2760caa22805450c2579a19ccb6cc1d8304ad4b58104ee5",
+      "encoding": "gzip",
+      "path": "inputs/v2/plan.json.gz",
+      "sha256": "8a70ebf145668b2fc5db99af6af2d9211d03d3f3282209ab144f9277df772482"
+    },
+    "rebuild_record": {
+      "bytes": 15701,
+      "encoded_bytes": 4777,
+      "encoded_sha256": "f1445a38fcd086bf613f6dd6a7a50e7fd90b322d794dfbb820fe7829b334ca2d",
+      "encoding": "gzip",
+      "path": "inputs/v2/rebuild-record.json.gz",
+      "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
+    },
+    "registry": {
+      "bytes": 64890,
+      "encoded_bytes": 13811,
+      "encoded_sha256": "2dced3361e7268994a12f555bc9e2deeba857fcd1efac55e50880a4a8a618598",
+      "encoding": "gzip",
+      "path": "inputs/v2/registry.json.gz",
+      "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
+    },
+    "release_bytes": 242722051,
+    "release_environment": "ARIADNE_WILDCAT_V2_RELEASE",
+    "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+    "release_location": "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v2-rebuild/release",
+    "signature_status": "unsigned",
+    "staging_manifest": {
+      "bytes": 20784,
+      "encoded_bytes": 6433,
+      "encoded_sha256": "68f21872c9aa0e1a68f0659889012d93177276dee0537dadb7cedf4701ecea75",
+      "encoding": "gzip",
+      "path": "inputs/v2/staging-manifest.json.gz",
+      "sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21"
+    },
+    "subjects": 128
+  },
+  "producer_sources": [
+    {
+      "bytes": 12504,
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
+      "sha256": "f64b5a355f52354f3762d90a498c25a096a27113a77732d37e0bade2d0f8e1f3"
+    },
+    {
+      "bytes": 13994,
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
+      "sha256": "a8a0ff53fe1e226df899fb877bd43cf862ab36be0c48e551ba1ec9963434f844"
+    },
+    {
+      "bytes": 4107,
+      "path": "plugins/alexandria/scripts/alexandria.py",
+      "sha256": "ed87d8cf25eadafaf3af63915edb707461ee4488b386b5b8a7b748cbbc4a505e"
+    },
+    {
+      "bytes": 474,
+      "path": "plugins/alexandria/scripts/alexandria_lib/__init__.py",
+      "sha256": "395e002b81302df0eb4d4f01f22636e29de9c0e1796cf831251bc20c97981b49"
+    },
+    {
+      "bytes": 7361,
+      "path": "plugins/alexandria/scripts/alexandria_lib/canonical.py",
+      "sha256": "717ecd24247a01c66bc2e671cab507eb703054b33d313e7bdeb90faa7522d30b"
+    },
+    {
+      "bytes": 26278,
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_phase0.py",
+      "sha256": "b2e95f627c882ac1edbb4c3e181273711a69c01dea4bab638acdd6813322fc93"
+    },
+    {
+      "bytes": 9361,
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
+      "sha256": "f01dfff7c51aa5178fde9fff478a0dc37cc04b14d71a78dc84617ae26206094a"
+    },
+    {
+      "bytes": 16763,
+      "path": "plugins/alexandria/scripts/alexandria_lib/derivation.py",
+      "sha256": "5e9c0f4fc3e408cd7a9e53e959dd3c8abf34204d8c94521afb8eb6c49ba5bbeb"
+    },
+    {
+      "bytes": 148,
+      "path": "plugins/alexandria/scripts/alexandria_lib/errors.py",
+      "sha256": "becef7552a937ece3a603982e78a79fd2ee4d4e9d94326d7d9c5d7e953de1bdd"
+    },
+    {
+      "bytes": 18854,
+      "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
+      "sha256": "b4a1a90e3465e5cbf4380634a261f0637d89efbc027fec4aec4b3dafa7c92437"
+    },
+    {
+      "bytes": 95812,
+      "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
+      "sha256": "fe6b3cd499f42df532771a68804c2fb45ab4352c0611e357dc6a4abeda63bc31"
+    },
+    {
+      "bytes": 812,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/__init__.py",
+      "sha256": "7a3675805923ad801834b2cc4a72be07192ea8489e6973ac5ff5f9856bb92afa"
+    },
+    {
+      "bytes": 10027,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/aave_v4.py",
+      "sha256": "63c0878a44c7638c37776050babb91568d47d979f21ba7ae867b07aa48aec761"
+    },
+    {
+      "bytes": 10918,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py",
+      "sha256": "8bc2b645d36b22979b0c830f45719ed9ce1a9482c63d25ee85dba7f1ff26158c"
+    },
+    {
+      "bytes": 4050,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
+      "sha256": "88c21eacf49cc0b8499bf78403bafabcd86015a5821b49f1a17304c3058028b7"
+    },
+    {
+      "bytes": 6631,
+      "path": "plugins/alexandria/scripts/alexandria_lib/paths.py",
+      "sha256": "a9341a3a62591685fd496174611d31a76136053ff9305f242d803a26664e2f0b"
+    },
+    {
+      "bytes": 6335,
+      "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
+      "sha256": "797f99e0563c5e91f6d8c73c20ef64a251ef606e93caf69404e1224309fe7892"
+    },
+    {
+      "bytes": 8825,
+      "path": "plugins/alexandria/scripts/alexandria_lib/proof_backed.py",
+      "sha256": "7d42566bced0997c9bff4180793f9913d635c5744ed538fcd7f0bf24a6bbc982"
+    },
+    {
+      "bytes": 8894,
+      "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
+      "sha256": "5c38acf22e5c216c52f69a6605bafc7ebf94efe216bb5e3839757110f5a483bb"
+    },
+    {
+      "bytes": 27102,
+      "path": "plugins/alexandria/scripts/alexandria_lib/release.py",
+      "sha256": "b5749b475b0935bf73ee4150f54db97ca82cd41536d12b35f4a0b03055c51c31"
+    },
+    {
+      "bytes": 13410,
+      "path": "plugins/alexandria/scripts/alexandria_lib/rows.py",
+      "sha256": "09c9275283a739426a54e4ef640a395a7e053b1660db8fdea65155a8bf7c8632"
+    },
+    {
+      "bytes": 13765,
+      "path": "plugins/alexandria/scripts/alexandria_lib/statement.py",
+      "sha256": "c4a09e828fb684c9065f2dab17533795c5e1687f3794711633e350427a75486f"
+    },
+    {
+      "bytes": 1214,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/__init__.py",
+      "sha256": "3e83db7dc9bfa772a9c246d6158f33e120f3eba2baba2acf0b24a76dd5acc49f"
+    },
+    {
+      "bytes": 1402,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/compound_v3.py",
+      "sha256": "68d4f6ab42fc61cb6b00ac156af9e71b34483f9296387ca1a44839751df8f250"
+    },
+    {
+      "bytes": 26530,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v1.py",
+      "sha256": "207e5d437654c1254ae5f31bd7ae37ea0a69464c0847b6afe1fa0f77bfa27e3d"
+    },
+    {
+      "bytes": 30724,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v2.py",
+      "sha256": "c357ac4e3d8f397d5a864930dabce3b0f5d00a559c1efe50c00b71491a759e6d"
+    },
+    {
+      "bytes": 35563,
+      "path": "plugins/alexandria/scripts/alexandria_lib/wildcat_registry.py",
+      "sha256": "cf0e6f8de2100b8bab94b8acb4b809838e1fef735643eb8025465173863e2e89"
+    },
+    {
+      "bytes": 173829,
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "sha256": "28d682da45fe61dd9be4d551e4b7c639e4d5ca5e2fb4532c4de64ae862c719db"
+    }
+  ],
+  "signature_status": "unsigned",
+  "source_revision": "104f6f82c390003fb61039d3023d07c1abe05086"
+}

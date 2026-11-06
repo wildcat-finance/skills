@@ -1,0 +1,440 @@
+{
+  "accepted_archive": {
+    "accepted_handoff_revision": "fb814e389805d0fceb463c112411f820d4edc03f",
+    "accepted_handoff_url": "https://github.com/wildcat-finance/miskatonic/blob/fb814e389805d0fceb463c112411f820d4edc03f/storage/r2/handoffs/wildcat-v1-v2-lemma-20260926/README.md",
+    "archive_bytes": 21728910,
+    "archive_sha256": "c2933988f0619b2874c5880211ef0f6d3586f3a463515b317ff8a7f609785fe1",
+    "public_acceptance_url": "https://github.com/wildcat-finance/skills/issues/1359#issuecomment-5846151695"
+  },
+  "accepted_exceptions": [
+    {
+      "accepted": "Separate native source partitions retained inside one catalog per generation",
+      "id": "generation-layout",
+      "scope": "Exact accepted archive digest only"
+    },
+    {
+      "accepted": "Preserved compiler input by SHA-256; absent single exact Git commit remains explicit",
+      "differing_files": 6,
+      "exact_git_matches": 40,
+      "id": "v1-lens-exact-git-reference",
+      "sha256": "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377",
+      "source_files_selected": 46
+    }
+  ],
+  "checked_counts": {
+    "archive_members_checked": 150,
+    "chunk_count": 4209,
+    "event_declarations_checked": 382,
+    "input_count": 15,
+    "interface_event_declarations_checked": 249,
+    "member_digests_checked": 149,
+    "partition_count": 10,
+    "verbatim_chunks_byte_checked": 3928
+  },
+  "generation_source_relations": {
+    "v1_core": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+    "v1_sentinel": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+    "v2_capture_registry": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+    "v2_source_comparison": "f5a26146987926f4811b72a795d662813dedfe85"
+  },
+  "historical_tool": {
+    "pinned_verification_sha256": "1472da329964f35b95642936e9194438fb9af26d4f24650318f6d238cb849b8c",
+    "tool_source_revision": "95dca9d0f04353856f4e1684333b3ed94e85de87",
+    "tool_version": "Lemma 0.2.1"
+  },
+  "limitations": [
+    "Accepted historical Lemma 0.2.1 reproduction; no current Lemma 0.5.1 schema conformance.",
+    "Historical acceptance, deployment mappings and compiler authenticity remain recorded evidence.",
+    "Relocated provenance changes only inputs[].path and compiler.invocation; accepted originals remain unchanged.",
+    "Source hashes do not establish chain finality, complete history, accounting or contract safety."
+  ],
+  "partitions": [
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 692,
+      "chunks_sha256": "84e3863d4f70935b128941752c1f7f2349e6b953acba63229f52f2bfd270a93c",
+      "compiler_version": "0.8.22+commit.4fc1097e",
+      "corpus_build_id": "602d077bd0e5ea7e883e96e59d8be8218fa694211d5a894191a4207861852ea1",
+      "generation": "wildcat-v1-ethereum-mainnet",
+      "id": "core-da74452a",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v1-ethereum-mainnet/WildcatMarketControllerFactory.json",
+          "bytes": 253234,
+          "sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706",
+          "source_units": 40
+        },
+        {
+          "bundle_path": "inputs/wildcat-v1-ethereum-mainnet/WildcatArchController.json",
+          "bytes": 61171,
+          "sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db",
+          "source_units": 10
+        }
+      ],
+      "provenance_sha256": "88d36b40e636ba0c3f6bfd0f01f211ed25b1509eb302bb4c1759e026cef436b5",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/wildcat-protocol/tree/da74452aa7d1a0f024d99efd22cc6d950a8116b7"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 57,
+      "chunks_sha256": "8eb7f5db0ded47c5991fecb02edcff9ae36df334ec47d1fe06b626ea4491314e",
+      "compiler_version": "0.8.22+commit.4fc1097e",
+      "corpus_build_id": "0b2c334e8bdf33e189d972ca9d743d754202e5c5d11c9c2c44c85933acfe9a17",
+      "generation": "wildcat-v1-ethereum-mainnet",
+      "id": "sentinel-6164ddd4",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v1-ethereum-mainnet/WildcatSanctionsSentinel.json",
+          "bytes": 32620,
+          "sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6",
+          "source_units": 7
+        }
+      ],
+      "provenance_sha256": "47e3188fa8d6884ecdddabd2283422fa74fb6aea6d932acc202072edefd84b7b",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/wildcat-protocol/tree/6164ddd4c75ef6da2181e5623b99795b9829e31c"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 989,
+      "chunks_sha256": "8bcbdc89a60bd3235bde90f0b91a95d4177753de19d14ca3156d878c37e36b7d",
+      "compiler_version": "0.8.25+commit.b61c2a91",
+      "corpus_build_id": "fd854a63991b6505fd75809bd133d0b4652ec89f5eac19516abe566ccddbc4d4",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "core-a70f297f",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/HooksFactory.json",
+          "bytes": 161751,
+          "sha256": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309",
+          "source_units": 21
+        },
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/WildcatMarket.json",
+          "bytes": 224443,
+          "sha256": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346",
+          "source_units": 35
+        },
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/FixedTermHooks.json",
+          "bytes": 141522,
+          "sha256": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33",
+          "source_units": 17
+        },
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/OpenTermHooks.json",
+          "bytes": 138286,
+          "sha256": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80",
+          "source_units": 17
+        },
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/MarketLens.json",
+          "bytes": 434585,
+          "sha256": "82f2b4bfd732136094d7f60a9d6d7f1240d324e44251e60065dfc907d50986c3",
+          "source_units": 63
+        }
+      ],
+      "provenance_sha256": "36f844cda9c84ac36f81d9e71e6ffe07b00ec49b24bf96729b604dc47c0f5aeb",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/v2-protocol/tree/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 756,
+      "chunks_sha256": "546299369ea211e2f45ab1c9dfdd4b0adec2b2efa146b5819487c25b0598f097",
+      "compiler_version": "0.8.22+commit.4fc1097e",
+      "corpus_build_id": "17e337359fb972f6f998cc85ac1aa792b557cc9f1e403765c60361267af9b5b4",
+      "generation": "wildcat-v1-ethereum-mainnet",
+      "id": "lens-verified-mixed",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v1-ethereum-mainnet/MarketLensMixed.json",
+          "bytes": 315455,
+          "sha256": "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377",
+          "source_units": 50
+        }
+      ],
+      "provenance_sha256": "03492fe8bac6b21819163186997265b4e180ff1d7c334c6450b0dd80eda26b62",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://sourcify.dev/server/v2/contract/1/0xf1d516954f96c1363f8b0ae48d79c8dde6237847?fields=stdJsonInput#sha256=fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 989,
+      "chunks_sha256": "da47e3b1c5d12a148409c9d097dd72bf14ed27b59a49d44aac32eda703aa1138",
+      "compiler_version": "0.8.25+commit.b61c2a91",
+      "corpus_build_id": "d3b104181f7fa96d608614f3ea99517fde6f500a3be24a1e111b38d5f80026b5",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "lens-e1f77540",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/MarketLensFda5.json",
+          "bytes": 436841,
+          "sha256": "d32150ad0e6f542a2ab68e9f688e38d73452046f47f593438ec8b59c9269cf7b",
+          "source_units": 63
+        }
+      ],
+      "provenance_sha256": "a96b274048d82447f9b45aac1b43fee833ee4cc0638b58e9a6615a14362a1415",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/v2-protocol/tree/e1f77540fef65736374de6c847743d8ca2233fb4"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 276,
+      "chunks_sha256": "6b59809e5b061c4e5887a19699523c5db379fd8e595a33a55714e791514e3850",
+      "compiler_version": "0.8.25+commit.b61c2a91",
+      "corpus_build_id": "6d6758ca9cf23d43dd3ed905c69d0e7bb3bd67eb2e9819a48a95de11bd013300",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "fixed-term-730-5838b2f3",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/FixedTermHooks730.json",
+          "bytes": 141521,
+          "sha256": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e",
+          "source_units": 17
+        }
+      ],
+      "provenance_sha256": "d752a1be1a08237fe4017ccc1f5489017b1514eef9e0b36416a389fa4f6a3ec1",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/v2-protocol/tree/5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 35,
+      "chunks_sha256": "52203254ccee4ec2923971d128c3d2d0b732e99e9dcab096e3162860a200de9f",
+      "compiler_version": "0.8.25+commit.b61c2a91",
+      "corpus_build_id": "33f3ecefc6145e96241629344b97e2f02cb751edd8701870ef4693321a41f0f5",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "fee-recipient-ac73bda3",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/WildcatFeeRecipient.json",
+          "bytes": 11708,
+          "sha256": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d",
+          "source_units": 2
+        }
+      ],
+      "provenance_sha256": "3b53cf6a5e85845c92962dd39878423cc9439a53c3bd69db04c840aff08e80ac",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/fee-recipient-contract/tree/ac73bda3642c9a7c8de64e39856b31af53f06068"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 8,
+      "chunks_sha256": "4a26890d46043b114b6b48f7f704194d9fcc7b18b2f88c25d9b989ad901e3226",
+      "compiler_version": "0.8.25+commit.b61c2a91",
+      "corpus_build_id": "7524857b94e61d477479f00c54f3e3c53f501e10a1f3ce507ad54eb445dc02f9",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "role-provider-5d7f8c88",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/OpenAccessRoleProvider.json",
+          "bytes": 1524,
+          "sha256": "ed02cede7cdb1ae87604fd42bde82579546a0cc409e7a8928434a2e658574556",
+          "source_units": 1
+        }
+      ],
+      "provenance_sha256": "4c199a6eb434feca6675888ca6d6e73bf7065f367d4009572ca6304c183e9ea9",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider/tree/5d7f8c889a8d29935838a3906172feb8d9861807"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 227,
+      "chunks_sha256": "8b692e4f38d80bec07615f16aa1edd64ac219926f862bbb403c0196e5914acd3",
+      "compiler_version": "0.8.28+commit.7893614a",
+      "corpus_build_id": "21ea68ac7580081def985a379c308fac61be02bddd79123ef14bc2f43f284ab6",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "collateral-46dba596",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/Collateral.json",
+          "bytes": 186073,
+          "sha256": "a2247a8f77804f50b4ed8b880b4b0b6702a795396b6d6560927d89b2c8f29783",
+          "source_units": 24
+        }
+      ],
+      "provenance_sha256": "5a2e009db46d4ba9b349ccb0e3f5587031151285e72dc81a9e12882d26b62589",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/collateral-contract/tree/46dba596fa111f868200358f551796e8f73b5fd7"
+    },
+    {
+      "accepted_to_rebuild_provenance_changed_fields": [
+        "inputs[].path",
+        "compiler.invocation"
+      ],
+      "chunk_count": 180,
+      "chunks_sha256": "f5a272cc4ec092c84d24d62d303abd78e7bb1573cf8762b7b88c1f1bb81dec39",
+      "compiler_version": "0.8.25+commit.b61c2a91",
+      "corpus_build_id": "73ddbfaaaf7dbfffcf8a7bbc8aa303b27e9bffda2ac2a6719e73950eda452d79",
+      "generation": "wildcat-v2-ethereum-mainnet",
+      "id": "wrapper-c7be4039",
+      "inputs": [
+        {
+          "bundle_path": "inputs/wildcat-v2-ethereum-mainnet/Wildcat4626WrapperFactory.json",
+          "bytes": 176691,
+          "sha256": "dc9bb81d6205c3149e856b122698f441a5d4a4e39acda77a97c0f18bee4841cc",
+          "source_units": 16
+        }
+      ],
+      "provenance_sha256": "a439071cab1cd544b054c5fc67ed274c4585a67536a1c32120241e46e45735aa",
+      "rebuild_chunks_match_accepted_bytes": true,
+      "repeat_provenance_bytes_identical": true,
+      "source_ref": "https://github.com/wildcat-finance/v2-protocol/tree/c7be4039f8f383a9dda4e45f63331c17d63f9ed9"
+    }
+  ],
+  "repository_artifacts": [
+    {
+      "bytes": 206100,
+      "path": "docs/kickoff/1963/linkage.json",
+      "sha256": "599ddca6f2c8eb01b956f0ba5cc8113d9cac886e7f46789c52eba3531874230a"
+    },
+    {
+      "bytes": 5997349,
+      "path": "docs/kickoff/1363/linkage.json",
+      "sha256": "910a6ec1cb3732b67c7c04b35fedd219fe951cf9ae1081310d7c355d6b78e226"
+    },
+    {
+      "bytes": 1712823,
+      "path": "docs/kickoff/1359/targets.json",
+      "sha256": "fef8a08e9cbb421ed7a45fa8d56ebec15fcb6b8fecd0e2a2c5571d7b2136103d"
+    },
+    {
+      "bytes": 39118,
+      "path": "docs/kickoff/1359/evidence/source-match-1590.json",
+      "sha256": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e"
+    }
+  ],
+  "repository_start": "b4af9c748a764287ccb9978937021e45cc81fc2d",
+  "schema": "fiat-1378-source-pins/v1",
+  "source_admission_sha256": "4b8488323f2ca62c7dfe323189a6332e00b8bf133588d75c9c14487d2a8f6670",
+  "specification": {
+    "current": {
+      "runbook": {
+        "amendment_suffix": {
+          "bytes": 2528,
+          "sha256": "8553e2e3184f04bc815fe63fc0d1eaec7ac5ab96487b4adf5ff981a07b3e7fe5"
+        },
+        "bytes": 19276,
+        "historical_prefix": {
+          "bytes": 16748,
+          "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
+        },
+        "historical_prefix_preserved": true,
+        "path": "runbook-current.md",
+        "sha256": "490de2be72348fca47a34e6812f07a3f1a67ff1c653e35ae9d7137f46e365c42"
+      },
+      "study": {
+        "amendment_suffix": {
+          "bytes": 1286,
+          "sha256": "4f4c0d06e82bcf16383fe738db20535bb8cbe727a468eba6ba0a105d51234ce0"
+        },
+        "bytes": 47494,
+        "historical_prefix": {
+          "bytes": 46208,
+          "sha256": "a590d9c3661fe74f9ce53726a49c8fe6b214a4f08add183377d73cbefb3a1d6f"
+        },
+        "historical_prefix_preserved": true,
+        "path": "study-current.md",
+        "sha256": "e19a7b28c5e37056a3c5015b0444a0661fe0be18b6df46f3a476686f4bd955fc"
+      }
+    },
+    "design-evidence.json": {
+      "bytes": 10970,
+      "sha256": "80282666266db259f1afb600ee981f28928fde0b077cf333967501672a04bb50"
+    },
+    "historical": {
+      "runbook": {
+        "bytes": 16748,
+        "path": "runbook.md",
+        "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
+      },
+      "study": {
+        "bytes": 46208,
+        "path": "study.md",
+        "sha256": "a590d9c3661fe74f9ce53726a49c8fe6b214a4f08add183377d73cbefb3a1d6f"
+      }
+    },
+    "implementation_packet": {
+      "bytes": 17273,
+      "runbook_step_amendment_sha256": "8553e2e3184f04bc815fe63fc0d1eaec7ac5ab96487b4adf5ff981a07b3e7fe5",
+      "runbook_step_effective_sha256": "2baaf85c7d2f4f04455ca7d0e936958f59d3965ae434b7cf5e8113de568ae9ca",
+      "sha256": "56d6b25b4cdbcdd7abe42f29557bb9d5682162c1d8a095ce1c74f5f0a1911fe9",
+      "snapshot_role": "accepted-step-1-packet-used-for-fixture-repair",
+      "source_path": ".hexaemeron/step-1-implementation-brief.json",
+      "source_path_is_mutable": true,
+      "step": 1,
+      "step_parent": "b4af9c748a764287ccb9978937021e45cc81fc2d"
+    },
+    "registered_interfaces": [
+      {
+        "bytes": 840,
+        "function": "build_parser",
+        "path": "plugins/tabularium/tests/prove_wildcat_v3.py",
+        "sha256": "f4fa83f22d7db99b48399936e7d1c41ef3d89795a544f895265bfedbe42d45a2"
+      },
+      {
+        "bytes": 654,
+        "function": "build_parser",
+        "path": "plugins/tabularium/tests/emit_wildcat_v3_report.py",
+        "sha256": "dcc1b6679b799965067e6d224016dd04f03ec348cb46d3807333b2f72634b4e1"
+      }
+    ],
+    "runbook.md": {
+      "bytes": 16748,
+      "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
+    },
+    "study": {
+      "amendment_suffix": {
+        "bytes": 789,
+        "sha256": "188da5bc3f7f95e182805e41da3daab0f58e6f9f622f05f128d2248409c049dd"
+      },
+      "effective": {
+        "bytes": 46208,
+        "sha256": "a590d9c3661fe74f9ce53726a49c8fe6b214a4f08add183377d73cbefb3a1d6f"
+      },
+      "original": {
+        "bytes": 45419,
+        "sha256": "f7956d890d7bab59b75ae6e511624e997e6dc815ea558cff64bb4c1e09d75f1a"
+      },
+      "original_prefix_preserved": true
+    }
+  }
+}

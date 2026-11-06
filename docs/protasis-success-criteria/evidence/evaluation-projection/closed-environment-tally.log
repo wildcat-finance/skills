@@ -1,0 +1,1 @@
+promise-evaluation run model=ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce date=2026-08-31 cases=11 passed=55 failed=0

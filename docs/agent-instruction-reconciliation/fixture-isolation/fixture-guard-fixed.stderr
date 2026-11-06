@@ -1,0 +1,6 @@
+test_creating_changing_and_removing_a_fixture_preserves_its_source (tests.test_joined_front_door.FixtureIsolationTests.test_creating_changing_and_removing_a_fixture_preserves_its_source) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+OK

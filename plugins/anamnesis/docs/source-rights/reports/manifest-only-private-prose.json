@@ -1,0 +1,9 @@
+{
+  "candidate": "manifest-only",
+  "command": "python3 .hexaemeron/reports/resolve.py manifest-only private-prose --out .hexaemeron/reports/manifest-only-private-prose.json",
+  "criterion": "private-prose",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 0
+}

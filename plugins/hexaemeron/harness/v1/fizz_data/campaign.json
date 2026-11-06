@@ -1,0 +1,339 @@
+{
+  "command": "FOUNDRY_PROFILE=v1 forge test --fuzz-seed 0x0fed649923710c6da31855c5b8ebf6cbc12f71e144814b1fa99c9024dcaae4e6 --fuzz-runs 1000000",
+  "counterexample_count": 0,
+  "counterexample_mentions_in_output": 0,
+  "counterexamples": [],
+  "cwd": "plugins/hexaemeron/harness",
+  "emitter_case_names": [
+    "test_emit_AnnualInterestBipsUpdated_indexed0",
+    "test_emit_Approval_indexed2",
+    "test_emit_AuthorizationStatusUpdated_indexed1",
+    "test_emit_Borrow_indexed0",
+    "test_emit_ChangedSpherexEngineAddress_indexed0",
+    "test_emit_ChangedSpherexOperator_indexed0",
+    "test_emit_DebtRepaid_indexed1",
+    "test_emit_Deposit_indexed1",
+    "test_emit_FeesCollected_indexed0",
+    "test_emit_InterestAndFeesAccrued_indexed0",
+    "test_emit_MarketClosed_indexed0",
+    "test_emit_MaxTotalSupplyUpdated_indexed0",
+    "test_emit_NewAllowedSenderOnchain_indexed0",
+    "test_emit_ReserveRatioBipsUpdated_indexed0",
+    "test_emit_SanctionedAccountAssetsSentToEscrow_indexed1",
+    "test_emit_SanctionedAccountWithdrawalSentToEscrow_indexed1",
+    "test_emit_SpherexAdminTransferCompleted_indexed0",
+    "test_emit_SpherexAdminTransferStarted_indexed0",
+    "test_emit_StateUpdated_indexed0",
+    "test_emit_Transfer_indexed2",
+    "test_emit_WithdrawalBatchClosed_indexed1",
+    "test_emit_WithdrawalBatchCreated_indexed1",
+    "test_emit_WithdrawalBatchExpired_indexed1",
+    "test_emit_WithdrawalBatchPayment_indexed1",
+    "test_emit_WithdrawalExecuted_indexed2",
+    "test_emit_WithdrawalQueued_indexed2"
+  ],
+  "emitter_count": 26,
+  "engine": {
+    "commit": "cae51ad458f6abb64852b7709eb784352429825d",
+    "name": "forge",
+    "version": "1.8.3"
+  },
+  "exit_code": 0,
+  "fuzz_case_count": 29,
+  "fuzz_runs": 1000000,
+  "fuzz_seed": "0x0fed649923710c6da31855c5b8ebf6cbc12f71e144814b1fa99c9024dcaae4e6",
+  "harness_src_tree": "3450aaca63745fafb7054737456839c41ed8defe",
+  "harness_test_tree": "2469e1a774063379b48759eb463516f87dba55c8",
+  "output_bytes": 4052,
+  "output_sha256": "5c20229f62df9b2417056c9d185efc41867d7af2ffbb8d1d9df50c974d650cd6",
+  "profile": "v1",
+  "protocol": {
+    "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+    "repository": "wildcat-finance/wildcat-protocol"
+  },
+  "repository_commit": "c40950e8365d832c70b9c2aa4bb6cfafec940cf3",
+  "schema": "wildcat.hexaemeron-harness-campaign.v1",
+  "suites": [
+    {
+      "declared": 39,
+      "name": "v1/test/EmitterFidelity.t.sol:EmitterFidelityTest",
+      "tests": [
+        {
+          "kind": "unit",
+          "name": "test_edge_every_auth_role",
+          "signature": "test_edge_every_auth_role()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_edge_every_emitter_at_high_bit",
+          "signature": "test_edge_every_emitter_at_high_bit()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_edge_every_emitter_at_max",
+          "signature": "test_edge_every_emitter_at_max()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_edge_every_emitter_at_one",
+          "signature": "test_edge_every_emitter_at_one()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_edge_every_emitter_at_zero",
+          "signature": "test_edge_every_emitter_at_zero()",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_AnnualInterestBipsUpdated_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_AnnualInterestBipsUpdated_indexed0(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_Approval_indexed2",
+          "runs": 1000000,
+          "signature": "test_emit_Approval_indexed2(address,address,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_AuthorizationStatusUpdated_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_AuthorizationStatusUpdated_indexed1(address,uint8)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_Borrow_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_Borrow_indexed0(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_ChangedSpherexEngineAddress_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_ChangedSpherexEngineAddress_indexed0(address,address)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_ChangedSpherexOperator_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_ChangedSpherexOperator_indexed0(address,address)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_DebtRepaid_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_DebtRepaid_indexed1(address,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_Deposit_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_Deposit_indexed1(address,uint256,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_FeesCollected_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_FeesCollected_indexed0(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_InterestAndFeesAccrued_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_InterestAndFeesAccrued_indexed0(uint256,uint256,uint256,uint256,uint256,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_MarketClosed_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_MarketClosed_indexed0(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_MaxTotalSupplyUpdated_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_MaxTotalSupplyUpdated_indexed0(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_NewAllowedSenderOnchain_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_NewAllowedSenderOnchain_indexed0(address)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_ReserveRatioBipsUpdated_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_ReserveRatioBipsUpdated_indexed0(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_SanctionedAccountAssetsSentToEscrow_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_SanctionedAccountAssetsSentToEscrow_indexed1(address,address,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_SanctionedAccountWithdrawalSentToEscrow_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_SanctionedAccountWithdrawalSentToEscrow_indexed1(address,address,uint32,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_SpherexAdminTransferCompleted_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_SpherexAdminTransferCompleted_indexed0(address,address)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_SpherexAdminTransferStarted_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_SpherexAdminTransferStarted_indexed0(address,address)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_StateUpdated_indexed0",
+          "runs": 1000000,
+          "signature": "test_emit_StateUpdated_indexed0(uint256,bool)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_Transfer_indexed2",
+          "runs": 1000000,
+          "signature": "test_emit_Transfer_indexed2(address,address,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_WithdrawalBatchClosed_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_WithdrawalBatchClosed_indexed1(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_WithdrawalBatchCreated_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_WithdrawalBatchCreated_indexed1(uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_WithdrawalBatchExpired_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_WithdrawalBatchExpired_indexed1(uint256,uint256,uint256,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_WithdrawalBatchPayment_indexed1",
+          "runs": 1000000,
+          "signature": "test_emit_WithdrawalBatchPayment_indexed1(uint256,uint256,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_WithdrawalExecuted_indexed2",
+          "runs": 1000000,
+          "signature": "test_emit_WithdrawalExecuted_indexed2(uint256,address,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_emit_WithdrawalQueued_indexed2",
+          "runs": 1000000,
+          "signature": "test_emit_WithdrawalQueued_indexed2(uint256,address,uint256,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_memory_dirtied_scratch_does_not_change_the_recorded_log",
+          "runs": 1000000,
+          "signature": "test_memory_dirtied_scratch_does_not_change_the_recorded_log(address,address,uint256,uint256,uint32,bool,uint8)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_memory_free_pointer_unchanged_across_every_emitter",
+          "runs": 1000000,
+          "signature": "test_memory_free_pointer_unchanged_across_every_emitter(address,address,uint256,uint256,uint32,bool,uint8)",
+          "status": "pass"
+        },
+        {
+          "kind": "fuzz",
+          "name": "test_narrowing_call_site_reaches_the_log_truncated",
+          "runs": 1000000,
+          "signature": "test_narrowing_call_site_reaches_the_log_truncated(uint256,address,uint256,uint256)",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_rejects_wrong_data_bytes_specimen",
+          "signature": "test_rejects_wrong_data_bytes_specimen()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_rejects_wrong_data_length_specimen",
+          "signature": "test_rejects_wrong_data_length_specimen()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_rejects_wrong_indexed_topic_specimen",
+          "signature": "test_rejects_wrong_indexed_topic_specimen()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_rejects_wrong_topic0_specimen",
+          "signature": "test_rejects_wrong_topic0_specimen()",
+          "status": "pass"
+        },
+        {
+          "kind": "unit",
+          "name": "test_rejects_wrong_topic_count_specimen",
+          "signature": "test_rejects_wrong_topic_count_specimen()",
+          "status": "pass"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "failed": 0,
+    "line": "Ran 1 test suite in 2118.99s (2118.99s CPU time): 39 tests passed, 0 failed, 0 skipped (39 total tests)",
+    "passed": 39,
+    "skipped": 0,
+    "suite_count": 1,
+    "total": 39
+  },
+  "test_count": 39,
+  "tests_failed": 0,
+  "tests_passed": 39,
+  "tests_skipped": 0
+}

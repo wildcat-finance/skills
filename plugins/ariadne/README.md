@@ -19,9 +19,10 @@ to “which evidence supports these exact bytes?” It writes an inspectable
 in-toto statement and can check or replay the relations its registered
 predicate declares.
 
-It works for Solidity, dataset, historical-state, and grounded-agent releases.
-It does not run the producer, authenticate the publisher, verify a signature,
-or turn a recorded result into a claim that the artefact is safe or correct.
+It works for Solidity, dataset, historical-state and grounded-agent releases,
+and for one closed checkpoint authority record. It does not run the producer,
+authenticate the publisher, verify a signature, or turn a recorded result into
+a claim that the artefact is safe or correct.
 
 ## PLACE IN THE COLLECTIVE
 
@@ -81,9 +82,11 @@ Five of those belong to an artefact-neutral core and run for any predicate, incl
 
 - the executable [`ariadne.py`](./scripts/ariadne.py) capture, verifier and replay, standard library only;
 - the [Solidity release predicate](./docs/solidity-release.md) and [its published schema](./schemas/solidity-release-v1.json), tied together by a test so the two cannot drift;
-- dataset, state-fixture and grounded-agent predicates, including
-  state-fixture/v2 receipt-root and receipt-trie evidence fields and a closed
-  grounded-agent schema;
+- dataset, state-fixture, grounded-agent and checkpoint-authority predicates,
+  including state-fixture/v2 receipt-root and receipt-trie evidence fields, a
+  closed grounded-agent schema and a [release copy](./docs/checkpoint-authority.md)
+  of the Hexaemeron checkpoint authority record schema held to its owner by a
+  checkout parity test;
 - four offline capture paths over local Foundry builds, dataset releases,
   Lazarus fixtures and Berean releases; none runs its producer or reaches a
   network;
@@ -211,10 +214,14 @@ recorded-RPC class.
 
 ## WHERE IT STOPS
 
-The registry holds five predicates, reached through four local capture paths.
-Grounded-agent capture binds a bounded local `berean-release/v1` tree; it does
-not import or run Berean, execute an agent, regrade evaluation or promotion
-evidence, or reach a network.
+The registry holds six predicates, five of them reached through four local
+capture paths. Grounded-agent capture binds a bounded local `berean-release/v1`
+tree; it does not import or run Berean, execute an agent, regrade evaluation or
+promotion evidence, or reach a network. The checkpoint authority predicate has
+no capture path: the checkpoint authority service produces and signs those
+records, and Ariadne checks one record's digest roles, typed evidence
+references and inventories without authenticating its signature, replaying
+the journal or deciding current eligibility.
 
 Nothing confirms a deployment against a chain, nothing signs, and nothing runs
 as a GitHub Action. Each is a deliberate boundary: the first needs a node, the

@@ -1,0 +1,9 @@
+{
+  "candidate": "topic-only",
+  "command": "python3 .hexaemeron/design-probe.py --candidate topic-only --criterion recoverable-source-identity --report .hexaemeron/design-reports/topic-only-recoverable-source-identity.json",
+  "criterion": "recoverable-source-identity",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

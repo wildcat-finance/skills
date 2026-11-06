@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "footer-proximity",
+  "criterion": "material-refusals",
+  "value": 117,
+  "unit": "count",
+  "command": "python3 .hexaemeron/measure_design.py --candidate footer-proximity --criterion material-refusals --report .hexaemeron/reports/footer-proximity-material-refusals.json",
+  "exit": 0
+}

@@ -19,9 +19,10 @@ venue-qualified event interpretation. Each output row keeps its source selector,
 native record, mapping rule, adapter version, and coverage gap so a common
 format does not erase what the venue meant.
 
-Aave v4, Euler v1, and Euler v2 releases ship, along with one non-canonical
-Compound v3 Phase 0 execution witness. The canonical Compound adapter and
-Ethereum USDC interval specimen remain Phase 1 work.
+Aave v4, Euler v1, Euler v2 and deployed Wildcat V1/V2 releases ship. The
+checked-in Wildcat examples use constructed evidence. One non-canonical
+Compound v3 Phase 0 execution witness also ships; the canonical Compound
+adapter and Ethereum USDC interval specimen remain Phase 1 work.
 
 ## PLACE IN THE COLLECTIVE
 
@@ -86,36 +87,49 @@ signed-principal transition. It establishes the recorded interpretation method
 for one transaction; the canonical Compound event adapter and interval
 specimen remain Phase 1 work.
 
-The release is four files doing separate jobs. `source.json` is the preserved
+For Aave/Euler, the release is four files doing separate jobs. `source.json` is the preserved
 response. `capture.json` records where and when it was taken. `events.jsonl` is
 the interpretation. `coverage.json` binds all three by digest, counts what was
 mapped and what was not, and states the evidence gaps.
 
+Wildcat adds the complete copied Alexandria raw release to those four generated
+files. Its [canonical guide](./docs/wildcat-canonical.md) describes generation,
+emitter roles, financial units, unsupported records and source classes.
+
 Verification does not stop at those digests. It checks the capture against the
 source, confines every path to the release directory, requires one ordered
 source selector per event and rebuilds the canonical bytes from the preserved
-input. The worked release is unsigned and its block boundary is what the hosted
-indexer reported, so a clean run establishes internal consistency rather than
-publisher authenticity or an independent chain proof.
+input. The worked Aave v4 release is unsigned and its logs and block hashes are
+what the RPC provider reported, so a clean run establishes internal consistency
+rather than publisher authenticity or an independent chain proof.
 
 ## WHAT IT SHIPS
 
 - the standard-library [`tabularium.py`](./scripts/tabularium.py)
   builder and offline verifier;
-- versioned event schemas [v1](./schemas/canonical-event-v2.json)
-  and [v2](./schemas/canonical-event-v2.json), plus coverage
-  schemas [v1](./schemas/coverage-manifest-v2.json) and
-  [v2](./schemas/coverage-manifest-v2.json);
+- the [canonical event v3 schema](./schemas/canonical-event-v3.json)
+  and [coverage manifest v3 schema](./schemas/coverage-manifest-v3.json),
+  which `build` writes and `verify` reads;
+- the superseded [canonical event v2 schema](./schemas/canonical-event-v2.json)
+  and [coverage manifest v2 schema](./schemas/coverage-manifest-v2.json),
+  which `verify` still reads so every published release stays checkable;
 - the complete [`aave-v4-v0`](./examples/aave-v4-v0/README.md)
   release, its data dictionary and a fresh-directory rebuild demonstration;
 - source-bound [`euler-v1-v0`](./examples/euler-v1-v0/README.md)
   and [`euler-v2-v0`](./examples/euler-v2-v0/README.md)
   releases with their own dictionaries and rebuild demonstrations;
+- the schema v3 [`aave-v4-v1`](./examples/aave-v4-v1/README.md),
+  [`euler-v1-v1`](./examples/euler-v1-v1/README.md) and
+  [`euler-v2-v1`](./examples/euler-v2-v1/README.md) releases, each built from
+  its v0 source bytes and superseding the v0 release rather than replacing it;
 - a non-canonical [Compound v3 Phase 0 witness](./examples/compound-v3-phase0-v0/README.md)
   rebuilt from Alexandria's verified release;
+- constructed [Wildcat V1](./examples/wildcat-v1-v0/README.md) and
+  [Wildcat V2](./examples/wildcat-v2-v0/README.md) self-contained schema 3
+  releases, with main and auxiliary registry specimens;
 - an [adapter guide](./docs/adding-an-adapter.md) and an
   immutable [release policy](./docs/release-policy.md); and
-- 134 tests and an audit log
+- the local test suite and a historical audit log
   ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every
   review round and fix.
 
@@ -158,6 +172,24 @@ python3 scripts/tabularium.py verify-compound-witness \
   --facts facts.jsonl --manifest witness.json
 ```
 
+Wildcat consumes a verified local Alexandria raw release. New builds use
+adapter `1.5.0`, which retains accrual and state-update rows and adds V2
+hook-call `MarketState` observations to `source.json`. Pass
+`--adapter-version` with an earlier version to replay its interpretation, or
+`1.0.0` for starting-tree replay. Fee collection keeps its own family and
+recipient gap. V2 protocol-fee Bips stays native state with no amount:
+
+```bash
+python3 scripts/tabularium.py wildcat-canonical \
+  --alexandria-release <raw-release-dir> \
+  --release <release-id> --out <new-release-dir>
+python3 scripts/tabularium.py verify <new-release-dir>/coverage.json
+```
+
+The output directory must be fresh. Moving the complete output preserves
+verification against its copied raw inputs. The
+[Wildcat guide](./docs/wildcat-canonical.md) gives reproduction and recovery steps.
+
 `build` refuses a capture whose source digest, byte count, adapter, scope or
 source metadata disagrees with the preserved bytes. Aave v4 remains the
 default adapter for backward compatibility. It writes canonical JSONL and a
@@ -171,7 +203,7 @@ that do not match a fresh source rebuild.
 ## THE CHECKED-IN RELEASES
 
 [`examples/aave-v4-v0`](examples/aave-v4-v0/README.md) contains the
-unchanged source and capture manifest, the 511-row ledger, its coverage
+unchanged source and capture manifest, the 500-row ledger, its coverage
 manifest, a data dictionary and a rebuild demonstration.
 
 [`examples/euler-v1-v0`](examples/euler-v1-v0/README.md) preserves one real
@@ -180,6 +212,14 @@ borrow log from the canonical Euler v1 proxy in block 14,531,589.
 fixed owner/second response from the Euler V3 API. Its manifest calls the
 protocol generation `euler-v2` and the source API `euler-v3`; these are not the
 same version axis.
+
+[`examples/aave-v4-v1`](examples/aave-v4-v1/README.md),
+[`examples/euler-v1-v1`](examples/euler-v1-v1/README.md) and
+[`examples/euler-v2-v1`](examples/euler-v2-v1/README.md) restate those three
+releases under canonical event schema v3. Each was built from the v0
+`source.json` byte for byte; its `capture.json` differs from the v0 capture in
+one field, `release`; and the only difference in a canonical row is
+`schema_version`. The v0 bytes were not migrated.
 
 [`examples/compound-v3-phase0-v0`](examples/compound-v3-phase0-v0/README.md)
 rebuilds 11 non-canonical facts from Alexandria's checked-in release: two
@@ -192,6 +232,9 @@ From the repository root:
 python3 plugins/tabularium/examples/aave-v4-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v1-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v2-v0/rebuild.py
+python3 plugins/tabularium/examples/aave-v4-v1/rebuild.py
+python3 plugins/tabularium/examples/euler-v1-v1/rebuild.py
+python3 plugins/tabularium/examples/euler-v2-v1/rebuild.py
 python3 plugins/tabularium/examples/compound-v3-phase0-v0/rebuild.py
 ```
 
@@ -199,6 +242,11 @@ The demonstration copies the preserved inputs to a new temporary directory,
 builds there, makes all four release files read-only, verifies them offline and
 compares the canonical and coverage bytes with the committed release. It never
 rewrites the example.
+
+The public Wildcat examples preserve explicit constructed-fixture context.
+Their native roles, units and unsupported dispositions remain visible; they
+establish no historical coverage. Retained-capture execution remains bound to
+separately preserved local custody.
 
 The Aave v4 capture is a topic pair over a block range, so it has no unmapped
 remainder: `unsupported_events` is empty. Supply, withdraw and collateral-flag
@@ -246,7 +294,10 @@ python3 -m unittest discover -s plugins/tabularium/tests -t plugins/tabularium
 Run the tests with the exact interpreter in the suite
 [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). The
 implementation uses only the standard library, and the tests make no network
-request.
+request. Ordinary discovery includes public constructed Wildcat and custody
+refusal controls. The separate saved four-input admission requires bound local
+custody and refuses by name when unavailable; see the
+[Wildcat guide](./docs/wildcat-canonical.md).
 
 ## READING FURTHER
 
@@ -255,6 +306,10 @@ request.
 - [`examples/euler-v1-v0/DATA-DICTIONARY.md`](examples/euler-v1-v0/DATA-DICTIONARY.md)
   and [`examples/euler-v2-v0/DATA-DICTIONARY.md`](examples/euler-v2-v0/DATA-DICTIONARY.md)
   -- Euler schema v2 provenance, amount legs and source limits.
+- [`examples/aave-v4-v1/DATA-DICTIONARY.md`](examples/aave-v4-v1/DATA-DICTIONARY.md),
+  [`examples/euler-v1-v1/DATA-DICTIONARY.md`](examples/euler-v1-v1/DATA-DICTIONARY.md)
+  and [`examples/euler-v2-v1/DATA-DICTIONARY.md`](examples/euler-v2-v1/DATA-DICTIONARY.md)
+  -- the same fields under schema v3.
 - [`examples/compound-v3-phase0-v0/DATA-DICTIONARY.md`](examples/compound-v3-phase0-v0/DATA-DICTIONARY.md)
   -- the non-canonical execution facts and their refusal boundaries.
 - [`docs/adding-an-adapter.md`](docs/adding-an-adapter.md) -- how a second venue
@@ -272,3 +327,7 @@ request.
 ## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## CONSTRUCTED SANCTIONED-ACCOUNT ROUTING
+
+The [V1 specimen](examples/wildcat-v1-sanctions-v0/README.md) and [V2 specimen](examples/wildcat-v2-sanctions-v0/README.md) rebuild supporting asset-routing joins under adapter `1.3.0`, with one primary queue or market-token transfer and no second event for its companion. The [guide](docs/wildcat-canonical.md#versioned-sanctioned-account-routing) states complete-key matching, reciprocal provenance, unchanged units and unmatched gaps. These constructed releases supply no historical emission or sanction-status claim. The repository's `docs/kickoff/2091/reproduction.md` records conditional retained coverage and its separate evidence limits.

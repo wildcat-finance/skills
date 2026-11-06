@@ -10,6 +10,10 @@ duplicate survived until 2026-08-24, when the licence record moved to 020. ADR-0
 nearly went the same way: one delivery held it while another landed it, and only a
 manual check caught the collision before both reached the default branch. There is
 no exception list below, because the state it would have described is fixed.
+
+One number per record in this tree is still enforced. The comparison against the
+default branch is report-only since 2026-09-12; that method's own docstring says
+why.
 """
 
 from __future__ import annotations
@@ -18,6 +22,7 @@ from pathlib import Path
 import os
 import re
 import subprocess
+import sys
 import unittest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +115,30 @@ class DecisionRecordNumbering(unittest.TestCase):
     def test_no_number_collides_with_one_already_on_the_default_branch(self):
         """The case a uniqueness check on this tree alone cannot catch.
 
+        Report-only since 2026-09-12. It prints the collision and passes. The
+        name is kept despite that, because ADR-076 and ten audit records cite
+        it by name and audit bytes are not swept.
+
+        It already had no bite in CI: `.github/workflows/repo.yml` checks out
+        at the default depth of 1, so no local ref for the default branch
+        exists and this skips. Every collision it has caught, it caught on a
+        contributor's machine.
+
+        There, failing on it costs more than it saves, because the fix is
+        always late. The file, its first heading and every citation of it move
+        together, after the number the branch was written against has been
+        taken by something that landed first. `docs/decisions/` carries 27
+        renames. The Probitas Midnight run is the worked example: its runbook
+        records the collision surviving four audit rounds unfixed, because the
+        smallest free number is only reliably knowable once no further step
+        will run.
+
+        The hazard is real and the detection stays. What changes is who
+        decides. The operator reads the report and either renumbers now or
+        lets it land and fixes it after. ADR-077's draft path removes the
+        hazard at source by not picking a number before merge; nothing in
+        `docs/decisions/drafts/` uses it yet.
+
         Two branches each add a record and each pick the same next number. Their
         filenames differ, so git merges both with no conflict and the duplicate
         only becomes visible once both have landed. Comparing against the default
@@ -146,12 +175,14 @@ class DecisionRecordNumbering(unittest.TestCase):
                         f"ADR-{number}: this branch adds {sorted(added)} while the "
                         f"default branch already has {sorted(theirs[number])}"
                     )
-        self.assertEqual(
-            collisions, [],
-            "a decision record on this branch reuses a number that is already taken "
-            "on the default branch. Renumber to the next free number and move every "
-            "reference with it: " + "; ".join(collisions),
-        )
+        if collisions:
+            print(
+                "decision-record number collision (report-only): a record on this "
+                "branch reuses a number already taken on the default branch. "
+                "Renumber to the next free number and move every reference with it, "
+                "or let it land and fix it after: " + "; ".join(collisions),
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":

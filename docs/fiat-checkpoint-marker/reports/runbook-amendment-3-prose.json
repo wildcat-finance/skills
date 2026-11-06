@@ -1,0 +1,27 @@
+{
+  "schema": "fiat-1755-runbook-amendment-prose/v1",
+  "prior_sha256": "8b22576f49bf4f49c5fc51508353362af88eb0c5b40b5b1976a09583cf290082",
+  "candidate_sha256": "10f22af09220644ebc64cf71dd1cecdaa4df4d1a526b18f379b0cd02e7eb19ac",
+  "prefix_unchanged": true,
+  "sapheneia": "Preserved the full Files replacement, explicit cause, touched step and complete remaining verdicts.",
+  "vulgate": "Neutral register; candidate retained byte-identically.",
+  "inventory": [
+    "Step 2 Files",
+    "Step 2: entry holds; exit holds.",
+    "Step 3: entry holds; exit holds.",
+    "1.6.59",
+    "1.6.60"
+  ],
+  "imprimatur": [
+    {
+      "name": "imprimatur-before-vulgate",
+      "exit": 0,
+      "stdout_sha256": "7069b189a120294806940eb86626cb381f2148edfee5662395d0d5589e97a4e0"
+    },
+    {
+      "name": "imprimatur-final",
+      "exit": 0,
+      "stdout_sha256": "7069b189a120294806940eb86626cb381f2148edfee5662395d0d5589e97a4e0"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+test_secret_scan_passes_the_run_s_own_specification_documents (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_scan_passes_the_run_s_own_specification_documents)
+The scan does not read a document's own pattern list as a key. ... 
+  test_secret_scan_passes_the_run_s_own_specification_documents (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_scan_passes_the_run_s_own_specification_documents) (document='study.md')
+The scan does not read a document's own pattern list as a key. ... FAIL
+
+======================================================================
+FAIL: test_secret_scan_passes_the_run_s_own_specification_documents (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_scan_passes_the_run_s_own_specification_documents) (document='study.md')
+The scan does not read a document's own pattern list as a key.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py", line 3086, in test_secret_scan_passes_the_run_s_own_specification_documents
+    self.assertTrue(
+    ~~~~~~~~~~~~~~~^
+        SUBSUMED_PATTERN_SPAN in text or ADDED_PATTERN_SPAN in text,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        f"{path.name} names no armour header, so it guards nothing",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+AssertionError: False is not true : study.md names no armour header, so it guards nothing
+
+----------------------------------------------------------------------
+Ran 1 test in 0.020s
+
+FAILED (failures=1)

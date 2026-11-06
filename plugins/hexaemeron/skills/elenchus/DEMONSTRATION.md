@@ -26,7 +26,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
       "id": "input",
       "class": "fixture",
       "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
-      "sha256": "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
+      "sha256": "dfaff30491ff4e0da0d7a567e563b11b20f0b712ee8e69d6f7354160b1e73b57"
     }
   ],
   "commands": [
@@ -42,7 +42,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
     }
   ],
   "observations": [
-    "The command exits 0 in about 5.4 seconds with no network.",
+    "On 2026-09-21 the command ran 63 tests in 28.440 seconds and exited 0.",
     "Its last reported line is: OK"
   ],
   "frontier": {

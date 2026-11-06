@@ -68,3 +68,15 @@ Every refusal names the rule that fired. Two examples are committed under
 sources, and one refusal recording rule `A057`, a digest mismatch, with the
 record it fired on, the policy version and a correlation id derived from the
 policy bytes rather than a clock.
+
+## Source-rights identity
+
+Each released source retains `basis` and `rights_sha256`, the SHA-256 of the
+canonical checked rights object. Holder and statement text stay in the admission
+policy. The release ID binds `id:sha256:bytes:disclosure:basis:rights_sha256`
+for each source, beside the curation policy and five graph components. A changed
+rights decision therefore names a different release even when its graph agrees.
+
+The reader refuses older manifests missing these fields. Rebuild them from their
+original admission and curation policies; editing a manifest does not recover its
+rights decision. A digest records the decision's identity, not legal authority.

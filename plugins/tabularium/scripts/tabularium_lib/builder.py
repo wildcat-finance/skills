@@ -12,6 +12,7 @@ from .core import (
     sha256_bytes,
     write_bytes_atomic,
 )
+from . import CURRENT_EVENT_SCHEMA, check_event_schema
 from .paths import relative_artifact_path
 from .release_v2 import (
     adapter_module,
@@ -55,7 +56,9 @@ def _refuse_aliases(inputs, outputs):
                     raise TabulariumError("build outputs alias each other")
 
 
-def build(source_path, capture_manifest_path, out_path, manifest_path, release, adapter="aave-v4"):
+def build(source_path, capture_manifest_path, out_path, manifest_path, release,
+          adapter="aave-v4", event_schema=CURRENT_EVENT_SCHEMA):
+    check_event_schema(event_schema, "requested event schema version")
     _refuse_aliases(
         (source_path, capture_manifest_path),
         (out_path, manifest_path),
@@ -77,7 +80,7 @@ def build(source_path, capture_manifest_path, out_path, manifest_path, release, 
     capture = loads_json(capture_bytes, "capture manifest")
     module = adapter_module(adapter)
     _, mapped = validate_capture_v2(
-        capture, source, source_bytes, expected_adapter=adapter
+        capture, source, source_bytes, event_schema, expected_adapter=adapter
     )
     if capture["release"] != release:
         raise TabulariumError("capture release does not match requested release")
@@ -93,8 +96,9 @@ def build(source_path, capture_manifest_path, out_path, manifest_path, release, 
         data,
         capture,
         mapped,
+        event_schema,
     )
-    validate_manifest_v2(manifest)
+    validate_manifest_v2(manifest, event_schema)
     manifest_bytes = canonical_json(manifest) + b"\n"
     write_bytes_atomic(data, out_path)
     write_bytes_atomic(manifest_bytes, manifest_path)

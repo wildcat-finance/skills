@@ -1,8 +1,9 @@
-"""Map preserved Aave v4 consensus logs to canonical event schema v2."""
+"""Map preserved Aave v4 consensus logs to a canonical event schema."""
 
 from collections import Counter
 from copy import deepcopy
 
+from .. import check_event_schema
 from ..core import TabulariumError
 from .euler_common import (
     MappingResult,
@@ -104,7 +105,7 @@ def _token_index(source):
     return index
 
 
-def _event(raw, position, window, reserves, tokens):
+def _event(raw, position, window, reserves, tokens, schema_version):
     where = "logs[%d]" % position
     raw = object_(raw, where)
     if raw.get("removed") is not False:
@@ -147,7 +148,7 @@ def _event(raw, position, window, reserves, tokens):
     if caller != user:
         parties.append({"role": "caller", "address": caller})
     return {
-        "schema_version": 2,
+        "schema_version": schema_version,
         "id": "tabularium:%s:%s:%s:%d:%s"
         % (CHAIN, ADAPTER, transaction_hash, log_index, rule),
         "event_family": family,
@@ -216,7 +217,8 @@ def _window(capture, source):
     return first, last
 
 
-def map_source(source, capture):
+def map_source(source, capture, schema_version):
+    check_event_schema(schema_version, "event schema version")
     source = object_(source, "Aave v4 source")
     unknown = sorted(set(source) - EXPECTED_TOP_LEVEL)
     missing = sorted(EXPECTED_TOP_LEVEL - set(source))
@@ -238,7 +240,7 @@ def map_source(source, capture):
     events = []
     seen = set()
     for position, raw in enumerate(logs):
-        event = _event(raw, position, window, reserves, tokens)
+        event = _event(raw, position, window, reserves, tokens, schema_version)
         selector = event["provenance"]["source_selector"]
         if selector in seen:
             raise TabulariumError("Aave v4 source repeats the selector %s" % selector)

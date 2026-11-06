@@ -1,0 +1,1 @@
+{"expected_stages":["admission","signer","token","create","readback-authenticated","readback-anonymous","cleanup","receipt"],"expires_at":"2033-05-18T04:33:20Z","issue_number":9250,"issue_url":"https://github.com/wildcat-finance/skills/issues/9250","schema":"github-issue-publisher-runtime-cases/v1"}

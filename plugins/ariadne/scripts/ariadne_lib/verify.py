@@ -11,6 +11,22 @@ from . import gates as gates_module
 from . import registry as registry_module
 
 
+def _closed_record_module(module):
+    """The one shipped module whose closed records stand in for claims/commands.
+
+    Identity is checked rather than a declared attribute, so an unknown or
+    look-alike module cannot opt out of the core gates by naming the same
+    block id.
+    """
+    from .predicates import checkpoint_authority
+
+    if module is checkpoint_authority and (
+        module.CORE_BLOCKS == checkpoint_authority.CORE_BLOCKS
+    ):
+        return checkpoint_authority
+    return None
+
+
 def _predicate_failure(predicate_type, detail):
     return gates_module.Gate(
         None,
@@ -191,6 +207,9 @@ class Report(object):
                     "it" if singular else "them",
                 )
             )
+        closed = _closed_record_module(self.predicate_module)
+        if closed is not None:
+            out.extend(closed.UNCHECKED)
         if self.document.signed:
             out.append(
                 "signatures were not checked; run cosign verify-attestation "
@@ -237,6 +256,32 @@ def report(document, registry=None):
     statement = document.statement
     module = registry.get(statement.predicate_type)
     found = gates_module.run(statement, getattr(module, "CORE_LIMITS", None))
+    closed = _closed_record_module(module)
+    if closed is not None:
+        # A closed protocol record carries typed evidence references instead
+        # of the generic claims/commands blocks. Gates 1, 3 and 6 read empty
+        # blocks; gate 7 reads the record with its closed evidence names
+        # projected, so external evidence pins are not read as self-attested
+        # authorship. Gate 4 and the predicate's own checks read the record.
+        from .statement import Statement
+
+        projected = Statement(
+            statement.subjects,
+            statement.predicate_type,
+            dict(statement.predicate, claims=[], commands=[]),
+        )
+        authorship = Statement(
+            statement.subjects,
+            statement.predicate_type,
+            closed.authorship_projection(statement.predicate),
+        )
+        replacements = {
+            1: gates_module.gate_1_subjects(projected),
+            3: gates_module.gate_3_absence(projected),
+            6: gates_module.gate_6_determinism(projected),
+            7: gates_module.gate_7_authorship(authorship),
+        }
+        found = [replacements.get(gate.number, gate) for gate in found]
 
     ran = False
     check = getattr(module, "check", None) if module is not None else None

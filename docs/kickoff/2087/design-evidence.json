@@ -1,0 +1,535 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "adjacent-burn",
+      "summary": "Join a batch payment to the market-to-zero transfer at the previous log index with equal value; created, expired and closed carry no burn."
+    },
+    {
+      "id": "unique-value-burn",
+      "summary": "Join a batch payment to the unique same-market, same-transaction burn with equal value, as the escrow companion does."
+    },
+    {
+      "id": "all-batch-events",
+      "summary": "Join every batch event to the nearest earlier market-to-zero transfer in its transaction."
+    },
+    {
+      "id": "envelope-batch-field",
+      "summary": "Adjacent join plus a batch field and a schema 4 envelope that carries the expiry on the row."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "source-pairing-determinism",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "single-claim",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "retained-join-closure",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "pair-comparisons",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "retained-candidates",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "schema-envelope-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "existing-rows-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "missing-or-ambiguous-stays-gap",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "semantic-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "schema-parity",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "retained-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "source-pairing-determinism",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-source-pairing-determinism.json",
+        "sha256": "24e9b83b4e3177fab9cd3233ad36e33f2e10650ffecdac270ba10b8e46dfc7f6"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "single-claim",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-single-claim.json",
+        "sha256": "cf979f352ef1eeaa28e8ae782a75a1a9a1f922d438a3d5f17ddb9659d76c68d2"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "retained-join-closure",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-retained-join-closure.json",
+        "sha256": "0ee7cfcb74246db3737cd0ef7eff5f6c552e98d28c594665983732db592553c4"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "pair-comparisons",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-pair-comparisons.json",
+        "sha256": "709761cd2041ef76ccdf3e6630be250234171d1d9f7dcbca127500fdde9baa1e"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "retained-candidates",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-retained-candidates.json",
+        "sha256": "9029580939a64bb3fa09fc37d05f6200e5c6bceefc1dc6baa4ea3cb35a537539"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "schema-envelope-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-schema-envelope-unchanged.json",
+        "sha256": "58265550417186262bd0bbea50717142972403cba6cea269e0b18f24fd8bdd31"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "existing-rows-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-existing-rows-unchanged.json",
+        "sha256": "582d96c1f235e03b243705c7a1ff2d3740d295fa960e11d9fe66871c8bef5a44"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "missing-or-ambiguous-stays-gap",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/adjacent-burn-missing-or-ambiguous-stays-gap.json",
+        "sha256": "5ce835ecf8006dec464c25534a7c817ce02c413fd5464b55a8b5d80604eec04f"
+      }
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate adjacent-burn --criterion semantic-conformance --report .hexaemeron/design-reports/adjacent-burn-semantic-conformance.json",
+      "report": "design-reports/adjacent-burn-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate adjacent-burn --criterion schema-parity --report .hexaemeron/design-reports/adjacent-burn-schema-parity.json",
+      "report": "design-reports/adjacent-burn-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "adjacent-burn",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate adjacent-burn --criterion retained-conformance --report .hexaemeron/design-reports/adjacent-burn-retained-conformance.json",
+      "report": "design-reports/adjacent-burn-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "source-pairing-determinism",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/unique-value-burn-source-pairing-determinism.json",
+        "sha256": "438bf87608aa83a4b1086fd68884df249e325b6917bda64eeef0e0f4ae37b915"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "single-claim",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/unique-value-burn-single-claim.json",
+        "sha256": "1b9ac349e4aa00a0fea480acca2fcc7beb0260a84c3e76b03f3c9fb3bf0b0f57"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "retained-join-closure",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/unique-value-burn-retained-join-closure.json",
+        "sha256": "591c88fd226f3dfa7a2580ed58426d26ed8e85ced0e2a2259738329a1476614c"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "pair-comparisons",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/unique-value-burn-pair-comparisons.json",
+        "sha256": "207f3ec580bf786f740e0ec2d9357d2cab63881900b21ca6fe0e875662224098"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "retained-candidates",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/unique-value-burn-retained-candidates.json",
+        "sha256": "69c04a766b1ae619b5df8b95c5ed6a75d6075cd4d51c93fb01d2467362645a06"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "schema-envelope-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/unique-value-burn-schema-envelope-unchanged.json",
+        "sha256": "ad899f7f3da7fc0cdc021140470ee5520187c8a329a4fd03022ccec5528b68aa"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "existing-rows-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/unique-value-burn-existing-rows-unchanged.json",
+        "sha256": "d9e0df4cced4fd535037a203af467b793802a6efe80c9335a4a366867e3e2c82"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "missing-or-ambiguous-stays-gap",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/unique-value-burn-missing-or-ambiguous-stays-gap.json",
+        "sha256": "b2df75ae215a48941eb81bb6c5cf518e898d9dc6618e1be77c4b0c2f0c8b4185"
+      }
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate unique-value-burn --criterion semantic-conformance --report .hexaemeron/design-reports/unique-value-burn-semantic-conformance.json",
+      "report": "design-reports/unique-value-burn-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate unique-value-burn --criterion schema-parity --report .hexaemeron/design-reports/unique-value-burn-schema-parity.json",
+      "report": "design-reports/unique-value-burn-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "unique-value-burn",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate unique-value-burn --criterion retained-conformance --report .hexaemeron/design-reports/unique-value-burn-retained-conformance.json",
+      "report": "design-reports/unique-value-burn-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "source-pairing-determinism",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/all-batch-events-source-pairing-determinism.json",
+        "sha256": "e695fe6dcbf10292779f77463cd9f5b3209ac23426a19bfc8763d7b9f43df0b0"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "single-claim",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/all-batch-events-single-claim.json",
+        "sha256": "3e635c2be82d036730ea260327d1d20acdb85b54e6462887ff81cada3c2fa274"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "retained-join-closure",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/all-batch-events-retained-join-closure.json",
+        "sha256": "972ed2e3a2f959e205b5c09291932d68a7534e8be0291b8b00730adebcc1d960"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "pair-comparisons",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/all-batch-events-pair-comparisons.json",
+        "sha256": "f34e683667a90174c5cc532153bbbbc4760fc063fd18eb91c375116f1d5e9b6d"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "retained-candidates",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/all-batch-events-retained-candidates.json",
+        "sha256": "1c3b4898f479dc855fe86dd4951667e713020eeb1bbf13c84f87bad868b15e1c"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "schema-envelope-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/all-batch-events-schema-envelope-unchanged.json",
+        "sha256": "eac4bd888dc021442bbfb7ad6229b1ed89a818eaf2cb0dd42b4313b6179795aa"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "existing-rows-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/all-batch-events-existing-rows-unchanged.json",
+        "sha256": "4dd5691291de4b8fe7b98b06353f5f30e76c19e6f489da99352cc4178dc6c5f1"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "missing-or-ambiguous-stays-gap",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/all-batch-events-missing-or-ambiguous-stays-gap.json",
+        "sha256": "8490cfb26e3db3efc202ef633da366749878da4ca1e2235714d3840e45906ad1"
+      }
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate all-batch-events --criterion semantic-conformance --report .hexaemeron/design-reports/all-batch-events-semantic-conformance.json",
+      "report": "design-reports/all-batch-events-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate all-batch-events --criterion schema-parity --report .hexaemeron/design-reports/all-batch-events-schema-parity.json",
+      "report": "design-reports/all-batch-events-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "all-batch-events",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate all-batch-events --criterion retained-conformance --report .hexaemeron/design-reports/all-batch-events-retained-conformance.json",
+      "report": "design-reports/all-batch-events-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "source-pairing-determinism",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/envelope-batch-field-source-pairing-determinism.json",
+        "sha256": "3f1bf5d44a91afea1c22cdf90d1b689715d172f466f30755661034427a45c6d4"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "single-claim",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/envelope-batch-field-single-claim.json",
+        "sha256": "f061641b787156557a69e1a3cd3bf1a18865303d81c4f96ae29fafe3eef26732"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "retained-join-closure",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/envelope-batch-field-retained-join-closure.json",
+        "sha256": "c0d5c9f5d18429e687b5f776615b26e4ce419ffe7c7f6aeb7e4fbbc9e737c5be"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "pair-comparisons",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/envelope-batch-field-pair-comparisons.json",
+        "sha256": "a6f89a32701e7204f010588badd0aec994dcb84533f08067608f2876db61caf0"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "retained-candidates",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/envelope-batch-field-retained-candidates.json",
+        "sha256": "a33f7f210ccfb1854f74534cef1b5a757f8f02c5a85f54905d5ebb307bf2f1a6"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "schema-envelope-unchanged",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/envelope-batch-field-schema-envelope-unchanged.json",
+        "sha256": "8310aa3123f6d4b709c2c21d99b1bec42a32ad576f63194edbbf78c8c1ad9fb6"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "existing-rows-unchanged",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/envelope-batch-field-existing-rows-unchanged.json",
+        "sha256": "f177d5391f6e750b2b7b07882516616b956fd1cbc6815007327819a764145134"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "missing-or-ambiguous-stays-gap",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/envelope-batch-field-missing-or-ambiguous-stays-gap.json",
+        "sha256": "0fbc74433b603a24f293fbf1ea3bef671e8ab76122743fa8c4af9e98a551cce9"
+      }
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate envelope-batch-field --criterion semantic-conformance --report .hexaemeron/design-reports/envelope-batch-field-semantic-conformance.json",
+      "report": "design-reports/envelope-batch-field-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate envelope-batch-field --criterion schema-parity --report .hexaemeron/design-reports/envelope-batch-field-schema-parity.json",
+      "report": "design-reports/envelope-batch-field-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "envelope-batch-field",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate envelope-batch-field --criterion retained-conformance --report .hexaemeron/design-reports/envelope-batch-field-retained-conformance.json",
+      "report": "design-reports/envelope-batch-field-retained-conformance.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "adjacent-burn",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

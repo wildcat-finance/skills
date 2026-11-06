@@ -1,0 +1,35 @@
+{
+  "base": "7952eafa337f5ba1c4f45417ceb154673f629c1c",
+  "whole_set_command": "python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .",
+  "whole_set_exit": 0,
+  "sources": [
+    {
+      "source": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.md",
+      "source_sha256": "84203e2761025f5a9057eee11e477384dbcaace57e2e65c8e0dc6710c81c2a61",
+      "view": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md",
+      "view_sha256": "1f58335e9783e69d74bbc6eb7d93e9938625c9a4d2d3f26ef8d6050f7663c342",
+      "reading": "complete verified synopsis"
+    },
+    {
+      "source": "audit/rounds/fiat-admit-the-anamnesis-corpus-projection-into-a-syn.md",
+      "source_sha256": "9ebc7a0647ddf49e9f83a36963828939dc49f116c48575c4a3cdbd98db98faa6",
+      "view": "audit/rounds/fiat-admit-the-anamnesis-corpus-projection-into-a-syn.synopsis.md",
+      "view_sha256": "194bdf2a810dacb8c6abbca8a0926e479b5610fb96df136bad2147847633bce2",
+      "reading": "complete verified synopsis"
+    },
+    {
+      "source": "audit/rounds/fiat-1351-anamnesis-2-declared-corpus-scope.md",
+      "source_sha256": "ae1eda1e2169a44fa64966bd30144cdcd5c911ddb9fd06b9ee251de4077241b6",
+      "view": "audit/rounds/fiat-1351-anamnesis-2-declared-corpus-scope.synopsis.md",
+      "view_sha256": "7996c73bf7f4b4a0690ac9bc7bfe52c8ba12fac9d9a38a662b4bf1d6ac0e136b",
+      "reading": "complete verified synopsis"
+    },
+    {
+      "source": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.md",
+      "source_sha256": "fde88356dcac0d89f9743ef63fe1ba2b465fa0f2d80952f2630b2eb51c45f84b",
+      "view": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md",
+      "view_sha256": "5101ec9545bc1feb54f1db760c21f44097b5992235b467f2c81c374cf827901c",
+      "reading": "complete verified synopsis"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+[
+  {
+    "argv": [
+      "/usr/bin/bwrap",
+      "--unshare-net",
+      "--bind",
+      "/",
+      "/",
+      "--",
+      "/usr/bin/python3",
+      "-I",
+      "-c",
+      "with open('/dev/null','rb') as stream: print(stream.read(1))"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nPermissionError: [Errno 13] Permission denied: '/dev/null'\n"
+  },
+  {
+    "argv": [
+      "/usr/bin/bwrap",
+      "--unshare-net",
+      "--bind",
+      "/",
+      "/",
+      "--dev-bind",
+      "/dev",
+      "/dev",
+      "--",
+      "/usr/bin/python3",
+      "-I",
+      "-c",
+      "with open('/dev/null','rb') as stream: print(stream.read(1))"
+    ],
+    "exit": 0,
+    "stdout": "b''\n",
+    "stderr": ""
+  }
+]

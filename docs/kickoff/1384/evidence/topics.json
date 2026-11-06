@@ -1,0 +1,10 @@
+{
+  "WithdrawalBatchCreated(uint256)": "0x5c9a946d3041134198ebefcd814de7748def6576efd3d1b48f48193e183e89ef",
+  "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)": "0x9262dc39b47cad3a0512e4c08dda248cb345e7163058f300bc63f56bda288b6e",
+  "WithdrawalBatchClosed(uint256)": "0xcbdf25bf6e096dd9030d89bb2ba2e3e7adb82d25a233c3ca3d92e9f098b74e55",
+  "WithdrawalBatchPayment(uint256,uint256,uint256)": "0x5272034725119f19d7236de4129fdb5093f0dcb80282ca5edbd587df91d2bd89",
+  "WithdrawalQueued(uint256,address,uint256,uint256)": "0xecc966b282a372469fa4d3e497c2ac17983c3eaed03f3f17c9acf4b15591663e",
+  "WithdrawalExecuted(uint256,address,uint256)": "0xd6cddb3d69146e96ebc2c87b1b3dd0b20ee2d3b0eadf134e011afb434a3e56e6",
+  "Transfer(address,address,uint256)": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+  "DebtRepaid(address,uint256)": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6"
+}

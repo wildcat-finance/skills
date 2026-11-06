@@ -7,6 +7,13 @@ killed between a record and its checkpoint leaves bytes no resumed run keeps,
 because resume truncates every journal back to its recorded offset before it
 returns the next shard.
 
+A plan may declare `shards_per_component`.  Each shard class's journal is then
+kept as one file per plan-derived component, a contiguous shard range, and
+released as one component per file, so a logical journal larger than the
+per-file ceiling is collected and shipped without any single file exceeding
+it.  The boundaries derive from the plan's shard count and that one field, so
+they move only when the plan changes.  The opening reads are never split.
+
 Nothing here reaches a network.  The collector that does is built on top of
 this module and supplies its own transport.
 """
@@ -21,13 +28,29 @@ import re
 import stat
 import tempfile
 
-from .canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes
+from .event_headers import (
+    CLASS as EVENT_HEADER_CLASS, FIELD as EVENT_HEADER_FIELD,
+    enabled as event_headers_enabled, validate_marker,
+)
+
+from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, MAX_LARGE_NODES, MAX_NODES, canonical_bytes, load_bytes
 from .errors import AlexandriaError
+from .release import count_nodes
 
 
 PLAN_FORMAT = "alexandria-interval-plan/v1"
+PLAN_FORMAT_V2 = "alexandria-interval-plan/v2"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
-RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
+# The checkpoint a split tree writes: the same fields, with `offsets` keyed by
+# journal component rather than by class, because a split tree has one file
+# per class and component. An unsplit tree keeps writing v1 byte for byte.
+CHECKPOINT_FORMAT_V2 = "alexandria-interval-checkpoint/v2"
+LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
+RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
+# The receipt a subject-set plan's release carries: the v2 positional rules,
+# with `epochs` one row per subject and every attribution row naming its own
+# subject. A single-proxy plan keeps writing v2 byte for byte.
+SUBJECT_RECEIPT_FORMAT = "alexandria-interval-receipt/v3"
 
 # Every class this collector knows how to request. A plan declares the ordered
 # subset it collects; a class it omits is a named coverage gap, never a journal
@@ -43,18 +66,55 @@ FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 
 # Operator bounds.  A shard is a request's block range, so its width is what a
 # provider's result limit and this collector's byte ceiling have to survive; the
-# shard count is what the release's 128-component ceiling and the checkpoint's
-# rewrite cost have to survive.
+# shard count is what the release's component cap, `MAX_COMPONENTS` in
+# `release.py`, and the checkpoint's rewrite cost have to survive.
 MIN_SHARD_WIDTH = 1
 MAX_SHARD_WIDTH = 50_000
 MAX_SHARDS = 4_096
+# The optional plan field that splits each shard-class journal into release
+# components of at most this many shards. Absent means one component per
+# class under the class's own name; present, it is a positive integer bounded
+# by the shard limit, and the component ranges derive from it and the shard
+# count alone, never from how many bytes a collection returned.
+SPLIT_FIELD = "shards_per_component"
+# The optional subject-set plan field that moves the attribution rows out of the
+# epoch table into one release component per journal range, `log-attributions.<k>`
+# beside `logs.<k>`. Its one admitted value names that rule, and it needs
+# `shards_per_component`, whose ranges the parts share. The release carries the
+# v4 receipt, which lists the parts in place of the rows. A plan without the
+# field keeps every row in the epoch table and validates exactly as before.
+PARTS_FIELD = "log_attribution_parts"
+PARTS_RULE = "journal-ranges"
+PARTS_RECEIPT_FORMAT = "alexandria-interval-receipt/v4"
+# The optional subject-set plan field that declares Wildcat V2 wrapper
+# instances: `{"rule": WRAPPERS_RULE, "subjects": [...]}`. `validate_plan`
+# checks its closed shape and the plan fields it depends on; the checks that
+# need the deployment registry or preserved logs live in `wildcat_wrappers.py`.
+# The venue name is spelled here because this module cannot import a venue
+# module, which imports it; a test holds it equal to `wildcat_v2.VENUE`.
+WRAPPERS_FIELD = "wildcat_v2_wrappers"
+WRAPPERS_RULE = "wrapper-deployed/v1"
+WRAPPERS_VENUE = "wildcat-v2"
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # How far back a reorg can be walked before the collector refuses instead of
 # guessing. Bounded because the checkpoint is working state, not a chain.
 MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
-MAX_TIMEOUT_SECONDS = 600
+# The ceiling a plan's own declared provider.timeout_seconds is validated
+# against -- not how long any one request is actually allowed to run for,
+# which is usdc_interval.MAX_REQUEST_SECONDS, a separate and much smaller
+# real deadline _bounded_request enforces regardless of what a plan
+# declares. Kept at the original 3,600 rather than lowered: plan_digest
+# hashes the whole plan, so lowering this ceiling would force an
+# already-authored, already-checkpointed plan's own declared value down
+# to fit, changing its digest and invalidating every checkpoint already
+# bound to it -- a live run's completed collection and in-progress
+# reconciliation among them, 2026-09-21. A plan's own outer ceiling and
+# the real per-request deadline are different concerns for exactly this
+# reason: one can be conservative and effectively unused; the other is
+# where a hang actually has to be caught.
+MAX_TIMEOUT_SECONDS = 3600
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
@@ -62,9 +122,20 @@ CHAIN_RE = re.compile(r"^eip155:(0|[1-9][0-9]*)$")
 WORD_RE = re.compile(r"^0x[0-9a-f]{64}$")
 CODE_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
+RECOLLECTED_AT_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 
 JOURNAL_DIRECTORY = "journals"
 CHECKPOINT_NAME = "checkpoint.json"
+# A shard component's replacement, see `Staging.replace_component`. The intent
+# names the journal, both digests and the record to append; while it exists no
+# reader trusts the tree, and `resume` finishes the replacement it describes.
+REPLACEMENT_INTENT = "recollection-pending.json"
+REPLACEMENT_INTENT_FORMAT = "alexandria-interval-recollection-intent/v1"
+RECOLLECTION_DIRECTORY = "receipts"
+RECOLLECTION_RECORDS = "recollections.jsonl"
+RECOLLECTION_FIELDS = frozenset({
+    "class", "new_sha256", "node_syncing", "old_sha256", "provider_class", "recollected_at", "shard",
+})
 
 # The EIP-1967 implementation slot, and the ERC-1967 `Upgraded(address)` topic.
 # Neither is computed here, because the standard library carries no keccak.
@@ -77,6 +148,7 @@ IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca5
 UPGRADED_TOPIC = "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
 ZERO_ADDRESS = "0x" + "0" * 40
 MAX_EPOCHS = 256
+MAX_SUBJECTS = 4096
 
 
 def plan_shards(start: int, end: int, width: int) -> list[dict]:
@@ -111,24 +183,110 @@ def plan_shards(start: int, end: int, width: int) -> list[dict]:
     return shards
 
 
+def component_ranges(shard_count, shards_per_component):
+    """The contiguous shard ranges each journal component holds, from the plan alone.
+
+    None when the plan declares no split, so an unsplit plan keeps one
+    component per class under the class's own name. Otherwise the ranges tile
+    shard indexes 0 through `shard_count - 1` in order, every range but the
+    last holding exactly `shards_per_component` shards, so the boundaries move
+    only when the plan changes and never because a re-collection returned one
+    more record.
+    """
+    if shards_per_component is None:
+        return None
+    if (
+        not isinstance(shards_per_component, int)
+        or isinstance(shards_per_component, bool)
+        or not 1 <= shards_per_component <= MAX_SHARDS
+    ):
+        raise AlexandriaError(
+            f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+        )
+    if not isinstance(shard_count, int) or isinstance(shard_count, bool) or shard_count < 1:
+        raise AlexandriaError("journal components need a positive shard count")
+    return [
+        (first, min(first + shards_per_component, shard_count) - 1)
+        for first in range(0, shard_count, shards_per_component)
+    ]
+
+
+def plan_partition(plan):
+    """The plan's component ranges, or None for a plan that declares no split."""
+    return component_ranges(len(plan["shards"]), plan.get(SPLIT_FIELD))
+
+
+def component_name(name: str, index: int) -> str:
+    """The journal component holding one contiguous shard range of one class."""
+    return f"{name}.{index}"
+
+
+def component_of(ranges, shard: int) -> int:
+    """Which component holds one shard; the ranges tile the shards, so exactly one does."""
+    for index, (first, last) in enumerate(ranges):
+        if first <= shard <= last:
+            return index
+    raise AlexandriaError(f"shard {shard} is outside every journal component")
+
+
+def journal_names(classes, ranges=None) -> tuple:
+    """The physical journals a tree holds: one per class, or one per class and component.
+
+    The opening reads are never split: they are staged under the virtual shard
+    index and their number is bounded by the epoch count rather than the shard
+    count, so no plan-derived shard range can hold them.
+    """
+    if ranges is None:
+        return tuple(classes)
+    names = []
+    for name in classes:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS):
+            names.append(name)
+        else:
+            names.extend(component_name(name, index) for index in range(len(ranges)))
+    return tuple(names)
+
+
 def validate_plan(plan) -> None:
-    """Check one closed `alexandria-interval-plan/v1` document."""
-    required = {
+    """Check one closed interval plan document.
+
+    `alexandria-interval-plan/v1` carries one `proxy` address and means
+    exactly one subject; `alexandria-interval-plan/v2` carries a `subjects`
+    array instead and means each declared address. Every other field --
+    chain, deployment, venue, evidence classes, interval/shards, finality,
+    provider -- is shared and checked the same way under either format.
+    Either format may carry the optional `shards_per_component`; a plan
+    without it declares no split and validates exactly as before. A v2 plan
+    that declares it may also declare `log_attribution_parts`, whose one value
+    is `journal-ranges`; the field refuses by name on a v1 plan, without the
+    split, or with any other value. A v2 plan may also declare
+    `wildcat_v2_wrappers`; `_validate_wrappers` checks it, and a plan
+    without it validates exactly as before.
+    """
+    required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
-    if not isinstance(plan, dict) or set(plan) != required:
+    required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
+    optional = {SPLIT_FIELD, PARTS_FIELD, EVENT_HEADER_FIELD, WRAPPERS_FIELD}
+    if not isinstance(plan, dict) or set(plan) - optional not in (required_v1, required_v2):
         raise AlexandriaError("interval plan has an unknown shape")
-    if plan["format"] != PLAN_FORMAT:
+    validate_marker(plan)
+    is_v2 = "subjects" in plan
+    if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
         raise AlexandriaError("interval plan format is not recognised")
     if not isinstance(plan["chain"], str) or CHAIN_RE.fullmatch(plan["chain"]) is None:
         raise AlexandriaError("interval plan chain is not an eip155 identifier")
     for field in ("deployment", "venue"):
         if not isinstance(plan[field], str) or NAME_RE.fullmatch(plan[field]) is None:
             raise AlexandriaError(f"interval plan {field} is not a name")
-    if not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
+    if is_v2:
+        _validate_subjects(plan["subjects"])
+    elif not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
         raise AlexandriaError("interval plan proxy is not a lowercase address")
     validate_evidence_classes(plan["evidence_classes"])
+    if WRAPPERS_FIELD in plan:
+        _validate_wrappers(plan)
 
     interval = plan["interval"]
     if not isinstance(interval, dict) or set(interval) != {"end", "start"}:
@@ -139,6 +297,31 @@ def validate_plan(plan) -> None:
     expected = plan_shards(start, end, width if isinstance(width, int) else 0)
     if plan["shards"] != expected:
         raise AlexandriaError("interval plan shards do not tile its declared interval")
+    if SPLIT_FIELD in plan:
+        # Present means declared: a null is not "no split", it is a field this
+        # collector cannot read. The bounds are checked before any use.
+        if plan[SPLIT_FIELD] is None:
+            raise AlexandriaError(
+                f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+            )
+        component_ranges(len(expected), plan[SPLIT_FIELD])
+    if PARTS_FIELD in plan:
+        # The parts are the plan's journal ranges and hold subject rows, so
+        # the field means nothing on a single-proxy plan or without the split.
+        if not is_v2:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} is admitted only on an {PLAN_FORMAT_V2} "
+                "subject-set plan"
+            )
+        if not isinstance(plan[PARTS_FIELD], str) or plan[PARTS_FIELD] != PARTS_RULE:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} must be {PARTS_RULE!r}, its one admitted value"
+            )
+        if SPLIT_FIELD not in plan:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} requires {SPLIT_FIELD}, whose journal ranges "
+                "the parts share"
+            )
 
     finality = plan["finality"]
     if not isinstance(finality, dict):
@@ -179,6 +362,101 @@ def validate_plan(plan) -> None:
         raise AlexandriaError("interval plan finality block hash is not a 32-byte hash")
 
 
+def _validate_subjects(subjects) -> None:
+    """Check a v2 plan's declared subject set: a non-empty list of distinct addresses."""
+    if not isinstance(subjects, list) or not subjects:
+        raise AlexandriaError("interval plan subjects must be a non-empty list of addresses")
+    if len(subjects) > MAX_SUBJECTS:
+        raise AlexandriaError(f"interval plan subjects exceed the {MAX_SUBJECTS}-subject limit")
+    seen = set()
+    for subject in subjects:
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("interval plan subject is not a lowercase address")
+        if subject in seen:
+            raise AlexandriaError(f"interval plan subject {subject} is declared twice")
+        seen.add(subject)
+
+
+def _validate_wrappers(plan) -> None:
+    """Check a plan's `wildcat_v2_wrappers` field before anything reads it.
+
+    The field is admitted only on an `alexandria-interval-plan/v2` plan whose
+    venue is `wildcat-v2` and whose evidence classes include `logs`. Its value
+    is exactly `{"rule": "wrapper-deployed/v1", "subjects": [...]}`, and the
+    list is non-empty, lowercase, strictly ascending, disjoint from `subjects`
+    and, together with `subjects`, within `MAX_SUBJECTS`. It runs after the
+    plan's venue, subjects and evidence classes are validated, the three other
+    fields it reads.
+    """
+    if "subjects" not in plan:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} is admitted only on an {PLAN_FORMAT_V2} "
+            "subject-set plan"
+        )
+    if plan["venue"] != WRAPPERS_VENUE:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} is admitted only for venue {WRAPPERS_VENUE}"
+        )
+    if "logs" not in plan["evidence_classes"]:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} requires the logs evidence class, which holds "
+            "the WrapperDeployed logs that admit each wrapper"
+        )
+    value = plan[WRAPPERS_FIELD]
+    if not isinstance(value, dict) or set(value) != {"rule", "subjects"}:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} must be an object with exactly rule and subjects"
+        )
+    if not isinstance(value["rule"], str) or value["rule"] != WRAPPERS_RULE:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} rule must be {WRAPPERS_RULE!r}, its one admitted value"
+        )
+    wrappers = value["subjects"]
+    if not isinstance(wrappers, list) or not wrappers:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} subjects must be a non-empty list of addresses"
+        )
+    if len(wrappers) + len(plan["subjects"]) > MAX_SUBJECTS:
+        raise AlexandriaError(
+            f"interval plan subjects and {WRAPPERS_FIELD} subjects together exceed the "
+            f"{MAX_SUBJECTS}-subject limit"
+        )
+    declared = set(plan["subjects"])
+    previous = None
+    for wrapper in wrappers:
+        if not isinstance(wrapper, str) or ADDRESS_RE.fullmatch(wrapper) is None:
+            raise AlexandriaError(
+                f"interval plan {WRAPPERS_FIELD} subject is not a lowercase address"
+            )
+        if previous is not None and wrapper <= previous:
+            raise AlexandriaError(
+                f"interval plan {WRAPPERS_FIELD} subject {wrapper} is duplicated or out of "
+                "ascending order"
+            )
+        if wrapper in declared:
+            raise AlexandriaError(
+                f"interval plan {WRAPPERS_FIELD} subject {wrapper} is also a declared subject"
+            )
+        previous = wrapper
+
+
+def capture_subjects(plan) -> list:
+    """Every address a subject-set plan's shard reads filter on, in request order.
+
+    The plan's `subjects` in plan order, then its declared
+    `wildcat_v2_wrappers` subjects in ascending order. A plan without that
+    field yields exactly its `subjects`, so its request bytes, epoch table and
+    attribution rows are the ones it derived before wrappers existed. A
+    single-proxy plan has no subject set and refuses.
+    """
+    if "subjects" not in plan:
+        raise AlexandriaError("a single-proxy plan declares no subject set")
+    subjects = list(plan["subjects"])
+    if WRAPPERS_FIELD in plan:
+        subjects.extend(plan[WRAPPERS_FIELD]["subjects"])
+    return subjects
+
+
 def validate_evidence_classes(value) -> tuple:
     """Check a plan's declared classes: a non-empty subset of the known ones.
 
@@ -215,22 +493,45 @@ def journal_classes(declared) -> tuple:
 
 def validate_checkpoint(
     checkpoint, expected_digest: str, shard_count: int, classes=EVIDENCE_CLASSES,
+    ranges=None,
 ) -> None:
-    """Check one closed `alexandria-interval-checkpoint/v1` document.
+    """Check one closed interval checkpoint document.
 
     `classes` is the plan's declared evidence classes; the checkpoint's offsets
     cover exactly those, so a plan that omits a class carries no journal for it.
+    `ranges` is the plan's component partition: None for an unsplit plan, whose
+    checkpoint is `alexandria-interval-checkpoint/v1` keyed by class, or the
+    plan-derived shard ranges, whose checkpoint is `/v2` keyed by journal
+    component. A checkpoint of the other format belongs to a tree laid out
+    differently from the one the plan describes and is refused by name.
     """
     required = {
         "format", "history", "last_accepted", "next_shard", "offsets",
         "plan_sha256", "records",
     }
+    if EVENT_HEADER_CLASS in classes:
+        required.add("event_headers_sha256")
     if not isinstance(checkpoint, dict) or set(checkpoint) != required:
         raise AlexandriaError("interval checkpoint has an unknown shape")
-    if checkpoint["format"] != CHECKPOINT_FORMAT:
+    if EVENT_HEADER_CLASS in classes and (not isinstance(checkpoint["event_headers_sha256"], str) or re.fullmatch(r"[0-9a-f]{64}", checkpoint["event_headers_sha256"]) is None):
+        raise AlexandriaError("event header checkpoint digest is malformed")
+    if checkpoint["format"] not in (CHECKPOINT_FORMAT, CHECKPOINT_FORMAT_V2):
         raise AlexandriaError("interval checkpoint format is not recognised")
     if checkpoint["plan_sha256"] != expected_digest:
         raise AlexandriaError("interval checkpoint belongs to a different plan")
+    # The plan's digest covers its split field, so a checkpoint of the wrong
+    # format for the plan it names is a tree laid out by other code.
+    expected_format = CHECKPOINT_FORMAT if ranges is None else CHECKPOINT_FORMAT_V2
+    if checkpoint["format"] != expected_format:
+        raise AlexandriaError(
+            "interval checkpoint format does not match the journal split the plan declares"
+        )
+    journals = set(journal_names(classes, ranges))
+    coverage = (
+        "interval checkpoint offsets do not cover every evidence class the plan declares"
+        if ranges is None
+        else "interval checkpoint offsets do not cover every journal component the plan derives"
+    )
     for field in ("next_shard", "records"):
         value = checkpoint[field]
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
@@ -238,8 +539,8 @@ def validate_checkpoint(
     if checkpoint["next_shard"] > shard_count:
         raise AlexandriaError("interval checkpoint names a shard outside its plan")
     offsets = checkpoint["offsets"]
-    if not isinstance(offsets, dict) or set(offsets) != set(classes):
-        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class the plan declares")
+    if not isinstance(offsets, dict) or set(offsets) != journals:
+        raise AlexandriaError(coverage)
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
@@ -248,8 +549,7 @@ def validate_checkpoint(
     # committed one; an offset that says otherwise is a checkpoint this
     # collector did not write.
     if (
-        OPENING_CLASS in offsets
-        and offsets[OPENING_CLASS] > 0
+        any(offsets.get(name, 0) > 0 for name in (OPENING_CLASS, EVENT_HEADER_CLASS))
         and checkpoint["next_shard"] != shard_count
     ):
         raise AlexandriaError(
@@ -281,18 +581,15 @@ def validate_checkpoint(
         if not isinstance(entry["records"], int) or isinstance(entry["records"], bool) or entry["records"] < 0:
             raise AlexandriaError("interval checkpoint history record count is not a count")
         entry_offsets = entry["offsets"]
-        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(classes):
-            raise AlexandriaError(
-                "interval checkpoint history offsets do not cover every evidence class the plan declares"
-            )
+        if not isinstance(entry_offsets, dict) or set(entry_offsets) != journals:
+            raise AlexandriaError("interval checkpoint history " + coverage.removeprefix("interval checkpoint "))
         for name, value in entry_offsets.items():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise AlexandriaError(
                     f"interval checkpoint history offset for {name} is not a byte count"
                 )
         if (
-            OPENING_CLASS in entry_offsets
-            and entry_offsets[OPENING_CLASS] > 0
+            any(entry_offsets.get(name, 0) > 0 for name in (OPENING_CLASS, EVENT_HEADER_CLASS))
             and shard != shard_count - 1
         ):
             raise AlexandriaError(
@@ -365,8 +662,23 @@ def contained(root: Path, candidate) -> Path:
     return resolved
 
 
+# The collector checkpoint's limits. Its offsets name every physical journal,
+# and a full rewind history repeats them sixteen more times, so a tree for the
+# largest plan the release caps admit needs more nodes than the default
+# 200,000. Its bytes stay under the 8 MiB control limit.
+MAX_CHECKPOINT_BYTES = MAX_CONTROL_BYTES
+MAX_CHECKPOINT_NODES = 2_000_000
+
+
 class Staging:
-    """One append-only journal per evidence class, checkpointed by byte offset."""
+    """One append-only journal per evidence class, checkpointed by byte offset.
+
+    Under a plan that declares `shards_per_component`, each shard class is kept
+    as one file per plan-derived component instead, so no file outgrows
+    `MAX_JOURNAL_BYTES` while the class's logical journal may. Readers see the
+    logical journal through `entries`, one component file at a time; nothing
+    ever joins the components into one file.
+    """
 
     def __init__(self, root, plan) -> None:
         validate_plan(plan)
@@ -376,7 +688,11 @@ class Staging:
         # The journals this tree holds: the classes the plan declares, then the
         # opening reads, which every plan owes and no plan declares.
         self.declared = validate_evidence_classes(plan["evidence_classes"])
-        self.classes = journal_classes(self.declared)
+        self.classes = journal_classes(self.declared) + ((EVENT_HEADER_CLASS,) if event_headers_enabled(plan) else ())
+        # The plan-derived split, if any, and the physical journals it implies.
+        self.ranges = plan_partition(plan)
+        self.journal_names = journal_names(self.classes, self.ranges)
+        self.checkpoint_format = CHECKPOINT_FORMAT if self.ranges is None else CHECKPOINT_FORMAT_V2
         self.root = resolve_root(root)
         self.journals = self.root / JOURNAL_DIRECTORY
         try:
@@ -390,14 +706,23 @@ class Staging:
         self._records = 0
         self._sizes: dict[str, int] = {}
         self._resumed = False
+        self._event_header_hash = None
+        self._event_header_hashed_bytes = 0
         self._history: list[dict] = []
 
     # -- journals ---------------------------------------------------------
 
     def _journal_path(self, name: str) -> Path:
-        if name not in JOURNAL_CLASSES:
-            raise AlexandriaError(f"unknown evidence class {name!r}")
+        """Where one physical journal lives: a class, or a class and component."""
+        if name not in self.journal_names:
+            raise AlexandriaError(f"unknown journal {name!r}")
         return self.journals / f"{name}.jsonl"
+
+    def _physical(self, shard: int, name: str) -> str:
+        """The journal file one record lands in: its class, or its class and component."""
+        if self.ranges is None or name in (OPENING_CLASS, EVENT_HEADER_CLASS):
+            return name
+        return component_name(name, component_of(self.ranges, shard))
 
     def _handle(self, name: str):
         if name not in self._handles:
@@ -420,7 +745,10 @@ class Staging:
             self._sizes[name] = info.st_size
         return self._handles[name]
 
-    def record(self, shard: int, name: str, request: bytes, response: bytes) -> None:
+    def record(
+        self, shard: int, name: str, request: bytes, response: bytes, *, node_syncing=None,
+        subranges=None,
+    ) -> None:
         """Append one preserved exchange to its class journal.
 
         A shard class is staged under its shard's index. The opening reads are
@@ -428,13 +756,13 @@ class Staging:
         only there: an opening read filed under a real shard, or a shard
         record filed under the virtual index, is refused.
         """
-        if name not in JOURNAL_CLASSES:
+        if name not in JOURNAL_CLASSES + (EVENT_HEADER_CLASS,):
             raise AlexandriaError(f"unknown evidence class {name!r}")
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
         if not isinstance(shard, int) or isinstance(shard, bool):
             raise AlexandriaError("staged shard index is outside the plan")
-        if name == OPENING_CLASS:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             if shard != self.shard_count:
                 raise AlexandriaError(
                     "opening reads are staged under the virtual shard index one past the plan's last"
@@ -450,14 +778,33 @@ class Staging:
             "response": _text(response, "staged response"),
             "shard": shard,
         }
-        data = canonical_bytes(entry)
-        handle = self._handle(name)
-        if self._sizes[name] + len(data) > MAX_JOURNAL_BYTES:
+        if node_syncing is not None:
+            if name != "boundary-blocks" or node_syncing is not False:
+                raise AlexandriaError("only a boundary record may carry node_syncing: false")
+            entry["node_syncing"] = node_syncing
+        if subranges is not None:
+            if name != "logs" or not isinstance(subranges, list):
+                raise AlexandriaError("only a logs record may carry subranges")
+            entry["subranges"] = subranges
+        data = canonical_bytes(entry, max_nodes=MAX_LARGE_NODES if subranges is not None else MAX_NODES)
+        # The ceiling is per file. A split class's components are separate
+        # files, so a logical journal may pass the ceiling while every file it
+        # is kept in stays under it; a single record that no file can hold
+        # still refuses here, before anything is written.
+        physical = self._physical(shard, name)
+        handle = self._handle(physical)
+        if self._sizes[physical] + len(data) > MAX_JOURNAL_BYTES:
             raise AlexandriaError(
-                f"journal {name} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
+                f"journal {physical} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
             )
         handle.write(data)
-        self._sizes[name] += len(data)
+        if name == EVENT_HEADER_CLASS:
+            if self._event_header_hash is not None and self._event_header_hashed_bytes == self._sizes[physical]:
+                self._event_header_hash.update(data)
+                self._event_header_hashed_bytes += len(data)
+            else:
+                self._event_header_hash = None
+        self._sizes[physical] += len(data)
         self._records += 1
 
     def last_accepted(self):
@@ -488,7 +835,7 @@ class Staging:
         if not isinstance(block_hash, str) or HASH_RE.fullmatch(block_hash) is None:
             raise AlexandriaError("committed block hash is not a 32-byte hash")
         offsets = {}
-        for name in self.classes:
+        for name in self.journal_names:
             handle = self._handles.get(name)
             if handle is None:
                 path = self._journal_path(name)
@@ -508,7 +855,7 @@ class Staging:
         })
         self._history = history[-MAX_HISTORY:]
         checkpoint = {
-            "format": CHECKPOINT_FORMAT,
+            "format": self.checkpoint_format,
             "history": list(self._history),
             "last_accepted": {"block_hash": block_hash, "block_number": number},
             "next_shard": shard + 1,
@@ -516,17 +863,79 @@ class Staging:
             "plan_sha256": self.digest,
             "records": self._records,
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
-        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        if EVENT_HEADER_CLASS in self.classes:
+            checkpoint["event_headers_sha256"] = self._event_header_digest(checkpoint["offsets"][EVENT_HEADER_CLASS])
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
+        return checkpoint
+
+    def _checkpoint_bytes(self, checkpoint) -> bytes:
+        """The checkpoint's canonical bytes, refused by name above either checkpoint limit."""
+        try:
+            data = canonical_bytes(checkpoint, max_nodes=MAX_CHECKPOINT_NODES)
+        except AlexandriaError as error:
+            nodes = count_nodes(checkpoint)
+            if nodes > MAX_CHECKPOINT_NODES:
+                raise AlexandriaError(
+                    f"the interval checkpoint holds {nodes} nodes, above the "
+                    f"{MAX_CHECKPOINT_NODES}-node limit"
+                ) from error
+            raise AlexandriaError(f"the interval checkpoint cannot be encoded: {error}") from error
+        if len(data) > MAX_CHECKPOINT_BYTES:
+            raise AlexandriaError(
+                f"the interval checkpoint encodes to {len(data)} bytes, above the "
+                f"{MAX_CHECKPOINT_BYTES}-byte limit"
+            )
+        return data
+
+    def _event_header_digest(self, offset, *, fresh=False):
+        """Bind committed bytes; incremental appends avoid quadratic prefix hashing."""
+        if fresh or self._event_header_hash is None or self._event_header_hashed_bytes != offset:
+            path = self._journal_path(EVENT_HEADER_CLASS)
+            data = _read_journal(path) if path.exists() or path.is_symlink() else b""
+            if len(data) < offset:
+                raise AlexandriaError("event header journal is shorter than its committed offset")
+            self._event_header_hash = hashlib.sha256(data[:offset])
+            self._event_header_hashed_bytes = offset
+        return self._event_header_hash.hexdigest()
+
+    def _read_checkpoint(self):
+        """The checkpoint document, read and parsed under the checkpoint limits.
+
+        Its size is taken before a byte is read, so an oversized checkpoint is
+        refused with its size and the limit; the bounded read then holds its
+        own descriptor to the same limit.
+        """
+        try:
+            size = self.checkpoint_path.lstat().st_size
+        except OSError:
+            size = None
+        if size is not None and size > MAX_CHECKPOINT_BYTES:
+            raise AlexandriaError(
+                f"interval checkpoint of {size} bytes exceeds the {MAX_CHECKPOINT_BYTES}-byte limit"
+            )
+        data = read_regular(self.checkpoint_path, "interval checkpoint", MAX_CHECKPOINT_BYTES)
+        checkpoint = load_bytes(
+            data, f"interval checkpoint of {len(data)} bytes",
+            max_bytes=MAX_CHECKPOINT_BYTES, max_nodes=MAX_CHECKPOINT_NODES,
+        )
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        if EVENT_HEADER_CLASS in self.classes and self._event_header_digest(checkpoint["offsets"][EVENT_HEADER_CLASS], fresh=True) != checkpoint["event_headers_sha256"]:
+            raise AlexandriaError("event header committed prefix digest differs from its checkpoint")
         return checkpoint
 
     def resume(self) -> dict:
-        """Truncate every journal to its committed offset and report where to continue."""
+        """Truncate every journal to its committed offset and report where to continue.
+
+        A component replacement a kill interrupted is finished first, so the
+        offsets compared below are the ones the replaced journal carries.
+        """
         self.close()
+        self.settle_replacement()
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            for name in self.classes:
+            for name in self.journal_names:
                 path = self._journal_path(name)
                 if path.is_file():
                     _truncate(path, 0)
@@ -536,10 +945,9 @@ class Staging:
             return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
-        data = _read_control(self.checkpoint_path, "interval checkpoint")
-        checkpoint = load_bytes(data, "interval checkpoint")
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
-        for name in self.classes:
+        checkpoint = self._read_checkpoint()
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        for name in self.journal_names:
             path = self._journal_path(name)
             offset = checkpoint["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -563,20 +971,22 @@ class Staging:
         `resume` truncates, which is right when a collection is about to
         continue and wrong for every reader. A reader that has to mutate the
         thing it reads can destroy evidence on the path that then refuses.
+        A tree with an unfinished component replacement is refused by name:
+        its checkpoint and that journal may disagree until `resume` or
+        `recollect` finishes it.
         """
+        self._refuse_pending_replacement()
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
             return {
                 "history": [], "last_accepted": None, "next_shard": 0,
-                "offsets": {name: 0 for name in self.classes}, "records": 0,
+                "offsets": {name: 0 for name in self.journal_names}, "records": 0,
             }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
-        checkpoint = load_bytes(
-            _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
-        )
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        checkpoint = self._read_checkpoint()
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         return {
             "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
@@ -586,7 +996,7 @@ class Staging:
         }
 
     def journal_bytes(self, name: str) -> int:
-        """The bytes one class journal holds on disk, committed or not; zero when absent."""
+        """The bytes one physical journal holds on disk, committed or not; zero when absent."""
         path = self._journal_path(name)
         return path.stat().st_size if path.is_file() else 0
 
@@ -607,7 +1017,11 @@ class Staging:
             )
         entry = matches[0]
         self.close()
-        for name in self.classes:
+        # A boundary inside an earlier component leaves every later component
+        # at its recorded offset of zero, so a rewind across a component
+        # boundary empties the later file rather than leaving records that the
+        # re-collection would then write beside.
+        for name in self.journal_names:
             path = self._journal_path(name)
             offset = entry["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -618,7 +1032,7 @@ class Staging:
         self._records = entry["records"]
         self._history = [item for item in self._history if item["shard"] <= shard]
         checkpoint = {
-            "format": CHECKPOINT_FORMAT,
+            "format": self.checkpoint_format,
             "history": list(self._history),
             "last_accepted": {
                 "block_hash": entry["block_hash"],
@@ -629,8 +1043,10 @@ class Staging:
             "plan_sha256": self.digest,
             "records": entry["records"],
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
-        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        if EVENT_HEADER_CLASS in self.classes:
+            checkpoint["event_headers_sha256"] = self._event_header_digest(checkpoint["offsets"][EVENT_HEADER_CLASS])
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
 
     def discard(self) -> dict:
@@ -638,37 +1054,238 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         self.close()
-        for name in self.classes:
+        for name in self.journal_names:
             path = self._journal_path(name)
             if path.is_file():
                 _truncate(path, 0)
+            self._replacement_path(name).unlink(missing_ok=True)
         if self.checkpoint_path.exists():
             self.checkpoint_path.unlink()
+        (self.root / REPLACEMENT_INTENT).unlink(missing_ok=True)
         self._records = 0
         self._history = []
         self._resumed = True
         return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
 
-    def entries(self, name: str):
-        """Yield the staged entries of one class, in the order they were kept."""
+    # -- replacing one shard's component ------------------------------------
+
+    def _replacement_path(self, name: str) -> Path:
+        """Where a replacement journal waits, fsynced, before it is renamed into place."""
+        return self.journals / f".{name}.jsonl.recollect"
+
+    def _refuse_pending_replacement(self) -> None:
+        if (self.root / REPLACEMENT_INTENT).exists():
+            raise AlexandriaError(
+                "a shard component replacement is unfinished; run resume or recollect "
+                "to finish it before the tree is read"
+            )
+
+    def replace_component(self, shard: int, name: str, request: bytes, response: bytes, record: dict) -> dict:
+        """Replace the one entry a one-shard component holds, crash-safely.
+
+        Only a plan with one shard per component reaches here, so the
+        component file holds exactly this shard's record and its offset is
+        the same in the checkpoint and in every history entry from this shard
+        on; entries before it hold zero. The order is: the new journal
+        written beside the old and fsynced, the intent written, the rename,
+        the checkpoint, the recollection record, then the intent removed.
+        `settle_replacement` repeats whatever part of that a kill left
+        undone, so `resume` accepts the tree after a kill at any point, and a
+        reader refuses it until then.
+        """
+        if self.ranges is None or any(first != last for first, last in self.ranges):
+            raise AlexandriaError(
+                "a shard component can be replaced only under a plan with one shard per component"
+            )
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS) or name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} has no shard component to replace")
+        if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
+            raise AlexandriaError("replaced shard index is outside the plan")
+        if not isinstance(record, dict) or set(record) != {"node_syncing", "provider_class", "recollected_at"}:
+            raise AlexandriaError("a recollection record has an unknown shape")
+        self.close()
+        self._refuse_pending_replacement()
+        physical = self._physical(shard, name)
+        path = self._journal_path(physical)
+        old = _read_journal(path) if path.is_file() else b""
+        entries = [line for line in old.splitlines() if line]
+        if len(entries) != 1:
+            raise AlexandriaError(
+                f"journal {physical} holds {len(entries)} records, not the one its shard owns"
+            )
+        entry = {
+            "class": name,
+            "request": _text(request, "replacement request"),
+            "response": _text(response, "replacement response"),
+            "shard": shard,
+        }
+        data = canonical_bytes(entry)
+        if len(data) > MAX_JOURNAL_BYTES:
+            raise AlexandriaError(
+                f"journal {physical} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
+            )
+        complete = dict(
+            record, **{
+                "class": name,
+                "new_sha256": hashlib.sha256(data).hexdigest(),
+                "old_sha256": hashlib.sha256(old).hexdigest(),
+                "shard": shard,
+            },
+        )
+        validate_recollection(complete, self.shard_count)
+        intent = {
+            "format": REPLACEMENT_INTENT_FORMAT,
+            "journal": physical,
+            "new_bytes": len(data),
+            "old_bytes": len(old),
+            "plan_sha256": self.digest,
+            "record": complete,
+        }
+        _write_synced(self._replacement_path(physical), data)
+        _atomic_write(self.root / REPLACEMENT_INTENT, canonical_bytes(intent))
+        _fsync_directory(self.root)
+        self.settle_replacement()
+        return complete
+
+    def settle_replacement(self) -> None:
+        """Finish, or discard, a replacement a kill interrupted; see `replace_component`.
+
+        Without an intent, a waiting replacement journal is the leftover of a
+        kill before the intent was written, and the tree is still the old
+        one, so it is removed. With an intent, each remaining step is done:
+        a step already done is recognised by the journal's digest, the
+        checkpoint's offset or the record's presence, so a second run changes
+        nothing the first finished.
+        """
+        intent_path = self.root / REPLACEMENT_INTENT
+        if intent_path.is_symlink():
+            raise AlexandriaError("the replacement intent must not be a symlink")
+        if not intent_path.exists():
+            for name in self.journal_names:
+                self._replacement_path(name).unlink(missing_ok=True)
+            return
+        intent = load_bytes(
+            read_regular(intent_path, "replacement intent", MAX_CONTROL_BYTES), "replacement intent",
+        )
+        if (
+            not isinstance(intent, dict)
+            or set(intent) != {"format", "journal", "new_bytes", "old_bytes", "plan_sha256", "record"}
+            or intent["format"] != REPLACEMENT_INTENT_FORMAT
+            or intent["journal"] not in self.journal_names
+            or not isinstance(intent["record"], dict)
+            or set(intent["record"]) != RECOLLECTION_FIELDS
+        ):
+            raise AlexandriaError("the replacement intent has an unknown shape")
+        if intent["plan_sha256"] != self.digest:
+            raise AlexandriaError("the replacement intent belongs to a different plan")
+        name = intent["journal"]
+        record = intent["record"]
         path = self._journal_path(name)
+        waiting = self._replacement_path(name)
+        current = hashlib.sha256(_read_journal(path) if path.is_file() else b"").hexdigest()
+        if current == record["old_sha256"] and current != record["new_sha256"]:
+            if not waiting.is_file() or hashlib.sha256(_read_journal(waiting)).hexdigest() != record["new_sha256"]:
+                raise AlexandriaError(
+                    f"the replacement journal for {name} is missing or is not the one its intent names"
+                )
+            os.replace(waiting, path)
+            _fsync_directory(self.journals)
+        elif current != record["new_sha256"]:
+            raise AlexandriaError(
+                f"journal {name} is neither the journal the replacement intent replaces nor its replacement"
+            )
+        waiting.unlink(missing_ok=True)
+        checkpoint = self._read_checkpoint()
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        if checkpoint["offsets"][name] != intent["new_bytes"]:
+            if checkpoint["offsets"][name] != intent["old_bytes"]:
+                raise AlexandriaError(
+                    f"the checkpoint offset for {name} is neither the replaced journal's nor its replacement's"
+                )
+            checkpoint["offsets"][name] = intent["new_bytes"]
+            for entry in checkpoint["history"]:
+                if entry["shard"] >= record["shard"]:
+                    entry["offsets"][name] = intent["new_bytes"]
+            validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+            _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
+            _fsync_directory(self.root)
+        _append_record_once(
+            self.root / RECOLLECTION_DIRECTORY, RECOLLECTION_RECORDS, canonical_bytes(record),
+        )
+        intent_path.unlink()
+        _fsync_directory(self.root)
+
+    def recollections(self) -> list:
+        """Every recollection record the tree holds, in the order they were made."""
+        directory = self.root / RECOLLECTION_DIRECTORY
+        path = directory / RECOLLECTION_RECORDS
+        if not path.exists() and not path.is_symlink():
+            return []
+        records = []
+        for line in read_regular(path, "recollection records", MAX_CONTROL_BYTES).splitlines():
+            if not line:
+                continue
+            record = load_bytes(line + b"\n", "recollection record")
+            validate_recollection(record, self.shard_count)
+            records.append(record)
+        return records
+
+    def entries(self, name: str, component=None):
+        """Yield the staged entries of one class, in the order they were kept.
+
+        Under a split plan the class's components are read in shard order, one
+        file at a time, so the logical journal is never assembled on disk.
+        `component` narrows the read to one plan-derived range; it is refused
+        for the opening reads and for an unsplit plan, which have no components
+        to name.
+        """
+        for journal in self.physical_journals(name, component):
+            yield from self._journal_entries(journal)
+
+    def physical_journals(self, name: str, component=None) -> list:
+        """The journal files one class's entries are read from, in shard order."""
+        if name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
+        if self.ranges is None or name in (OPENING_CLASS, EVENT_HEADER_CLASS):
+            if component is not None:
+                raise AlexandriaError(f"journal {name} is not split into components")
+            return [name]
+        if component is None:
+            return [component_name(name, index) for index in range(len(self.ranges))]
+        if (
+            not isinstance(component, int) or isinstance(component, bool)
+            or not 0 <= component < len(self.ranges)
+        ):
+            raise AlexandriaError(f"journal {name} has no component {component!r}")
+        return [component_name(name, component)]
+
+    def _journal_entries(self, journal: str):
+        path = self._journal_path(journal)
         if not path.is_file():
             return
-        for line in _read_journal(path).splitlines():
-            if line:
-                # The ceiling here is the one `record` enforced when it wrote the
-                # entry. Reading under the smaller control limit would refuse a
-                # record this module had already accepted.
-                yield load_bytes(
-                    line + b"\n", f"journal {name} entry", max_bytes=MAX_JOURNAL_BYTES
-                )
+        yield from journal_entries(journal, _read_journal(path))
 
     def close(self) -> None:
-        for handle in self._handles.values():
-            handle.flush()
-            handle.close()
+        """Release every journal handle, then name every journal that failed.
+
+        A flush that fails on one journal must not leave the others open: a
+        split plan owns one handle per component. Every failing journal is
+        named, so a second failure is not lost behind the first.
+        """
+        failures = []
+        for name, handle in self._handles.items():
+            for step in (handle.flush, handle.close):
+                try:
+                    step()
+                except OSError as error:
+                    failures.append((name, error))
         self._handles = {}
         self._sizes = {}
+        if failures:
+            names = ", ".join(sorted({name for name, _error in failures}))
+            raise AlexandriaError(
+                f"journal {names} could not be flushed and closed: {failures[0][1]}"
+            ) from failures[0][1]
 
     def __enter__(self) -> "Staging":
         return self
@@ -679,7 +1296,466 @@ class Staging:
 
 
 
-def discover_epochs(
+MAX_POSITION_INDEX = 10 ** MAX_INTEGER_DIGITS - 1
+MAX_POSITION_QUANTITY_LENGTH = len(hex(MAX_POSITION_INDEX))
+
+
+def _declared_subjects(subjects):
+    """Return the declared addresses after checking their shape and uniqueness."""
+    if isinstance(subjects, str):
+        return (_address(subjects, "position proxy"),)
+    if not isinstance(subjects, (list, tuple, set, frozenset)) or not subjects:
+        raise AlexandriaError("declared subjects must be a non-empty collection of addresses")
+    if len(subjects) > MAX_SUBJECTS:
+        raise AlexandriaError(f"declared subjects exceed the {MAX_SUBJECTS}-subject limit")
+    normalised = []
+    seen = set()
+    for subject in subjects:
+        address = _address(subject, "position subject")
+        if address in seen:
+            raise AlexandriaError(f"declared subject {address} is duplicated")
+        seen.add(address)
+        normalised.append(address)
+    return tuple(normalised)
+
+
+def proxy_log_positions(
+    records, subjects, interval, *, upgrade_topic=UPGRADED_TOPIC, order_upgrade_transactions=False
+):
+    """Validate every preserved proxy coordinate before deriving ownership.
+
+    `subjects` is one proxy address (v1: every record must be its log, and
+    each returned row keeps its original shape) or a non-empty collection of
+    declared addresses (v2: every record must be one of theirs, and each
+    returned row also carries which one under `subject`, so a caller can
+    route it to that subject's own epoch table).
+
+    `upgrade_topic` is the first topic that marks an epoch boundary under the
+    caller's epoch model. The default is the ERC-1967 announcement. A venue
+    whose subjects cannot be upgraded passes None: no topic is compared, no
+    log is read as an upgrade, and every row is an ordinary `proxy-log`.
+
+    `order_upgrade_transactions` is off by default, and off an ordinary log a
+    subject emits in its own upgrade transaction is refused. On, that log is
+    kept, and ownership by position then places it by log index: before the
+    subject's `Upgraded` in the old epoch, after it in the new one. Only a
+    venue whose pinned proxy source establishes that the slot changes at the
+    announcement may pass True; `venues/aave_v3.py` is the one that does.
+    """
+    if type(order_upgrade_transactions) is not bool:
+        raise AlexandriaError("order_upgrade_transactions must be True or False")
+    single = isinstance(subjects, str)
+    allowed = _declared_subjects(subjects)
+    allowed_set = set(allowed)
+    if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
+        raise AlexandriaError("position interval has an unknown shape")
+    if not isinstance(records, (list, tuple)):
+        raise AlexandriaError("proxy logs are not a list")
+    if any(not isinstance(interval[key], str) or len(interval[key]) > 19 for key in ("start", "end")):
+        raise AlexandriaError("position interval blocks must be bounded decimal strings")
+    start = _decimal(interval["start"], "position interval start")
+    end = _decimal(interval["end"], "position interval end")
+    previous = None
+    hashes, transactions, indexes = {}, {}, {}
+    rows = []
+    upgrades = {}
+    not_emitted = (
+        "a preserved log was not emitted by the proxy" if single
+        else "a preserved log was not emitted by a declared subject"
+    )
+    for record in records:
+        if not isinstance(record, dict):
+            raise AlexandriaError(not_emitted)
+        address = _address(record.get("address"), "log emitting contract")
+        if address not in allowed_set:
+            raise AlexandriaError(not_emitted)
+        values = []
+        for field in ("blockNumber", "transactionIndex", "logIndex"):
+            value = record.get(field)
+            if not isinstance(value, str) or re.fullmatch(r"0x(?:0|[1-9a-f][0-9a-f]*)", value) is None:
+                raise AlexandriaError(f"proxy log {field} is not a canonical non-negative quantity")
+            if len(value) > MAX_POSITION_QUANTITY_LENGTH or int(value, 16) > MAX_POSITION_INDEX:
+                raise AlexandriaError(f"proxy log {field} exceeds the canonical integer limit")
+            values.append(int(value, 16))
+        block, tx, log = values
+        if not start <= block <= end:
+            raise AlexandriaError(f"proxy log block {block} is outside the interval")
+        coordinate = (block, tx, log)
+        if previous is not None and (coordinate <= previous or
+                (block == previous[0] and (tx < previous[1] or log <= previous[2]))):
+            raise AlexandriaError(f"proxy log position {coordinate} is duplicated or unordered")
+        previous = coordinate
+        block_hash = _hash(record.get("blockHash"), "proxy log block hash")
+        tx_hash = _hash(record.get("transactionHash"), "proxy log transaction hash")
+        if hashes.setdefault(block, block_hash) != block_hash:
+            raise AlexandriaError(f"proxy log block {block} has contradictory hashes")
+        if transactions.setdefault((block, tx), tx_hash) != tx_hash or indexes.setdefault(tx_hash, (block, tx)) != (block, tx):
+            raise AlexandriaError(f"proxy log position {coordinate} has contradictory transaction hash/index pairs")
+        topics = record.get("topics")
+        if not isinstance(topics, list) or any(not isinstance(topic, str) or HASH_RE.fullmatch(topic) is None for topic in topics):
+            raise AlexandriaError(f"proxy log position {coordinate} has malformed topics")
+        is_upgrade = bool(upgrade_topic is not None and topics and topics[0] == upgrade_topic)
+        if is_upgrade:
+            _upgrade_log(record, address, len(rows))
+            if block == start:
+                raise AlexandriaError(f"first-block upgrade at {coordinate} has no preceding implementation evidence")
+            if (address, block) in upgrades:
+                raise AlexandriaError(f"multiple upgrades in block {block} are unsupported")
+            upgrades[(address, block)] = tx
+        row = {"block_number": str(block), "block_hash": block_hash,
+               "transaction_hash": tx_hash, "transaction_index": tx,
+               "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"}
+        if not single:
+            row["subject"] = address
+        rows.append(row)
+    if order_upgrade_transactions:
+        return rows
+    for row in rows:
+        subject = allowed[0] if single else row["subject"]
+        if row["kind"] == "proxy-log" and upgrades.get((subject, int(row["block_number"]))) == row["transaction_index"]:
+            raise AlexandriaError(f"ordinary proxy log at ({row['block_number']}, {row['transaction_index']}, {row['log_index']}) in an upgrade transaction is unsupported")
+    return rows
+
+
+def _position(block, tx=None, log=None):
+    return {"block_number": str(block), "transaction_index": tx, "log_index": log}
+
+
+def _position_key(position):
+    if not isinstance(position, dict) or set(position) != {"block_number", "transaction_index", "log_index"}:
+        raise AlexandriaError("epoch position has an unknown shape")
+    value = position["block_number"]
+    if not isinstance(value, str) or len(value) > 19 or re.fullmatch(r"0|[1-9][0-9]*", value) is None:
+        raise AlexandriaError("epoch position block must be a bounded decimal string")
+    block = int(value)
+    tx, log = position["transaction_index"], position["log_index"]
+    if block > MAX_BLOCK + (tx is None and log is None):
+        raise AlexandriaError("epoch position block is outside the supported range")
+    if tx is None and log is None:
+        return (block, -1, -1)
+    if any(type(value) is not int or value < 0 for value in (tx, log)):
+        raise AlexandriaError("epoch position indexes must both be null or non-negative integers")
+    if tx > MAX_POSITION_INDEX or log > MAX_POSITION_INDEX:
+        raise AlexandriaError("epoch position indexes exceed the canonical integer limit")
+    return (block, tx, log)
+
+
+def discover_epochs(*, chain, deployment, proxy, interval, upgrade_logs, slot_reads, code_reads, block_hashes):
+    """Derive exclusive positional epochs from all preserved proxy logs."""
+    rows = proxy_log_positions(upgrade_logs, proxy, interval)
+    selected = [record for record, row in zip(upgrade_logs, rows) if row["kind"] == "upgrade-boundary"]
+    epochs = discover_block_epochs(chain=chain, deployment=deployment, proxy=proxy,
+        interval=interval, upgrade_logs=selected, slot_reads=slot_reads,
+        code_reads=code_reads, block_hashes=block_hashes)
+    starts = [_position(interval["start"])] + [
+        _position(row["block_number"], row["transaction_index"], row["log_index"])
+        for row in rows if row["kind"] == "upgrade-boundary"]
+    for index, epoch in enumerate(epochs):
+        epoch["start_position"] = starts[index]
+        epoch["end_position"] = starts[index + 1] if index + 1 < len(starts) else _position(int(interval["end"]) + 1)
+        if index + 1 < len(starts):
+            epoch["end_block"] = starts[index + 1]["block_number"]
+            epoch["end_hash"] = _block_hash(block_hashes, int(epoch["end_block"]))
+        if epoch["upgrade"] is not None:
+            epoch["upgrade"]["transaction_index"] = starts[index]["transaction_index"]
+    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    attribute_logs(upgrade_logs, proxy, interval, epochs)
+    return epochs
+
+
+def validate_epochs(epochs, start, end):
+    """Check exclusive position tiling; block envelopes overlap at upgrades.
+
+    `epochs` is a flat list (one subject, tiling the whole interval from
+    `start` through `end`) or a `{subject: [epoch, ...]}` table (many
+    declared subjects, each list tiling from its own first in-interval
+    position through the interval's end; a subject with no in-interval
+    extent carries no key at all here, never an empty list).
+    """
+    if isinstance(epochs, dict):
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        for subject, table in epochs.items():
+            _validate_position_table(table, start, end, pinned_start=False)
+            _validate_epoch_owner(subject, table)
+        return
+    _validate_position_table(epochs, start, end, pinned_start=True)
+
+
+def _validate_position_table(epochs, start, end, *, pinned_start: bool) -> None:
+    if not isinstance(epochs, list) or not epochs or len(epochs) > MAX_EPOCHS:
+        raise AlexandriaError("epoch table is empty or exceeds the epoch limit")
+    expected = _position(start) if pinned_start else None
+    for index, epoch in enumerate(epochs):
+        if not isinstance(epoch, dict) or set(epoch) != {"chain", "deployment", "proxy", "start_block", "end_block", "start_hash", "end_hash", "upgrade", "implementation", "implementation_code_sha256", "start_position", "end_position"}:
+            raise AlexandriaError("positional epoch has an unknown shape")
+        first, last = epoch["start_position"], epoch["end_position"]
+        first_key, last_key = _position_key(first), _position_key(last)
+        if expected is None:
+            if not _position_key(_position(start)) <= first_key < _position_key(_position(end + 1)):
+                raise AlexandriaError("epoch table subject's own first position is outside the interval")
+            # A subject's extent opens before every log of its first block,
+            # exactly as the single-proxy table's does at the interval start.
+            # A transaction position here would leave that block's earlier
+            # logs with no owner while the table still read as tiling.
+            if first["transaction_index"] is not None or first["log_index"] is not None:
+                raise AlexandriaError(
+                    "epoch table subject's own first position is not a block sentinel"
+                )
+            expected = first
+        if first != expected or first_key >= last_key:
+            raise AlexandriaError("epoch positions leave a gap or overlap")
+        if index and first["transaction_index"] is None:
+            raise AlexandriaError("interior epoch boundary cannot be a block sentinel")
+        envelope_end = last_key[0] - (last["transaction_index"] is None)
+        if epoch["start_block"] != first["block_number"] or epoch["end_block"] != str(envelope_end):
+            raise AlexandriaError("epoch block envelope disagrees with its positions")
+        # Reuse v1's code and identifier checks on an isolated block envelope.
+        block_epoch = {key: value for key, value in epoch.items() if key not in ("start_position", "end_position")}
+        upgrade = epoch["upgrade"]
+        if index == 0:
+            if upgrade is not None:
+                raise AlexandriaError("initial epoch cannot claim an upgrade")
+        else:
+            if not isinstance(upgrade, dict) or set(upgrade) != {"block_number", "transaction_index", "log_index", "transaction_hash"}:
+                raise AlexandriaError("positional upgrade has an unknown shape")
+            _position_key({key: upgrade[key] for key in first})
+            if any(upgrade[key] != first[key] for key in first):
+                raise AlexandriaError("upgrade coordinates do not open their epoch")
+            _hash(upgrade["transaction_hash"], "epoch upgrade transaction hash")
+            block_epoch["upgrade"] = {key: value for key, value in upgrade.items() if key != "transaction_index"}
+        validate_block_epochs([block_epoch], first_key[0], envelope_end)
+        if index and epoch["start_hash"] != epochs[index - 1]["end_hash"]:
+            raise AlexandriaError("adjacent epoch boundary hashes disagree")
+        expected = last
+    if expected != _position(end + 1):
+        raise AlexandriaError("epoch positions leave the interval end uncovered")
+
+
+def _attribute_into(rows, epochs) -> None:
+    """Walk one subject's own rows against its own epoch table, in place."""
+    index = 0
+    for row in rows:
+        key = (int(row["block_number"]), row["transaction_index"], row["log_index"])
+        while index + 1 < len(epochs) and key >= _position_key(epochs[index]["end_position"]):
+            index += 1
+        epoch = epochs[index]
+        if not _position_key(epoch["start_position"]) <= key < _position_key(epoch["end_position"]):
+            raise AlexandriaError("proxy log has no positional epoch owner")
+        for boundary in ("start", "end"):
+            if row["block_number"] == epoch[boundary + "_block"] and row["block_hash"] != epoch[boundary + "_hash"]:
+                raise AlexandriaError("proxy log hash contradicts its epoch boundary")
+        row["epoch_index"] = index
+
+
+def _validate_epoch_owner(subject, table, *, single=False):
+    """Require every epoch in one keyed table to name that subject."""
+    if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+        raise AlexandriaError("epoch table subject is not a lowercase address")
+    if not isinstance(table, list) or not table:
+        raise AlexandriaError("epoch subject table must be a non-empty list")
+    for epoch in table:
+        if not isinstance(epoch, dict) or epoch.get("proxy") != subject:
+            if single:
+                raise AlexandriaError("an epoch does not belong to the plan's market")
+            raise AlexandriaError("an epoch does not belong to its table subject")
+
+
+def validate_epoch_subjects(epochs, subjects):
+    """Return the epochs after checking their subjects and container shape."""
+    allowed = _declared_subjects(subjects)
+    if isinstance(subjects, str):
+        if not isinstance(epochs, list):
+            raise AlexandriaError("a single subject requires a flat epoch list")
+        tables = {allowed[0]: epochs}
+    else:
+        if not isinstance(epochs, dict):
+            raise AlexandriaError("a subject set requires an epoch table keyed by subject")
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        if set(epochs) - set(allowed):
+            raise AlexandriaError("epoch table names an undeclared subject")
+        tables = epochs
+    entries = []
+    for subject, table in tables.items():
+        _validate_epoch_owner(subject, table, single=isinstance(subjects, str))
+        entries.extend(table)
+    return entries
+
+
+def subject_epoch_rows(epochs) -> list:
+    """A subject-keyed epoch table as the receipt writes it: one row per subject.
+
+    `[{"epochs": [...], "subject": address}, ...]` in ascending subject order:
+    one list, so coverage counts the table through one selector. A keyed
+    object would need a collection per subject, bounded below `MAX_SUBJECTS`.
+    """
+    if not isinstance(epochs, dict) or not epochs:
+        raise AlexandriaError("epoch table names no subject")
+    return [{"epochs": epochs[subject], "subject": subject} for subject in sorted(epochs)]
+
+
+def subject_epoch_table(rows) -> dict:
+    """The `{subject: [epoch, ...]}` table a receipt's subject rows declare.
+
+    Refuses anything but the one form `subject_epoch_rows` writes: a
+    non-empty list of closed rows under `MAX_SUBJECTS`, each naming a
+    lowercase address and a list, in strictly ascending subject order, so a
+    repeated subject and an unsorted table are both refused here. What each
+    list holds, and whether its subject was declared, is for `validate_epochs`
+    and `validate_epoch_subjects`, which read the table this returns.
+    """
+    if not isinstance(rows, list):
+        raise AlexandriaError("a subject set requires a list of subject epoch rows")
+    if not rows:
+        raise AlexandriaError("epoch table names no subject")
+    if len(rows) > MAX_SUBJECTS:
+        raise AlexandriaError(f"epoch table subject rows exceed the {MAX_SUBJECTS}-subject limit")
+    table = {}
+    previous = None
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"epochs", "subject"}:
+            raise AlexandriaError("epoch table subject row has an unknown shape")
+        subject = row["subject"]
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("epoch table subject is not a lowercase address")
+        if previous is not None and subject <= previous:
+            raise AlexandriaError(
+                "epoch table subject rows repeat a subject or are not in ascending subject order"
+            )
+        if not isinstance(row["epochs"], list):
+            raise AlexandriaError("epoch subject table must be a non-empty list")
+        previous = subject
+        table[subject] = row["epochs"]
+    return table
+
+
+FIRST_CODE_OPENINGS = ("interval-start", "observed-block")
+
+
+def validate_first_code(rows, epochs, start) -> None:
+    """Check a subject receipt's rows for epochs opened where code was first read.
+
+    One closed row per unrecorded subject, in strictly ascending subject
+    order. `interval-start`: code read at the interval's first block, no empty
+    read. `observed-block`: empty code at `empty_block`, code at `code_block`,
+    the next block. `code_block` is the subject's first epoch's start, so a
+    pair that does not bracket it refuses. The caller re-derives the rows.
+    """
+    if not isinstance(rows, list) or len(rows) > MAX_SUBJECTS:
+        raise AlexandriaError("first-code rows are not a bounded list")
+    previous = None
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"code_block", "empty_block", "opening", "subject"}:
+            raise AlexandriaError("first-code row has an unknown shape")
+        subject = row["subject"]
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("first-code row subject is not a lowercase address")
+        if previous is not None and subject <= previous:
+            raise AlexandriaError(
+                "first-code rows repeat a subject or are not in ascending subject order"
+            )
+        previous = subject
+        table = epochs.get(subject) if isinstance(epochs, dict) else None
+        if not table:
+            raise AlexandriaError(f"first-code row names subject {subject}, which has no epoch")
+        if row["opening"] not in FIRST_CODE_OPENINGS:
+            raise AlexandriaError("first-code row names an unknown opening")
+        code_block = _decimal(row["code_block"], "first-code block")
+        if row["code_block"] != table[0]["start_block"]:
+            raise AlexandriaError(
+                f"the first-code reads of subject {subject} do not bracket its epoch's first block"
+            )
+        if row["opening"] == "interval-start":
+            if row["empty_block"] is not None or code_block != start:
+                raise AlexandriaError(
+                    f"subject {subject} is said to open at the interval start, but its "
+                    "first-code row names another block or an empty read"
+                )
+        elif (
+            not isinstance(row["empty_block"], str)
+            or _decimal(row["empty_block"], "first-code empty block") + 1 != code_block
+            or code_block <= start
+        ):
+            raise AlexandriaError(
+                f"the first-code reads of subject {subject} do not bracket its epoch's first block"
+            )
+
+
+def attribute_logs(
+    records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC, order_upgrade_transactions=False
+):
+    """Assign each accepted log once; announcements mark boundaries only.
+
+    `subjects`/`epochs` are one proxy address and its flat epoch list (v1:
+    exactly as before, one table, one walk) or a declared collection of
+    subject addresses and a `{subject: [epoch, ...]}` table (v2: each log is
+    grouped by its own emitting subject and walked against that subject's
+    own table alone, so two subjects sharing a block and transaction each
+    reach their own epoch independently). A subject the table carries no key
+    for cannot own a log; one that claims it refuses.
+    `order_upgrade_transactions` is passed to `proxy_log_positions` unchanged.
+    """
+    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    if isinstance(subjects, str):
+        if not isinstance(epochs, list):
+            raise AlexandriaError("a single subject requires a flat epoch list")
+    else:
+        validate_epoch_subjects(epochs, subjects)
+    rows = proxy_log_positions(
+        records, subjects, interval, upgrade_topic=upgrade_topic,
+        order_upgrade_transactions=order_upgrade_transactions,
+    )
+    if isinstance(subjects, str):
+        _attribute_into(rows, epochs)
+        return rows
+    grouped: dict = {}
+    for row in rows:
+        grouped.setdefault(row["subject"], []).append(row)
+    for subject, subject_rows in grouped.items():
+        table = epochs.get(subject)
+        if not table:
+            raise AlexandriaError("proxy log has no positional epoch owner")
+        _attribute_into(subject_rows, table)
+    return rows
+
+
+def validate_attributions(rows, *, subjects=None):
+    """Reject open or mixed shapes and bool/integer equality before replay.
+
+    Supplying subjects also binds each row to the plan's subject form and set.
+    """
+    required = {"block_number", "block_hash", "transaction_hash", "transaction_index", "log_index", "epoch_index", "kind"}
+    if not isinstance(rows, list):
+        raise AlexandriaError("log attributions are not a list")
+    allowed = None if subjects is None else set(_declared_subjects(subjects))
+    has_subject = (
+        not isinstance(subjects, str) if subjects is not None
+        else bool(rows and isinstance(rows[0], dict) and "subject" in rows[0])
+    )
+    if has_subject:
+        required = required | {"subject"}
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != required:
+            raise AlexandriaError("log attribution has an unknown shape")
+        if has_subject:
+            subject = row["subject"]
+            if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+                raise AlexandriaError("log attribution subject is not a lowercase address")
+            if allowed is not None and subject not in allowed:
+                raise AlexandriaError("log attribution names an undeclared subject")
+        _decimal(row["block_number"], "attribution block")
+        _hash(row["block_hash"], "attribution block hash")
+        _hash(row["transaction_hash"], "attribution transaction hash")
+        if any(type(row[key]) is not int or row[key] < 0 for key in ("transaction_index", "log_index", "epoch_index")):
+            raise AlexandriaError("log attribution indexes must be non-negative integers")
+        if any(row[key] > MAX_POSITION_INDEX for key in ("transaction_index", "log_index")):
+            raise AlexandriaError("log attribution indexes exceed the canonical integer limit")
+        if row["epoch_index"] >= MAX_EPOCHS or row["kind"] not in ("proxy-log", "upgrade-boundary"):
+            raise AlexandriaError("log attribution has an unsupported owner or kind")
+
+
+def discover_block_epochs(
     *,
     chain: str,
     deployment: str,
@@ -766,12 +1842,30 @@ def discover_epochs(
             "upgrade": openings[boundary],
         })
 
-    validate_epochs(epochs, start, end)
+    validate_block_epochs(epochs, start, end)
     return epochs
 
 
-def validate_epochs(epochs, start: int, end: int) -> None:
-    """Check that an epoch table tiles its interval exactly, with no gap or overlap."""
+def validate_block_epochs(epochs, start: int, end: int) -> None:
+    """Check that an epoch table tiles its interval exactly, with no gap or overlap.
+
+    `epochs` is a flat list (one subject, tiling the whole interval from
+    `start` through `end`) or a `{subject: [epoch, ...]}` table (many
+    declared subjects, each list tiling from its own first in-interval block
+    through `end`; a subject with no in-interval extent carries no key at
+    all here). `MAX_EPOCHS` bounds each subject's own list, never their sum.
+    """
+    if isinstance(epochs, dict):
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        for subject, table in epochs.items():
+            _validate_block_table(table, start, end, pinned_start=False)
+            _validate_epoch_owner(subject, table)
+        return
+    _validate_block_table(epochs, start, end, pinned_start=True)
+
+
+def _validate_block_table(epochs, start: int, end: int, *, pinned_start: bool) -> None:
     if not isinstance(epochs, list) or not epochs:
         raise AlexandriaError("epoch table is empty")
     if len(epochs) > MAX_EPOCHS:
@@ -781,7 +1875,7 @@ def validate_epochs(epochs, start: int, end: int) -> None:
         "implementation_code_sha256", "proxy", "start_block", "start_hash",
         "upgrade",
     }
-    expected = start
+    expected = start if pinned_start else None
     for epoch in epochs:
         if not isinstance(epoch, dict) or set(epoch) != required:
             raise AlexandriaError("epoch has an unknown shape")
@@ -789,6 +1883,12 @@ def validate_epochs(epochs, start: int, end: int) -> None:
         last = _decimal(epoch["end_block"], "epoch end block")
         if last < first:
             raise AlexandriaError("epoch end block precedes its start block")
+        if expected is None:
+            if not start <= first <= end:
+                raise AlexandriaError(
+                    "epoch table subject's own first block is outside the interval"
+                )
+            expected = first
         if first != expected:
             raise AlexandriaError(
                 f"epoch table leaves block {expected} uncovered"
@@ -958,7 +2058,7 @@ SHARD_STATUSES = ("complete", "partial", "failed")
 # The shard kinds, then the three opening-read kinds a second provider is
 # asked about: the first block's hash, each slot word and each code digest.
 DISPUTE_KINDS = (
-    "boundary-hash", "log-identity", "transaction-order",
+    "boundary-hash", "log-identity", "transaction-order", "trace-identity",
     "first-block-hash", "slot-word", "code-digest",
 )
 MAX_DISPUTES = 1_024
@@ -975,6 +2075,19 @@ OPENING_READ_KINDS = (
     "first-block-header", "implementation-slot", "epoch-boundary-header",
     "implementation-code",
 )
+
+
+class OpeningRefusal(AlexandriaError):
+    """An opening read the collector will not believe, named by its receipt code.
+
+    Defined here so a venue module that owns its opening reads raises the
+    same refusal the collector already records an error receipt for.
+    """
+
+    def __init__(self, code: str, block: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.block = block
 
 
 def upgrade_logs(records, proxy: str) -> list[dict]:
@@ -1123,10 +2236,30 @@ def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> No
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
-        if not isinstance(entry, dict) or set(entry) != {
+        if not isinstance(entry, dict) or set(entry) - {"node_syncing", "log_subranges"} != {
             "end", "end_hash", "index", "record_counts", "start", "status",
         }:
             raise AlexandriaError("a shard entry has an unknown shape")
+        if "node_syncing" in entry and entry["node_syncing"] is not False:
+            raise AlexandriaError("a shard entry node_syncing must be false when recorded")
+        if "log_subranges" in entry:
+            if "logs" not in classes:
+                raise AlexandriaError("a shard without logs cannot carry log subranges")
+            ranges = entry["log_subranges"]
+            if not isinstance(ranges, list) or len(ranges) < 2 or len(ranges) > planned["end"] - planned["start"] + 1:
+                raise AlexandriaError("a shard log subrange list has an invalid count")
+            cursor = planned["start"]
+            for part in ranges:
+                if not isinstance(part, dict) or set(part) != {"start", "end"}:
+                    raise AlexandriaError("a shard log subrange has an unknown shape")
+                low, high = part["start"], part["end"]
+                if (not isinstance(low, int) or isinstance(low, bool) or
+                        not isinstance(high, int) or isinstance(high, bool) or
+                        low != cursor or high < low or high > planned["end"]):
+                    raise AlexandriaError("the shard log subranges do not tile the plan")
+                cursor = high + 1
+            if cursor != planned["end"] + 1:
+                raise AlexandriaError("the shard log subranges do not cover the plan")
         if (entry["index"], entry["start"], entry["end"]) != (
             planned["index"], planned["start"], planned["end"]
         ):
@@ -1222,6 +2355,74 @@ def _atomic_write(path: Path, data: bytes) -> None:
             Path(temporary).unlink(missing_ok=True)
 
 
+def _write_synced(path: Path, data: bytes) -> None:
+    """Write a fresh file whole and fsync it, replacing any leftover at that path."""
+    path.unlink(missing_ok=True)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except OSError as exc:
+        raise AlexandriaError(f"cannot write {path.name}: {exc}") from exc
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _fsync_directory(path: Path) -> None:
+    """Make a rename or unlink in one directory durable."""
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _append_record_once(directory: Path, name: str, line: bytes) -> None:
+    """Append one canonical record line unless that exact line is already there."""
+    directory.mkdir(exist_ok=True)
+    if directory.is_symlink() or not directory.is_dir():
+        raise AlexandriaError(f"{directory.name} is not a directory")
+    path = directory / name
+    if path.exists() or path.is_symlink():
+        existing = read_regular(path, name, MAX_CONTROL_BYTES)
+        if line in (item + b"\n" for item in existing.splitlines()):
+            return
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except OSError as exc:
+        raise AlexandriaError(f"cannot open {name}: {exc}") from exc
+    with os.fdopen(descriptor, "ab") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def validate_recollection(record, shard_count: int) -> None:
+    """Check one recollection record: which shard, both digests, when, from which class, and the sync answer."""
+    if not isinstance(record, dict) or set(record) != RECOLLECTION_FIELDS:
+        raise AlexandriaError("a recollection record has an unknown shape")
+    if record["node_syncing"] is not False:
+        raise AlexandriaError("a recollection record node_syncing must be false")
+    if record["class"] not in EVIDENCE_CLASSES:
+        raise AlexandriaError("a recollection record names an unknown evidence class")
+    shard = record["shard"]
+    if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < shard_count:
+        raise AlexandriaError("a recollection record names a shard outside its plan")
+    for field in ("new_sha256", "old_sha256"):
+        if not isinstance(record[field], str) or CODE_DIGEST_RE.fullmatch(record[field]) is None:
+            raise AlexandriaError(f"a recollection record {field} is not a SHA-256 digest")
+    if not isinstance(record["recollected_at"], str) or RECOLLECTED_AT_RE.fullmatch(record["recollected_at"]) is None:
+        raise AlexandriaError("a recollection record time is not a UTC timestamp")
+    provider = record["provider_class"]
+    if (
+        not isinstance(provider, str) or not 1 <= len(provider) <= 256
+        or "://" in provider or "@" in provider
+    ):
+        raise AlexandriaError("a recollection record provider class is not a bounded class name")
+
+
 def _truncate(path: Path, offset: int) -> None:
     flags = os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -1237,8 +2438,17 @@ def _truncate(path: Path, offset: int) -> None:
         os.close(descriptor)
 
 
-def _read_control(path: Path, label: str) -> bytes:
-    return read_regular(path, label, MAX_CONTROL_BYTES)
+def journal_entries(journal: str, data: bytes):
+    """Yield the entries of one physical journal's bytes, in the order they were kept."""
+    for line in data.splitlines():
+        if line:
+            # The ceiling here is the one `record` enforced when it wrote the
+            # entry. Reading under the smaller control limit would refuse a
+            # record this module had already accepted.
+            yield load_bytes(
+                line + b"\n", f"journal {journal} entry",
+                max_bytes=MAX_JOURNAL_BYTES, max_nodes=MAX_LARGE_NODES,
+            )
 
 
 def _read_journal(path: Path) -> bytes:
@@ -1271,11 +2481,13 @@ def read_regular(path: Path, label: str, maximum: int) -> bytes:
 
 __all__ = [
     "CHECKPOINT_FORMAT",
+    "CHECKPOINT_FORMAT_V2",
     "IMPLEMENTATION_SLOT",
     "JOURNAL_CLASSES",
     "MAX_EPOCHS",
     "OPENING_CLASS",
     "OPENING_READ_KINDS",
+    "OpeningRefusal",
     "UPGRADED_TOPIC",
     "EVIDENCE_CLASSES",
     "FINALITY_POLICIES",
@@ -1291,11 +2503,31 @@ __all__ = [
     "MAX_SHARDS",
     "MAX_SHARD_WIDTH",
     "PLAN_FORMAT",
+    "PLAN_FORMAT_V2",
     "RECEIPT_FORMAT",
+    "SUBJECT_RECEIPT_FORMAT",
+    "subject_epoch_rows",
+    "validate_first_code",
+    "FIRST_CODE_OPENINGS",
+    "subject_epoch_table",
+    "SPLIT_FIELD",
+    "PARTS_FIELD",
+    "PARTS_RECEIPT_FORMAT",
+    "PARTS_RULE",
+    "WRAPPERS_FIELD",
+    "WRAPPERS_RULE",
+    "WRAPPERS_VENUE",
+    "capture_subjects",
     "Staging",
+    "component_name",
+    "component_of",
+    "component_ranges",
     "contained",
     "discover_epochs",
+    "journal_entries",
+    "journal_names",
     "plan_digest",
+    "plan_partition",
     "plan_shards",
     "read_regular",
     "resolve_root",
@@ -1305,6 +2537,7 @@ __all__ = [
     "log_identity",
     "validate_checkpoint",
     "validate_epochs",
+    "validate_epoch_subjects",
     "validate_evidence_classes",
     "validate_reconciliation",
     "validate_shard_coverage",

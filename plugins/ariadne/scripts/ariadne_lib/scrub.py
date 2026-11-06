@@ -24,6 +24,9 @@ HEXLIKE = re.compile(r"^(0x)?[0-9a-fA-F]{40,}$")
 """An address or a hash is hex too, so hex alone is not redacted. This exists
 to describe what the marker means when a private key turns up."""
 
+DELIMITER = re.compile(r"[/?#]")
+"""RFC 3986 ends a URL's authority at the first of these."""
+
 SECRET_FLAGS = frozenset(
     {
         "--rpc-url",
@@ -103,6 +106,22 @@ def credentials(url):
     A repository is recorded so a reader can find it, so redacting the whole
     thing would defeat the field. What has to go is the `user:token@` some
     tooling leaves in front of the host.
+
+    The host starts after the last `@` ahead of the first `/`, `?` or `#`
+    that follows the first `@`. Splitting at the first `@` alone turned
+    `https://a@user:token@host/p` into `https://user:token@host/p`, keeping
+    the credential this exists to remove. An `@` past that delimiter belongs
+    to the path and stays, so `https://token@host/owner/repo.git@v1` keeps its
+    ref. Whenever `URL` matches, what comes back holds no `@` ahead of its own
+    first delimiter, so RFC 3986 finds no userinfo in it.
+
+    Two shapes still come out wrong. An `@` with no userinfo in front of it is
+    read as the end of one, so `https://host/repo@v1` is recorded as
+    `https://v1`: the location is lost, though no credential is kept. And a
+    userinfo carrying an `@` ahead of an unencoded `/`, `?` or `#`, such as
+    `a@b/c` in `https://a@b/c@host/p`, reads exactly like a credential
+    followed by a path holding an `@`, so `b/c@host/p` survives. RFC 3986
+    allows none of those four characters unencoded in userinfo.
     """
     if not isinstance(url, str):
         return url
@@ -110,10 +129,13 @@ def credentials(url):
     if not match:
         return url
     scheme, rest = match.group(1), match.group(2)
-    if "@" not in rest:
+    first = rest.find("@")
+    if first == -1:
         return url
-    _, _, tail = rest.partition("@")
-    return "%s://%s" % (scheme, tail)
+    delimiter = DELIMITER.search(rest, first)
+    end = delimiter.start() if delimiter else len(rest)
+    host = rest.rindex("@", first, end) + 1
+    return "%s://%s" % (scheme, rest[host:])
 
 
 def redacted(words):

@@ -1,0 +1,67 @@
+{
+  "schema": "wildcat.kickoff-decision.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1490",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1374",
+  "evidence_class": "attested",
+  "decision_maker": {
+    "name": "Dr Laurence E. Day",
+    "role": "capture maintainer",
+    "date": "2026-09-18"
+  },
+  "channel": "six structured questions in the delivery session, in two rounds",
+  "recorded_by": "Shoggoth",
+  "record": {
+    "url": "https://github.com/wildcat-finance/skills/issues/1490#issuecomment-5737251991",
+    "posted_by": "laurenceday",
+    "created_at": "2026-09-18T23:06:13Z",
+    "updated_at": "2026-09-18T23:06:39Z",
+    "update_reason": "the draft dated the decision 2026-09-19 from a local clock that had passed midnight; the dates were corrected to UTC before the bytes were bound",
+    "body_bytes": 7207,
+    "body_sha256": "9539e45fedaecb230c7a27af9ce4114a340620652cbb11c538fe358f57c54375",
+    "readback": "the posted comment was read back from GitHub after the correction and is byte-identical to these bytes",
+    "body": "Decision for this issue, made by Dr Laurence E. Day (capture maintainer) on 2026-09-18 UTC. He answered six structured questions put by the delivery session in two rounds, both on 2026-09-18 UTC; the second round followed after he asked for an explanation of what a reference capture is and stated that Wildcat V1/V2 should be the target. Each question, every option offered with the text it was offered under, and the option selected are reproduced below exactly as displayed. The delivery session posted this comment from his account; it is not a separate GitHub review.\n\n## Round one\n\n### 1. Selection\n\nQuestion: What does `docs/kickoff/1374/capture.md` select as the reference capture?\n\nOptions offered:\n\n- **Seal it, narrow scope (Recommended)** \u2014 Name usdc-interval-live-v0 as the kickoff reference capture under an explicitly labelled narrow scope: one registry-excluded venue, Compound v3 USDC Comet, not any of the nine admitted targets. #1374 gets real bytes, digests and coverage now; the target mismatch is recorded as an attributed scope decision, not hidden.\n- **Seal it, pilot label only** \u2014 Same bytes, weaker claim: the release is admitted only as a labelled pilot #1374 may bind to exercise its dataset/v1 gates. It is explicitly not the kickoff reference capture, so #1374's own close condition stays open until an admitted-target capture exists.\n- **Select nothing; record blocked** \u2014 No release selected. The record states that no admitted target has a capture and no collector can produce one, and the only output is the missing-adapter blocker. #1374 stays blocked with nothing to bind.\n\nSelected: none of the three. He replied instead: \"Explain what a reference capture is exactly? We want Wildcat V1/V2 to be that.\" Round two replaces this question.\n\n### 2. Tail\n\nQuestion: How does the record treat blocks 25,905,935 to 25,919,986 \u2014 the 14,052 blocks between the interval end and the pinned finality boundary?\n\nOptions offered:\n\n- **Scope bound, not a gap (Recommended)** \u2014 State it as a declared-interval bound. The plan never claimed those blocks, and the checkpoint proves everything it did claim was read. #1374's coverage check then sees zero gaps inside bounds, which is what the release actually supports.\n- **Record as a reasoned gap** \u2014 Write the 14,052 blocks into the capture record as an explicit reasoned gap so #1374's coverage check has a non-empty gaps list to exercise. Costs accuracy: it names as a gap something the interval never declared.\n\nSelected: **Scope bound, not a gap**.\n\n### 3. Blocker\n\nQuestion: What does the child blocker issue name?\n\nOptions offered:\n\n- **One narrow issue (Recommended)** \u2014 File one alexandria-wish: the interval build path admits only the byte-pinned Compound III registry (compound_registry.py:216) and the EIP-1967 upgrade epoch model (interval.py:77-78), so no admitted target can be captured. Cites both refusal specimens. Links #1379 as related, not prerequisite.\n- **Two issues, split by cause** \u2014 One issue for the registry byte-pin, one for the EIP-1967 epoch model, since a non-upgradeable estate like Wildcat V2 needs a different epoch derivation than a venue-registry abstraction would supply.\n- **Comment on #1379 instead** \u2014 File nothing new; add the evidence as a comment on the existing multi-venue collector issue #1379. Risk: #1490 explicitly forbids treating #1379 as its prerequisite, and a comment is not a blocker the parent can track.\n\nSelected: **Comment on #1379 instead**. Question 6 in round two replaces this answer.\n\n### 4. Attribution\n\nQuestion: Who does the record name as reviewer?\n\nOptions offered:\n\n- **Independent agent (Recommended)** \u2014 Matches the pattern in docs/kickoff/1372/eventdecision.md: you as capture maintainer and decision-maker, Shoggoth as Surveyor producing the evidence, and an independent agent as reviewer whose report names the digests it checked.\n- **You as decision-maker and reviewer** \u2014 You review the evidence yourself and the record names you in both roles. Simpler and fewer moving parts, but the record then carries no independent check of the digests.\n\nSelected: **Independent agent**.\n\n## Round two\n\nRound two was put after the delivery session answered his question, reporting that the approved registry holds Wildcat V1 and V2 deployment identity but no Wildcat capture exists, that the interval collector refuses any registry whose bytes differ from the pinned Compound III registry, and that its epoch model is hard-wired to the EIP-1967 implementation slot, which no contract in the Wildcat estate uses.\n\n### 5. Deliverable\n\nQuestion: Given Wildcat V1/V2 is the reference target and no Wildcat capture exists, what does this PR deliver?\n\nOptions offered:\n\n- **Select Wildcat, specify, blocker (Recommended)** \u2014 docs/kickoff/1374/capture.md selects Wildcat V1/V2 as the reference target, specifies exactly what its capture must contain using the registry's real addresses, start blocks and code hashes, inventories the Compound release as the worked pattern (not the reference), and records the two executable refusals. The capture itself becomes a named blocker. Honest and fits Fiat-Required: 0, but #1374 gets a specification, not bytes to bind.\n- **Select Wildcat, plus Compound as interim** \u2014 Same as above, and additionally admits the Compound v3 release as an explicitly labelled interim that #1374 may bind now to exercise its dataset/v1 gates, superseded the moment a Wildcat capture lands. #1374 can proceed immediately; costs a record that names two things where the programme wanted one.\n- **Escalate to a Fiat run** \u2014 Stop here. #1490 cannot deliver under its only-pr-needed label once Wildcat is the target, so re-label it and build the Wildcat registry module, epoch model and capture properly as a Fiat delivery. Nothing merges today.\n\nSelected: **Select Wildcat, specify, blocker**.\n\n### 6. Blocker, revisited\n\nQuestion: Where does the adapter blocker go, now that #1374 waits on it?\n\nOptions offered:\n\n- **New narrow issue (Recommended)** \u2014 File one alexandria-wish naming both causes with their line references and both refusal specimens, linked as a prerequisite of #1374 so the parent tracks it. Links #1379 as related, not prerequisite. Reverses your earlier answer, which was given before Wildcat was the target.\n- **Comment on #1379 as you chose** \u2014 Keep your original answer: add the evidence as a comment on the existing multi-venue collector issue. #1374's dependency then has no trackable issue of its own, and #1490 forbids depending on #1379.\n\nSelected: **New narrow issue**. This supersedes the round-one answer to question 3.\n\n## What these answers decide\n\nThe reference capture target is the Wildcat V1 and V2 Ethereum mainnet estate. The Compound v3 USDC Comet release is recorded as the worked pattern the Wildcat capture must follow, not as the reference capture and not as an interim one. The declared-interval tail is a scope bound rather than a gap. The missing capture adapter is a separate filed issue held as a prerequisite of #1374. The reviewer is an independent agent naming the digests it checked.\n\nNo part of this authorises a live capture, provider spending or a completeness claim."
+  },
+  "decisions": [
+    {
+      "question": "What does docs/kickoff/1374/capture.md select as the reference capture?",
+      "round": 1,
+      "selected": "none of the offered options",
+      "reply": "Explain what a reference capture is exactly? We want Wildcat V1/V2 to be that.",
+      "superseded_by": "question 5"
+    },
+    {
+      "question": "How does the record treat blocks 25,905,935 to 25,919,986 \u2014 the 14,052 blocks between the interval end and the pinned finality boundary?",
+      "round": 1,
+      "selected": "Scope bound, not a gap",
+      "recommended": "Scope bound, not a gap"
+    },
+    {
+      "question": "What does the child blocker issue name?",
+      "round": 1,
+      "selected": "Comment on #1379 instead",
+      "recommended": "One narrow issue",
+      "superseded_by": "question 6"
+    },
+    {
+      "question": "Who does the record name as reviewer?",
+      "round": 1,
+      "selected": "Independent agent",
+      "recommended": "Independent agent"
+    },
+    {
+      "question": "Given Wildcat V1/V2 is the reference target and no Wildcat capture exists, what does this PR deliver?",
+      "round": 2,
+      "selected": "Select Wildcat, specify, blocker",
+      "recommended": "Select Wildcat, specify, blocker"
+    },
+    {
+      "question": "Where does the adapter blocker go, now that #1374 waits on it?",
+      "round": 2,
+      "selected": "New narrow issue",
+      "recommended": "New narrow issue",
+      "supersedes": "question 3"
+    }
+  ],
+  "inferred_from_anything_else": false,
+  "boundary": "the decision selects a target, a tail treatment, a blocker location and a reviewer; it authorises no capture, endpoint or provider spending"
+}

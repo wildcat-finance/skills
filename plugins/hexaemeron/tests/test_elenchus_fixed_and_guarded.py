@@ -314,7 +314,7 @@ class AcceptedRecord(Harness):
         self.assertEqual(code, 0, err)
         self.assertIn("clean", stdout)
 
-    def test_the_record_holds_the_schema_and_the_nine_fields_and_no_more(self):
+    def test_record_holds_schema_and_nine_fields_and_no_more(self):
         record = self.accepted_record()
         self.assertEqual(set(record), {"schema", *EVIDENCE_FIELDS})
 
@@ -323,14 +323,14 @@ class AcceptedRecord(Harness):
         self.assertEqual(record["unfixed_parent"]["commit"], self.fixture.base)
         self.assertNotEqual(record["unfixed_parent"]["commit"], record["repair"]["commit"])
 
-    def test_the_two_result_derived_fields_are_taken_without_translation(self):
+    def test_two_result_derived_fields_are_taken_verbatim(self):
         record = self.accepted_record()
         result = result_for(self.fixture)
         self.assertEqual(record["verdict"]["status"], result["status"])
         self.assertEqual(record["verdict"]["detail"], result["detail"])
         self.assertEqual(record["unfixed_parent"]["report"], result["report"])
 
-    def test_the_reproduction_output_reaches_the_record_only_as_a_digest(self):
+    def test_reproduction_output_reaches_record_only_as_digest(self):
         out = "records/fixed-and-guarded.json"
         self.accepted_record(out)
         written = (self.fixture.path / out).read_text(encoding="utf-8")
@@ -471,7 +471,7 @@ class GuardBinding(Harness):
         record = self.accepted_record()
         self.assertEqual(record["guard"], {"file": GUARD_FILE, "test": GUARD_TEST})
 
-    def test_a_guard_test_absent_from_the_guard_file_at_the_repair_is_refused(self):
+    def test_guard_test_absent_from_file_at_repair_is_refused(self):
         """Step 3 round 2 of the #1275 run emitted this draft at exit 0.
 
         F018 reads the guard file's blob at the repair commit, so the refusal
@@ -490,7 +490,7 @@ class GuardBinding(Harness):
         self.assertFalse((self.fixture.path / out).exists())
         self.assertFalse((self.fixture.path / "records").exists())
 
-    def test_a_module_qualified_name_whose_module_segments_are_absent_is_refused(self):
+    def test_module_qualified_name_absent_segments_is_refused(self):
         """The operator drops the prefix; the file never spells its own module."""
         draft = draft_for(self.fixture)
         draft["guard"]["test"] = f"tests.test_widget.{GUARD_TEST}"
@@ -516,7 +516,7 @@ class GuardBinding(Harness):
                     (self.fixture.path / out).read_text(encoding="utf-8"))
                 self.assertEqual(record["guard"]["test"], name)
 
-    def test_a_segment_occurring_only_inside_a_longer_identifier_is_refused(self):
+    def test_segment_only_inside_longer_identifier_is_refused(self):
         """Whole-word occurrence: a prefix of the real test name is not the name."""
         draft = draft_for(self.fixture)
         draft["guard"]["test"] = "WidgetRegression.test_negative_width"
@@ -550,7 +550,7 @@ class GuardBinding(Harness):
         cat_file = [argv[argv.index("cat-file") + 1] for argv in argv_seen if "cat-file" in argv]
         self.assertEqual(cat_file, ["-s"])
 
-    def test_a_guard_file_absent_or_not_a_blob_at_the_repair_is_refused(self):
+    def test_guard_file_absent_or_non_blob_at_repair_is_refused(self):
         """A path the result names is not thereby a blob the emitter can bind."""
         for shape, guard_file in (
             ("absent from the commit", "tests/test_missing.py"),
@@ -583,7 +583,7 @@ class Verdicts(Harness):
         self.assertRefused(
             self.emit(result=result), "F006", "result.status")
 
-    def test_a_record_whose_verdict_is_not_guarded_is_refused_on_its_own(self):
+    def test_record_with_unguarded_verdict_refused_on_its_own(self):
         record = self.accepted_record()
         record["verdict"]["status"] = "inconclusive"
         path = self.fixture.inputs / "inconclusive.json"
@@ -602,7 +602,7 @@ class RecordRelations(Harness):
         self.assertRefused(
             self.invoke(["--check", str(path)]), "F011", "unfixed_parent.commit")
 
-    def test_a_guarded_record_whose_parent_report_never_failed_is_refused(self):
+    def test_guarded_record_parent_report_never_failed_refused(self):
         record = self.accepted_record()
         record["unfixed_parent"]["report"]["assertion_failures"] = 0
         record["unfixed_parent"]["report"]["errors"] = 0
@@ -620,7 +620,7 @@ class RecordRelations(Harness):
         self.assertRefused(
             self.invoke(["--check", str(path)]), "F013", "verdict.status")
 
-    def test_a_guarded_record_whose_fixed_tree_report_failed_is_refused(self):
+    def test_guarded_record_fixed_tree_report_failed_is_refused(self):
         for counter in ("assertion_failures", "errors"):
             with self.subTest(counter=counter):
                 record = self.accepted_record(out=f"records/{counter}.json")
@@ -654,7 +654,7 @@ class RecordRelations(Harness):
             self.assertRefused(
                 self.invoke(["--check", str(path)]), "F015", "fixed_tree.commit")
 
-    def test_a_record_whose_guard_is_absent_from_the_repairs_files_is_refused(self):
+    def test_record_whose_guard_not_in_repair_files_is_refused(self):
         """A guard the repair did not touch is not the Boundary's named guard.
 
         F007 settles this on the emit path against the result's changed test
@@ -676,7 +676,7 @@ class RecordRelations(Harness):
                 self.emit(draft=draft, out=out), "F016", "guard.file")
             self.assertFalse((self.fixture.path / out).exists())
 
-    def test_a_guarded_record_whose_fixed_tree_executed_no_tests_is_refused(self):
+    def test_guarded_record_fixed_tree_ran_no_tests_is_refused(self):
         """A comparison that ran no test is not a guard, on either path.
 
         F014 reads only counters above zero, so nothing read the executed
@@ -704,7 +704,7 @@ class RecordRelations(Harness):
             self.assertRefused(
                 self.invoke(["--check", str(path)]), "F017", "verdict.status")
 
-    def test_a_parent_report_executing_no_tests_needs_no_eleventh_counterpart(self):
+    def test_empty_parent_report_needs_no_eleventh_counterpart(self):
         """The parent side is already closed, checked rather than assumed.
 
         `executed` 0 forces both parent counters to 0, because the count rule
@@ -733,7 +733,7 @@ class RecordRelations(Harness):
                 self.invoke(["--check", str(path)]),
                 "F002", "unfixed_parent.report")
 
-    def test_a_record_whose_two_trees_differ_and_whose_parent_failed_is_accepted(self):
+    def test_record_differing_trees_failed_parent_is_accepted(self):
         """The seven above must not refuse the record the emitter actually writes."""
         record = self.accepted_record()
         self.assertNotEqual(
@@ -754,7 +754,7 @@ class RecordRelations(Harness):
         self.assertEqual(code, 0, err)
         self.assertIn("clean", out)
 
-    def test_a_malformed_record_is_not_also_charged_the_relation_refusals(self):
+    def test_malformed_record_not_charged_relation_refusals(self):
         """A shape the per-field rules already refuse names those rules only."""
         record = self.accepted_record()
         record["unfixed_parent"]["commit"] = "not-a-commit"
@@ -767,7 +767,7 @@ class RecordRelations(Harness):
         for code in ("F011", "F012", "F013", "F014", "F015", "F016", "F017"):
             self.assertNotIn(code, err)
 
-    def test_a_repair_omitting_a_changed_test_file_is_refused_at_emit(self):
+    def test_repair_omitting_changed_test_file_refused_at_emit(self):
         """Step 1 round 6 of the #1275 run, S1-R6-02, emitted this draft at exit 0.
 
         F019 reads `result["tests"]` against `repair.files` directly after
@@ -788,7 +788,7 @@ class RecordRelations(Harness):
         self.assertFalse((self.fixture.path / out).exists())
         self.assertFalse((self.fixture.path / "records").exists())
 
-    def test_check_still_accepts_an_unbound_guard_test_and_a_short_repair_files(self):
+    def test_still_accepts_unbound_guard_and_short_repair_files(self):
         """The stated boundary, not a defect: `--check` runs no emit-path rule.
 
         F018 needs the guard file's blob and F019 needs `result["tests"]`,
@@ -985,7 +985,7 @@ class EndToEnd(unittest.TestCase):
             env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
         )
 
-    def test_the_demo_path_emits_a_record_and_refuses_the_ones_it_should(self):
+    def test_demo_path_emits_record_and_refuses_expected_cases(self):
         scratch = self.scratch
 
         # Reproduce. The guard is written but not yet committed, so it runs

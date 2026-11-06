@@ -1,0 +1,321 @@
+{
+  "candidates": [
+    {
+      "id": "view-projection",
+      "summary": "Project the existing bounded archive view into event rows."
+    },
+    {
+      "id": "topic-only",
+      "summary": "Dispatch event signatures without emitter-role qualification."
+    },
+    {
+      "id": "role-qualified",
+      "summary": "Dispatch by generation, registry role and deployed signature from full native journals."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "scope-retained",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "role-and-generation-retained",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "dispatch-time",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "dispatch-bytes",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "recoverable-source-identity",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "semantic-conformance",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "release-reproduction",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "schema-parity",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "view-projection",
+      "criterion": "scope-retained",
+      "report": {
+        "path": "design-reports/view-projection-scope-retained.json",
+        "sha256": "c1ab37040bd3b4c962487e61a8dabd9c25565dd337f77f1066b114731d440f6b"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "view-projection",
+      "criterion": "role-and-generation-retained",
+      "report": {
+        "path": "design-reports/view-projection-role-and-generation-retained.json",
+        "sha256": "5402ad4a15421f95aed614b6d15f8b7c55a49678f282d0a742ff6229e0149826"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "view-projection",
+      "criterion": "dispatch-time",
+      "report": {
+        "path": "design-reports/view-projection-dispatch-time.json",
+        "sha256": "f36c1126e58dc528b281aeb252ecb1ac6291e2758b082877cdeb8b3f211947fd"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "view-projection",
+      "criterion": "dispatch-bytes",
+      "report": {
+        "path": "design-reports/view-projection-dispatch-bytes.json",
+        "sha256": "c08ed748280aa505dcfe47ffa40f60db2c9e5ae1ef032a482f2ad87ddd571943"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "view-projection",
+      "criterion": "recoverable-source-identity",
+      "report": {
+        "path": "design-reports/view-projection-recoverable-source-identity.json",
+        "sha256": "84cab28472caf225accce622250a02de775f2c37dd40b80a8b7582d2add8f382"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "topic-only",
+      "criterion": "scope-retained",
+      "report": {
+        "path": "design-reports/topic-only-scope-retained.json",
+        "sha256": "3d4cba977e6b7353341a73c9b8924bddb74881b8994de114e6f525bdfe84cc0c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "topic-only",
+      "criterion": "role-and-generation-retained",
+      "report": {
+        "path": "design-reports/topic-only-role-and-generation-retained.json",
+        "sha256": "cc14b90c381a6731d8dd7182d8c2f1b9a98fd800a7b1f7122533a6e35951bb77"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "topic-only",
+      "criterion": "dispatch-time",
+      "report": {
+        "path": "design-reports/topic-only-dispatch-time.json",
+        "sha256": "aad3068c6ec554402a8705acb8bf2cadb7d7b1de9d2c5714fc1fde8937a60165"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "topic-only",
+      "criterion": "dispatch-bytes",
+      "report": {
+        "path": "design-reports/topic-only-dispatch-bytes.json",
+        "sha256": "a315e470a3ddd20d6f699ebd8a3b54ed0fe4987658de1c342137caf7ec6a32c2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "topic-only",
+      "criterion": "recoverable-source-identity",
+      "report": {
+        "path": "design-reports/topic-only-recoverable-source-identity.json",
+        "sha256": "db0d2a9ef6a6825ca9044c3d21779b4d98441bb086406130ea402be119d843d2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "role-qualified",
+      "criterion": "scope-retained",
+      "report": {
+        "path": "design-reports/role-qualified-scope-retained.json",
+        "sha256": "8b5b4a42b1c54b0d9b3c90470e2e0b0237ff4d73d4ac2ef8f16eee0297304b5a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "role-qualified",
+      "criterion": "role-and-generation-retained",
+      "report": {
+        "path": "design-reports/role-qualified-role-and-generation-retained.json",
+        "sha256": "c1a42430a7d9538f2fd1682b239af6a3b470a0b22feb17144aaaf4dc71b9f488"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "role-qualified",
+      "criterion": "dispatch-time",
+      "report": {
+        "path": "design-reports/role-qualified-dispatch-time.json",
+        "sha256": "b6fc7d12af9c223009786192441cdba1c57d8638685407ae88060f40d70d3583"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "role-qualified",
+      "criterion": "dispatch-bytes",
+      "report": {
+        "path": "design-reports/role-qualified-dispatch-bytes.json",
+        "sha256": "218f0237c965e1200d3449adcc4c71a563bfbd0a355a0ef8276dfeded0041f1a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "role-qualified",
+      "criterion": "recoverable-source-identity",
+      "report": {
+        "path": "design-reports/role-qualified-recoverable-source-identity.json",
+        "sha256": "310ebfc1e174db457d17d4a6d7598a60dde91af4b6c01b3d1b379d3e6af368d6"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "view-projection",
+      "criterion": "semantic-conformance",
+      "report": "design-reports/view-projection-semantic-conformance.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate view-projection --criterion semantic-conformance --report .hexaemeron/design-reports/view-projection-semantic-conformance.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "topic-only",
+      "criterion": "semantic-conformance",
+      "report": "design-reports/topic-only-semantic-conformance.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate topic-only --criterion semantic-conformance --report .hexaemeron/design-reports/topic-only-semantic-conformance.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "role-qualified",
+      "criterion": "semantic-conformance",
+      "report": "design-reports/role-qualified-semantic-conformance.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate role-qualified --criterion semantic-conformance --report .hexaemeron/design-reports/role-qualified-semantic-conformance.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "view-projection",
+      "criterion": "release-reproduction",
+      "report": "design-reports/view-projection-release-reproduction.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate view-projection --criterion release-reproduction --report .hexaemeron/design-reports/view-projection-release-reproduction.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "topic-only",
+      "criterion": "release-reproduction",
+      "report": "design-reports/topic-only-release-reproduction.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate topic-only --criterion release-reproduction --report .hexaemeron/design-reports/topic-only-release-reproduction.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "role-qualified",
+      "criterion": "release-reproduction",
+      "report": "design-reports/role-qualified-release-reproduction.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate role-qualified --criterion release-reproduction --report .hexaemeron/design-reports/role-qualified-release-reproduction.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "view-projection",
+      "criterion": "schema-parity",
+      "report": "design-reports/view-projection-schema-parity.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate view-projection --criterion schema-parity --report .hexaemeron/design-reports/view-projection-schema-parity.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "topic-only",
+      "criterion": "schema-parity",
+      "report": "design-reports/topic-only-schema-parity.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate topic-only --criterion schema-parity --report .hexaemeron/design-reports/topic-only-schema-parity.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "role-qualified",
+      "criterion": "schema-parity",
+      "report": "design-reports/role-qualified-schema-parity.json",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_v3.py --candidate role-qualified --criterion schema-parity --report .hexaemeron/design-reports/role-qualified-schema-parity.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "role-qualified",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

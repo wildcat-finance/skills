@@ -1,0 +1,15 @@
+{
+  "answers_sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855",
+  "changed_fields": [],
+  "counts": {
+    "answers": 11,
+    "cases": 11,
+    "failed": 0,
+    "outcomes": 55,
+    "passed": 55
+  },
+  "manifest_unchanged": true,
+  "new_model_observation": false,
+  "projection_sha256": "416ca056a957560995752979eaa56a2f0b1bfe4e8faca060ef6e3e39c338ed94",
+  "schema": "success-criteria-evaluation-source-check/v1"
+}

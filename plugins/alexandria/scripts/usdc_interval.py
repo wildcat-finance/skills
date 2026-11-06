@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Collect a bounded Ethereum USDC Comet block interval, resumably.
 
-The network path is explicit and lives in one place: `HttpsTransport`, built
-from an environment variable that is never written anywhere. Every other path
-in this module takes a transport it was handed, so the whole collector is
-exercised offline against a fixture provider and no test opens a socket.
+The network path is explicit and lives in two places: the hosted
+`HttpsTransport`, built from an environment variable that is never written
+anywhere, and the bounded, explicit opt-in local `LoopbackHttpTransport`,
+reached only over a literal loopback address. `transport_from_environment`
+chooses between them from the environment alone. Every other path in this
+module takes a transport it was handed, so the whole collector is exercised
+offline against a fixture provider and no test but the loopback wiring proof
+itself opens a socket.
 
 The loop is the one `docs/compound-v3-harvest.md` specifies. It binds the end
 boundary under a named finality policy before it asks for a shard, walks the
@@ -18,19 +22,52 @@ resumed like a shard and reconciled like one. `build` discovers the epochs
 from that journal alone, ships each implementation's runtime bytes as a
 component the epoch table names by digest, and binds every evidence scope to
 the first block's hash and the last shard's; `check` re-hashes the bytes.
+
+A plan that declares `shards_per_component` ships each shard-class journal as
+one release component per plan-derived shard range, named `<class>.<k>`, so a
+journal larger than the component ceiling is released in parts. `check`
+re-derives those ranges from the plan alone, refuses components that do not
+tile the shard range exactly, and compares every component's byte count with
+the ceiling.
+
+A subject-set plan that also declares `log_attribution_parts` moves the
+attribution rows out of the epoch table into one `log-attributions.<k>` part
+per journal range, under receipt `alexandria-interval-receipt/v4`. `check`
+derives the parts from the plan and compares each one with the rows
+`attribute_logs` derives from the preserved logs of its own shards.
+
+A `wildcat-v2` plan that declares `wildcat_v2_wrappers` adds the declared
+wrappers to every shard read's address filter, after its `subjects`. The
+venue's opening phase derives each declared wrapper's epoch from the preserved
+`WrapperDeployed` log that names it, `build` writes the derived set as the
+`wrapper-subjects` component, and `check` re-derives that component byte for
+byte and lists each wrapper, a declared one with its epoch and attributed log
+count. A plan without the field makes the same requests and builds the same
+bytes as before.
 """
 
 from __future__ import annotations
 
 import argparse
+import collections
+import concurrent.futures
+import functools
 import hashlib
+import http.client
+import itertools
 import json
 import os
 from pathlib import Path
+import queue
+import selectors
+import ssl
 import sys
+import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import weakref
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -46,11 +83,28 @@ from alexandria_lib.interval import (
     EVIDENCE_CLASSES,
     JOURNAL_CLASSES,
     MAX_DISPUTES,
+    MAX_JOURNAL_BYTES,
     OPENING_CLASS,
+    PARTS_FIELD,
+    PARTS_RECEIPT_FORMAT,
+    SPLIT_FIELD,
     RECEIPT_FORMAT,
+    SUBJECT_RECEIPT_FORMAT,
+    UPGRADED_TOPIC,
+    LEGACY_RECEIPT_FORMAT,
+    WRAPPERS_FIELD,
+    capture_subjects,
+    OpeningRefusal,
+    discover_block_epochs,
+    validate_block_epochs,
+    proxy_log_positions,
+    attribute_logs,
+    validate_attributions,
     Staging,
     ZERO_ADDRESS,
+    component_name,
     discover_epochs,
+    journal_entries,
     log_identity,
     FINALITY_POLICIES,
     HASH_RE,
@@ -58,31 +112,102 @@ from alexandria_lib.interval import (
     opening_code_reads,
     opening_prefix,
     plan_digest,
+    plan_partition,
     read_regular,
     runtime_code,
     slot_word_address,
     upgrade_logs,
     validate_epochs,
+    validate_epoch_subjects,
+    subject_epoch_rows,
+    subject_epoch_table,
+    validate_first_code,
     validate_plan,
     validate_reconciliation,
     validate_shard_coverage,
+    validate_recollection,
 )
-from alexandria_lib.compound_registry import validate_registry
+from alexandria_lib import event_headers
+from alexandria_lib import wildcat_wrappers
+
+from alexandria_lib.venues import VENUES
+from alexandria_lib.wildcat_registry import checking_release
 from alexandria_lib.paths import read_confined_file
-from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES, ingest, verify
+from alexandria_lib.release import (
+    MAX_COMPONENTS,
+    MAX_MANIFEST_NODES,
+    MAX_RAW_COMPONENT_BYTES,
+    encode_manifest,
+    ingest,
+    load_manifest,
+    read_manifest_bytes,
+    verify,
+)
 
 
 ENDPOINT_ENV = "ALEXANDRIA_COMPOUND_RPC_URL"
+BEARER_ENV = "ALEXANDRIA_RPC_BEARER"  # phylax: allow the environment variable's name, never a credential value
+LOOPBACK_ALLOW_ENV = "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP"
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1"})
 MAX_COLLECT_SECONDS = 3_600
+# Past MAX_COLLECT_BYTES a collection starts no new shard, but the shards
+# already running finish and commit, so a restart refetches none of them.
+# MAX_COLLECT_DRAIN_BYTES is the hard stop for that finishing work.
 MAX_COLLECT_BYTES = 512 * 1024 * 1024
+MAX_COLLECT_DRAIN_BYTES = 2 * MAX_COLLECT_BYTES
+# A bounded worker pool fetches this many shards' data concurrently; commits
+# still land strictly in ascending shard order (see `Collector._collect_shards`).
+# Conservative by default -- tune with `collect --concurrency`, never past the
+# ceiling, which exists so a plan cannot turn concurrency into an unbounded
+# thread count.
+DEFAULT_COLLECT_CONCURRENCY = 4
+MAX_COLLECT_CONCURRENCY = 8
+DEFAULT_TRACE_CONCURRENCY = 4
+MAX_TRACE_CONCURRENCY = 16
+DEFAULT_RPC_CONCURRENCY = 8
+MAX_RPC_CONCURRENCY = 8
 MAX_RESPONSE_NODES = 2_000_000
+# _bounded_request's own real deadline for one request, independent of a
+# plan's own declared provider.timeout_seconds (bounded separately, much
+# more loosely, by alexandria_lib.interval.MAX_TIMEOUT_SECONDS). Every real
+# shard reconciled against the live hosted endpoint so far (1,539 of them,
+# 2026-09-21) took at most 34 seconds, and every already-committed example
+# already declares 25; a hung request -- most plausibly a stalled DNS
+# resolution, which no socket-level timeout reaches, see _bounded_request --
+# should not need up to an hour, or whatever larger ceiling a plan happens
+# to declare, to reveal itself.
+MAX_REQUEST_SECONDS = 60
 RECEIPTS_DIRECTORY = "receipts"
 ERROR_RECEIPTS = "errors.jsonl"
 RECONCILIATION_DIRECTORY = "reconciliation"
 RECONCILIATION_RECORD = "reconciliation.json"
+# Where `recollect` sets the bound reconciliation aside: never read by a
+# build or a plain reconcile, only by `reconcile --carry-forward`.
+RECONCILIATION_PRIOR = "prior.json"
+# The optional reconciliation field a carry-forward record adds; a record
+# without it is byte for byte what a full reconcile writes.
+CARRY_FORWARD_FIELD = "carry_forward"
+# Dispute kinds a shard records whatever the dispute count already is.
+UNCAPPED_DISPUTE_KINDS = ("boundary-hash", "transaction-order")
 DISPUTED_RESPONSES = "disputed.jsonl"
+# Reconciliation's own progress marker, separate from `Staging`'s: a shard's
+# comparison work against the second provider, not the collected bytes
+# themselves. See `Reconciler._save_reconcile_checkpoint`.
+RECONCILE_CHECKPOINT_NAME = "checkpoint.json"
+# v2 binds the checkpoint to the staging tree's committed boundary hash as well
+# as to the plan and the second provider; a v1 checkpoint is not trusted.
+RECONCILE_CHECKPOINT_FORMAT = "alexandria-interval-reconcile-checkpoint/v2"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
+ERRORS_FORMAT = "alexandria-interval-errors/v1"
+# The error-receipts document of a tree where `recollect` replaced a shard's
+# traces: the same receipts, and one record per replacement.
+RECOLLECTED_ERRORS_FORMAT = "alexandria-interval-errors/v2"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
+RECONCILIATION_BINDING_GAP = "the reconciliation record has no journal digest binding"
+TARGETED_TRACE_GAP = (
+    "traces cover only transactions named by the subjects' preserved logs; "
+    "transactions with no matching log were not traced"
+)
 BOUNDARY_CLASS = "boundary-blocks"
 ENTRY_BLOCK_CLASSES = ("logs", "traces")
 CODE_COMPONENT = "implementation-code"
@@ -105,6 +230,185 @@ OMISSION_REASONS = {
     ),
     "traces": "no internal call to the proxy was preserved",
 }
+# A split plan's attribution parts: one component per journal range, named
+# `log-attributions.<k>` beside `logs.<k>`. A part is written and read under the
+# byte and node bounds every other component has, and `MAX_PART_BYTES` and
+# `MAX_PART_NODES` name those bounds where the part rule applies them.
+PART_CLASS = "log-attributions"
+PART_FORMAT = "alexandria-interval-log-attributions/v1"
+MAX_PART_BYTES = MAX_RAW_COMPONENT_BYTES
+MAX_PART_NODES = MAX_RESPONSE_NODES
+# The derived wrapper set a plan declaring `wildcat_v2_wrappers` releases
+# beside its journals, and no other plan does.
+WRAPPER_COMPONENT = wildcat_wrappers.COMPONENT
+
+
+
+def journal_components(plan, classes) -> dict:
+    """The release's journal components, derived from the plan alone.
+
+    Maps each component name to `{"class", "index", "first", "last"}`: the
+    class whose records it holds, its position among that class's components
+    (None where the class is one component), and the inclusive shard range it
+    covers. A plan that declares no `shards_per_component` yields one component
+    per class under the class's own name, so every existing release keeps the
+    names it was built with. A split plan yields `<class>.<k>` for each
+    contiguous shard range the plan derives, in shard order. The opening
+    journal is one component either way, under the virtual shard index.
+
+    Refuses a plan whose components would exceed the release limit, so a
+    collection cannot run to its end and then have no release to build. The
+    count is the fixed components, these journals, under
+    `log_attribution_parts` one attribution part per journal range, and under
+    `wildcat_v2_wrappers` the `wrapper-subjects` component.
+    """
+    shard_count = len(plan["shards"])
+    ranges = plan_partition(plan)
+    components = {}
+    for name in classes:
+        if ranges is None:
+            components[name] = {"class": name, "index": None, "first": 0, "last": shard_count - 1}
+            continue
+        for index, (first, last) in enumerate(ranges):
+            components[component_name(name, index)] = {
+                "class": name, "index": index, "first": first, "last": last,
+            }
+    components[OPENING_CLASS] = {
+        "class": OPENING_CLASS, "index": None, "first": shard_count, "last": shard_count,
+    }
+    if event_headers.enabled(plan):
+        components[event_headers.CLASS] = {"class": event_headers.CLASS, "index": None, "first": shard_count, "last": shard_count}
+    parts = attribution_parts(plan)
+    total = len(FIXED_COMPONENTS) + len(components) + len(parts) + (WRAPPERS_FIELD in plan)
+    if total > MAX_COMPONENTS:
+        derived = f"{len(components)} journal components"
+        if parts:
+            derived += f" and {len(parts)} {PART_CLASS} parts"
+        raise AlexandriaError(
+            f"the plan derives {derived}, so its release would carry "
+            f"{total} components, above the {MAX_COMPONENTS}-component limit"
+        )
+    return components
+
+
+def attribution_parts(plan) -> dict:
+    """The release's attribution parts, derived from the plan alone.
+
+    Empty unless the plan declares `log_attribution_parts`. Otherwise maps
+    `log-attributions.<k>` to `{"class", "index", "first", "last"}` for the
+    plan's `k`th journal range, the shards `logs.<k>` covers, in shard order.
+    A part holds the attribution rows of every preserved log in those shards,
+    so a range with no preserved log gives an empty part.
+    """
+    if PARTS_FIELD not in plan:
+        return {}
+    ranges = plan_partition(plan)
+    if ranges is None:
+        raise AlexandriaError(
+            f"a plan that declares {PARTS_FIELD} derives its parts from its journal ranges, "
+            "and this one declares none"
+        )
+    return {
+        component_name(PART_CLASS, index): {
+            "class": PART_CLASS, "index": index, "first": first, "last": last,
+        }
+        for index, (first, last) in enumerate(ranges)
+    }
+
+
+def part_label(name: str, part) -> str:
+    """How a refusal names one attribution part: its component and its shard range."""
+    return f"{name} (shards {part['first']} to {part['last']})"
+
+
+def part_blocks(plan, part) -> tuple:
+    """The inclusive block range one attribution part's shards cover."""
+    shards = plan["shards"]
+    return shards[part["first"]]["start"], shards[part["last"]]["end"]
+
+
+def attribution_part_rows(plan, parts, rows) -> dict:
+    """Slice the list `attribute_logs` returns into the plan's parts, keeping its order.
+
+    The list's blocks never decrease, so one pass hands each row to the part
+    whose blocks hold its block. Each part then holds the rows of every
+    preserved log in its own shards, in `attribute_logs` order. A row outside
+    every part, or one that runs back across a part boundary, refuses by name.
+    """
+    ordered = [(name, part, *part_blocks(plan, part)) for name, part in parts.items()]
+    sliced = {name: [] for name, *_rest in ordered}
+    position = 0
+    for row in rows:
+        block = int(row["block_number"])
+        while position < len(ordered) and block > ordered[position][3]:
+            position += 1
+        if position == len(ordered) or block < ordered[position][2]:
+            raise AlexandriaError(
+                f"the attribution row at block {block} lies outside every {PART_CLASS} part "
+                "or out of block order"
+            )
+        sliced[ordered[position][0]].append(row)
+    return sliced
+
+
+def attribution_part(part, rows) -> dict:
+    """One `alexandria-interval-log-attributions/v1` document: a part's index, range and rows."""
+    return {
+        "first_shard": part["first"],
+        "format": PART_FORMAT,
+        "last_shard": part["last"],
+        "part": part["index"],
+        "rows": rows,
+    }
+
+
+def part_bytes(name: str, part, document) -> bytes:
+    """One part's canonical bytes, refused by name above the part bounds."""
+    try:
+        data = canonical_bytes(document, max_nodes=MAX_PART_NODES)
+    except AlexandriaError as error:
+        raise AlexandriaError(f"{part_label(name, part)} cannot be written: {error}") from error
+    if len(data) > MAX_PART_BYTES:
+        raise AlexandriaError(
+            f"{part_label(name, part)} encodes to {len(data)} bytes, above the "
+            f"{MAX_PART_BYTES}-byte component ceiling"
+        )
+    return data
+
+
+def component_gap(plan, part) -> str:
+    """What one split component does not hold, named on its own coverage.
+
+    A split component's scope binds the whole interval's two boundary hashes,
+    because those are the hashes the collector read and the journal as a whole
+    covers the interval. This sentence says which shards the component itself
+    carries, so a reader of one component alone does not take it for the
+    journal. `check` derives the same sentence from the plan and requires it.
+    """
+    shards = plan["shards"]
+    return (
+        f"component {part['index']} of the {part['class']} journal holds shards "
+        f"{part['first']} to {part['last']}, blocks {shards[part['first']]['start']} to "
+        f"{shards[part['last']]['end']}; the journal's other components hold the interval's "
+        "other shards"
+    )
+
+
+def attribution_part_gap(plan, part) -> str:
+    """What one attribution part does not hold, named on its own coverage.
+
+    A part's scope names the whole interval, like the epoch table's. This
+    sentence says which shards and blocks the part's rows come from, so a
+    reader of one part does not take it for every row. `check` derives the
+    same sentence from the plan and requires it.
+    """
+    low, high = part_blocks(plan, part)
+    return (
+        f"part {part['index']} of the log attributions holds the rows of shards "
+        f"{part['first']} to {part['last']}, blocks {low} to {high}; the log "
+        "attributions' other parts hold the interval's other rows"
+    )
+
 
 FINALITY_TAGS = {"finalized": "finalized", "safe": "safe"}
 TIMESTAMP_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
@@ -142,35 +446,469 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         raise TransportError("the Compound RPC endpoint redirected")
 
 
-class HttpsTransport:
-    """The one network path. The endpoint reaches no file, receipt or message."""
+def _close_transport_error(error: urllib.error.URLError) -> None:
+    """Release the socket a raised `URLError` may still be holding open.
 
-    def __init__(self, endpoint: str, timeout: int) -> None:
+    `urlopen`'s default error handling turns any non-2xx response into an
+    `HTTPError`, a `URLError` subclass that is itself the file-like response
+    object -- it never closes on its own, unlike the `with` block's own
+    response on the success path. Neither transport reads its body, so
+    closing it here costs nothing and the label-only message stays exactly
+    what it was; leaving it open instead keeps the socket alive until an
+    unpredictable later garbage-collection pass reclaims it, printing a
+    `ResourceWarning` wherever `sys.stderr` happens to point at that moment,
+    in this process or a caller's.
+    """
+    close = getattr(error, "close", None)
+    if callable(close):
+        close()
+
+
+class _KeptResponse(http.client.HTTPResponse):
+    """A response that returns its connection for reuse once its body is read.
+
+    `_open_kept` sets `_release`. `fp` is already `None` at `close` only when
+    a read reached the end of the body, so a response closed early -- an
+    error status, or a body past the component ceiling -- closes its
+    connection rather than leave unread bytes on it for the next request.
+    """
+
+    _release = None
+
+    def close(self):
+        consumed = self.fp is None
+        try:
+            super().close()
+        finally:
+            release, self._release = self._release, None
+            if release is not None:
+                release(consumed and not self.will_close)
+
+
+class _KeptHTTPConnection(http.client.HTTPConnection):
+    response_class = _KeptResponse
+
+
+class _KeptHTTPSConnection(http.client.HTTPSConnection):
+    response_class = _KeptResponse
+
+
+def _idle_socket_is_readable(sock) -> bool:
+    """Whether the server closed, or wrote to, a connection while it sat idle.
+
+    A selector, not `select.select`: a split plan holds one journal handle per
+    component, so a socket's descriptor can pass `select`'s 1,024 limit.
+    """
+    if getattr(sock, "pending", lambda: 0)():
+        return True
+    try:
+        with selectors.DefaultSelector() as selector:
+            selector.register(sock, selectors.EVENT_READ)
+            return bool(selector.select(0))
+    except (OSError, ValueError):
+        return True
+
+
+class _KeptConnections:
+    """The idle connections one transport keeps open between requests.
+
+    At most `limit` wait idle, one per worker slot. A connection comes back
+    only after its whole response body was read, and one whose socket is
+    readable while idle is closed rather than reused.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._lock = threading.Lock()
+        self._idle = []
+
+    def take(self, key):
+        while True:
+            with self._lock:
+                found = next((position for position, (held, _) in enumerate(self._idle) if held == key), None)
+                if found is None:
+                    return None
+                _, connection = self._idle.pop(found)
+            if connection.sock is not None and not _idle_socket_is_readable(connection.sock):
+                return connection
+            connection.close()
+
+    def release(self, key, connection, reusable: bool) -> None:
+        if reusable and connection.sock is not None:
+            with self._lock:
+                if len(self._idle) < self._limit:
+                    self._idle.append((key, connection))
+                    return
+        connection.close()
+
+    def close(self) -> None:
+        with self._lock:
+            idle, self._idle = self._idle, []
+        for _, connection in idle:
+            connection.close()
+
+
+# A kept connection the server closed while it sat idle fails with one of
+# these before any response byte arrives.
+_STALE_CONNECTION_ERRORS = (
+    http.client.RemoteDisconnected, BrokenPipeError, ConnectionResetError, ConnectionAbortedError,
+    ssl.SSLEOFError,
+)
+
+
+def _open_kept(handler, http_class, req, connections, **http_conn_args):
+    """`AbstractHTTPHandler.do_open`, keeping the connection for the next request.
+
+    urllib sends `Connection: close` and shuts the socket after each
+    response, so every call paid a new TCP connect and, over HTTPS, a new TLS
+    handshake. This sends neither. A kept connection that fails with
+    `_STALE_CONNECTION_ERRORS` is closed and the request is sent once more
+    on a new connection; a new connection's failure is never retried. Proxy
+    tunnelling, redirect refusal and error statuses stay with the opener's
+    other handlers, exactly as `do_open` leaves them.
+    """
+    host = req.host
+    if not host:
+        raise urllib.error.URLError("no host given")
+    headers = dict(req.unredirected_hdrs)
+    headers.update({name: value for name, value in req.headers.items() if name not in headers})
+    headers = {name.title(): value for name, value in headers.items()}
+    tunnel_headers = {}
+    if req._tunnel_host and "Proxy-Authorization" in headers:
+        # Proxy-Authorization should not be sent to the origin server.
+        tunnel_headers["Proxy-Authorization"] = headers.pop("Proxy-Authorization")
+    key = (host, req._tunnel_host, tuple(sorted(tunnel_headers.items())))
+    connection = connections.take(key)
+    reused = connection is not None
+    while True:
+        if connection is None:
+            connection = http_class(host, timeout=req.timeout, **http_conn_args)
+            if req._tunnel_host:
+                connection.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+        else:
+            connection.timeout = req.timeout
+            connection.sock.settimeout(req.timeout)
+        connection.set_debuglevel(handler._debuglevel)
+        try:
+            try:
+                connection.request(
+                    req.get_method(), req.selector, req.data, headers,
+                    encode_chunked=req.has_header("Transfer-encoding"),
+                )
+            except _STALE_CONNECTION_ERRORS:
+                raise
+            except OSError as error:
+                raise urllib.error.URLError(error)
+            response = connection.getresponse()
+        except _STALE_CONNECTION_ERRORS:
+            connection.close()
+            if not reused:
+                raise
+            connection, reused = None, False
+            continue
+        except BaseException:
+            connection.close()
+            raise
+        break
+    response._release = functools.partial(connections.release, key, connection)
+    response.url = req.get_full_url()
+    response.msg = response.reason
+    return response
+
+
+class _KeptHTTPHandler(urllib.request.HTTPHandler):
+    def __init__(self, connections: _KeptConnections) -> None:
+        super().__init__()
+        self._connections = connections
+
+    def http_open(self, req):
+        return _open_kept(self, _KeptHTTPConnection, req, self._connections)
+
+
+class _KeptHTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, connections: _KeptConnections) -> None:
+        super().__init__()
+        self._connections = connections
+
+    def https_open(self, req):
+        return _open_kept(self, _KeptHTTPSConnection, req, self._connections, context=self._context)
+
+
+class _RequestTask:
+    """One request queued for `_RequestWorkers`, which a caller may cancel until it starts."""
+
+    __slots__ = ("_call", "_lock", "_state", "done")
+
+    def __init__(self, call) -> None:
+        self._call = call
+        self._lock = threading.Lock()
+        self._state = "queued"
+        self.done = threading.Event()
+
+    def run(self) -> None:
+        with self._lock:
+            if self._state != "queued":
+                return
+            self._state = "running"
+        try:
+            self._call()
+        finally:
+            self.done.set()
+
+    def cancel(self) -> bool:
+        with self._lock:
+            if self._state != "queued":
+                return False
+            self._state = "cancelled"
+            return True
+
+
+class _RequestWorkers:
+    """The threads that run one transport's requests, at most `limit` of them.
+
+    Started as they are first needed and kept, where `_bounded_request` used
+    to start one thread per call. They are daemons, as that one was, so a
+    call abandoned in a hang never blocks process exit; a
+    `ThreadPoolExecutor` joins its workers at exit, so it is not used here.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._tasks = queue.SimpleQueue()
+        self._lock = threading.Lock()
+        self._started = 0
+
+    def submit(self, call) -> _RequestTask:
+        task = _RequestTask(call)
+        self._tasks.put(task)
+        with self._lock:
+            if self._started < self._limit:
+                self._started += 1
+                threading.Thread(target=self._work, name="alexandria-request", daemon=True).start()
+        return task
+
+    def _work(self) -> None:
+        while (task := self._tasks.get()) is not None:
+            task.run()
+
+    def close(self) -> None:
+        """Let every started thread exit once the queue ahead of it drains."""
+        with self._lock:
+            started, self._started = self._started, self._limit
+        for _ in range(started):
+            self._tasks.put(None)
+
+
+def _bounded_request(
+    opener, message: urllib.request.Request, timeout: int, label: str, *, workers: _RequestWorkers, slots=None,
+) -> bytes:
+    """Run one HTTP request under a real deadline that covers the whole call.
+
+    `urlopen(..., timeout=timeout)` only reaches a socket that already
+    exists: `socket.create_connection` calls `getaddrinfo` *before* creating
+    one, with no timeout parameter of its own -- read its source. A stalled
+    DNS resolution can hang there past any configured timeout, with the CPU
+    idle and no exception ever raised, which is indistinguishable from a
+    process that is simply still working unless something outside urllib
+    bounds the whole call. Running it on one of the transport's `workers`
+    and bounding the wait for it covers every stage -- resolution, connect,
+    and read -- not only the ones a socket timeout already reaches. The
+    deadline also covers any wait for a free worker: a call still queued when
+    it passes is cancelled and never sent.
+
+    The deadline is `min(timeout, MAX_REQUEST_SECONDS)`, never the bare
+    plan-declared `timeout`: a plan's own ceiling is validated much more
+    loosely (`alexandria_lib.interval.MAX_TIMEOUT_SECONDS`) than what a
+    single request should realistically ever need, precisely so that an
+    already-authored plan's declared value never has to change -- and
+    changing it would change `plan_digest` and invalidate every checkpoint
+    already bound to that plan. Capping the real wait here, separately,
+    gets a fast, bounded failure without touching the plan at all.
+
+    Python cannot forcibly cancel a running thread. A genuine hang leaves
+    its thread abandoned rather than making this call wait on it; the thread
+    is daemonized so an abandoned one never blocks process exit. Until the
+    call returns, that thread holds its worker and its slot.
+    """
+    bounded = min(timeout, MAX_REQUEST_SECONDS)
+    outcome: dict = {}
+
+    def _run() -> None:
+        acquired = False
+        try:
+            if slots is not None:
+                acquired = slots.acquire(timeout=bounded)
+                if not acquired:
+                    raise TransportError("request capacity timed out")
+            with opener.open(message, timeout=bounded) as response:
+                if response.status != 200:
+                    outcome["error"] = TransportError(f"{label} returned HTTP {response.status}")
+                    return
+                outcome["data"] = response.read(MAX_RAW_COMPONENT_BYTES + 1)
+        except urllib.error.URLError as error:
+            _close_transport_error(error)
+            outcome["error"] = TransportError(f"{label} transport failed")
+        except Exception as error:  # noqa: BLE001
+            # Not every failure below urlopen's own retry logic arrives as a
+            # URLError: a read that times out after the connection is already
+            # open can raise a bare TimeoutError straight out of the socket
+            # layer instead (observed for real: a live loopback query timed
+            # out this way and the narrower except above let it escape
+            # uncaught, leaving `outcome` with neither "data" nor "error" and
+            # the caller crashing on a KeyError instead of seeing a refusal).
+            # Caught broadly here so this thread can never finish without
+            # setting one or the other -- label-only, exactly like every
+            # other refusal on this path; see _close_transport_error.
+            _close_transport_error(error)
+            outcome["error"] = TransportError(f"{label} transport failed")
+        finally:
+            if acquired:
+                slots.release()
+
+    task = workers.submit(_run)
+    if not task.done.wait(bounded):
+        task.cancel()
+        raise TransportError(
+            f"{label} did not finish within {bounded} seconds -- possibly stalled in DNS "
+            "resolution, which no socket-level timeout reaches"
+        )
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["data"]
+
+
+class HttpsTransport:
+    """The hosted network path: HTTPS only, with an optional per-instance bearer.
+
+    The endpoint reaches no file, receipt or message. Neither does the bearer:
+    it lives on this instance alone, reaches one `Authorization` header on a
+    copy of the request headers, and never touches the module-level
+    `REQUEST_HEADERS` constant, which stays exactly what a transport built
+    without a bearer still sends.
+    """
+
+    def __init__(self, endpoint: str, timeout: int, bearer: str | None = None) -> None:
         if not endpoint.startswith("https://") or any(c.isspace() for c in endpoint):
             raise AlexandriaError(f"{ENDPOINT_ENV} must name an HTTPS endpoint")
+        if bearer is not None and (
+            any(character.isspace() for character in bearer) or not bearer.isprintable()
+        ):
+            raise AlexandriaError(f"{BEARER_ENV} must carry no whitespace and only printable bytes")
         self._endpoint = endpoint
         self._timeout = timeout
-        self._opener = urllib.request.build_opener(_NoRedirect)
+        self._bearer = bearer
+        # One kept connection per worker slot; the default ProxyHandler still
+        # reads the environment, as the default opener's does.
+        self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._connections.close)
+        self._workers = _RequestWorkers(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._workers.close)
+        self._opener = urllib.request.build_opener(_NoRedirect, _KeptHTTPSHandler(self._connections))
 
     @classmethod
     def from_environment(cls, timeout: int, environ=None) -> "HttpsTransport":
         values = os.environ if environ is None else environ
+        raw_bearer = values.get(BEARER_ENV)
+        return cls(values.get(ENDPOINT_ENV, ""), timeout, raw_bearer if raw_bearer else None)
+
+    def request(self, payload: bytes, label: str, *, slots=None) -> bytes:
+        headers = dict(REQUEST_HEADERS)
+        if self._bearer is not None:
+            headers["Authorization"] = f"Bearer {self._bearer}"
+        message = urllib.request.Request(
+            self._endpoint,
+            data=payload,
+            headers=headers,
+            method="POST",
+        )
+        return _bounded_request(self._opener, message, self._timeout, label, workers=self._workers, slots=slots)
+
+
+def _validate_loopback_endpoint(endpoint: str) -> None:
+    """Refuse anything but a literal-loopback HTTP endpoint, before any connection.
+
+    A hostname that merely resolves to loopback is refused by its spelling
+    alone -- this never resolves DNS, so a moved or spoofed record cannot
+    change the answer. Malformed authority, URL user information and every
+    other scheme or host are refused the same way, and none of these messages
+    repeats the endpoint the caller supplied.
+    """
+    if not endpoint or any(character.isspace() for character in endpoint):
+        raise AlexandriaError("the local loopback endpoint must name a literal loopback address")
+    try:
+        parts = urllib.parse.urlsplit(endpoint)
+        username = parts.username
+        password = parts.password
+        hostname = parts.hostname
+        _ = parts.port
+    except ValueError as exc:
+        raise AlexandriaError("the local loopback endpoint has a malformed authority") from exc
+    if parts.scheme != "http":
+        raise AlexandriaError("the local loopback endpoint must use plain HTTP")
+    if username is not None or password is not None or "@" in parts.netloc:
+        raise AlexandriaError("the local loopback endpoint must carry no user information")
+    if hostname not in LOOPBACK_HOSTS:
+        raise AlexandriaError("the local loopback endpoint must literally name 127.0.0.1 or ::1")
+
+
+class LoopbackHttpTransport:
+    """The bounded, explicit opt-in local path: literal loopback HTTP, never a bearer.
+
+    Reached only through `transport_from_environment`, when the operator opts
+    in with `ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` and the endpoint is a
+    literal `127.0.0.1` or `::1` HTTP address. Environment proxy settings are
+    never honored here and no redirect is ever followed, and it applies the
+    same request, response and timeout bounds `HttpsTransport` does.
+    """
+
+    def __init__(self, endpoint: str, timeout: int) -> None:
+        _validate_loopback_endpoint(endpoint)
+        self._endpoint = endpoint
+        self._timeout = timeout
+        # An explicit empty proxy mapping overrides whatever HTTP_PROXY/
+        # http_proxy (and friends) the environment carries; build_opener adds
+        # no default ProxyHandler once one is supplied explicitly.
+        self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._connections.close)
+        self._workers = _RequestWorkers(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._workers.close)
+        self._opener = urllib.request.build_opener(
+            _NoRedirect, urllib.request.ProxyHandler({}), _KeptHTTPHandler(self._connections),
+        )
+
+    @classmethod
+    def from_environment(cls, timeout: int, environ=None) -> "LoopbackHttpTransport":
+        values = os.environ if environ is None else environ
         return cls(values.get(ENDPOINT_ENV, ""), timeout)
 
-    def request(self, payload: bytes, label: str) -> bytes:
+    def request(self, payload: bytes, label: str, *, slots=None) -> bytes:
         message = urllib.request.Request(
             self._endpoint,
             data=payload,
             headers=dict(REQUEST_HEADERS),
             method="POST",
         )
-        try:
-            with self._opener.open(message, timeout=self._timeout) as response:
-                if response.status != 200:
-                    raise TransportError(f"{label} returned HTTP {response.status}")
-                return response.read(MAX_RAW_COMPONENT_BYTES + 1)
-        except urllib.error.URLError as error:
-            raise TransportError(f"{label} transport failed") from error
+        return _bounded_request(self._opener, message, self._timeout, label, workers=self._workers, slots=slots)
+
+
+def transport_from_environment(timeout: int, environ=None):
+    """The collector's one network path, chosen from the environment alone.
+
+    The hosted `HttpsTransport` is the default. The bounded local path opens
+    only when `ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` accompanies a literal
+    loopback HTTP endpoint; any other endpoint under that opt-in refuses here,
+    before any connection opens, rather than falling through to the hosted
+    path's own HTTPS-only refusal. A bearer is never accepted alongside the
+    opt-in.
+    """
+    values = os.environ if environ is None else environ
+    if values.get(LOOPBACK_ALLOW_ENV) == "1":
+        endpoint = values.get(ENDPOINT_ENV, "")
+        _validate_loopback_endpoint(endpoint)
+        if values.get(BEARER_ENV):
+            raise AlexandriaError("the local loopback endpoint accepts no bearer credential")
+        return LoopbackHttpTransport(endpoint, timeout)
+    return HttpsTransport.from_environment(timeout, environ)
 
 
 def request_bytes(identifier: int, method: str, params) -> bytes:
@@ -180,6 +918,20 @@ def request_bytes(identifier: int, method: str, params) -> bytes:
 def request_identifier(shard: int, name: str) -> int:
     """Derive an id from the plan, so a resumed run asks for the same bytes."""
     return shard * len(EVIDENCE_CLASSES) + EVIDENCE_CLASSES.index(name) + 1
+
+
+SYNC_STATE_IDENTIFIER_BASE = 2**52
+
+
+def sync_state_identifier(shard: int) -> int:
+    """The id of one shard's `eth_syncing` read: non-negative and above every other id.
+
+    A JSON-RPC id may be any number, but Reth answers a negative id with the
+    body `null`, so a negative id here refuses every shard of a real collection.
+    2**52 stays inside the integers every JSON parser holds exactly and above
+    any shard or opening-read id a plan can derive.
+    """
+    return SYNC_STATE_IDENTIFIER_BASE + shard
 
 
 def opening_identifier(virtual: int, position: int) -> int:
@@ -207,8 +959,15 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
     collector's resume path, the builder's replay and the release check alike.
     This is the one reader all four sites use, so a rule added here reaches
     every preserved read rather than the journal whose loop it was written in.
+
+    The envelope is read under `MAX_RESPONSE_NODES`, the limit `_ask` parsed
+    the same bytes under when it accepted them, so a dense shard's answer
+    reads back rather than refusing under the smaller control-document default.
     """
-    envelope = load_bytes(response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES)
+    envelope = load_bytes(
+        response.encode(), parse_label,
+        max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
+    )
     if (
         not isinstance(envelope, dict)
         or envelope.get("jsonrpc") != "2.0"
@@ -228,6 +987,38 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
     return result
 
 
+def preserved_event_headers(plan, opening, boundaries):
+    """Read already validated opening/boundary envelopes without rewriting them."""
+    headers = []
+    for record in itertools.chain(opening, boundaries):
+        request = load_bytes(record["request"].encode(), "preserved header request")
+        if request.get("method") != "eth_getBlockByNumber":
+            continue
+        headers.append(preserved_result(record["response"], request["id"], plan["provider"]["page_limit"], "preserved header", "preserved header result", "preserved header response"))
+    return headers
+
+
+def missing_event_headers(plan, logs, registry, opening, boundaries):
+    identities = event_headers.identities(plan, logs, registry)
+    return event_headers.missing(identities, preserved_event_headers(plan, opening, boundaries))
+
+
+def event_header_identifier(position):
+    return 1_000_000_000 + position
+
+
+def verify_event_headers(plan, identities, records, *, complete=True):
+    """Verify a complete inventory or a retained resume prefix, without RPC."""
+    if len(records) > len(identities) or (complete and len(records) != len(identities)):
+        raise AlexandriaError("event header journal does not cover its selected inventory")
+    for position, (identity, record) in enumerate(zip(identities, records)):
+        expected = request_bytes(event_header_identifier(position), "eth_getBlockByNumber", [hex(identity[0]), False])
+        if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"} or record["class"] != event_headers.CLASS or record["shard"] != len(plan["shards"]) or not isinstance(record["request"], str) or record["request"].encode() != expected:
+            raise AlexandriaError("event header journal request differs from its selected inventory")
+        result = preserved_result(record["response"], event_header_identifier(position), plan["provider"]["page_limit"], "event header response", "event header result", "event header response")
+        event_headers.accept(result, identity)
+
+
 def opening_result(plan, position: int, response: str, parse_label: str):
     """One preserved opening read's result, held to the same rules as a shard read."""
     virtual = len(plan["shards"])
@@ -242,13 +1033,55 @@ def opening_result(plan, position: int, response: str, parse_label: str):
     )
 
 
-class OpeningRefusal(AlexandriaError):
-    """An opening read the collector will not believe, named by its receipt code."""
+# The epoch model this module's own `OpeningPhase` implements. A venue naming
+# any other model owns its opening reads and epoch derivation.
+EIP1967_MODEL = "eip1967-proxy"
 
-    def __init__(self, code: str, block: int, message: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.block = block
+
+def plan_venue(plan):
+    """The registered venue module a plan names, or a refusal naming the venue."""
+    venue = plan["venue"]
+    if venue not in VENUES:
+        raise AlexandriaError(f"the interval plan names an unregistered venue {venue!r}")
+    return VENUES[venue]
+
+
+def upgrade_transaction_order(venue) -> bool:
+    """Whether a venue module admits ordinary logs inside its own upgrade transactions.
+
+    Read from the module's `ORDER_UPGRADE_TRANSACTIONS`, which only
+    `venues/aave_v3.py` sets; every other venue keeps the shared walk's
+    default, under which such a log refuses.
+    """
+    return getattr(venue, "ORDER_UPGRADE_TRANSACTIONS", False) is True
+
+
+def positional_verification_limit(venue):
+    """The sentence a venue's evidence scopes owe about what log agreement excludes, or None."""
+    return getattr(venue, "POSITIONAL_VERIFICATION_LIMIT", None)
+
+
+def opening_phase(plan, staged_logs, *, registry=None, legacy=False):
+    """The opening reads one plan owes, from the venue that owns its epoch model.
+
+    Every path that plans, replays or re-derives opening reads comes through
+    here, so a subject-set plan never reaches the single-proxy phase's
+    `plan["proxy"]` and a single-proxy plan never reaches a venue's
+    subject-keyed one. Either mismatch refuses by name.
+    """
+    venue = plan_venue(plan)
+    if venue.EPOCH_MODEL == EIP1967_MODEL:
+        if "subjects" in plan:
+            raise AlexandriaError(
+                f"the {venue.VENUE} venue derives its epochs from one proxy's implementation "
+                "slot, so a subject-set plan has no opening reads under it"
+            )
+        return OpeningPhase(plan, staged_logs, legacy=legacy)
+    if legacy:
+        raise AlexandriaError(
+            f"the {venue.VENUE} venue has no block-only receipt; its epochs are positional"
+        )
+    return venue.opening_phase(plan, registry, staged_logs)
 
 
 class OpeningPhase:
@@ -261,11 +1094,17 @@ class OpeningPhase:
     Nothing here touches a transport or a file.
     """
 
-    def __init__(self, plan, staged_logs) -> None:
+    # The first topic this epoch model reads as an epoch boundary.
+    upgrade_topic = UPGRADED_TOPIC
+
+    def __init__(self, plan, staged_logs, *, legacy=False) -> None:
         self.plan = plan
         self.virtual = len(plan["shards"])
         self.start = int(plan["interval"]["start"])
         self.end = int(plan["interval"]["end"])
+        self.logs = staged_logs
+        if not legacy:
+            proxy_log_positions(staged_logs, plan["proxy"], plan["interval"])
         self.upgrades = upgrade_logs(staged_logs, plan["proxy"])
         self.announced = {upgrade["block"]: upgrade for upgrade in self.upgrades}
         self.boundaries = opening_boundaries(self.start, self.end, self.upgrades)
@@ -351,14 +1190,45 @@ class OpeningPhase:
             return digest
         raise AlexandriaError(f"unknown opening read kind {kind!r}")
 
+    def compare(self, read, value, second):
+        """Whether the second provider's answer binds the same thing, and the kind it is."""
+        kind = read["kind"]
+        block = read["block"]
+        if kind == "first-block-header":
+            # The header has to be the first block's own: the right hash under
+            # another number is a provider describing some other block.
+            agreed = isinstance(second, dict) and second.get("hash") == value
+            if agreed:
+                try:
+                    agreed = _hex(second.get("number"), "first block number") == block
+                except AlexandriaError:
+                    agreed = False
+            return agreed, "first-block-hash", f"block {block}"
+        if kind == "implementation-slot":
+            try:
+                agreed = slot_word_address(second, block) == value
+            except AlexandriaError:
+                agreed = False
+            return agreed, "slot-word", f"implementation slot at block {block}"
+        if kind == "implementation-code":
+            try:
+                agreed = hashlib.sha256(runtime_code(second, read["address"])).hexdigest() == value
+            except AlexandriaError:
+                agreed = False
+            return agreed, "code-digest", f"code of {read['address']} at block {block}"
+        raise AlexandriaError(f"opening read kind {kind!r} is not compared")
+
 
 def staged_results(staging: Staging, name: str) -> list:
-    """The `result` of every staged response of one class, in journal order."""
+    """The `result` of every staged response of one class, in journal order.
+
+    Read under `MAX_RESPONSE_NODES`, the limit the response was accepted under.
+    """
     results = []
     for entry in staging.entries(name):
         envelope = load_bytes(
             entry["response"].encode(), f"staged {name} response",
-            max_bytes=MAX_RAW_COMPONENT_BYTES,
+            max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
         )
         results.append(envelope.get("result") if isinstance(envelope, dict) else None)
     return results
@@ -386,7 +1256,7 @@ def require_committed_journals(staging: Staging, state: dict, purpose: str) -> N
     collector does not stand behind. A journal shorter than its offset is a
     tree something else has cut.
     """
-    for name in staging.classes:
+    for name in staging.journal_names:
         size = staging.journal_bytes(name)
         offset = state["offsets"].get(name, 0)
         if size > offset:
@@ -401,16 +1271,23 @@ def require_committed_journals(staging: Staging, state: dict, purpose: str) -> N
             )
 
 
-def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]:
+def replay_opening(
+    plan, staging: Staging, classes, registry=None, *, log_records=None, entries=None,
+) -> tuple[OpeningPhase, list]:
     """Replay the committed opening reads against the plan they were made from.
 
     Returns the phase, holding every accepted value, and one
     `(position, read, value, payload)` per read in plan order. Refuses a
     journal that stops short of the plan, runs past it, or holds a record the
     plan does not name at that position. Reads no network and changes no file.
+    A caller that has already read the journals passes `log_records` and the
+    opening `entries`, and the staging tree is not read again.
     """
-    phase = OpeningPhase(plan, staged_log_records(staging, classes))
-    entries = list(staging.entries(OPENING_CLASS))
+    if log_records is None:
+        log_records = staged_log_records(staging, classes)
+    phase = opening_phase(plan, log_records, registry=registry)
+    if entries is None:
+        entries = list(staging.entries(OPENING_CLASS))
     virtual = len(plan["shards"])
     replayed = []
     position = 0
@@ -421,7 +1298,7 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
                 "epoch-evidence journal cannot be believed"
             )
         entry = entries[position]
-        payload = phase.request(position, read)
+        payload = opening_request(plan, position, read)
         if (
             not isinstance(entry, dict)
             or set(entry) != {"class", "request", "response", "shard"}
@@ -445,8 +1322,18 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
     return phase, replayed
 
 
-def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str) -> list:
+def opening_request(plan, position: int, read) -> bytes:
+    """The request bytes of one opening read, whichever venue planned it."""
+    return request_bytes(
+        opening_identifier(len(plan["shards"]), position), read["method"], read["params"]
+    )
+
+
+def epochs_from_opening(plan, phase, end_hash: str, *, legacy=False):
     """The epoch table the preserved opening reads derive, and nothing else.
+
+    A venue-owned phase derives its own table, keyed by subject; what follows
+    describes the single-proxy phase.
 
     Every input is a value `OpeningPhase.accept` took from a journaled read:
     the upgrade logs the shards preserved, the slot word at each boundary, the
@@ -455,15 +1342,20 @@ def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str) -> list:
     last shard's boundary read, which is the one hash the opening phase does
     not make itself.
     """
+    if not isinstance(phase, OpeningPhase):
+        if legacy:
+            raise AlexandriaError("a venue-owned opening phase derives no block-only epoch table")
+        return phase.epochs(end_hash)
     interval = plan["interval"]
     block_hashes = {str(block): value for block, value in phase.hashes.items()}
     block_hashes[str(int(interval["end"]))] = end_hash
-    return discover_epochs(
+    discover = discover_block_epochs if legacy else discover_epochs
+    return discover(
         chain=plan["chain"],
         deployment=plan["deployment"],
         proxy=plan["proxy"],
         interval=dict(interval),
-        upgrade_logs=[upgrade["record"] for upgrade in phase.upgrades],
+        upgrade_logs=[upgrade["record"] for upgrade in phase.upgrades] if legacy else phase.logs,
         slot_reads={str(block): word for block, word in phase.slot_words.items()},
         code_reads=dict(phase.codes),
         block_hashes=block_hashes,
@@ -471,16 +1363,120 @@ def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str) -> list:
 
 
 def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
-    """The requests one shard makes: one per declared class, in the plan's order."""
-    proxy = plan["proxy"]
+    """The requests one shard makes: one per declared class, in the plan's order.
+
+    A v1 plan's single `proxy` filters `eth_getLogs` by one address and
+    `trace_filter` by a one-element `toAddress`, exactly as before. A v2
+    plan's declared `subjects` filters both by the whole array instead,
+    followed by any declared `wildcat_v2_wrappers` subjects.
+    """
     start = hex(shard["start"])
     end = hex(shard["end"])
+    if "subjects" in plan:
+        address_filter = capture_subjects(plan)
+        to_address = capture_subjects(plan)
+    else:
+        address_filter = plan["proxy"]
+        to_address = [plan["proxy"]]
     requests = {
         "boundary-blocks": ("eth_getBlockByNumber", [end, False]),
-        "logs": ("eth_getLogs", [{"address": proxy, "fromBlock": start, "toBlock": end}]),
-        "traces": ("trace_filter", [{"fromBlock": start, "toAddress": [proxy], "toBlock": end}]),
+        "logs": ("eth_getLogs", [{"address": address_filter, "fromBlock": start, "toBlock": end}]),
+        "traces": ("trace_filter", [{"fromBlock": start, "toAddress": to_address, "toBlock": end}]),
     }
     return [(name, *requests[name]) for name in plan["evidence_classes"]]
+
+
+class LogResultCap(AlexandriaError):
+    """A node refused a log range because its result set is capped."""
+
+    def __init__(self, suggested_end):
+        super().__init__("eth_getLogs exceeded the node's result cap")
+        self.suggested_end = suggested_end
+
+
+def _log_cap_bound(error, start, end):
+    """Accept only a recognised max-results refusal and an in-range retry hint."""
+    if not isinstance(error, dict) or error.get("code") != -32602:
+        return None
+    message = error.get("message")
+    if not isinstance(message, str) or re.search(r"query exceeds max results \d{1,20}\b", message) is None:
+        return None
+    hint = re.search(r"retry with the range (\d{1,20})-(\d{1,20})\b", message)
+    if hint and int(hint[1]) == start and start <= int(hint[2]) < end:
+        return int(hint[2])
+    return start + (end - start) // 2 if start < end else start
+
+
+def _log_result(record, plan, shard):
+    """Rebuild a split log answer from the raw successful subrange exchanges."""
+    subranges = record.get("subranges")
+    if subranges is None:
+        return preserved_result(
+            record["response"], request_identifier(shard["index"], "logs"),
+            plan["provider"]["page_limit"], "logs response", "logs result", "logs response",
+        )
+    if not isinstance(subranges, list) or len(subranges) < 2 or len(subranges) > shard["end"] - shard["start"] + 1:
+        raise AlexandriaError("the log subranges have an invalid count")
+    cursor = shard["start"]
+    joined = []
+    for part in subranges:
+        if not isinstance(part, dict) or set(part) != {"start", "end", "request", "response"}:
+            raise AlexandriaError("a log subrange has an unknown shape")
+        start, end = part["start"], part["end"]
+        if (not isinstance(start, int) or isinstance(start, bool) or
+                not isinstance(end, int) or isinstance(end, bool) or
+                start != cursor or end < start or end > shard["end"]):
+            raise AlexandriaError("the log subranges do not tile their shard")
+        expected = request_bytes(
+            request_identifier(shard["index"], "logs"), "eth_getLogs",
+            [{"address": _plan_subjects(plan), "fromBlock": hex(start), "toBlock": hex(end)}],
+        )
+        if not isinstance(part["request"], str) or part["request"].encode() != expected:
+            raise AlexandriaError("a log subrange request differs from the plan")
+        if not isinstance(part["response"], str):
+            raise AlexandriaError("a log subrange response is not text")
+        result = preserved_result(
+            part["response"], request_identifier(shard["index"], "logs"),
+            plan["provider"]["page_limit"], "log subrange response", "log subrange result",
+            "log subrange response",
+        )
+        if not isinstance(result, list):
+            raise AlexandriaError("a log subrange result is not a list")
+        for entry in result:
+            block = _entry_block(entry.get("blockNumber") if isinstance(entry, dict) else None,
+                                 "log subrange block number")
+            if not start <= block <= end:
+                raise AlexandriaError("a log subrange result names a block outside its request")
+        joined.extend(result)
+        cursor = end + 1
+    if cursor != shard["end"] + 1:
+        raise AlexandriaError("the log subranges do not cover their shard")
+    joined = _ordered_logs(joined)
+    aggregate = canonical_bytes({"id": request_identifier(shard["index"], "logs"),
+                                 "jsonrpc": "2.0", "result": joined},
+                                max_nodes=MAX_RESPONSE_NODES)
+    if record["response"].encode() != aggregate:
+        raise AlexandriaError("the joined logs differ from their preserved subranges")
+    return joined
+
+
+def _ordered_logs(rows):
+    """Use chain coordinates to join successful subreads in canonical log order."""
+    def position(row):
+        if not isinstance(row, dict):
+            raise AlexandriaError("a logs result entry is not an object")
+        return (_entry_block(row.get("blockNumber"), "log block number"),
+                _hex(row.get("logIndex"), "log index"))
+    return sorted(rows, key=position)
+
+
+def _plan_subjects(plan):
+    """The plan's declared subject or subjects, whichever field it carries.
+
+    A subject set includes any declared `wildcat_v2_wrappers` subjects, after
+    the plan's own `subjects`; see `capture_subjects`.
+    """
+    return capture_subjects(plan) if "subjects" in plan else plan["proxy"]
 
 
 def declared_classes(plan) -> tuple:
@@ -497,17 +1493,178 @@ def declared_classes(plan) -> tuple:
             "the plan must declare the boundary-blocks evidence class; every shard "
             "is bound by its boundary block"
         )
+    # The targeted-trace derivation reads a shard's own `logs` result instead of
+    # calling `trace_filter`; a subject-set plan that declares `traces` without
+    # `logs` gives it nothing to derive transaction hashes from.
+    if "subjects" in plan and "traces" in classes and "logs" not in classes:
+        raise AlexandriaError(
+            "a subject-set plan declaring traces must also declare logs; the targeted "
+            "trace derivation reads a shard's own logs result"
+        )
     return classes
+
+
+class _FetchedShard:
+    """One shard's whole set of request/response entries, not yet staged.
+
+    `entries` is `[(name, payload, data, result, subranges), ...]` in the plan's
+    declared-class order -- the order a strictly sequential collection would
+    have written them in. Building this holds nothing the caller must not
+    also hold: it carries no file handle and no lock. `fetch_seconds` is wall
+    time spent inside `_fetch_shard` alone (network only), reported by the
+    per-shard heartbeat once this shard is written.
+    """
+
+    __slots__ = ("index", "shard", "entries", "boundary", "fetch_seconds", "node_syncing")
+
+    def __init__(self, index, shard, entries, boundary, fetch_seconds, node_syncing) -> None:
+        self.index = index
+        self.shard = shard
+        self.entries = entries
+        self.boundary = boundary
+        self.fetch_seconds = fetch_seconds
+        self.node_syncing = node_syncing
+
+
+class _ReadOutcome:
+    """Carry a worker result or refusal back to the ordered coordinator."""
+
+    def __init__(self, call):
+        try:
+            self.value, self.error = call(), None
+        except Exception as error:
+            self.value, self.error = None, error
+
+    def result(self):
+        if self.error is not None:
+            raise self.error
+        return self.value
+
+
+def _read_batches(items, read, limit):
+    """Bound submitted work and retained responses, preserving input order.
+
+    At most `limit` reads run at once, and at most `limit` more wait settled
+    for the caller. A settled read frees its slot for the next item at once,
+    so a slow read no longer idles the others. A caller that stops early
+    leaves the running reads to settle when the generator closes.
+    """
+    iterator = iter(items)
+    if limit == 1:
+        for item in iterator:
+            yield item, _ReadOutcome(lambda: read(item))
+        return
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=limit)
+    window = []
+    exhausted = False
+    try:
+        while True:
+            running = [future for _item, future in window if not future.done()]
+            if not exhausted and len(running) < limit and len(window) < 2 * limit:
+                pulled = list(itertools.islice(iterator, 1))
+                exhausted = not pulled
+                window.extend((item, pool.submit(_ReadOutcome, lambda item=item: read(item))) for item in pulled)
+            elif not window:
+                return
+            elif window[0][1].done():
+                item, future = window.pop(0)
+                yield item, future.result()
+            else:
+                concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
+
+
+def _rpc_concurrency(value):
+    if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= MAX_RPC_CONCURRENCY:
+        raise AlexandriaError(f"RPC concurrency must be a whole number from 1 to {MAX_RPC_CONCURRENCY}")
+    return value
+
+
+def _rpc_request(owner, payload, label):
+    # Real transports retain the slot inside the HTTP worker even if its
+    # caller's deadline expires during DNS or response reading.
+    if isinstance(owner.transport, (HttpsTransport, LoopbackHttpTransport)):
+        return owner.transport.request(payload, label, slots=owner._rpc_slots)
+    with owner._rpc_slots:
+        return owner.transport.request(payload, label)
+
+
+def _trace_concurrency(value: int) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= MAX_TRACE_CONCURRENCY:
+        raise AlexandriaError(
+            f"trace concurrency must be a whole number from 1 to {MAX_TRACE_CONCURRENCY}"
+        )
+    return value
+
+
+def _ordered_trace_results(hashes, ask, concurrency, slots):
+    """Overlap a bounded request window, yielding only in transaction order.
+
+    The window refills a slot as soon as any call settles, so one slow call
+    does not idle the others. A settled result waits until every earlier hash
+    has yielded, so `ask` returns only what its caller keeps. The owner's
+    slots also bound calls across concurrent collector shards. A failure
+    stops window refill; already running calls settle before the exception
+    escapes. Workers never write a shard or advance a checkpoint.
+    """
+    if concurrency == 1:
+        for tx_hash in hashes:
+            with slots:
+                yield ask(tx_hash)
+        return
+    if not hashes:
+        return
+    def fetch(tx_hash):
+        with slots:
+            return ask(tx_hash)
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(concurrency, len(hashes)))
+    window = []
+    submitted = 0
+    try:
+        while window or submitted < len(hashes):
+            failed = any(future.done() and future.exception() is not None for future in window)
+            running = [future for future in window if not future.done()]
+            if not failed and len(running) < concurrency and submitted < len(hashes):
+                window.append(pool.submit(fetch, hashes[submitted]))
+                submitted += 1
+            elif window[0].done():
+                yield window.pop(0).result()
+            else:
+                concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
 
 
 class Collector:
     """One bounded collection over one plan, against one transport."""
 
-    def __init__(self, plan, staging_root, transport, *, receipts_root=None) -> None:
+    def __init__(
+        self, plan, staging_root, transport, *, receipts_root=None, registry=None,
+        concurrency=1, trace_concurrency=DEFAULT_TRACE_CONCURRENCY,
+        rpc_concurrency=DEFAULT_RPC_CONCURRENCY,
+    ) -> None:
         validate_plan(plan)
+        self.trace_concurrency = _trace_concurrency(trace_concurrency)
+        self._trace_slots = threading.BoundedSemaphore(self.trace_concurrency)
+        self.rpc_concurrency = _rpc_concurrency(rpc_concurrency)
+        self._rpc_slots = threading.BoundedSemaphore(self.rpc_concurrency)
+        self._coordinator = threading.get_ident()
+        self._worker_errors = threading.local()
         self.plan = plan
+        self.registry = registry
+        self._held = {}
+        # The opening reads come after the last shard. A plan whose venue
+        # cannot plan them -- an unregistered venue, a subject set under a
+        # single-proxy venue, a registry the venue refuses -- is refused here,
+        # before a shard is requested, rather than after every shard is paid for.
+        opening_phase(plan, [], registry=registry)
         self.digest = plan_digest(plan)
         self.classes = declared_classes(plan)
+        # The release this collection is for has to be buildable: a split that
+        # derives more components than a release may carry refuses here.
+        journal_components(plan, self.classes)
         self.transport = transport
         self.provider = plan["provider"]
         self.staging = Staging(staging_root, plan)
@@ -521,36 +1678,84 @@ class Collector:
             raise AlexandriaError("the receipts directory is not a directory")
         self._started = None
         self._bytes = 0
+        self._bytes_lock = threading.Lock()
+        if not isinstance(concurrency, int) or isinstance(concurrency, bool) or not 1 <= concurrency <= MAX_COLLECT_CONCURRENCY:
+            raise AlexandriaError(
+                f"collect concurrency must be a whole number from 1 to {MAX_COLLECT_CONCURRENCY}"
+            )
+        self.concurrency = concurrency
+        # The multi-subject path's targeted trace derivation matches against
+        # this lowercase set; a single-proxy plan never reaches it, so it is
+        # None there.
+        self._subjects = frozenset(address.lower() for address in capture_subjects(plan)) if "subjects" in plan else None
 
     # -- bounds -----------------------------------------------------------
 
-    def _spend(self, count: int) -> None:
-        self._bytes += count
-        if self._bytes > MAX_COLLECT_BYTES:
+    def _spend(self, count: int, *, draining: bool = False) -> None:
+        """Count one request's or response's bytes against the run's ceilings.
+
+        A read for a shard that has already started passes `draining`, and
+        refuses only past `MAX_COLLECT_DRAIN_BYTES`: the loops start no new
+        shard once `_spent` holds, so that shard can finish and commit.
+        """
+        with self._bytes_lock:
+            self._bytes += count
+            over_bytes = self._bytes > (MAX_COLLECT_DRAIN_BYTES if draining else MAX_COLLECT_BYTES)
+            over_time = (
+                self._started is not None
+                and time.monotonic() - self._started > MAX_COLLECT_SECONDS
+            )
+        if over_bytes and draining:
+            raise AlexandriaError("collection exceeded its hard byte ceiling while finishing started shards")
+        if over_bytes:
             raise AlexandriaError("collection exceeded its total byte ceiling")
-        if self._started is not None and time.monotonic() - self._started > MAX_COLLECT_SECONDS:
+        if over_time:
             raise AlexandriaError("collection exceeded its elapsed-time ceiling")
+
+    def _spent(self) -> bool:
+        """Whether the run has passed `MAX_COLLECT_BYTES`, so no new shard may start."""
+        with self._bytes_lock:
+            return self._bytes > MAX_COLLECT_BYTES
 
     # -- one request ------------------------------------------------------
 
-    def _ask(
+    def _ask(self, *args, **kwargs):
+        self._worker_errors.receipts = []
+        try:
+            return self._ask_read(*args, **kwargs)
+        except AlexandriaError as error:
+            if self._worker_errors.receipts:
+                error._collector_receipts = self._worker_errors.receipts
+            raise
+        finally:
+            self._worker_errors.receipts = []
+
+    def _flush_error(self, error):
+        for args, kwargs in getattr(error, "_collector_receipts", []):
+            self.record_error(*args, **kwargs)
+        if hasattr(error, "_collector_receipts"):
+            del error._collector_receipts
+
+    def _ask_read(
         self, shard_index: int, name: str, method: str, params, *, identifier=None, label=None,
     ) -> tuple[bytes, bytes, object]:
         if identifier is None:
             identifier = request_identifier(shard_index, name)
         payload = request_bytes(identifier, method, params)
-        self._spend(len(payload))
+        # Opening reads use a virtual shard index past the last real one.
+        draining = 0 <= shard_index < len(self.plan["shards"])
+        self._spend(len(payload), draining=draining)
         if label is None:
             label = f"shard {shard_index} {name}"
         try:
-            data = self.transport.request(payload, label)
+            data = _rpc_request(self, payload, label)
         except AlexandriaError:
             self.record_error(shard_index, name, "transport")
             raise
         if len(data) > MAX_RAW_COMPONENT_BYTES:
             self.record_error(shard_index, name, "oversized-response", len(data))
             raise AlexandriaError(f"{label} exceeded the component byte ceiling")
-        self._spend(len(data))
+        self._spend(len(data), draining=draining)
         try:
             envelope = load_raw_json(
                 data, label, max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
@@ -564,6 +1769,13 @@ class Collector:
             raise AlexandriaError(f"{label} envelope does not match its request")
         if "error" in envelope:
             code = envelope["error"].get("code") if isinstance(envelope["error"], dict) else None
+            if name == "logs" and method == "eth_getLogs":
+                bounds = params[0]
+                suggested = _log_cap_bound(
+                    envelope["error"], int(bounds["fromBlock"], 16), int(bounds["toBlock"], 16),
+                )
+                if suggested is not None:
+                    raise LogResultCap(suggested)
             self.record_error(
                 shard_index, name, "json-rpc-error",
                 code if isinstance(code, int) and not isinstance(code, bool) else None,
@@ -573,6 +1785,13 @@ class Collector:
             self.record_error(shard_index, name, "no-result")
             raise AlexandriaError(f"{label} carried neither result nor error")
         result = envelope["result"]
+        if method == "eth_syncing" and result is not False:
+            code = "node-syncing" if isinstance(result, dict) else "invalid-sync-state"
+            self.record_error(shard_index, name, code)
+            raise AlexandriaError(
+                f"{code}: shard {shard_index} requires eth_syncing to return false; "
+                "resume collection after the node reports it has finished syncing"
+            )
         if isinstance(envelope.get("truncated"), bool) and envelope["truncated"]:
             self.record_error(shard_index, name, "truncated-response")
             raise AlexandriaError(f"{label} was marked truncated")
@@ -582,6 +1801,55 @@ class Collector:
                 f"{label} returned a page at the provider's limit, so it may be short"
             )
         return payload, data, result
+
+    def _ask_logs(self, index, params):
+        """Split capped queries, retaining one journal record with each raw subread."""
+        original = request_bytes(request_identifier(index, "logs"), "eth_getLogs", params)
+        start = int(params[0]["fromBlock"], 16)
+        end = int(params[0]["toBlock"], 16)
+        pending = [(start, end)]
+        parts = []
+        joined = []
+        while pending:
+            low, high = pending.pop()
+            subparams = [{**params[0], "fromBlock": hex(low), "toBlock": hex(high)}]
+            try:
+                payload, data, result = self._ask(index, "logs", "eth_getLogs", subparams)
+            except LogResultCap as exc:
+                if low == high:
+                    self._logs_refusal(index, "log-result-cap", -32602,
+                                       f"shard {index} logs exceed the node result cap at block {low}")
+                cut = exc.suggested_end
+                pending.extend([(cut + 1, high), (low, cut)])
+                continue
+            if not isinstance(result, list):
+                self._logs_refusal(index, "invalid-log-result", None,
+                                   f"shard {index} logs result is not a list")
+            parts.append({"start": low, "end": high,
+                          "request": payload.decode(), "response": data.decode()})
+            joined.extend(result)
+        if len(parts) == 1:
+            return original, parts[0]["response"].encode(), joined, None
+        try:
+            joined = _ordered_logs(joined)
+            aggregate = canonical_bytes({"id": request_identifier(index, "logs"),
+                                         "jsonrpc": "2.0", "result": joined},
+                                        max_nodes=MAX_RESPONSE_NODES)
+        except AlexandriaError:
+            self._logs_refusal(index, "invalid-log-result", None,
+                               f"shard {index} logs could not be joined")
+        if len(aggregate) > MAX_RAW_COMPONENT_BYTES:
+            self._logs_refusal(index, "oversized-response", len(aggregate),
+                               f"shard {index} joined logs exceed the component byte ceiling")
+        return original, aggregate, joined, parts
+
+    def _logs_refusal(self, index, code, status, message):
+        self.record_error(index, "logs", code, status)
+        error = AlexandriaError(message)
+        if threading.get_ident() != self._coordinator:
+            error._collector_receipts = list(self._worker_errors.receipts)
+            self._worker_errors.receipts = []
+        raise error
 
     def record_error(self, shard_index: int, name: str, code: str, status=None, *, block=None) -> None:
         """Append one receipt built here, not copied from anything the provider said.
@@ -598,6 +1866,9 @@ class Collector:
         An opening read is filed under the virtual shard index with the one
         block it did not resolve as its range.
         """
+        if threading.get_ident() != self._coordinator:
+            self._worker_errors.receipts.append(((shard_index, name, code, status), {"block": block}))
+            return
         shard = self.plan["shards"][shard_index] if 0 <= shard_index < len(self.plan["shards"]) else None
         if status is not None and not isinstance(status, (int, str)):
             raise AlexandriaError("an error receipt status must be a number or a short string")
@@ -632,12 +1903,15 @@ class Collector:
 
     # -- the loop ---------------------------------------------------------
 
+    def _sync_state(self, index: int) -> bool:
+        return self._ask(index, "sync-state", "eth_syncing", [], identifier=sync_state_identifier(index))[2]
+
     def _finality_header(self, block, label: str) -> dict:
         """One bounded header read on the finality path, with its own receipt on refusal."""
         payload = request_bytes(0, "eth_getBlockByNumber", [block, False])
         self._spend(len(payload))
         try:
-            data = self.transport.request(payload, label)
+            data = _rpc_request(self, payload, label)
         except AlexandriaError:
             self.record_error(-1, "finality", "transport")
             raise
@@ -712,7 +1986,7 @@ class Collector:
         )
         self._spend(len(payload))
         try:
-            data = self.transport.request(payload, f"shard {shard_index} boundary re-read")
+            data = _rpc_request(self, payload, f"shard {shard_index} boundary re-read")
         except AlexandriaError:
             self.record_error(shard_index, "boundary-re-read", "transport")
             raise
@@ -747,37 +2021,493 @@ class Collector:
         )
 
     def collect(self) -> dict:
+        """Collect, and release every journal handle this run opened however it ends.
+
+        `Staging` keeps one handle per physical journal until `close`, and a
+        split plan owns one per component, so the refusal path closes them.
+        """
+        self._coordinator = threading.get_ident()
+        try:
+            summary = self._collect()
+        except BaseException as error:
+            try:
+                self._flush_error(error)
+            finally:
+                # A receipt-write refusal must also release every journal;
+                # a close failure must not replace either refusal.
+                try:
+                    self.staging.close()
+                except AlexandriaError:
+                    pass
+            raise
+        self.staging.close()
+        return summary
+
+    def _collect(self) -> dict:
         self._started = time.monotonic()
         self.bind_finality()
         start = self._settle_start()
+        # A venue's preliminary reads, and any refusal, precede the first shard.
+        self._preliminary_reads()
         shards = self.plan["shards"]
         counts = {name: 0 for name in self.classes}
-        for index in range(start, len(shards)):
+        total = len(shards)
+        if start < total:
+            if self.concurrency == 1:
+                self._collect_sequential(start, total, counts)
+            else:
+                self._collect_shards(start, total, counts)
+        opening = self._open_interval()
+        headers = self._event_headers() if event_headers.enabled(self.plan) else None
+        summary = {
+            "collected_shards": total - start,
+            "opening_reads": opening,
+            "record_counts": counts,
+            "resumed_from": start,
+            "shards": total,
+        }
+        if headers is not None:
+            summary["event_header_reads"] = headers
+        return summary
+
+    def _collect_sequential(self, start: int, total: int, counts: dict) -> None:
+        """The original one-shard-at-a-time loop: request, then stage, per class.
+
+        Reached whenever `self.concurrency == 1` -- the default for any
+        caller that never asks for concurrency, which is every existing call
+        site and test. Each request's bytes are staged the moment they are
+        read, before the shard's next request is even made, exactly as
+        collection has always worked; a kill mid-shard leaves whatever
+        prefix of that shard's classes were already staged; `resume` decides
+        what survives that, unchanged by anything below.
+        """
+        shards = self.plan["shards"]
+        for index in range(start, total):
+            if self._spent():
+                raise AlexandriaError("collection exceeded its total byte ceiling")
             shard = shards[index]
+            started = time.monotonic()
+            node_syncing = self._sync_state(index)
             boundary = None
+            logs_result = None
+            shard_counts = {}
             for name, method, params in shard_requests(self.plan, shard):
-                payload, data, result = self._ask(index, name, method, params)
+                subranges = None
+                if name == "traces" and self._subjects is not None:
+                    payload, data, result = self._targeted_traces(index, logs_result)
+                elif name == "logs":
+                    payload, data, result, subranges = self._ask_logs(index, params)
+                    logs_result = result
+                else:
+                    payload, data, result = self._ask(index, name, method, params)
                 if name == "boundary-blocks":
                     if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                         raise AlexandriaError(f"shard {index} boundary block carries no hash")
                     boundary = result["hash"]
-                if isinstance(result, list):
-                    counts[name] += len(result)
-                else:
-                    counts[name] += 1
-                self.staging.record(index, name, payload, data)
+                count = len(result) if isinstance(result, list) else 1
+                counts[name] += count
+                shard_counts[name] = count
+                self.staging.record(
+                    index, name, payload, data,
+                    node_syncing=node_syncing if name == BOUNDARY_CLASS else None,
+                    subranges=subranges,
+                )
             self.staging.commit(index, shard["end"], boundary)
-        opening = self._open_interval()
-        self.staging.close()
-        return {
-            "collected_shards": len(shards) - start,
-            "opening_reads": opening,
-            "record_counts": counts,
-            "resumed_from": start,
-            "shards": len(shards),
-        }
+            self._heartbeat(index, shard, shard_counts, time.monotonic() - started)
+
+    def _fetch_shard(self, index: int) -> "_FetchedShard":
+        """Every request one shard makes, without writing anything to the staging tree.
+
+        Safe to call from a worker thread: nothing here touches `self.staging`,
+        only `self.transport` (a fresh call per request) and `_spend`'s locked
+        counters. The multi-subject path's `traces` class is derived here too
+        -- through `_targeted_traces`, from this same call's own `logs`
+        result -- rather than left for the writer to redo.
+        """
+        shard = self.plan["shards"][index]
+        started = time.monotonic()
+        node_syncing = self._sync_state(index)
+        entries = []
+        boundary = None
+        logs_result = None
+        requests = list(shard_requests(self.plan, shard))
+        independent = [request for request in requests if request[0] != "traces" or self._subjects is None]
+
+        def fetch(request):
+            name, method, params = request
+            if name == "logs":
+                payload, data, result, subranges = self._ask_logs(index, params)
+            else:
+                payload, data, result = self._ask(index, name, method, params)
+                subranges = None
+            values = {name: (payload, data, result, subranges)}
+            if name == "logs" and self._subjects is not None and "traces" in self.classes:
+                values["traces"] = (*self._targeted_traces(index, result), None)
+            return values
+
+        answers = {}
+        for _request, outcome in _read_batches(independent, fetch, self.rpc_concurrency):
+            answers.update(outcome.result())
+        for name, _method, _params in requests:
+            payload, data, result, subranges = answers[name]
+            if name == "boundary-blocks":
+                if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
+                    raise AlexandriaError(f"shard {index} boundary block carries no hash")
+                boundary = result["hash"]
+            entries.append((name, payload, data, result, subranges))
+        return _FetchedShard(
+            index=index, shard=shard, entries=entries, boundary=boundary,
+            fetch_seconds=time.monotonic() - started,
+            node_syncing=node_syncing,
+        )
+
+    def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
+        """Stage and commit one already-fetched shard, in its fetched (plan) order."""
+        shard_counts = {}
+        for name, payload, data, result, subranges in fetched.entries:
+            count = len(result) if isinstance(result, list) else 1
+            counts[name] += count
+            shard_counts[name] = count
+            self.staging.record(
+                fetched.index, name, payload, data,
+                node_syncing=fetched.node_syncing if name == BOUNDARY_CLASS else None,
+                subranges=subranges,
+            )
+        self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
+        self._heartbeat(fetched.index, fetched.shard, shard_counts, fetched.fetch_seconds)
+
+    def _heartbeat(self, index: int, shard: dict, shard_counts: dict, fetch_seconds: float) -> None:
+        """One flushed progress line to stderr, right after a shard commits.
+
+        A console line only: it is never staged, never journaled, and reading
+        it establishes nothing `check` or `reconcile` reads -- only a human
+        watching the run. Printed to stderr, not stdout, so a caller that
+        parses `collect`'s stdout (the final JSON summary, written once at
+        exit) never sees it mixed in; `collect ... > collect.log 2>&1 &` then
+        `tail -f collect.log` still shows both together, live, per shard.
+        """
+        total = len(self.plan["shards"])
+        elapsed = time.monotonic() - self._started
+        counted = " ".join(
+            f"{name} {shard_counts.get(name, 0)}" for name in self.classes if name != BOUNDARY_CLASS
+        )
+        print(
+            f"[collect] shard {index + 1}/{total} done | blocks {shard['start']}-{shard['end']} | "
+            f"this shard {fetch_seconds:.1f}s | elapsed {elapsed:.1f}s | {counted}",
+            file=sys.stderr, flush=True,
+        )
+
+    def _collect_shards(self, start: int, total: int, counts: dict) -> None:
+        """Fetch shards `start` to `total - 1` with a bounded worker pool, ordered commits.
+
+        Fetches may finish out of arrival order; `Staging.commit` never does.
+        `index` only ever advances by one and each advance waits on that
+        exact shard's future, so a killed run's checkpoint always names a
+        contiguous committed prefix with no gap -- the same resumability a
+        strictly sequential loop gives, just fetched with real concurrency. A
+        shard whose fetch finishes early still waits, uncommitted and only
+        held in memory, until every lower-indexed shard is committed first.
+
+        The window refills a slot as soon as any fetch settles, so a slow
+        lowest shard no longer idles the others. At most `concurrency`
+        fetches run at once and at most `concurrency` more wait settled, so
+        held shards stay bounded at twice the concurrency. A failure stops
+        refill; every shard below it still commits before it escapes. Past
+        the byte ceiling no new shard starts, and the byte ceiling refuses
+        only after every started shard has committed.
+        """
+        concurrency = min(self.concurrency, total - start)
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=concurrency)
+        window = {}
+        next_to_submit = start
+        index = start
+        try:
+            while index < total:
+                running = [future for future in window.values() if not future.done()]
+                failed = any(future.done() and future.exception() is not None for future in window.values())
+                if (
+                    not failed and next_to_submit < total and len(running) < concurrency
+                    and len(window) < 2 * concurrency and not self._spent()
+                ):
+                    window[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
+                    next_to_submit += 1
+                elif not window:
+                    raise AlexandriaError("collection exceeded its total byte ceiling")
+                elif window[index].done():
+                    self._write_shard(window.pop(index).result(), counts)
+                    index += 1
+                else:
+                    concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
+        finally:
+            # `cancel_futures` drops anything still queued rather than paying
+            # for it after a refusal; a fetch already running finishes on its
+            # own and its result is simply never written.
+            pool.shutdown(wait=True, cancel_futures=True)
+
+    def _targeted_traces(self, shard_index: int, logs_result) -> tuple[bytes, bytes, list]:
+        """One shard's whole `traces` result, without ever calling `trace_filter`.
+
+        Only reached on the multi-subject path (`self._subjects` is not
+        `None`). Derives the distinct transaction hashes this shard's own
+        `logs` result touched (`subject_transaction_hashes`; no new
+        `eth_getLogs` call), asks `trace_transaction` once per hash, and
+        filters each transaction's frames down to the ones a blanket
+        `trace_filter` call's `toAddress` parameter would have kept
+        (`_matches_subjects`). The concatenation, in hash order, is the whole
+        shard's `traces` result; the caller records it exactly once, the same
+        as every other class -- see `Staging.record`'s one-record-per-shard
+        contract, which this method must never call more than the one time
+        its return value is written.
+        """
+        if logs_result is None:
+            raise AlexandriaError(
+                f"shard {shard_index}: the targeted trace derivation needs this shard's "
+                "logs result, which was not read before traces this shard"
+            )
+        hashes = subject_transaction_hashes(logs_result)
+        combined = []
+        def ask(tx_hash):
+            _, _, trace_result = self._ask(
+                shard_index, "traces", "trace_transaction", [tx_hash],
+                label=f"shard {shard_index} traces {tx_hash}",
+            )
+            if not isinstance(trace_result, list):
+                raise AlexandriaError(
+                    f"shard {shard_index} trace_transaction {tx_hash} did not return a list"
+                )
+            return [frame for frame in trace_result if _matches_subjects(frame, self._subjects)]
+
+        for frames in _ordered_trace_results(
+            hashes, ask, self.trace_concurrency, self._trace_slots,
+        ):
+            combined.extend(frames)
+        identifier = request_identifier(shard_index, "traces")
+        payload = request_bytes(identifier, "trace_transaction", hashes)
+        # Written under `MAX_RESPONSE_NODES`, the limit every trace answer was
+        # parsed under and the one build and check read this record under.
+        try:
+            response = canonical_bytes(
+                {"id": identifier, "jsonrpc": "2.0", "result": combined},
+                max_nodes=MAX_RESPONSE_NODES,
+            )
+        except AlexandriaError as error:
+            self.record_error(shard_index, "traces", "oversized-response")
+            raise AlexandriaError(
+                f"shard {shard_index} traces combined record cannot be written: {error}"
+            ) from error
+        if len(response) > MAX_RAW_COMPONENT_BYTES:
+            raise AlexandriaError(
+                f"shard {shard_index} traces combined record exceeded the component byte ceiling"
+            )
+        return payload, response, combined
+
+    # -- re-collecting one shard's traces -------------------------------------
+
+    def recollect(self, indices, *, now=None) -> dict:
+        """Replace the traces component of each named shard of a complete collection.
+
+        Only under a plan with one shard per component, where each shard's
+        traces are one journal file of their own. Each shard is fetched whole
+        through `_fetch_shard`, the request path `collect` uses, so a node
+        whose `eth_syncing` is not false refuses the shard by name before any
+        evidence read. The boundary block and logs request and response bytes
+        must come back as staged, or the shard is refused before anything is
+        written; the staged boundary record, with its own `node_syncing`, is
+        never rewritten. Its traces then replace the staged component through
+        `Staging.replace_component`, which records the shard, both digests,
+        the time, the provider class and the node's sync answer. Before
+        the first replacement the reconciliation record is moved to
+        `reconciliation/prior.json` and the reconcile checkpoint removed,
+        because both compared bytes that are no longer in the tree; only
+        `reconcile --carry-forward` reads the prior record again. Shards are replaced
+        in ascending order; a refusal leaves every earlier replacement whole.
+        """
+        self._coordinator = threading.get_ident()
+        try:
+            return self._recollect(indices, now)
+        except BaseException as error:
+            self._flush_error(error)
+            raise
+
+    def _recollect(self, indices, now) -> dict:
+        shards = self.plan["shards"]
+        if self.plan.get(SPLIT_FIELD) != 1:
+            raise AlexandriaError(
+                f"recollect replaces one shard's component, so the plan must declare "
+                f"{SPLIT_FIELD} 1, not {self.plan.get(SPLIT_FIELD)}"
+            )
+        if "traces" not in self.classes:
+            raise AlexandriaError("recollect replaces traces, which the plan does not declare")
+        if not isinstance(indices, (list, tuple)) or not indices:
+            raise AlexandriaError("recollect needs at least one shard index")
+        for index in indices:
+            if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < len(shards):
+                raise AlexandriaError(
+                    f"shard {index} is outside the plan's {len(shards)} shards"
+                )
+        # A replacement a kill interrupted is finished before the tree is read.
+        self.staging.settle_replacement()
+        state = self.staging.committed()
+        if state["next_shard"] != len(shards) or state["offsets"].get(OPENING_CLASS, 0) == 0:
+            raise AlexandriaError(
+                "the interval is not completely collected, so there is nothing to recollect"
+            )
+        require_committed_journals(self.staging, state, "recollect")
+        replay_opening(self.plan, self.staging, self.classes, self.registry)
+        self._started = time.monotonic()
+        replaced = []
+        discarded = False
+        for index in sorted(set(indices)):
+            # The collector's own test: past MAX_COLLECT_BYTES no new shard
+            # starts, while a started shard drains to MAX_COLLECT_DRAIN_BYTES.
+            if self._spent() or time.monotonic() - self._started > MAX_COLLECT_SECONDS:
+                raise AlexandriaError(
+                    f"recollect spent its {MAX_COLLECT_BYTES}-byte or {MAX_COLLECT_SECONDS}-second "
+                    f"budget before shard {index}; that shard was not replaced"
+                )
+            started = time.monotonic()
+            fetched = self._fetch_shard(index)
+            entries = {name: (payload, data) for name, payload, data, _result, _subranges in fetched.entries}
+            for name in self.classes:
+                if name == "traces":
+                    continue
+                staged = [entry for entry in self.staging.entries(name, index) if entry["shard"] == index]
+                payload, data = entries[name]
+                if (
+                    len(staged) != 1
+                    or staged[0]["request"].encode() != payload
+                    or staged[0]["response"].encode() != data
+                ):
+                    raise AlexandriaError(
+                        f"shard {index} {name} re-read is not byte-identical to the staged "
+                        "response, so its traces were not replaced"
+                    )
+            payload, data = entries["traces"]
+            if not discarded:
+                self._set_aside_reconciliation()
+                discarded = True
+            record = self.staging.replace_component(index, "traces", payload, data, {
+                "node_syncing": fetched.node_syncing,
+                "provider_class": self.provider["class"],
+                "recollected_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+            })
+            replaced.append(record)
+            print(
+                f"[recollect] shard {index} traces replaced | {record['old_sha256'][:12]} -> "
+                f"{record['new_sha256'][:12]} | this shard {time.monotonic() - started:.1f}s",
+                file=sys.stderr, flush=True,
+            )
+        return {"recollected": replaced, "shards": len(shards)}
+
+    def _set_aside_reconciliation(self) -> None:
+        """Move the record a replacement makes stale aside, and remove the checkpoint.
+
+        A build and a plain reconcile read only `reconciliation.json`, so the
+        stale verdict is never reused; `reconcile --carry-forward` reads it
+        back from `prior.json` to keep every unchanged shard's comparison.
+        Without a record, an earlier `prior.json` stays: a second recollect
+        before any reconcile leaves the last bound record in place. The
+        disputed-response file stays: it is the second provider's bytes that
+        led here, and nothing reads it back into a release.
+        """
+        directory = self.staging.root / RECONCILIATION_DIRECTORY
+        record = directory / RECONCILIATION_RECORD
+        if record.is_symlink():
+            record.unlink()
+        elif record.exists():
+            os.replace(record, directory / RECONCILIATION_PRIOR)
+        checkpoint = directory / RECONCILE_CHECKPOINT_NAME
+        if checkpoint.is_symlink() or checkpoint.exists():
+            checkpoint.unlink()
 
     # -- the opening phase --------------------------------------------------
+
+    def _event_headers(self):
+        """Resume a distinct header prefix separately from immutable opening reads."""
+        selected = event_headers.identities(self.plan, staged_log_records(self.staging, self.classes), self.registry)
+        identities = event_headers.missing(selected, preserved_event_headers(self.plan, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)))
+        committed = list(self.staging.entries(event_headers.CLASS))
+        try:
+            verify_event_headers(self.plan, identities[:len(committed)], committed, complete=False)
+        except AlexandriaError:
+            self.record_error(len(self.plan["shards"]), "event-header", "event-header-journal-mismatch")
+            raise
+        if len(committed) > len(identities):
+            raise AlexandriaError("event header journal exceeds its selected inventory")
+        accepted = self.staging.last_accepted()
+        virtual = len(self.plan["shards"])
+        for position in range(len(committed), len(identities)):
+            if self._spent():
+                raise AlexandriaError("event header collection exceeded its run budget")
+            number, block_hash = identities[position]
+            payload, data, result = self._ask(virtual, event_headers.CLASS, "eth_getBlockByNumber", [hex(number), False], identifier=event_header_identifier(position), label="selected event header")
+            try:
+                event_headers.accept(result, (number, block_hash))
+            except AlexandriaError:
+                self.record_error(virtual, "event-header", "event-header-identity-or-timestamp-mismatch", block=number)
+                raise
+            self.staging.record(virtual, event_headers.CLASS, payload, data)
+            self.staging.commit(accepted["shard"], accepted["block_number"], accepted["block_hash"])
+        # A zero-event inventory still owes a physical, digest-bound journal.
+        self.staging._handle(event_headers.CLASS)
+        self.staging.commit(accepted["shard"], accepted["block_number"], accepted["block_hash"])
+        print(f"[collect] event headers {len(identities)}/{len(identities)} | resumed {len(committed)}", file=sys.stderr, flush=True)
+        return {"issued": len(identities) - len(committed), "resumed_from": len(committed), "total": len(identities), "reused": len(selected) - len(identities)}
+
+    def _committed_opening(self, entry, position: int, read, payload: bytes, label: str):
+        """The result of one committed opening read, or a refusal naming its position."""
+        virtual = len(self.plan["shards"])
+        if (
+            set(entry) != {"class", "request", "response", "shard"}
+            or entry["class"] != OPENING_CLASS
+            or entry["shard"] != virtual
+            or entry["request"].encode() != payload
+        ):
+            self.record_error(virtual, OPENING_CLASS, "opening-journal-mismatch", position, block=read["block"])
+            raise AlexandriaError(
+                f"committed opening read {position} is not the read the plan names there"
+            )
+        try:
+            return opening_result(self.plan, position, entry["response"], f"staged {label}")
+        except AlexandriaError:
+            self.record_error(
+                virtual, OPENING_CLASS, "opening-journal-mismatch", position, block=read["block"],
+            )
+            raise
+
+    def _preliminary_reads(self) -> None:
+        """Make a venue's preliminary opening reads before any shard is requested.
+
+        They need no shard and can refuse the collection. Each is asked with
+        the request bytes of the opening-journal position it will take, and
+        its answer is held: a checkpoint cannot commit an opening read while a
+        shard is uncollected, so `_open_interval` journals the held bytes after
+        the last shard. A run stopped before then asks again; a journal that
+        already holds them is replayed.
+        """
+        self._held = {}
+        phase = opening_phase(self.plan, [], registry=self.registry)
+        preliminary = getattr(phase, "preliminary_reads", None)
+        if preliminary is None:
+            return
+        virtual = len(self.plan["shards"])
+        committed = list(self.staging.entries(OPENING_CLASS))
+        for position, read in enumerate(preliminary()):
+            payload = opening_request(self.plan, position, read)
+            label = opening_label(position, read)
+            if position < len(committed):
+                result = self._committed_opening(committed[position], position, read, payload, label)
+            else:
+                _payload, data, result = self._ask(
+                    virtual, OPENING_CLASS, read["method"], read["params"],
+                    identifier=opening_identifier(virtual, position), label=label,
+                )
+                self._held[position] = (payload, data, result)
+            try:
+                phase.accept(read, result)
+            except OpeningRefusal as refusal:
+                self.record_error(virtual, OPENING_CLASS, refusal.code, refusal.block, block=refusal.block)
+                raise
 
     def _open_interval(self) -> dict:
         """Read what binds the interval's start and its epochs, after the last shard.
@@ -798,56 +2528,62 @@ class Collector:
             raise AlexandriaError("the opening phase needs every shard committed first")
         virtual = len(self.plan["shards"])
         try:
-            phase = OpeningPhase(self.plan, staged_log_records(self.staging, self.classes))
+            phase = opening_phase(
+                self.plan, staged_log_records(self.staging, self.classes), registry=self.registry
+            )
         except AlexandriaError:
-            self.record_error(virtual, OPENING_CLASS, "malformed-upgrade-log")
+            code = (
+                "malformed-upgrade-log" if plan_venue(self.plan).EPOCH_MODEL == EIP1967_MODEL
+                else "malformed-staged-log"
+            )
+            self.record_error(virtual, OPENING_CLASS, code)
             raise
         committed = list(self.staging.entries(OPENING_CLASS))
         issued = 0
         position = 0
-        for read in phase.reads():
-            payload = phase.request(position, read)
-            label = opening_label(position, read)
-            if position < len(committed):
-                entry = committed[position]
-                if (
-                    set(entry) != {"class", "request", "response", "shard"}
-                    or entry["class"] != OPENING_CLASS
-                    or entry["shard"] != virtual
-                    or entry["request"].encode() != payload
-                ):
-                    self.record_error(virtual, OPENING_CLASS, "opening-journal-mismatch", position, block=read["block"])
-                    raise AlexandriaError(
-                        f"committed opening read {position} is not the read the plan names there"
+        def fetch_opening(item):
+            item_position, read = item
+            payload = opening_request(self.plan, item_position, read)
+            held = self._held.get(item_position)
+            if item_position < len(committed):
+                return payload, None, None
+            if held is not None and held[0] == payload:
+                return held
+            return self._ask(
+                virtual, OPENING_CLASS, read["method"], read["params"],
+                identifier=opening_identifier(virtual, item_position), label=opening_label(item_position, read),
+            )
+
+        def batches():
+            reads = enumerate(phase.reads())
+            for item in reads:
+                batch = [item]
+                # Immutable venues have independent header/code reads after
+                # their dependent first-code probes have all been accepted.
+                if plan_venue(self.plan).EPOCH_MODEL == "immutable-code" and item[1]["kind"] != "first-code-probe":
+                    batch.extend(itertools.islice(reads, self.rpc_concurrency - 1))
+                yield batch
+
+        for batch in batches():
+            for item, outcome in _read_batches(batch, fetch_opening, self.rpc_concurrency):
+                position, read = item
+                payload, data, result = outcome.result()
+                if position < len(committed):
+                    result = self._committed_opening(
+                        committed[position], position, read, payload, opening_label(position, read)
                     )
                 try:
-                    result = opening_result(
-                        self.plan, position, entry["response"], f"staged {label}"
-                    )
-                except AlexandriaError:
-                    self.record_error(
-                        virtual, OPENING_CLASS, "opening-journal-mismatch", position,
-                        block=read["block"],
-                    )
+                    phase.accept(read, result)
+                except OpeningRefusal as refusal:
+                    self.record_error(virtual, OPENING_CLASS, refusal.code, refusal.block, block=refusal.block)
                     raise
-                data = None
-            else:
-                _payload, data, result = self._ask(
-                    virtual, OPENING_CLASS, read["method"], read["params"],
-                    identifier=opening_identifier(virtual, position), label=label,
-                )
-            try:
-                phase.accept(read, result)
-            except OpeningRefusal as refusal:
-                self.record_error(virtual, OPENING_CLASS, refusal.code, refusal.block, block=refusal.block)
-                raise
-            if data is not None:
-                self.staging.record(virtual, OPENING_CLASS, payload, data)
-                self.staging.commit(
-                    accepted["shard"], accepted["block_number"], accepted["block_hash"]
-                )
-                issued += 1
-            position += 1
+                if data is not None:
+                    self.staging.record(virtual, OPENING_CLASS, payload, data)
+                    self.staging.commit(
+                        accepted["shard"], accepted["block_number"], accepted["block_hash"]
+                    )
+                    issued += 1
+                position += 1
         if len(committed) > position:
             self.record_error(virtual, OPENING_CLASS, "opening-journal-mismatch", len(committed))
             raise AlexandriaError(
@@ -865,9 +2601,22 @@ class Reconciler:
     disagreed and both sets of bytes are kept.
     """
 
-    def __init__(self, plan, staging_root, transport, provider_class) -> None:
+    def __init__(
+        self, plan, staging_root, transport, provider_class, *, registry=None,
+        trace_concurrency=DEFAULT_TRACE_CONCURRENCY, concurrency=DEFAULT_COLLECT_CONCURRENCY,
+        rpc_concurrency=DEFAULT_RPC_CONCURRENCY,
+    ) -> None:
         validate_plan(plan)
+        self.trace_concurrency = _trace_concurrency(trace_concurrency)
+        self._trace_slots = threading.BoundedSemaphore(self.trace_concurrency)
+        self.rpc_concurrency = _rpc_concurrency(rpc_concurrency)
+        self._rpc_slots = threading.BoundedSemaphore(self.rpc_concurrency)
+        if not isinstance(concurrency, int) or isinstance(concurrency, bool) or not 1 <= concurrency <= MAX_COLLECT_CONCURRENCY:
+            raise AlexandriaError(f"reconcile concurrency must be a whole number from 1 to {MAX_COLLECT_CONCURRENCY}")
+        self.concurrency = concurrency
         self.plan = plan
+        self.registry = registry
+        opening_phase(plan, [], registry=registry)
         self.transport = transport
         if not isinstance(provider_class, str) or not 1 <= len(provider_class) <= 256:
             raise AlexandriaError("the second provider class is not a bounded name")
@@ -875,8 +2624,13 @@ class Reconciler:
             raise AlexandriaError("the second provider class must not carry an endpoint")
         self.provider_class = provider_class
         self.classes = declared_classes(plan)
+        journal_components(plan, self.classes)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
+        # The multi-subject path's targeted trace derivation matches against
+        # this lowercase set; a single-proxy plan never reaches it, so it is
+        # None there.
+        self._subjects = frozenset(address.lower() for address in capture_subjects(plan)) if "subjects" in plan else None
         directory = self.root / RECONCILIATION_DIRECTORY
         try:
             directory.mkdir(exist_ok=True)
@@ -886,17 +2640,36 @@ class Reconciler:
             raise AlexandriaError("the reconciliation directory is not a directory")
         self.directory = directory
 
-    def _staged(self) -> dict:
-        """The primary's responses, keyed by shard and class."""
-        staged = {}
-        for name in self.classes:
-            for entry in self.staging.entries(name):
-                envelope = load_bytes(
-                    entry["response"].encode(), f"staged {name} response",
-                    max_bytes=MAX_RAW_COMPONENT_BYTES,
+    def _read_journals(self) -> tuple:
+        """Read every physical journal once, for its digest and for what it staged.
+
+        Returns the digest binding `_staged_journal_bindings` gives, the
+        primary's responses keyed by shard and class, every staged log record
+        in journal order, and the opening reads' entries. Each journal used to
+        be read once for its digest and again for its entries, and the log
+        journals a third time for the opening replay; one read now serves all
+        of them, so the entries compared are the bytes the digest binds.
+        """
+        journals, staged, log_records, opening = {}, {}, [], []
+        for name in self.staging.classes:
+            for journal in self.staging.physical_journals(name):
+                data = read_confined_file(
+                    self.staging.journals, f"{journal}.jsonl", f"committed journal {journal}",
+                    max_bytes=MAX_JOURNAL_BYTES,
                 )
-                staged[(entry["shard"], name)] = envelope.get("result")
-        return staged
+                journals[journal] = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+                for entry in journal_entries(journal, data):
+                    if name == OPENING_CLASS:
+                        opening.append(entry)
+                        continue
+                    envelope = load_bytes(
+                        entry["response"].encode(), f"staged {name} response",
+                        max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
+                    )
+                    staged[(entry["shard"], name)] = envelope.get("result")
+                    if name == "logs" and isinstance(envelope.get("result"), list):
+                        log_records.extend(envelope["result"])
+        return dict(sorted(journals.items())), staged, log_records, opening
 
     def _second(self, shard_index: int, name: str, method: str, params):
         identifier = request_identifier(shard_index, name)
@@ -905,7 +2678,7 @@ class Reconciler:
 
     def _second_raw(self, payload: bytes, identifier: int, label: str):
         """Ask the second provider the exact bytes the primary was asked."""
-        data = self.transport.request(payload, f"{label} second provider")
+        data = _rpc_request(self, payload, f"{label} second provider")
         if len(data) > MAX_RAW_COMPONENT_BYTES:
             raise AlexandriaError(
                 f"{label} second-provider response exceeded the byte ceiling"
@@ -926,37 +2699,46 @@ class Reconciler:
             )
         return envelope["result"], data
 
-    def _opening(self) -> list:
-        """The committed opening reads, replayed; see `replay_opening`."""
-        return replay_opening(self.plan, self.staging, self.classes)[1]
+    def _second_traces(self, shard_index: int, hashes) -> tuple:
+        """Ask the second provider `trace_transaction` for each hash, filtered and combined.
 
-    def _compare_opening(self, read, value, second) -> tuple[bool, str, str]:
-        """Whether the second provider's answer binds the same thing, and the kind it is."""
-        kind = read["kind"]
-        block = read["block"]
-        if kind == "first-block-header":
-            # The header has to be the first block's own: the right hash under
-            # another number is a provider describing some other block.
-            agreed = isinstance(second, dict) and second.get("hash") == value
-            if agreed:
-                try:
-                    agreed = _hex(second.get("number"), "first block number") == block
-                except AlexandriaError:
-                    agreed = False
-            return agreed, "first-block-hash", f"block {block}"
-        if kind == "implementation-slot":
-            try:
-                agreed = slot_word_address(second, block) == value
-            except AlexandriaError:
-                agreed = False
-            return agreed, "slot-word", f"implementation slot at block {block}"
-        if kind == "implementation-code":
-            try:
-                agreed = hashlib.sha256(runtime_code(second, read["address"])).hexdigest() == value
-            except AlexandriaError:
-                agreed = False
-            return agreed, "code-digest", f"code of {read['address']} at block {block}"
-        raise AlexandriaError(f"opening read kind {kind!r} is not compared")
+        Mirrors `Collector._targeted_traces`, against `self.transport`
+        instead of the primary's: one `trace_transaction` call per hash, each
+        frame kept only if `_matches_subjects` would have kept it, all
+        concatenated in hash order. Never staged and never journaled, only
+        compared -- and kept via `_keep` when the comparison disagrees.
+        """
+        combined = []
+        def ask(tx_hash):
+            identifier = request_identifier(shard_index, "traces")
+            payload = request_bytes(identifier, "trace_transaction", [tx_hash])
+            result, _data = self._second_raw(
+                payload, identifier, f"shard {shard_index} traces {tx_hash}",
+            )
+            if not isinstance(result, list):
+                raise AlexandriaError(
+                    f"shard {shard_index} second-provider trace_transaction {tx_hash} did not "
+                    "return a list"
+                )
+            return [frame for frame in result if _matches_subjects(frame, self._subjects)]
+
+        for frames in _ordered_trace_results(
+            hashes, ask, self.trace_concurrency, self._trace_slots,
+        ):
+            combined.extend(frames)
+        identifier = request_identifier(shard_index, "traces")
+        # The same limit the primary's combined record was written under.
+        try:
+            combined_bytes = canonical_bytes(
+                {"id": identifier, "jsonrpc": "2.0", "result": combined},
+                max_nodes=MAX_RESPONSE_NODES,
+            )
+        except AlexandriaError as error:
+            raise AlexandriaError(
+                f"shard {shard_index} second-provider traces combined record cannot be "
+                f"compared: {error}"
+            ) from error
+        return combined, combined_bytes
 
     def _keep(self, shard_index: int, name: str, data: bytes) -> None:
         """Preserve the second provider's bytes for a shard that disagreed."""
@@ -980,12 +2762,267 @@ class Reconciler:
         finally:
             os.close(descriptor)
 
-    def reconcile(self) -> dict:
-        """Read the staging tree without changing it, then compare.
+    # -- this run's own progress, separate from the collected bytes ---------
 
-        Reconciliation never resumes the collection, because `resume` truncates
-        every journal back to its checkpoint. Reading an interval must not be
-        able to destroy part of it, least of all on the path that then refuses.
+    def _checkpoint_path(self) -> Path:
+        return self.directory / RECONCILE_CHECKPOINT_NAME
+
+    def _committed_input_digest(self, state: dict, *, journals=None) -> str:
+        """Bind resumed comparisons to exact checkpoint and journal bytes."""
+        if journals is None:
+            journals = _staged_journal_bindings(self.staging)
+        digest = hashlib.sha256(canonical_bytes(state))
+        for name in sorted(journals):
+            digest.update(canonical_bytes({"name": name, **journals[name]}))
+        return digest.hexdigest()
+
+    def _load_reconcile_checkpoint(self, boundary: str, input_digest: str):
+        """This plan, second provider and committed tree's saved reconcile progress, or `None`.
+
+        A checkpoint recorded for another plan, another `provider_class` or a
+        staging tree whose committed boundary hash differs -- one rewound and
+        collected again since the checkpoint was written -- proves nothing
+        about this run: comparisons already counted under a different second
+        opinion, or over bytes no longer in the tree, cannot be carried into
+        this one, so it is treated as absent rather than trusted. So is a
+        checkpoint in an earlier format.
+        """
+        path = self._checkpoint_path()
+        if not path.is_file():
+            return None
+        document = load_bytes(
+            read_confined_file(
+                self.directory, RECONCILE_CHECKPOINT_NAME, "reconcile checkpoint",
+                max_bytes=MAX_CONTROL_BYTES,
+            ),
+            "reconcile checkpoint",
+        )
+        if (
+            not isinstance(document, dict)
+            or document.get("format") != RECONCILE_CHECKPOINT_FORMAT
+            or document.get("plan_sha256") != plan_digest(self.plan)
+            or document.get("provider_class") != self.provider_class
+            or document.get("staging_last_accepted") != boundary
+            or document.get("staging_sha256") != input_digest
+        ):
+            return None
+        required = {"compared", "matched", "disputed", "statuses", "next_shard"}
+        if set(document) != required | {
+            "format", "plan_sha256", "provider_class", "staging_last_accepted", "staging_sha256",
+        }:
+            raise AlexandriaError("the reconcile checkpoint has an unknown shape")
+        if (
+            not isinstance(document["next_shard"], int) or isinstance(document["next_shard"], bool)
+            or not 0 <= document["next_shard"] <= len(self.plan["shards"])
+            or not isinstance(document["compared"], int) or isinstance(document["compared"], bool)
+            or not isinstance(document["matched"], int) or isinstance(document["matched"], bool)
+            or not isinstance(document["disputed"], list)
+            or not isinstance(document["statuses"], dict)
+        ):
+            raise AlexandriaError("the reconcile checkpoint has an unknown shape")
+        return document
+
+    def _save_reconcile_checkpoint(
+        self, compared, matched, disputed, statuses, next_shard, boundary: str, input_digest: str,
+    ) -> None:
+        """Checkpoint reconciliation's own progress, one shard's comparisons at a time.
+
+        Not a batch: each shard already costs several real requests to the
+        second provider, which dominates a local `fsync` by one to two
+        orders of magnitude, so checkpointing every shard keeps that cost
+        negligible while guaranteeing a failure never loses more than the
+        one shard it happened on.
+        """
+        document = {
+            "compared": compared,
+            "disputed": disputed,
+            "format": RECONCILE_CHECKPOINT_FORMAT,
+            "matched": matched,
+            "next_shard": next_shard,
+            "plan_sha256": plan_digest(self.plan),
+            "provider_class": self.provider_class,
+            "staging_last_accepted": boundary,
+            "staging_sha256": input_digest,
+            "statuses": {str(index): status for index, status in statuses.items()},
+        }
+        _atomic_json(self._checkpoint_path(), document)
+
+    def _record_error(self, shard_index, name: str, exc: Exception) -> None:
+        """Append one receipt naming what failed, where, and why -- never silently discarded.
+
+        `shard_index` is a real shard index, or `len(self.plan["shards"])`
+        for the opening-reads segment, matching the virtual index shard
+        records use. `str(exc)` is bounded and, for every exception this
+        actually catches (`TransportError` and the other `AlexandriaError`s
+        raised on this path), already carries only a request label, never an
+        endpoint or a credential -- see `_close_transport_error` -- but it is
+        still truncated here rather than trusted to stay that way forever.
+        """
+        receipt = {
+            "class": name,
+            "exception": type(exc).__name__,
+            "message": str(exc)[:200],
+            "provider_class": self.provider_class,
+            "shard": shard_index,
+        }
+        path = self.directory / ERROR_RECEIPTS
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(path, flags, 0o600)
+        except OSError as inner:
+            raise AlexandriaError(f"cannot open the reconcile error receipt file: {inner}") from inner
+        try:
+            with os.fdopen(descriptor, "ab", closefd=False) as handle:
+                handle.write(canonical_bytes(receipt))
+                handle.flush()
+                os.fsync(handle.fileno())
+        finally:
+            os.close(descriptor)
+
+    def _heartbeat(self, label: str, status: str, shard_compared: int, shard_matched: int,
+                    shard_disputed: int, started: float) -> None:
+        """One flushed progress line to stderr, the same shape `collect` already prints.
+
+        A console line only -- nothing here is staged, journaled or part of
+        `reconciliation.json`.
+        """
+        elapsed = time.monotonic() - started
+        print(
+            f"[reconcile] {label} | {status} | compared {shard_compared} matched {shard_matched} "
+            f"disputed {shard_disputed} | elapsed {elapsed:.1f}s",
+            file=sys.stderr, flush=True,
+        )
+
+    def _fetch_shard(self, shard, staged):
+        """Fetch independent second-provider classes without any durable write."""
+        index = shard["index"]
+        requests = {name: (method, params) for name, method, params in shard_requests(self.plan, shard)}
+        names = ["boundary-blocks"]
+        if "logs" in self.classes:
+            names.append("logs")
+        if "traces" in self.classes and self._subjects is not None:
+            names.append("traces")
+
+        def read(name):
+            if name == "traces":
+                logs = staged.get((index, "logs"))
+                return self._second_traces(index, subject_transaction_hashes(logs) if isinstance(logs, list) else [])
+            method, params = requests[name]
+            return self._second(index, name, method, params)
+
+        answers = {name: outcome for name, outcome in _read_batches(names, read, self.rpc_concurrency)}
+        boundary, boundary_bytes = answers["boundary-blocks"].result()
+        logs, logs_bytes = answers["logs"].result() if "logs" in answers else (None, b"")
+        traces, traces_bytes = answers["traces"].result() if "traces" in answers else (None, b"")
+        return boundary, boundary_bytes, logs, logs_bytes, traces, traces_bytes
+
+    def _check_positions(self, logs, second_logs, subjects, upgrade_topic) -> None:
+        """Refuse either provider's shard logs whose positions the venue cannot order."""
+        if isinstance(logs, list):
+            proxy_log_positions(
+                logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic,
+                order_upgrade_transactions=upgrade_transaction_order(plan_venue(self.plan)),
+            )
+        if isinstance(second_logs, list):
+            proxy_log_positions(
+                second_logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic,
+                order_upgrade_transactions=upgrade_transaction_order(plan_venue(self.plan)),
+            )
+
+    def _compare_shard(
+        self, shard, staged, second_boundary, boundary_bytes, second_logs, logs_bytes,
+        second_traces, traces_bytes,
+    ) -> tuple:
+        """One shard's status, comparisons, matches and uncapped disputes.
+
+        The second provider's bytes are kept for each class that disagreed.
+        The caller applies the dispute limit through `_extend_disputes`, so a
+        full reconcile and a carry-forward record the same list.
+        """
+        index = shard["index"]
+        boundary = staged[(index, "boundary-blocks")]
+        logs = staged.get((index, "logs"))
+        status, compared, matched, disputed = "complete", 1, 0, []
+        if not isinstance(second_boundary, dict) or second_boundary.get("hash") != boundary.get("hash"):
+            status = "failed"
+            disputed.append({
+                "identity": f"block {shard['end']}",
+                "kind": "boundary-hash",
+                "shard": index,
+            })
+            self._keep(index, "boundary-blocks", boundary_bytes)
+        else:
+            matched += 1
+            first_transactions = _transaction_order(boundary)
+            second_transactions = _transaction_order(second_boundary)
+            compared += 1
+            if first_transactions != second_transactions:
+                status = "partial"
+                disputed.append({
+                    "identity": f"block {shard['end']} transaction order",
+                    "kind": "transaction-order",
+                    "shard": index,
+                })
+                self._keep(index, "boundary-blocks", boundary_bytes)
+            else:
+                matched += 1
+
+        first_identities = [log_identity(record) for record in logs] if isinstance(logs, list) else []
+        second_identities = (
+            [log_identity(record) for record in second_logs] if isinstance(second_logs, list) else []
+        )
+        agreed, disagreements = _identity_comparison(first_identities, second_identities)
+        compared += agreed + len(disagreements)
+        matched += agreed
+        if disagreements:
+            if status != "failed":
+                status = "partial"
+            self._keep(index, "logs", logs_bytes)
+            disputed.extend(
+                {"identity": identity, "kind": "log-identity", "shard": index}
+                for identity in disagreements
+            )
+
+        if "traces" in self.classes and self._subjects is not None:
+            traces = staged.get((index, "traces"))
+            first_trace_identities = (
+                [trace_identity(record) for record in traces] if isinstance(traces, list) else []
+            )
+            second_trace_identities = (
+                [trace_identity(record) for record in second_traces]
+                if isinstance(second_traces, list) else []
+            )
+            trace_agreed, trace_disagreements = _identity_comparison(
+                first_trace_identities, second_trace_identities
+            )
+            compared += trace_agreed + len(trace_disagreements)
+            matched += trace_agreed
+            if trace_disagreements:
+                if status != "failed":
+                    status = "partial"
+                self._keep(index, "traces", traces_bytes)
+                disputed.extend(
+                    {"identity": identity, "kind": "trace-identity", "shard": index}
+                    for identity in trace_disagreements
+                )
+        return status, compared, matched, disputed
+
+    # -- carry-forward: compare only the shards a recollection changed --------
+
+    def carry_forward(self) -> dict:
+        """Re-compare only the shards whose journals changed since the prior record.
+
+        `recollect` moves the bound reconciliation to `prior.json`. That
+        record must name this plan, this provider class and this staging
+        boundary, bind every journal's digest, and every journal whose digest
+        moved must be explained by the recorded recollections, in order, from
+        the bound digest to the current one. Each changed shard is compared
+        again as a full reconcile compares it; every other shard keeps its
+        earlier status, and its comparisons and disputes are counted again
+        from its unchanged staged bytes and the prior record's disputes, so
+        the totals equal a full reconcile's. Where the prior record cannot
+        give an exact count, carry-forward refuses by name rather than
+        approximate. Nothing is written until every changed shard compared.
         """
         shards = self.plan["shards"]
         state = self.staging.committed()
@@ -994,105 +3031,382 @@ class Reconciler:
                 "the interval is not completely collected, so there is nothing to reconcile"
             )
         require_committed_journals(self.staging, state, "reconcile")
-        staged = self._staged()
+        last_accepted = state["last_accepted"]
+        if not isinstance(last_accepted, dict) or not isinstance(last_accepted.get("block_hash"), str):
+            raise AlexandriaError("the collected interval's checkpoint names no accepted boundary")
+        prior, prior_sha256, bindings = self._prior_record()
+        journals, staged, log_records, opening_entries = self._read_journals()
+        self.journal_sha256 = {name: entry["sha256"] for name, entry in journals.items()}
         for index in range(len(shards)):
             for name in self.classes:
                 if (index, name) not in staged:
                     raise AlexandriaError(
                         f"shard {index} has no staged {name} response to reconcile"
                     )
-        opening = self._opening()
+        for entry in prior["shards"]:
+            if entry["end_hash"] != staged[(entry["index"], "boundary-blocks")].get("hash"):
+                raise AlexandriaError(
+                    f"the earlier reconciliation's staging boundary differs at shard {entry['index']}"
+                )
+        if prior["shards"][-1]["end_hash"] != last_accepted["block_hash"]:
+            raise AlexandriaError(
+                "the earlier reconciliation's staging boundary differs from the collected tree's"
+            )
+        changed = self._changed_shards(bindings)
+        phase, opening = replay_opening(
+            self.plan, self.staging, self.classes, self.registry,
+            log_records=log_records, entries=opening_entries,
+        )
+        if event_headers.enabled(self.plan):
+            verify_event_headers(self.plan, missing_event_headers(self.plan, log_records, self.registry, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)), list(self.staging.entries(event_headers.CLASS)))
+        subjects = _plan_subjects(self.plan)
+        upgrade_topic = phase.upgrade_topic
 
-        compared = 0
-        matched = 0
-        disputed = []
-        statuses = {}
-        counts = {}
-        for shard in shards:
+        record = prior["reconciliation"]
+        virtual = len(shards)
+        earlier = {index: [] for index in range(virtual + 1)}
+        for item in record["disputed"]:
+            if item["shard"] > virtual:
+                raise AlexandriaError("an earlier dispute names a shard outside the plan")
+            earlier[item["shard"]].append(item)
+        opening_reads = sum(1 for row in opening if row[1]["kind"] != "epoch-boundary-header")
+        if len(earlier[virtual]) > opening_reads:
+            raise AlexandriaError(
+                "the earlier reconciliation records more opening disputes than opening reads"
+            )
+        compared, matched = opening_reads, opening_reads - len(earlier[virtual])
+        for entry in prior["shards"]:
+            if entry["index"] in changed:
+                continue
+            shard_compared, shard_matched = self._carried_counts(
+                entry["index"], entry["status"], earlier[entry["index"]], staged,
+            )
+            compared += shard_compared
+            matched += shard_matched
+        # What the prior record says the changed shards compared. It cannot
+        # be negative, and with no changed shard it must be nothing at all.
+        rest_compared, rest_matched = record["compared"] - compared, record["matched"] - matched
+        if (
+            rest_compared < 0 or rest_matched < 0 or rest_matched > rest_compared
+            or (not changed and (rest_compared, rest_matched) != (0, 0))
+        ):
+            raise AlexandriaError(
+                "the earlier reconciliation's totals disagree with its shard table and "
+                "disputes, so they cannot be carried forward"
+            )
+
+        statuses = {entry["index"]: entry["status"] for entry in prior["shards"]}
+        again = {}
+        started = time.monotonic()
+        fetched_shards = _read_batches(
+            [shards[index] for index in sorted(changed)],
+            lambda shard: self._fetch_shard(shard, staged), self.concurrency,
+        )
+        for shard, fetched in fetched_shards:
             index = shard["index"]
-            boundary = staged[(index, "boundary-blocks")]
+            logs = staged.get((index, "logs"))
+            try:
+                (second_boundary, boundary_bytes, second_logs, logs_bytes,
+                 second_traces, traces_bytes) = fetched.result()
+                self._check_positions(logs, second_logs, subjects, upgrade_topic)
+            except AlexandriaError as exc:
+                self._record_error(index, "second-provider", exc)
+                raise AlexandriaError(
+                    f"carry-forward could not compare shard {index} again, so nothing was "
+                    f"written and the earlier record stays in {RECONCILIATION_PRIOR}: {exc}"
+                ) from exc
+            status, shard_compared, shard_matched, shard_disputes = self._compare_shard(
+                shard, staged, second_boundary, boundary_bytes, second_logs, logs_bytes,
+                second_traces, traces_bytes,
+            )
+            again[index] = shard_disputes
+            statuses[index] = status
+            compared += shard_compared
+            matched += shard_matched
+            self._heartbeat(
+                f"shard {index} compared again", status, shard_compared, shard_matched,
+                len(shard_disputes), started,
+            )
+
+        # The disputes in the order a full reconcile appends them: shard by
+        # shard, then the opening reads, under the same limit.
+        disputed = []
+        for index in range(virtual):
+            _extend_disputes(disputed, again[index] if index in changed else earlier[index])
+        _extend_disputes(disputed, earlier[virtual], uncapped=())
+        counts = {index: self._counts(index, staged) for index in range(virtual)}
+        document = {
+            "compared": compared,
+            "disputed": disputed,
+            "matched": matched,
+            "provider_class": self.provider_class,
+            "status": "disputed" if disputed else "agreed",
+        }
+        carried = {
+            "carried_forward_shards": [index for index in range(virtual) if index not in changed],
+            "prior_sha256": prior_sha256,
+            "recompared_shards": sorted(changed),
+        }
+        return self._write(shards, counts, statuses, document, staged, carry_forward=carried)
+
+    def _prior_record(self) -> tuple:
+        """The record `recollect` set aside, its digest and its journal binding."""
+        path = self.directory / RECONCILIATION_PRIOR
+        if path.is_symlink() or not path.is_file():
+            raise AlexandriaError(
+                "carry-forward needs an earlier bound reconciliation, and "
+                f"{RECONCILIATION_DIRECTORY}/{RECONCILIATION_PRIOR} is absent"
+            )
+        data = read_confined_file(
+            self.directory, RECONCILIATION_PRIOR, "earlier reconciliation",
+            max_bytes=MAX_CONTROL_BYTES,
+        )
+        document = load_bytes(data, "earlier reconciliation")
+        bindings = _reconciliation_bindings(
+            document, self.staging.journal_names, "earlier reconciliation",
+        )
+        if bindings is None:
+            raise AlexandriaError(
+                "the earlier reconciliation has no journal digest binding, so carry-forward "
+                "cannot tell which shards changed"
+            )
+        if document["plan_sha256"] != plan_digest(self.plan):
+            raise AlexandriaError("the earlier reconciliation belongs to a different plan")
+        record = document["reconciliation"]
+        if record is None:
+            raise AlexandriaError("the earlier reconciliation records no comparison")
+        validate_reconciliation(record)
+        if record["provider_class"] != self.provider_class:
+            raise AlexandriaError(
+                f"the earlier reconciliation compared provider class {record['provider_class']}, "
+                f"not {self.provider_class}"
+            )
+        if record["status"] not in ("agreed", "disputed"):
+            raise AlexandriaError(
+                f"the earlier reconciliation is {record['status']}, so it holds no complete "
+                "comparison to carry forward"
+            )
+        if len(record["disputed"]) >= MAX_DISPUTES:
+            raise AlexandriaError(
+                f"the earlier reconciliation's disputes reached the {MAX_DISPUTES}-entry limit, "
+                "so the disputes it dropped cannot be carried forward"
+            )
+        validate_shard_coverage(document["shards"], self.plan["shards"], self.classes)
+        return document, hashlib.sha256(data).hexdigest(), bindings
+
+    def _changed_shards(self, bindings) -> set:
+        """The shards whose journals moved, each move explained by recorded recollections."""
+        recollections = self.staging.recollections()
+        changed = set()
+        for name, current in sorted(self.journal_sha256.items()):
+            digest = bindings[name]
+            if digest == current:
+                continue
+            for row in recollections:
+                if self.staging._physical(row["shard"], row["class"]) == name and row["old_sha256"] == digest:
+                    digest = row["new_sha256"]
+            if digest != current:
+                raise AlexandriaError(
+                    f"journal {name} changed outside a recorded recollection since the earlier "
+                    "reconciliation"
+                )
+            changed.add(name)
+        return {
+            index for index in range(len(self.plan["shards"]))
+            if any(
+                self.staging._physical(index, name) in changed
+                for name in self.classes if name != OPENING_CLASS
+            )
+        }
+
+    def _carried_counts(self, index: int, status: str, disputes, staged) -> tuple:
+        """An unchanged shard's comparisons and matches, recounted exactly.
+
+        The prior record keeps totals, not per-shard counts, so each carried
+        shard is counted again from what it does hold: its disputes and the
+        unchanged staged bytes those disputes were found against. A shard
+        with no dispute agreed on every identity it staged. A disputed
+        identity the primary never staged, or staged fewer times than it is
+        disputed, is the second provider's alone. Any other disputed identity
+        could have been either provider's, and the record cannot say which,
+        so the count is refused rather than guessed.
+        """
+        kinds = [item["kind"] for item in disputes]
+        if "boundary-hash" in kinds:
+            compared, matched, expected = 1, 0, "failed"
+        elif "transaction-order" in kinds:
+            compared, matched, expected = 2, 1, "partial"
+        else:
+            compared, matched, expected = 2, 2, "complete"
+        pairs = [("log-identity", "logs", log_identity)]
+        if "traces" in self.classes and self._subjects is not None:
+            pairs.append(("trace-identity", "traces", trace_identity))
+        known = {"boundary-hash", "transaction-order"} | {kind for kind, _name, _identity in pairs}
+        if any(kind not in known for kind in kinds):
+            raise AlexandriaError(f"an earlier dispute of shard {index} has a kind no shard records")
+        for kind, name, identify in pairs:
+            records = staged.get((index, name))
+            first = [identify(record) for record in records] if isinstance(records, list) else []
+            disputed = [item["identity"] for item in disputes if item["kind"] == kind]
+            if disputed and expected == "complete":
+                expected = "partial"
+            staged_counts = collections.Counter(first)
+            for identity, times in collections.Counter(disputed).items():
+                if staged_counts[identity] and times <= staged_counts[identity]:
+                    raise AlexandriaError(
+                        f"the earlier reconciliation does not say which provider held shard "
+                        f"{index} {kind} {identity}, so its exact count cannot be carried forward; "
+                        "run a full reconcile"
+                    )
+            # Every disputed identity left is the second provider's alone, so
+            # the primary's staged identities all agreed.
+            compared += len(first) + len(disputed)
+            matched += len(first)
+        if status != expected:
+            raise AlexandriaError(
+                f"the earlier status of shard {index} does not match its recorded disputes"
+            )
+        return compared, matched
+
+    def reconcile(self) -> dict:
+        """Read the staging tree without changing it, then compare.
+
+        Reconciliation never resumes the COLLECTION, because `resume`
+        truncates every journal back to its checkpoint, and reading an
+        interval must not be able to destroy part of it, least of all on the
+        path that then refuses -- that invariant is unchanged. Reconciliation
+        now resumes ITS OWN progress instead: `_load_reconcile_checkpoint`
+        restores whatever shard-by-shard comparison work an earlier, failed
+        attempt against this exact second provider already finished, so a
+        transport failure at shard 3,000 does not force shards 0-2,999 to be
+        asked again.
+        """
+        shards = self.plan["shards"]
+        state = self.staging.committed()
+        if state["next_shard"] != len(shards):
+            raise AlexandriaError(
+                "the interval is not completely collected, so there is nothing to reconcile"
+            )
+        require_committed_journals(self.staging, state, "reconcile")
+        # The committed boundary this run reads. A reconcile checkpoint written
+        # over a tree that was rewound and collected again names another one,
+        # and its comparisons say nothing about the bytes now in the tree.
+        last_accepted = state["last_accepted"]
+        if not isinstance(last_accepted, dict) or not isinstance(last_accepted.get("block_hash"), str):
+            raise AlexandriaError("the collected interval's checkpoint names no accepted boundary")
+        staging_boundary = last_accepted["block_hash"]
+        journals, staged, log_records, opening_entries = self._read_journals()
+        self.journal_sha256 = {name: entry["sha256"] for name, entry in journals.items()}
+        staging_digest = self._committed_input_digest(state, journals=journals)
+        for index in range(len(shards)):
+            for name in self.classes:
+                if (index, name) not in staged:
+                    raise AlexandriaError(
+                        f"shard {index} has no staged {name} response to reconcile"
+                    )
+        phase, opening = replay_opening(
+            self.plan, self.staging, self.classes, self.registry,
+            log_records=log_records, entries=opening_entries,
+        )
+        # The address every shard read filters on, in the form the plan
+        # declares it: one proxy, or the whole subject set.
+        if event_headers.enabled(self.plan):
+            verify_event_headers(self.plan, missing_event_headers(self.plan, log_records, self.registry, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)), list(self.staging.entries(event_headers.CLASS)))
+        subjects = _plan_subjects(self.plan)
+        upgrade_topic = phase.upgrade_topic
+
+        checkpoint = self._load_reconcile_checkpoint(staging_boundary, staging_digest)
+        if checkpoint is None:
+            compared, matched, disputed, statuses, start = 0, 0, [], {}, 0
+        else:
+            compared = checkpoint["compared"]
+            matched = checkpoint["matched"]
+            disputed = list(checkpoint["disputed"])
+            statuses = {int(index): value for index, value in checkpoint["statuses"].items()}
+            start = checkpoint["next_shard"]
+
+        counts = {}
+        # Shards a checkpoint already covers still need their counts for the
+        # final table below; this reads only the already-staged primary
+        # bytes, so it is redone rather than checkpointed alongside them.
+        for index in range(start):
+            counts[index] = self._counts(index, staged)
+
+        started = time.monotonic()
+        fetched_shards = _read_batches(
+            shards[start:], lambda shard: self._fetch_shard(shard, staged), self.concurrency,
+        )
+        for shard, fetched in fetched_shards:
+            index = shard["index"]
             logs = staged.get((index, "logs"))
             counts[index] = self._counts(index, staged)
-            status = "complete"
+            compared_before, matched_before, disputed_before = compared, matched, len(disputed)
             try:
-                second_boundary, boundary_bytes = self._second(
-                    index, "boundary-blocks", "eth_getBlockByNumber", [hex(shard["end"]), False]
+                (second_boundary, boundary_bytes, second_logs, logs_bytes,
+                 second_traces, traces_bytes) = fetched.result()
+                self._check_positions(logs, second_logs, subjects, upgrade_topic)
+            except AlexandriaError as exc:
+                self._record_error(index, "second-provider", exc)
+                self._save_reconcile_checkpoint(
+                    compared, matched, disputed, statuses, index, staging_boundary, staging_digest,
                 )
-                second_logs, logs_bytes = None, b""
-                if "logs" in self.classes:
-                    second_logs, logs_bytes = self._second(
-                        index, "logs", "eth_getLogs",
-                        [{"address": self.plan["proxy"], "fromBlock": hex(shard["start"]), "toBlock": hex(shard["end"])}],
-                    )
-            except AlexandriaError:
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
                 )
 
-            compared += 1
-            if not isinstance(second_boundary, dict) or second_boundary.get("hash") != boundary.get("hash"):
-                status = "failed"
-                disputed.append({
-                    "identity": f"block {shard['end']}",
-                    "kind": "boundary-hash",
-                    "shard": index,
-                })
-                self._keep(index, "boundary-blocks", boundary_bytes)
-            else:
-                matched += 1
-                first_transactions = _transaction_order(boundary)
-                second_transactions = _transaction_order(second_boundary)
-                compared += 1
-                if first_transactions != second_transactions:
-                    status = "partial" if status == "complete" else status
-                    disputed.append({
-                        "identity": f"block {shard['end']} transaction order",
-                        "kind": "transaction-order",
-                        "shard": index,
-                    })
-                    self._keep(index, "boundary-blocks", boundary_bytes)
-                else:
-                    matched += 1
-
-            first_identities = [log_identity(record) for record in logs] if isinstance(logs, list) else []
-            second_identities = (
-                [log_identity(record) for record in second_logs] if isinstance(second_logs, list) else []
+            status, shard_compared, shard_matched, shard_disputes = self._compare_shard(
+                shard, staged, second_boundary, boundary_bytes, second_logs, logs_bytes,
+                second_traces, traces_bytes,
             )
-            agreed, disagreements = _identity_comparison(first_identities, second_identities)
-            compared += agreed + len(disagreements)
-            matched += agreed
-            if disagreements:
-                if status != "failed":
-                    status = "partial"
-                self._keep(index, "logs", logs_bytes)
-                for identity in disagreements:
-                    if len(disputed) < MAX_DISPUTES:
-                        disputed.append({"identity": identity, "kind": "log-identity", "shard": index})
+            compared += shard_compared
+            matched += shard_matched
+            _extend_disputes(disputed, shard_disputes)
             statuses[index] = status
+            self._save_reconcile_checkpoint(
+                compared, matched, disputed, statuses, index + 1, staging_boundary, staging_digest,
+            )
+            self._heartbeat(
+                f"shard {index + 1}/{len(shards)} done", status,
+                compared - compared_before, matched - matched_before, len(disputed) - disputed_before,
+                started,
+            )
 
         # The opening reads: the first block's hash, each slot word and each
         # code digest, asked of the second provider with the primary's exact
         # request bytes. A disagreement keeps both byte sets and settles
         # nothing; the epoch boundary headers are bound by the upgrade logs
-        # the primary preserved and are not asked again.
+        # the primary preserved and are not asked again. Not checkpointed
+        # shard by shard like the loop above -- there are a few hundred of
+        # these at most, not thousands, so a failure here just redoes this
+        # much smaller segment; the shard loop's own checkpoint still stands.
         virtual = len(shards)
-        for position, read, value, payload in opening:
-            if read["kind"] == "epoch-boundary-header":
-                continue
+        opening_started = time.monotonic()
+        opening_position = 0
+        opening_reads = (row for row in opening if row[1]["kind"] != "epoch-boundary-header")
+        def fetch_opening(row):
+            position, read, _value, payload = row
+            return self._second_raw(payload, opening_identifier(virtual, position), opening_label(position, read))
+
+        for row, outcome in _read_batches(opening_reads, fetch_opening, self.rpc_concurrency):
+            position, read, value, payload = row
+            opening_position += 1
             try:
-                second, data = self._second_raw(
-                    payload, opening_identifier(virtual, position), opening_label(position, read),
-                )
-            except AlexandriaError:
+                second, data = outcome.result()
+            except AlexandriaError as exc:
+                self._record_error(virtual, OPENING_CLASS, exc)
                 return self._unreconciled(shards, counts, staged, compared, matched, disputed)
             compared += 1
-            agreed, kind, identity = self._compare_opening(read, value, second)
+            agreed, kind, identity = phase.compare(read, value, second)
             if agreed:
                 matched += 1
             else:
                 if len(disputed) < MAX_DISPUTES:
                     disputed.append({"identity": identity, "kind": kind, "shard": virtual})
                 self._keep(virtual, OPENING_CLASS, data)
+            self._heartbeat(
+                f"opening read {opening_position}", "agreed" if agreed else "disputed",
+                1, 1 if agreed else 0, 0 if agreed else 1, opening_started,
+            )
 
         record = {
             "compared": compared,
@@ -1124,7 +3438,7 @@ class Reconciler:
         statuses = {shard["index"]: "complete" for shard in shards}
         return self._write(shards, counts, statuses, record, staged)
 
-    def _write(self, shards, counts, statuses, record, staged) -> dict:
+    def _write(self, shards, counts, statuses, record, staged, *, carry_forward=None) -> dict:
         table = [
             {
                 "end": shard["end"],
@@ -1136,18 +3450,130 @@ class Reconciler:
             }
             for shard in shards
         ]
+        for entry in self.staging.entries(BOUNDARY_CLASS):
+            _check_journal_record(entry, "a staged boundary-blocks record")
+            if "node_syncing" in entry:
+                table[entry["shard"]]["node_syncing"] = entry["node_syncing"]
+        if "logs" in self.classes:
+            for entry in self.staging.entries("logs"):
+                _check_journal_record(entry, "a staged logs record")
+                if "subranges" in entry:
+                    _log_result(entry, self.plan, shards[entry["shard"]])
+                    table[entry["shard"]]["log_subranges"] = [
+                        {"start": part["start"], "end": part["end"]}
+                        for part in entry["subranges"]
+                    ]
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
+        _check_staged_journal_bindings(self.staging, self.journal_sha256)
         document = {
             "format": RECONCILIATION_FORMAT,
+            "journal_sha256": self.journal_sha256,
             "plan_sha256": plan_digest(self.plan),
             "reconciliation": record,
             "shards": table,
         }
+        if carry_forward is not None:
+            document[CARRY_FORWARD_FIELD] = carry_forward
+            _carried_shards(document, len(shards))
         _atomic_json(self.directory / RECONCILIATION_RECORD, document)
         self.staging.close()
         return document
 
+
+
+def _extend_disputes(disputed, items, *, uncapped=UNCAPPED_DISPUTE_KINDS) -> None:
+    """Append disputes as reconcile always has: identity disputes stop at the limit."""
+    for item in items:
+        if item["kind"] in uncapped or len(disputed) < MAX_DISPUTES:
+            disputed.append(item)
+
+
+def _carried_shards(document, shard_count: int) -> tuple:
+    """A carry-forward field's carried and re-compared shards, which tile the plan."""
+    value = document[CARRY_FORWARD_FIELD]
+    if not isinstance(value, dict) or set(value) != {
+        "carried_forward_shards", "prior_sha256", "recompared_shards",
+    }:
+        raise AlexandriaError("the reconciliation carry-forward field has an unknown shape")
+    if not isinstance(value["prior_sha256"], str) or re.fullmatch(r"[0-9a-f]{64}", value["prior_sha256"]) is None:
+        raise AlexandriaError("the reconciliation carry-forward names no prior record digest")
+    lists = []
+    for field in ("carried_forward_shards", "recompared_shards"):
+        indices = value[field]
+        if (
+            not isinstance(indices, list)
+            or any(not isinstance(index, int) or isinstance(index, bool) for index in indices)
+            or indices != sorted(set(indices))
+        ):
+            raise AlexandriaError(f"the reconciliation carry-forward {field} is not an ascending index list")
+        lists.append(indices)
+    carried, recompared = lists
+    if set(carried) & set(recompared) or sorted(carried + recompared) != list(range(shard_count)):
+        raise AlexandriaError(
+            "the reconciliation carry-forward does not name every shard exactly once"
+        )
+    return carried, recompared
+
+
+def _staged_journal_bindings(staging) -> dict:
+    """Hash each bounded physical journal, including the opening reads."""
+    result = {}
+    for name in sorted(staging.journal_names):
+        data = read_confined_file(
+            staging.journals, f"{name}.jsonl", f"committed journal {name}",
+            max_bytes=MAX_JOURNAL_BYTES,
+        )
+        result[name] = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+    return result
+
+
+def _reconciliation_bindings(document, names, label):
+    """Accept the historical record or its complete journal digest map.
+
+    A carry-forward record also names its carried and re-compared shards,
+    and only a record that binds its journals may.
+    """
+    required = {"format", "plan_sha256", "reconciliation", "shards"}
+    bound = required | {"journal_sha256"}
+    if (
+        not isinstance(document, dict)
+        or set(document) not in (required, bound, bound | {CARRY_FORWARD_FIELD})
+        or document["format"] != RECONCILIATION_FORMAT
+    ):
+        raise AlexandriaError(f"the {label} has an unknown shape")
+    if "journal_sha256" not in document:
+        return None
+    if CARRY_FORWARD_FIELD in document:
+        shards = document["shards"]
+        _carried_shards(document, len(shards) if isinstance(shards, list) else 0)
+    bindings = document["journal_sha256"]
+    if not isinstance(bindings, dict):
+        raise AlexandriaError("the reconciliation journal digest binding is not an object")
+    for name in sorted(names):
+        digest = bindings.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            raise AlexandriaError(f"the reconciliation has no valid digest for journal {name}")
+    if set(bindings) != set(names):
+        raise AlexandriaError("the reconciliation binds a journal the plan does not declare")
+    return bindings
+
+
+def _check_staged_journal_bindings(staging, bindings) -> None:
+    if bindings is not None:
+        for name, entry in _staged_journal_bindings(staging).items():
+            if entry["sha256"] != bindings[name]:
+                raise AlexandriaError(f"the reconciliation digest differs for journal {name}")
+
+
+def _check_released_journal_binding(name, records, bindings) -> None:
+    if bindings is None:
+        return
+    digest = hashlib.sha256()
+    for record in records:
+        digest.update(canonical_bytes(record))
+    if digest.hexdigest() != bindings[name]:
+        raise AlexandriaError(f"the reconciliation digest differs for journal {name}")
 
 
 class Builder:
@@ -1165,13 +3591,26 @@ class Builder:
         validate_plan(plan)
         self.plan = plan
         self.classes = declared_classes(plan)
+        # One release component per plan-derived journal component, named
+        # from the plan and nothing else.
+        self.components = journal_components(plan, self.classes)
+        # A split plan's attribution parts, named from the plan the same way,
+        # and the part documents `_epoch_receipt` writes for them.
+        self.parts = attribution_parts(plan)
+        self.part_documents = {}
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
-        validate_registry(registry)
+        self.venue = plan_venue(plan)
+        self.venue.validate_registry(registry)
         self.registry = registry
+        # The plan's subject form and the venue's epoch model have to agree
+        # before any staged byte is read; see `opening_phase`.
+        opening_phase(plan, [], registry=registry)
         if not isinstance(created_at, str) or TIMESTAMP_RE.fullmatch(created_at) is None:
             raise AlexandriaError("the release creation time is not a UTC timestamp")
         self.created_at = created_at
+        self.logs = []
+        self.first_code = None
 
     def _reconciliation(self) -> dict:
         path = self.root / RECONCILIATION_DIRECTORY / RECONCILIATION_RECORD
@@ -1182,14 +3621,14 @@ class Builder:
         document = load_bytes(
             read_regular(path, "reconciliation record", MAX_CONTROL_BYTES), "reconciliation record"
         )
-        if not isinstance(document, dict) or set(document) != {
-            "format", "plan_sha256", "reconciliation", "shards",
-        }:
-            raise AlexandriaError("the reconciliation record has an unknown shape")
+        bindings = _reconciliation_bindings(
+            document, self.staging.journal_names, "reconciliation record",
+        )
         if document["plan_sha256"] != plan_digest(self.plan):
             raise AlexandriaError("the reconciliation record belongs to a different plan")
         validate_reconciliation(document["reconciliation"])
         validate_shard_coverage(document["shards"], self.plan["shards"], self.classes)
+        _check_staged_journal_bindings(self.staging, bindings)
         return document
 
     def _errors(self) -> list:
@@ -1204,11 +3643,28 @@ class Builder:
             if line
         ]
 
-    def _journal(self, name: str) -> dict:
-        records = list(self.staging.entries(name))
+    def _receipts(self) -> dict:
+        """The error receipts, and the recollection records when a shard was re-collected.
+
+        A tree with no recollection yields the v1 document byte for byte, so
+        no release built before `recollect` existed changes identity.
+        """
+        document = {"format": ERRORS_FORMAT, "records": self._errors()}
+        recollections = self.staging.recollections()
+        if recollections:
+            document["format"] = RECOLLECTED_ERRORS_FORMAT
+            document["recollections"] = recollections
+        return document
+
+    def _journal(self, name: str, component=None) -> dict:
+        """One journal document: a whole class, or one plan-derived component of it.
+
+        A component reads its own staging file alone, so a split journal is
+        released without ever being joined into one oversized document.
+        """
+        records = list(self.staging.entries(name, component))
         for record in records:
-            if set(record) != {"class", "request", "response", "shard"}:
-                raise AlexandriaError(f"a staged {name} record has an unknown shape")
+            _check_journal_record(record, f"a staged {name} record")
         return {
             "class": name,
             "format": JOURNAL_FORMAT,
@@ -1216,23 +3672,29 @@ class Builder:
             "records": records,
         }
 
-    def _opening(self, state: dict) -> OpeningPhase:
+    def _opening(self, state: dict):
         """The opening phase the journal committed, or a refusal naming what is missing."""
         if state["offsets"].get(OPENING_CLASS, 0) == 0:
             raise AlexandriaError(
                 "the staging tree has no committed epoch-evidence journal; the opening "
                 "phase has not been collected, so there is no release to build"
             )
-        return replay_opening(self.plan, self.staging, self.classes)[0]
+        return replay_opening(self.plan, self.staging, self.classes, self.registry)[0]
 
-    def _epochs(self, phase: OpeningPhase, end_hash: str) -> list:
+    def _epochs(self, phase, end_hash: str):
         """The epoch table, derived from the opening reads; see `epochs_from_opening`."""
         return epochs_from_opening(self.plan, phase, end_hash)
 
-    def _code_component(self, epochs, phase: OpeningPhase) -> dict:
+    def _code_component(self, epochs, phase) -> dict:
         """Each implementation's runtime bytes as the collector read them, keyed by address."""
         records = []
-        for address in sorted({epoch["implementation"] for epoch in epochs}):
+        # A subject-keyed table is read through its entries, never iterated
+        # as though its keys were epochs.
+        entries = (
+            validate_epoch_subjects(epochs, _plan_subjects(self.plan))
+            if isinstance(epochs, dict) else epochs
+        )
+        for address in sorted({epoch["implementation"] for epoch in entries}):
             code = phase.codes.get(address)
             if code is None:
                 raise AlexandriaError(
@@ -1248,35 +3710,53 @@ class Builder:
                 "the interval is not completely collected, so there is no release to build"
             )
         require_committed_journals(self.staging, state, "build")
+        record_path = self.root / RECONCILIATION_DIRECTORY / RECONCILIATION_RECORD
+        reconciliation = self._reconciliation() if record_path.is_file() else None
         phase = self._opening(state)
-        reconciliation = self._reconciliation()
+        if event_headers.enabled(self.plan):
+            verify_event_headers(self.plan, missing_event_headers(self.plan, phase.logs, self.registry, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)), list(self.staging.entries(event_headers.CLASS)))
+        if reconciliation is None:
+            reconciliation = self._reconciliation()
         shards = _receipt_shards(reconciliation["shards"])
         end_hash = shards[-1]["end_hash"]
         start_hash = phase.hashes[phase.start]
         epochs = self._epochs(phase, end_hash)
-        validate_epochs(epochs, phase.start, phase.end)
+        self._validate_epoch_table(epochs, phase.start, phase.end)
         code = self._code_component(epochs, phase)
         code_bytes = canonical_bytes(code)
+        # The parts come back here, not in the return value, because two demonstration
+        # builders override `_epoch_receipt` with this signature.
+        self.part_documents = {}
+        receipt = self._epoch_receipt(phase, epochs, code_bytes, reconciliation, shards)
+        if set(self.part_documents) != set(self.parts):
+            raise AlexandriaError(
+                f"the plan derives {len(self.parts)} {PART_CLASS} parts, but the interval "
+                f"receipt was built with {len(self.part_documents)}"
+            )
         documents = {
-            "epoch-table": {
-                "epochs": epochs,
-                "format": RECEIPT_FORMAT,
-                "implementation_code": {
-                    "component": CODE_COMPONENT,
-                    "sha256": hashlib.sha256(code_bytes).hexdigest(),
-                },
-                "reconciliation": reconciliation["reconciliation"],
-                "shards": shards,
-            },
-            "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
+            "epoch-table": receipt,
+            "error-receipts": self._receipts(),
             CODE_COMPONENT: code,
             "interval-plan": self.plan,
             "reconciliation": reconciliation,
             "registry": self.registry,
         }
-        for name in self.staging.classes:
-            documents[name] = self._journal(name)
+        # Empty unless the plan declares `log_attribution_parts`.
+        documents.update(self.part_documents)
+        # The wrapper set the opening phase derived from the staged logs, for
+        # a plan that declares wrappers and for no other.
+        if WRAPPERS_FIELD in self.plan:
+            documents[WRAPPER_COMPONENT] = phase.wrapper_component
+        for component, part in self.components.items():
+            documents[component] = self._journal(part["class"], part["index"])
+            _check_released_journal_binding(
+                component, documents[component]["records"], reconciliation.get("journal_sha256"),
+            )
         boundaries = {"end_hash": end_hash, "start_hash": start_hash}
+        # The preserved logs, and how each unrecorded subject was opened, for
+        # the venue's own gap contribution.
+        self.logs = phase.logs
+        self.first_code = phase.first_code_rows() if "subjects" in self.plan else None
 
         parent = output.absolute().parent
         parent.mkdir(parents=True, exist_ok=True)
@@ -1286,14 +3766,35 @@ class Builder:
             captures = []
             for component, document in sorted(documents.items()):
                 relative = f"{component}.json"
-                (staging / relative).write_bytes(canonical_bytes(document))
+                # Every journal component is already bounded by
+                # MAX_JOURNAL_BYTES per physical file, and every raw
+                # response any of them holds already passed load_raw_json's
+                # own MAX_RESPONSE_NODES limit at collect time -- this is a
+                # second, output-side bound on already-validated data, not
+                # the place untrusted input gets its first check. A wide
+                # real capture's epoch-table can legitimately carry one
+                # log_attributions entry per preserved log (74,088 of them
+                # for the full V2 interval, 2026-09-21), so this uses the
+                # same larger ceiling MAX_RESPONSE_NODES already sets for
+                # real provider data, not the tighter default meant for a
+                # small control document like a plan or a registry.
+                # A part carries its own bounds, so one above them refuses
+                # under the part's name and shard range.
+                attribution = self.parts.get(component)
+                data = (
+                    canonical_bytes(document, max_nodes=MAX_RESPONSE_NODES)
+                    if attribution is None
+                    else part_bytes(component, attribution, document)
+                )
+                (staging / relative).write_bytes(data)
+                part = self.components.get(component, attribution)
                 components.append({
                     "access": "public",
                     "media_type": "application/json",
                     "name": component,
                     "path": relative,
                     "redistribution": "permitted",
-                    "role": _role(component),
+                    "role": _role(component if part is None else part["class"]),
                 })
                 captures.append(self._capture(component, document, reconciliation, boundaries))
             plan_document = {
@@ -1302,14 +3803,77 @@ class Builder:
                 "format": "alexandria-capture-plan/v1",
                 "release": {"created_at": self.created_at, "name": RELEASE_NAME},
             }
-            (staging / "capture-plan.json").write_bytes(canonical_bytes(plan_document))
+            # Written under the manifest limits `ingest` reads it back under, so a
+            # plan past either refuses here by name.
+            (staging / "capture-plan.json").write_bytes(
+                encode_manifest(plan_document, "capture plan")
+            )
             return ingest(staging / "capture-plan.json", output)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
 
+    def _validate_epoch_table(self, epochs, start, end):
+        validate_epochs(epochs, start, end)
+
+    def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
+        """The interval receipt; under a split plan, also the parts that hold its rows.
+
+        A plan without `log_attribution_parts` gets today's receipt, byte for
+        byte, and no part. Under the split, the rows `attribute_logs` returned
+        leave the receipt for one part per journal range, kept in
+        `part_documents`, and the receipt becomes v4, listing each part's
+        component, shard range and row count in order.
+        """
+        subjects = _plan_subjects(self.plan)
+        attributions = attribute_logs(
+            phase.logs, subjects, self.plan["interval"], epochs,
+            upgrade_topic=phase.upgrade_topic,
+            order_upgrade_transactions=upgrade_transaction_order(self.venue),
+        )
+        # Every retained row passes the runtime validator before it is
+        # written, under the plan's own subject form.
+        validate_attributions(attributions, subjects=subjects)
+        # A subject-keyed table is written as one list of subject rows, so its
+        # coverage is one collection however many subjects the plan declares.
+        receipt = {"epochs": subject_epoch_rows(epochs) if isinstance(epochs, dict) else epochs,
+                   "format": SUBJECT_RECEIPT_FORMAT if "subjects" in self.plan else RECEIPT_FORMAT,
+                   "log_attributions": attributions,
+                   "implementation_code": {"component": CODE_COMPONENT,
+                                           "sha256": hashlib.sha256(code_bytes).hexdigest()},
+                   "reconciliation": reconciliation["reconciliation"], "shards": shards}
+        if "subjects" in self.plan:
+            # How each unrecorded subject was opened; `check` re-derives the rows.
+            receipt["first_code"] = phase.first_code_rows()
+            validate_first_code(
+                receipt["first_code"], epochs, int(self.plan["interval"]["start"])
+            )
+        if self.parts:
+            rows = attribution_part_rows(self.plan, self.parts, receipt.pop("log_attributions"))
+            receipt["format"] = PARTS_RECEIPT_FORMAT
+            receipt["log_attribution_parts"] = [
+                {
+                    "component": name, "first_shard": part["first"],
+                    "last_shard": part["last"], "rows": len(rows[name]),
+                }
+                for name, part in self.parts.items()
+            ]
+            self.part_documents = {
+                name: attribution_part(part, rows[name]) for name, part in self.parts.items()
+            }
+        return receipt
+
     def _capture(self, component: str, document, reconciliation, boundaries) -> dict:
         interval = self.plan["interval"]
-        evidence = component in JOURNAL_CLASSES
+        # A journal component is named `<class>` or `<class>.<k>`; its class
+        # decides its role, its scope and its gaps, and its own name is the
+        # capture it is filed under.
+        part = self.components.get(component)
+        journal = component if part is None else part["class"]
+        # An attribution part is filed the same way under `log-attributions.<k>`.
+        attribution = self.parts.get(component)
+        if attribution is not None:
+            journal = PART_CLASS
+        evidence = journal in JOURNAL_CLASSES + (event_headers.CLASS,)
         collections = []
         record_count = 0
         if evidence or component in ("error-receipts", CODE_COMPONENT):
@@ -1320,11 +3884,23 @@ class Builder:
                 "selector": "/records",
             }]
         elif component == "epoch-table":
+            # One list under either receipt: a single proxy's epochs, or one
+            # row per in-interval subject. The count is the length of `/epochs`
+            # and never grows the collection list with the subject set.
             record_count = len(document["epochs"])
             collections = [{
                 "name": "epochs",
                 "record_count": record_count,
                 "selector": "/epochs",
+            }]
+        elif attribution is not None:
+            # One part's rows, counted under `/rows`. Its gap sentence below
+            # says which shards and blocks they come from.
+            record_count = len(document["rows"])
+            collections = [{
+                "name": PART_CLASS,
+                "record_count": record_count,
+                "selector": "/rows",
             }]
         elif component == "registry":
             record_count = len(document["entries"])
@@ -1332,6 +3908,13 @@ class Builder:
                 "name": "registry-entries",
                 "record_count": record_count,
                 "selector": "/entries",
+            }]
+        elif component == WRAPPER_COMPONENT:
+            record_count = len(document["wrappers"])
+            collections = [{
+                "name": "wrappers",
+                "record_count": record_count,
+                "selector": "/wrappers",
             }]
         else:
             # The plan and the reconciliation record are single documents, but
@@ -1343,8 +3926,13 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/shards",
             }]
-        gaps = _gaps(component, self.plan, self.registry, reconciliation)
-        unsupported = _unsupported(component)
+        gaps = _gaps(
+            journal, self.plan, self.registry, reconciliation, self.venue, part,
+            logs=self.logs, first_code=self.first_code,
+        )
+        if attribution is not None:
+            gaps.append(attribution_part_gap(self.plan, attribution))
+        unsupported = _unsupported(journal)
         scope_interval = {
             "end": interval["end"],
             "kind": "block-range",
@@ -1402,14 +3990,17 @@ def _role(component: str) -> str:
     return {
         "boundary-blocks": "json-rpc-response",
         OPENING_CLASS: "json-rpc-response",
+        event_headers.CLASS: "json-rpc-response",
         "epoch-table": "interval-receipt",
         "error-receipts": "error-receipt",
+        PART_CLASS: "log-attributions",
         CODE_COMPONENT: "implementation-code",
         "interval-plan": "capture-contract",
         "logs": "json-rpc-response",
         "reconciliation": "provider-reconciliation",
         "registry": "deployment-registry",
         "traces": "json-rpc-response",
+        WRAPPER_COMPONENT: "wrapper-subjects",
     }[component]
 
 
@@ -1439,19 +4030,18 @@ def _unsupported(component: str) -> list:
     return []
 
 
-def _gaps(component: str, plan, registry, reconciliation) -> list:
+def _gaps(
+    component: str, plan, registry, reconciliation, venue, part=None, *, logs=(), first_code=None,
+) -> list:
     gaps = []
     if component == "registry":
-        others = [
-            f"{entry['network']}/{entry['market']}"
-            for entry in registry["entries"]
-            if not (entry["network"] == "mainnet" and entry["market"] == "usdc")
-        ]
-        gaps.append(
-            f"{len(others)} of the {len(registry['entries'])} registry entries at the pin "
-            "were not collected; this release covers the Ethereum USDC Comet only"
+        return venue.gaps(registry, plan)
+    if component == WRAPPER_COMPONENT:
+        # What the derived wrapper set does not establish, from the same
+        # preserved logs the opening phase derived it from.
+        return venue.wrapper_gaps(
+            plan, registry, wildcat_wrappers.wrapper_subjects(plan, registry, logs)
         )
-        return gaps
     for shard in reconciliation["shards"]:
         if shard["status"] != "complete":
             gaps.append(
@@ -1460,7 +4050,9 @@ def _gaps(component: str, plan, registry, reconciliation) -> list:
             )
     if reconciliation["reconciliation"]["status"] == "unreconciled":
         gaps.append("the interval was not reconciled against a second provider")
-    if component in JOURNAL_CLASSES:
+    if component in JOURNAL_CLASSES + (event_headers.CLASS,):
+        if component == "traces" and "subjects" in plan:
+            gaps.append(TARGETED_TRACE_GAP)
         # Every class the plan omitted is a gap on every evidence scope, with
         # what its absence leaves unpreserved, so a release that never asked
         # for logs says so where a reader of the logs scope would look.
@@ -1471,9 +4063,21 @@ def _gaps(component: str, plan, registry, reconciliation) -> list:
                     f"the {name} evidence class was not declared by the plan, so it was "
                     f"never requested or preserved; {OMISSION_REASONS[name]}"
                 )
+        if part is not None and part["index"] is not None:
+            gaps.append(component_gap(plan, part))
+        # What the venue itself says these bytes do not establish: whether
+        # they were collected at all, and what its registry could not supply.
+        gaps.extend(venue.evidence_gaps(plan, registry, logs, first_code))
+        # What provider agreement over logs does not cover, where a venue
+        # declares it; every evidence scope carries the reconciliation's status.
+        limit = positional_verification_limit(venue)
+        if limit is not None:
+            gaps.append(limit)
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
+    if component == event_headers.CLASS:
+        gaps.append("event block headers are provider-reported and are not compared against a second provider or independently proved")
     return gaps
 
 
@@ -1486,9 +4090,24 @@ def _receipt_shards(shards) -> list:
             "record_counts": shard["record_counts"],
             "start": shard["start"],
             "status": shard["status"],
+            **({"node_syncing": shard["node_syncing"]} if "node_syncing" in shard else {}),
+            **({"log_subranges": shard["log_subranges"]} if "log_subranges" in shard else {}),
         }
         for shard in shards
     ]
+
+
+def _check_journal_record(record, label: str) -> None:
+    if not isinstance(record, dict) or set(record) - {"node_syncing", "subranges"} != {
+        "class", "request", "response", "shard",
+    }:
+        raise AlexandriaError(f"{label} has an unknown shape")
+    if "node_syncing" in record and (
+        record["class"] != BOUNDARY_CLASS or record["node_syncing"] is not False
+    ):
+        raise AlexandriaError(f"{label} may carry node_syncing: false only for boundary-blocks")
+    if "subranges" in record and record["class"] != "logs":
+        raise AlexandriaError(f"{label} may carry subranges only for logs")
 
 
 def _transaction_order(header) -> list:
@@ -1552,48 +4171,165 @@ def check_interval(release_root: Path) -> dict:
     re-derived from the preserved opening reads, each implementation's digest
     is re-hashed from the `implementation-code` component, and every evidence
     scope's start hash is compared with the collector's own first-block read.
+
+    A Wildcat V2 release built before #1880 carries the earlier registry, which
+    only this check admits; see `wildcat_registry.checking_release`.
     """
+    with checking_release():
+        return _check_interval(release_root)
+
+
+def _check_interval(release_root: Path) -> dict:
+    """The body of `check_interval`, run while an existing release is checked."""
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
-    manifest = load_bytes(
-        read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
-        "manifest",
+    manifest = load_manifest(
+        read_manifest_bytes(release_root, "manifest.json", "manifest"), "manifest",
     )
-    plan = load_bytes(
-        _component(release_root, manifest, "interval-plan"), "component interval-plan",
-        max_bytes=MAX_RAW_COMPONENT_BYTES,
-    )
+    # Every release is read only as the bytes `verify` accepted: this manifest
+    # has to hash to the identity `verify` returned before any field of it is
+    # used, and each component read below has to carry the size and digest it
+    # records. Read by path alone, a release replaced after verification was
+    # checked and reported under the identifier of the one it replaced.
+    _require_verified_manifest(manifest, release_id)
+    recorded = {item["name"]: item for item in manifest["components"]}
+    # The manifest already carries every component's byte count; comparing it
+    # with the ceiling here, before any component is read, makes the budget a
+    # refusal by name rather than a figure left to a reader.
+    for item in manifest["components"]:
+        if item["bytes"] > MAX_RAW_COMPONENT_BYTES:
+            raise AlexandriaError(
+                f"component {item['name']} holds {item['bytes']} bytes, above the "
+                f"{MAX_RAW_COMPONENT_BYTES}-byte component ceiling"
+            )
+    # One pass keys the manifest's components by name, so each lookup below is
+    # one dictionary read rather than a scan of up to 16,384 entries.
+    by_name = _components_by_name(manifest)
+    plan_bytes = _component(release_root, by_name, "interval-plan")
+    _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
+    plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
     validate_plan(plan)
+    venue = plan_venue(plan)
     classes = declared_classes(plan)
-    journal_names = (*classes, OPENING_CLASS)
-    expected_components = set(FIXED_COMPONENTS) | set(journal_names)
+    # The journal components, and the shard range each one holds, come from
+    # the plan and nothing else; the manifest's own list is compared with them,
+    # never believed.
+    journal_parts = journal_components(plan, classes)
+    journal_names = tuple(journal_parts)
+    # The attribution parts come from the plan the same way: empty unless it
+    # declares `log_attribution_parts`, and never read off the manifest.
+    parts = attribution_parts(plan)
+    split = bool(parts)
+
+    def named(name):
+        return part_label(name, parts[name]) if name in parts else name
+
+    expected_components = set(FIXED_COMPONENTS) | set(journal_names) | set(parts)
+    # The wrapper set is released exactly when the plan declares wrappers.
+    if WRAPPERS_FIELD in plan:
+        expected_components.add(WRAPPER_COMPONENT)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
         raise AlexandriaError(
             f"the release carries a {name} component the plan does not declare"
         )
     for name in sorted(expected_components - set(present)):
-        raise AlexandriaError(f"the release lacks its {name} component")
+        raise AlexandriaError(f"the release lacks its {named(name)} component")
     documents = {}
     component_bytes = {}
     for name in sorted(expected_components):
-        component_bytes[name] = _component(release_root, manifest, name)
+        if name in parts:
+            # Read once, compared with the verified manifest, then parsed
+            # from those same bytes under the part bounds.
+            label = named(name)
+            if recorded[name]["bytes"] > MAX_PART_BYTES:
+                raise AlexandriaError(
+                    f"component {label} holds {recorded[name]['bytes']} bytes, above the "
+                    f"{MAX_PART_BYTES}-byte component ceiling"
+                )
+            data = read_confined_file(
+                release_root, recorded[name]["object_path"], f"release component {label}",
+                max_bytes=MAX_PART_BYTES,
+            )
+            _require_recorded_bytes(label, data, recorded[name])
+            documents[name] = load_bytes(
+                data, f"component {label}", max_bytes=MAX_PART_BYTES, max_nodes=MAX_PART_NODES,
+            )
+            continue
+        component_bytes[name] = _component(release_root, by_name, name)
+        _require_recorded_bytes(name, component_bytes[name], recorded[name])
+        # max_nodes matches Builder.build's own write-side ceiling for these
+        # same components: real data already built and digest-verified by
+        # `verify` above, not fresh untrusted input, so the epoch-table's
+        # one log_attributions entry per preserved log (74,088 of them for
+        # the full V2 interval, 2026-09-21) reads back the same way it was
+        # written rather than refusing under the tighter default meant for
+        # a small control document.
         documents[name] = load_bytes(
-            component_bytes[name], f"component {name}", max_bytes=MAX_RAW_COMPONENT_BYTES,
+            component_bytes[name], f"component {name}",
+            max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
         )
+
+    _check_recollections(plan, documents["error-receipts"], documents, journal_parts)
 
     interval = plan["interval"]
     start = int(interval["start"])
     end = int(interval["end"])
 
     receipt = documents["epoch-table"]
-    if not isinstance(receipt, dict) or set(receipt) != {
-        "epochs", "format", "implementation_code", "reconciliation", "shards",
-    } or receipt["format"] != RECEIPT_FORMAT:
+    legacy = isinstance(receipt, dict) and receipt.get("format") == LEGACY_RECEIPT_FORMAT
+    divided = isinstance(receipt, dict) and receipt.get("format") == PARTS_RECEIPT_FORMAT
+    required = {"epochs", "format", "implementation_code", "reconciliation", "shards"}
+    if divided:
+        required.add("log_attribution_parts")
+    elif not legacy:
+        required.add("log_attributions")
+    # Keyed on the receipt's own format, so a receipt under the other kind of
+    # plan still reaches the refusal below that names the mismatch.
+    if isinstance(receipt, dict) and receipt.get("format") in (
+        SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
+    ):
+        required.add("first_code")
+    if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (
+        LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
+    ):
         raise AlexandriaError("the interval receipt has an unknown shape")
-    validate_epochs(receipt["epochs"], start, end)
-    for epoch in receipt["epochs"]:
-        if epoch["proxy"] != plan["proxy"] or epoch["chain"] != plan["chain"]:
+    # A subject-set plan's receipt is the subject-row format and a
+    # single-proxy plan's is not; either one under the other plan is a receipt
+    # some other plan's build wrote.
+    if ("subjects" in plan) != (receipt["format"] in (SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT)):
+        raise AlexandriaError(
+            "the interval receipt format does not match the plan's subject form"
+        )
+    # Receipt v4 lists the parts in place of the rows, so it belongs to a plan
+    # that declares them and to no other.
+    if split and not divided:
+        raise AlexandriaError(
+            f"the plan declares {PARTS_FIELD}, so its receipt must be {PARTS_RECEIPT_FORMAT}, "
+            f"not {receipt['format']}"
+        )
+    if divided and not split:
+        raise AlexandriaError(
+            f"the interval receipt is {PARTS_RECEIPT_FORMAT}, but the plan declares no "
+            f"{PARTS_FIELD}"
+        )
+    # A subject-set receipt writes its table as one list of subject rows; the
+    # table those rows declare is what every check below reads.
+    receipt_epochs = (
+        subject_epoch_table(receipt["epochs"]) if "subjects" in plan else receipt["epochs"]
+    )
+    (validate_block_epochs if legacy else validate_epochs)(receipt_epochs, start, end)
+    subjects = _plan_subjects(plan)
+    epoch_entries = validate_epoch_subjects(receipt_epochs, subjects)
+    if "subjects" in plan:
+        validate_first_code(receipt["first_code"], receipt_epochs, start)
+    if split:
+        _check_attribution_parts(plan, parts, receipt, documents, subjects)
+    elif not legacy:
+        validate_attributions(receipt["log_attributions"], subjects=subjects)
+    for epoch in epoch_entries:
+        owned = epoch["proxy"] == subjects if isinstance(subjects, str) else epoch["proxy"] in subjects
+        if not owned or epoch["chain"] != plan["chain"]:
             raise AlexandriaError("an epoch does not belong to the plan's market")
 
     shards = receipt["shards"]
@@ -1615,7 +4351,7 @@ def check_interval(release_root: Path) -> dict:
     # the opening phase's header reads, the shard hash from what the collector
     # saw at that block while walking the shards.
     shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
-    for epoch in receipt["epochs"]:
+    for epoch in epoch_entries:
         boundary = int(epoch["end_block"])
         if boundary in shard_hashes and epoch["end_hash"] != shard_hashes[boundary]:
             raise AlexandriaError(
@@ -1639,12 +4375,9 @@ def check_interval(release_root: Path) -> dict:
     # the return, and a wrong format was accepted. The shape is settled here,
     # once, on the same terms as the epoch table and the journals.
     reconciliation = documents["reconciliation"]
-    if (
-        not isinstance(reconciliation, dict)
-        or set(reconciliation) != {"format", "plan_sha256", "reconciliation", "shards"}
-        or reconciliation["format"] != RECONCILIATION_FORMAT
-    ):
-        raise AlexandriaError("the reconciliation component has an unknown shape")
+    bindings = _reconciliation_bindings(
+        reconciliation, journal_names, "reconciliation component",
+    )
     if reconciliation["reconciliation"] is None:
         raise AlexandriaError(
             "the reconciliation component records no reconciliation, so the release "
@@ -1654,6 +4387,22 @@ def check_interval(release_root: Path) -> dict:
         raise AlexandriaError("the reconciliation record belongs to a different plan")
     validate_reconciliation(reconciliation["reconciliation"])
     validate_shard_coverage(reconciliation["shards"], plan["shards"], classes)
+    # A carry-forward record compared again only the shards it names, and a
+    # shard is compared again only because `recollect` replaced its traces,
+    # so each must carry the recollection record that explains it.
+    carried = None
+    if CARRY_FORWARD_FIELD in reconciliation:
+        carried = _carried_shards(reconciliation, len(plan["shards"]))
+        recollected = {
+            record.get("shard") for record in documents["error-receipts"].get("recollections", [])
+            if isinstance(record, dict)
+        }
+        for index in carried[1]:
+            if index not in recollected:
+                raise AlexandriaError(
+                    f"the reconciliation compared shard {index} again, but the release records "
+                    "no recollection of it"
+                )
     # The two shard tables are one table written twice. Only their statuses
     # were compared, so the reconciliation copy could carry another boundary
     # hash or another record count than the receipt's -- neither of which any
@@ -1679,9 +4428,35 @@ def check_interval(release_root: Path) -> dict:
     # name of the component it preserves; a release whose captures name
     # something else raised a KeyError there instead of refusing.
     for name in sorted(expected_components - set(captures)):
-        raise AlexandriaError(f"the release carries no capture for its {name} component")
+        raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
+    # Each coverage and scope below is found under its component's own name,
+    # so that capture has to preserve that component, and no other capture may
+    # stand beside it: a second one, complete and naming no gap, was never
+    # read, while a reader of the manifest could take it for the component's.
+    for name in sorted(expected_components):
+        if captures[name]["component"] != name:
+            raise AlexandriaError(
+                f"the {named(name)} capture preserves the "
+                f"{named(captures[name]['component'])} component, not its own"
+            )
+    for capture in manifest["captures"]:
+        if capture["id"] not in expected_components:
+            raise AlexandriaError(
+                f"capture {capture['id']} preserves the {named(capture['component'])} "
+                "component, which its own-named capture already carries"
+            )
+    for name, part in parts.items():
+        _check_part_capture(plan, name, part, captures[name], documents[name])
     derived = {shard["index"]: {} for shard in plan["shards"]}
     boundary_headers = {}
+    # A subject-set plan's `traces` request is derived from its own shard's
+    # `logs` result (see `subject_transaction_hashes`), not from a static
+    # per-shard filter `shard_requests` can precompute; this is filled in as
+    # each shard's `logs` record is read below, which always precedes its
+    # `traces` record because `journal_components` orders components by
+    # declared class, and `declared_classes` refuses a plan that declares
+    # `traces` under subjects without also declaring `logs`.
+    logs_by_shard = {}
     # The read each shard and class makes, derived from the plan exactly as the
     # collector derived it. A shard journal record was filed under a shard
     # index that nothing held against the request the record preserves, so a
@@ -1701,18 +4476,21 @@ def check_interval(release_root: Path) -> dict:
     # The address every shard read filters on: `eth_getLogs` by the emitting
     # contract, `trace_filter` by the recipient. An entry naming another
     # address is one its own preserved request could not have returned.
-    proxy = plan["proxy"]
+    proxy = _plan_subjects(plan)
     reads = {}
     virtual = len(plan["shards"])
-    for name in journal_names:
+    for name, part in journal_parts.items():
         journal = documents[name]
+        # `name` is the component, `kind` the class whose records it holds;
+        # they differ only under a split, where the plan derives `<class>.<k>`.
+        kind = part["class"]
         if (
             not isinstance(journal, dict)
             or set(journal) != {"class", "format", "interval", "records"}
             or journal["format"] != JOURNAL_FORMAT
         ):
             raise AlexandriaError(f"the {name} component is not an interval journal")
-        if journal["class"] != name:
+        if journal["class"] != kind:
             raise AlexandriaError(
                 f"the {name} component carries a {str(journal['class'])[:64]} journal, "
                 "so the plan and the journals disagree about the declared classes"
@@ -1722,8 +4500,7 @@ def check_interval(release_root: Path) -> dict:
         if not isinstance(journal["records"], list):
             raise AlexandriaError(f"the {name} journal carries no record list")
         for record in journal["records"]:
-            if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"}:
-                raise AlexandriaError(f"a {name} journal record has an unknown shape")
+            _check_journal_record(record, f"a {name} journal record")
             # The request and the response are read as text further down, by
             # `_replay_release_opening` and by the count derivation. A release
             # is somebody else's bytes, so the type is checked here rather
@@ -1741,22 +4518,58 @@ def check_interval(release_root: Path) -> dict:
                 raise AlexandriaError(
                     f"a {name} journal record carries a shard index that is not a whole number"
                 )
-            if record["class"] != name:
+            if record["class"] != kind:
                 raise AlexandriaError(
                     f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
                     "plan and the journals disagree about the declared classes"
                 )
+            if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
+                if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
+                    raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
+            if kind == "logs" and 0 <= record["shard"] < len(shards):
+                if "subranges" in record:
+                    _log_result(record, plan, plan["shards"][record["shard"]])
+                expected_ranges = (
+                    [{"start": part["start"], "end": part["end"]}
+                     for part in record["subranges"]]
+                    if isinstance(record.get("subranges"), list) else None
+                )
+                if expected_ranges != shards[record["shard"]].get("log_subranges"):
+                    raise AlexandriaError("the shard receipt log subranges differ from its journal")
         staged = {record["shard"] for record in journal["records"]}
-        if name == OPENING_CLASS:
+        if kind in (OPENING_CLASS, event_headers.CLASS):
             if staged and staged != {virtual}:
                 raise AlexandriaError(
                     "the epoch-evidence journal holds a record outside the virtual shard index"
                 )
         else:
-            if staged != {shard["index"] for shard in plan["shards"]}:
-                raise AlexandriaError(f"the {name} journal does not cover every shard")
+            # The component holds exactly the shards the plan derives for it:
+            # a shard from another range is an overlap or a repeated range, a
+            # missing one is a gap, and either leaves a journal that does not
+            # reassemble from its components.
+            expected_shards = set(range(part["first"], part["last"] + 1))
+            for index in sorted(staged - expected_shards):
+                raise AlexandriaError(
+                    f"the {name} component holds shard {index}, outside the shards "
+                    f"{part['first']} to {part['last']} the plan derives for it"
+                )
+            for index in sorted(expected_shards - staged):
+                raise AlexandriaError(
+                    f"the {name} component does not cover shard {index} of the shards "
+                    f"{part['first']} to {part['last']} the plan derives for it"
+                )
             for record in journal["records"]:
-                if record["request"].encode() != planned_requests[(record["shard"], name)]:
+                if kind == "traces" and "subjects" in plan:
+                    # Not a static per-shard filter: the request this plan
+                    # actually made is `trace_transaction` once per distinct
+                    # transaction hash its own `logs` result touched.
+                    expected_request = request_bytes(
+                        request_identifier(record["shard"], "traces"), "trace_transaction",
+                        subject_transaction_hashes(logs_by_shard.get(record["shard"], [])),
+                    )
+                else:
+                    expected_request = planned_requests[(record["shard"], kind)]
+                if record["request"].encode() != expected_request:
                     raise AlexandriaError(
                         f"the {name} record filed under shard {record['shard']} is not the "
                         "read the plan names there"
@@ -1769,32 +4582,37 @@ def check_interval(release_root: Path) -> dict:
                 # opening journal's three readers share, so the release's
                 # shard evidence and its opening evidence are read under one
                 # rule rather than two that drift apart.
-                result = preserved_result(
-                    record["response"],
-                    request_identifier(record["shard"], name),
-                    plan["provider"]["page_limit"],
-                    f"{name} response for shard {record['shard']}",
-                    f"{name} result for shard {record['shard']}",
-                    f"{name} response for shard {record['shard']}",
+                result = (
+                    _log_result(record, plan, plan["shards"][record["shard"]])
+                    if kind == "logs" and "subranges" in record else
+                    preserved_result(
+                        record["response"], request_identifier(record["shard"], kind),
+                        plan["provider"]["page_limit"],
+                        f"{name} response for shard {record['shard']}",
+                        f"{name} result for shard {record['shard']}",
+                        f"{name} response for shard {record['shard']}",
+                    )
                 )
                 # A `logs` or `trace_filter` answer is a list of entries, and
                 # the entries are read below. A result of any other shape was
                 # counted as one read and never looked at.
-                if name in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
+                if kind in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
                     raise AlexandriaError(
                         f"the {name} result for shard {record['shard']} is not a list of entries"
                     )
-                reads[(record["shard"], name)] = reads.get((record["shard"], name), 0) + 1
+                if kind == "logs":
+                    logs_by_shard[record["shard"]] = result
+                reads[(record["shard"], kind)] = reads.get((record["shard"], kind), 0) + 1
                 # Two records of one class for one shard are two reads, so
                 # their sizes add. Assigning here declared the last record's
                 # size alone, so a journal could carry a shard's evidence
                 # twice while the receipt's count named one read of it.
-                derived[record["shard"]][name] = derived[record["shard"]].get(name, 0) + (
+                derived[record["shard"]][kind] = derived[record["shard"]].get(kind, 0) + (
                     len(result) if isinstance(result, list) else 1
                 )
-                if name == BOUNDARY_CLASS:
+                if kind == BOUNDARY_CLASS:
                     boundary_headers[record["shard"]] = result
-                if name in ENTRY_BLOCK_CLASSES:
+                if kind in ENTRY_BLOCK_CLASSES:
                     # An entry the read could not have returned: the record's
                     # own request bounds the blocks its result can carry, and
                     # an entry outside them contradicts the read it sits in.
@@ -1816,13 +4634,23 @@ def check_interval(release_root: Path) -> dict:
                         # names one address, so an entry naming another is one
                         # the read could not have returned. The block was
                         # bound and the address was not.
-                        address = _entry_address(entry, name, label)
-                        if address != proxy:
+                        address = _entry_address(entry, kind, label)
+                        if isinstance(proxy, str):
+                            if address != proxy:
+                                raise AlexandriaError(
+                                    f"{label} names address {address}, not the {proxy} its "
+                                    "read asked for"
+                                )
+                        elif address not in proxy:
                             raise AlexandriaError(
-                                f"{label} names address {address}, not the {proxy} its "
-                                "read asked for"
+                                f"{label} names address {address}, which is not one of the "
+                                "subjects its read asked for"
                             )
         gaps = captures[name]["coverage"]["gaps"]
+        if kind == event_headers.CLASS and "event block headers are provider-reported and are not compared against a second provider or independently proved" not in gaps:
+            raise AlexandriaError("event header coverage omits its provider-reported qualification")
+        if kind == "traces" and "subjects" in plan and TARGETED_TRACE_GAP not in gaps:
+            raise AlexandriaError(f"the {name} coverage does not name the targeted trace gap")
         for index in sorted(disputed):
             if not any(f"shard {index}," in gap for gap in gaps):
                 raise AlexandriaError(
@@ -1839,6 +4667,14 @@ def check_interval(release_root: Path) -> dict:
                 raise AlexandriaError(
                     f"the plan omits {omitted} but the {name} coverage does not name the gap"
                 )
+        # A split component's coverage names the shards it holds, in the words
+        # the plan derives, so a reader of one component is not left to take
+        # it for the whole journal its scope binds.
+        if part["index"] is not None and component_gap(plan, part) not in gaps:
+            raise AlexandriaError(
+                f"the {name} coverage does not name the shards {part['first']} to "
+                f"{part['last']} the plan derives for it"
+            )
 
     for shard in shards:
         if shard["record_counts"] != derived[shard["index"]]:
@@ -1891,7 +4727,9 @@ def check_interval(release_root: Path) -> dict:
     # the first block's hash and derive the epoch table the receipt has to
     # match, so nothing the receipt declares about an epoch is believed on
     # its own word.
-    phase = _replay_release_opening(plan, documents, classes)
+    phase = _replay_release_opening(plan, documents, classes, journal_parts, legacy=legacy)
+    if event_headers.enabled(plan):
+        verify_event_headers(plan, missing_event_headers(plan, phase.logs, documents["registry"], documents[OPENING_CLASS]["records"], (record for name, part in journal_parts.items() if part["class"] == BOUNDARY_CLASS for record in documents[name]["records"])), documents[event_headers.CLASS]["records"])
     first_hash = phase.hashes[start]
 
     # The implementation code, re-hashed from the component's bytes: the
@@ -1900,41 +4738,558 @@ def check_interval(release_root: Path) -> dict:
     # table as a whole is compared, so a digest the bytes do not carry is
     # refused under its own name.
     implementations = _recheck_implementation_code(
-        receipt, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
+        receipt, epoch_entries, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
     )
-    derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"])
-    if derived_epochs != receipt["epochs"]:
+    derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"], legacy=legacy)
+    if derived_epochs != receipt_epochs:
         raise AlexandriaError(
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
+    # The wrapper set the replayed opening phase derived from the release's
+    # own logs and registry, compared with the released component byte for
+    # byte, so no row, flag or log identity is believed on its own word.
+    if WRAPPERS_FIELD in plan and component_bytes[WRAPPER_COMPONENT] != (
+        wildcat_wrappers.component_bytes(phase.wrapper_component)
+    ):
+        raise AlexandriaError(
+            f"the {WRAPPER_COMPONENT} component is not the wrapper set the release's preserved "
+            "WrapperDeployed logs and registry derive"
+        )
+
+    attributions = None if legacy else attribute_logs(
+        phase.logs, _plan_subjects(plan), interval, derived_epochs,
+        upgrade_topic=phase.upgrade_topic,
+        order_upgrade_transactions=upgrade_transaction_order(venue),
+    )
+    if split:
+        # Each part against the rows derived for its own shards, sliced from
+        # the one list the unchanged call returns.
+        derived_rows = attribution_part_rows(plan, parts, attributions)
+        for name, part in parts.items():
+            if documents[name]["rows"] != derived_rows[name]:
+                raise AlexandriaError(
+                    f"component {named(name)} does not hold the rows attribute_logs derives "
+                    "from the preserved logs of its shards"
+                )
+    elif not legacy and receipt["log_attributions"] != attributions:
+        raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
+
+    # The gaps the venue owes every evidence scope, re-derived from the
+    # release's own plan, registry and preserved logs: a release whose
+    # coverage dropped one -- the constructed-staging label above all -- is
+    # refused here rather than read as preserved evidence.
+    # The receipt's first-code rows have to be the ones the preserved probes give.
+    first_code = None
+    if "subjects" in plan:
+        first_code = phase.first_code_rows()
+        if receipt["first_code"] != first_code:
+            raise AlexandriaError(
+                "the first-code rows do not match the opening reads the release preserves"
+            )
+    owed = venue.evidence_gaps(plan, documents["registry"], phase.logs, first_code)
+    for name in journal_names:
+        declared_gaps = captures[name]["coverage"]["gaps"]
+        for sentence in owed:
+            if sentence not in declared_gaps:
+                raise AlexandriaError(
+                    f"the {name} coverage does not name a gap its venue owes: {sentence[:160]}"
+                )
+    if WRAPPERS_FIELD in plan:
+        declared_gaps = captures[WRAPPER_COMPONENT]["coverage"]["gaps"]
+        for sentence in venue.wrapper_gaps(plan, documents["registry"], phase.wrapper_component):
+            if sentence not in declared_gaps:
+                raise AlexandriaError(
+                    f"the {WRAPPER_COMPONENT} coverage does not name a gap its venue owes: "
+                    f"{sentence[:160]}"
+                )
+    # A venue that declares the positional verification limit owes it on
+    # every evidence scope, so agreement is never read as a positional claim.
+    limit = positional_verification_limit(venue)
+    if limit is not None:
+        for name in journal_names:
+            if limit not in captures[name]["coverage"]["gaps"]:
+                raise AlexandriaError(
+                    f"the {name} coverage does not declare the positional verification limit "
+                    f"the {venue.VENUE} venue owes: provider agreement over logs excludes "
+                    "transactionIndex"
+                )
 
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
+    for name in journal_names:
+        _check_released_journal_binding(name, documents[name]["records"], bindings)
 
-    return {
-        "epochs": len(receipt["epochs"]),
+    result = {
+        "receipt_semantics": (
+            "v1-block-only" if legacy
+            else "v4-subject-positional-parts" if divided
+            else "v3-subject-positional" if receipt["format"] == SUBJECT_RECEIPT_FORMAT
+            else "v2-positional"
+        ),
+        "epochs": len(epoch_entries),
         "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
         "reconciliation": reconciliation["reconciliation"]["status"],
+        "reconciliation_binding": {
+            "status": "absent" if bindings is None else "verified",
+            "gaps": [RECONCILIATION_BINDING_GAP] if bindings is None else [],
+        },
         "release_id": release_id,
         "shard_statuses": {
             status: sum(1 for shard in shards if shard["status"] == status)
             for status in sorted({shard["status"] for shard in shards})
         },
     }
+    # Only a carry-forward release reports it, so every other check result
+    # is unchanged.
+    if carried is not None:
+        result["reconciliation_carry_forward"] = {
+            "carried_forward_shards": len(carried[0]),
+            "recompared_shards": carried[1],
+        }
+    # Only a wrapper plan's release reports its wrappers, so a legacy
+    # release's check result keeps exactly its keys.
+    if WRAPPERS_FIELD in plan:
+        result["wrappers"] = wrapper_listing(
+            phase.wrapper_component, derived_epochs, attributions
+        )
+    return result
 
 
-def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
-    """Replay the release's `epoch-evidence` records against its plan, offline."""
+def wrapper_listing(component, epochs, attributions) -> list:
+    """Each wrapper the `wrapper-subjects` component lists, as `check` reports it.
+
+    A declared wrapper carries its market, its `WrapperDeployed` log's
+    block and position, its one epoch's start block, end block and
+    runtime-code SHA-256, and how many `log_attributions` rows name it, which
+    is how many of its logs the `logs` journal preserves. An undeclared one
+    carries no epoch and no count, because none of its logs was requested.
+    """
+    counts = collections.Counter(row["subject"] for row in attributions)
+    listing = []
+    for row in component["wrappers"]:
+        table = epochs.get(row["wrapper"]) if row["declared"] else None
+        if row["declared"] and (not table or len(table) != 1):
+            raise AlexandriaError(
+                f"declared wrapper {row['wrapper']} does not have exactly one epoch"
+            )
+        listing.append({
+            "attributed_logs": counts[row["wrapper"]] if row["declared"] else None,
+            "declared": row["declared"],
+            "deployment": dict(row["deployment"]),
+            "epoch": None if table is None else {
+                "end_block": table[0]["end_block"],
+                "implementation_code_sha256": table[0]["implementation_code_sha256"],
+                "start_block": table[0]["start_block"],
+            },
+            "market": row["market"],
+            "wrapper": row["wrapper"],
+        })
+    return listing
+
+
+def _check_recollections(plan, receipts, documents, journal_parts) -> None:
+    """Hold the error-receipts document to its format, and each recollection to its bytes.
+
+    A v2 document names every shard whose traces `recollect` replaced. Each
+    record's new digest must be the digest of the journal the release carries
+    for that shard, re-encoded as the collector staged it, so a record cannot
+    claim a replacement the release does not hold. Only the last replacement
+    of a shard can match; an earlier one names bytes a later one replaced.
+    """
+    if not isinstance(receipts, dict) or not isinstance(receipts.get("records"), list):
+        raise AlexandriaError("the error-receipts component has an unknown shape")
+    if receipts.get("format") == ERRORS_FORMAT and set(receipts) == {"format", "records"}:
+        return
+    if receipts.get("format") != RECOLLECTED_ERRORS_FORMAT or set(receipts) != {
+        "format", "records", "recollections",
+    }:
+        raise AlexandriaError("the error-receipts component has an unknown shape")
+    recollections = receipts["recollections"]
+    if not isinstance(recollections, list) or not recollections:
+        raise AlexandriaError("the error-receipts component names no recollection")
+    if plan.get(SPLIT_FIELD) != 1:
+        raise AlexandriaError(
+            f"a recollection is recorded under a plan whose {SPLIT_FIELD} is not 1"
+        )
+    latest = {}
+    for record in recollections:
+        validate_recollection(record, len(plan["shards"]))
+        latest[(record["class"], record["shard"])] = record
+    for (name, shard), record in latest.items():
+        component = component_name(name, shard)
+        if component not in journal_parts:
+            raise AlexandriaError(f"a recollection names {component}, which the release does not carry")
+        data = b"".join(canonical_bytes(entry) for entry in documents[component]["records"])
+        if hashlib.sha256(data).hexdigest() != record["new_sha256"]:
+            raise AlexandriaError(
+                f"the recollection of shard {shard} {name} names bytes the release does not carry"
+            )
+
+
+def _require_verified_manifest(manifest, release_id: str) -> None:
+    """Refuse a manifest other than the one `verify` accepted.
+
+    `verify` reads the manifest and every object, then `check` reads them
+    again. The digests a split release is checked against come from this
+    second read, so it has to hash to the identity `verify` returned; naming
+    that identity in its own `release_id` field is not enough.
+    """
+    if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
+        identity = {key: value for key, value in manifest.items() if key != "release_id"}
+        digest = hashlib.sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES))
+        if "sha256:" + digest.hexdigest() == release_id:
+            return
+    raise AlexandriaError(
+        "the manifest check read does not hash to the release identity verification "
+        "accepted, so the release changed after it was verified"
+    )
+
+
+def _require_recorded_bytes(label: str, data: bytes, item) -> None:
+    """Refuse component bytes other than the ones the verified manifest records."""
+    if (
+        not isinstance(item, dict)
+        or len(data) != item.get("bytes")
+        or "sha256:" + hashlib.sha256(data).hexdigest() != item.get("sha256")
+    ):
+        raise AlexandriaError(
+            f"component {label} does not carry the size and SHA-256 the verified manifest "
+            "records, so it changed after the release was verified"
+        )
+
+
+def _whole(value) -> bool:
+    """A non-negative integer and not a boolean, since `True == 1` would pass for one."""
+    return type(value) is int and value >= 0
+
+
+def _check_attribution_parts(plan, parts, receipt, documents, subjects) -> None:
+    """Hold a v4 receipt's part list and every part document to the plan's parts.
+
+    The plan derives the parts. The receipt's list and each document are
+    compared with that derivation and never believed: each has to name its
+    own component, index and shard range, and hold valid rows inside its
+    range's blocks, as many as the list counts. Whether the rows are the ones
+    the preserved logs give is settled after the epochs are re-derived.
+    """
+    listing = receipt["log_attribution_parts"]
+    if not isinstance(listing, list):
+        raise AlexandriaError("the interval receipt's log_attribution_parts is not a list")
+    ordered = list(parts.items())
+    for position in range(len(ordered), len(listing)):
+        entry = listing[position]
+        extra = entry.get("component") if isinstance(entry, dict) else None
+        raise AlexandriaError(
+            f"the interval receipt lists {str(extra)[:64]} at position {position}, beyond the "
+            f"{len(ordered)} {PART_CLASS} parts the plan derives"
+        )
+    for position, (name, part) in enumerate(ordered):
+        label = part_label(name, part)
+        if position >= len(listing):
+            raise AlexandriaError(f"the interval receipt does not list {label}")
+        entry = listing[position]
+        if not isinstance(entry, dict) or set(entry) != {
+            "component", "first_shard", "last_shard", "rows",
+        }:
+            raise AlexandriaError(f"the interval receipt's entry for {label} has an unknown shape")
+        if entry["component"] != name:
+            raise AlexandriaError(
+                f"the interval receipt lists {str(entry['component'])[:64]} at position "
+                f"{position}, where the plan derives {label}"
+            )
+        if (
+            not _whole(entry["first_shard"]) or not _whole(entry["last_shard"])
+            or (entry["first_shard"], entry["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"the interval receipt names another shard range for {label}"
+            )
+        if not _whole(entry["rows"]):
+            raise AlexandriaError(f"the interval receipt's row count for {label} is not a count")
+        document = documents[name]
+        if (
+            not isinstance(document, dict)
+            or set(document) != {"first_shard", "format", "last_shard", "part", "rows"}
+            or document["format"] != PART_FORMAT
+        ):
+            raise AlexandriaError(f"component {label} is not an {PART_FORMAT} document")
+        if not _whole(document["part"]) or document["part"] != part["index"]:
+            raise AlexandriaError(
+                f"component {label} names itself part {str(document['part'])[:64]}, not "
+                f"part {part['index']}"
+            )
+        if (
+            not _whole(document["first_shard"]) or not _whole(document["last_shard"])
+            or (document["first_shard"], document["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"component {label} declares another shard range than the plan derives for it"
+            )
+        rows = document["rows"]
+        if not isinstance(rows, list):
+            raise AlexandriaError(f"component {label} carries no row list")
+        if len(rows) != entry["rows"]:
+            raise AlexandriaError(
+                f"component {label} holds {len(rows)} rows, but the interval receipt counts "
+                f"{entry['rows']}"
+            )
+        try:
+            validate_attributions(rows, subjects=subjects)
+        except AlexandriaError as error:
+            raise AlexandriaError(f"component {label}: {error}") from error
+        low, high = part_blocks(plan, part)
+        for row in rows:
+            block = int(row["block_number"])
+            if not low <= block <= high:
+                raise AlexandriaError(
+                    f"component {label} holds a row at block {block}, outside its blocks "
+                    f"{low} to {high}"
+                )
+
+
+def _check_part_capture(plan, name: str, part, capture, document) -> None:
+    """A part's capture is the one the builder writes: derived, header-bound, counting `/rows`.
+
+    The fields are compared with the ones the plan gives every part, and the
+    coverage has to count the part's rows under `/rows` and name its shards
+    and blocks in the sentence the plan derives. Every refusal names the part.
+    """
+    label = part_label(name, part)
+    interval = plan["interval"]
+    expected = {
+        "chain": plan["chain"],
+        "component": name,
+        "evidence_class": "header-bound",
+        "scope": {
+            "deployment": plan["deployment"],
+            "finality": "provider-reported",
+            "interval": {"end": interval["end"], "kind": "block-range", "start": interval["start"]},
+            "kind": "full-dataset",
+        },
+        "source": {
+            "kind": "local-fixture",
+            "locator_class": "local-fixture",
+            "reference": f"derived offline from the collected interval, {name}",
+        },
+        "venue": plan["venue"],
+    }
+    for field, value in expected.items():
+        if capture.get(field) != value:
+            raise AlexandriaError(
+                f"the {label} capture's {field} is not the one the plan gives every part"
+            )
+    coverage = capture["coverage"]
+    if attribution_part_gap(plan, part) not in coverage["gaps"]:
+        raise AlexandriaError(
+            f"the {label} coverage does not name the shards and blocks the plan derives for it"
+        )
+    count = len(document["rows"])
+    counted = {
+        "collections": [{"name": PART_CLASS, "record_count": count, "selector": "/rows"}],
+        "record_count": count,
+        "status": "partial",
+        "unsupported_collections": [],
+    }
+    if any(coverage.get(field) != value for field, value in counted.items()):
+        raise AlexandriaError(
+            f"the {label} coverage does not count its {count} rows under /rows as a partial part"
+        )
+
+
+def _require_verified_manifest(manifest, release_id: str) -> None:
+    """Refuse a manifest other than the one `verify` accepted.
+
+    `verify` reads the manifest and every object, then `check` reads them
+    again. The digests every component is checked against come from this
+    second read, so it has to hash to the identity `verify` returned; naming
+    that identity in its own `release_id` field is not enough. Anything other
+    than an object, a list among them, refuses here rather than as a
+    `TypeError` at the first field read.
+    """
+    if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
+        identity = {key: value for key, value in manifest.items() if key != "release_id"}
+        digest = hashlib.sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES))
+        if "sha256:" + digest.hexdigest() == release_id:
+            return
+    raise AlexandriaError(
+        "the manifest check read does not hash to the release identity verification "
+        "accepted, so the release changed after it was verified"
+    )
+
+
+def _require_recorded_bytes(label: str, data: bytes, item) -> None:
+    """Refuse component bytes other than the ones the verified manifest records."""
+    if (
+        not isinstance(item, dict)
+        or len(data) != item.get("bytes")
+        or "sha256:" + hashlib.sha256(data).hexdigest() != item.get("sha256")
+    ):
+        raise AlexandriaError(
+            f"component {label} does not carry the size and SHA-256 the verified manifest "
+            "records, so it changed after the release was verified"
+        )
+
+
+def _whole(value) -> bool:
+    """A non-negative integer and not a boolean, since `True == 1` would pass for one."""
+    return type(value) is int and value >= 0
+
+
+def _check_attribution_parts(plan, parts, receipt, documents, subjects) -> None:
+    """Hold a v4 receipt's part list and every part document to the plan's parts.
+
+    The plan derives the parts. The receipt's list and each document are
+    compared with that derivation and never believed: each has to name its
+    own component, index and shard range, and hold valid rows inside its
+    range's blocks, as many as the list counts. Whether the rows are the ones
+    the preserved logs give is settled after the epochs are re-derived.
+    """
+    listing = receipt["log_attribution_parts"]
+    if not isinstance(listing, list):
+        raise AlexandriaError("the interval receipt's log_attribution_parts is not a list")
+    ordered = list(parts.items())
+    for position in range(len(ordered), len(listing)):
+        entry = listing[position]
+        extra = entry.get("component") if isinstance(entry, dict) else None
+        raise AlexandriaError(
+            f"the interval receipt lists {str(extra)[:64]} at position {position}, beyond the "
+            f"{len(ordered)} {PART_CLASS} parts the plan derives"
+        )
+    for position, (name, part) in enumerate(ordered):
+        label = part_label(name, part)
+        if position >= len(listing):
+            raise AlexandriaError(f"the interval receipt does not list {label}")
+        entry = listing[position]
+        if not isinstance(entry, dict) or set(entry) != {
+            "component", "first_shard", "last_shard", "rows",
+        }:
+            raise AlexandriaError(f"the interval receipt's entry for {label} has an unknown shape")
+        if entry["component"] != name:
+            raise AlexandriaError(
+                f"the interval receipt lists {str(entry['component'])[:64]} at position "
+                f"{position}, where the plan derives {label}"
+            )
+        if (
+            not _whole(entry["first_shard"]) or not _whole(entry["last_shard"])
+            or (entry["first_shard"], entry["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"the interval receipt names another shard range for {label}"
+            )
+        if not _whole(entry["rows"]):
+            raise AlexandriaError(f"the interval receipt's row count for {label} is not a count")
+        document = documents[name]
+        if (
+            not isinstance(document, dict)
+            or set(document) != {"first_shard", "format", "last_shard", "part", "rows"}
+            or document["format"] != PART_FORMAT
+        ):
+            raise AlexandriaError(f"component {label} is not an {PART_FORMAT} document")
+        if not _whole(document["part"]) or document["part"] != part["index"]:
+            raise AlexandriaError(
+                f"component {label} names itself part {str(document['part'])[:64]}, not "
+                f"part {part['index']}"
+            )
+        if (
+            not _whole(document["first_shard"]) or not _whole(document["last_shard"])
+            or (document["first_shard"], document["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"component {label} declares another shard range than the plan derives for it"
+            )
+        rows = document["rows"]
+        if not isinstance(rows, list):
+            raise AlexandriaError(f"component {label} carries no row list")
+        if len(rows) != entry["rows"]:
+            raise AlexandriaError(
+                f"component {label} holds {len(rows)} rows, but the interval receipt counts "
+                f"{entry['rows']}"
+            )
+        try:
+            validate_attributions(rows, subjects=subjects)
+        except AlexandriaError as error:
+            raise AlexandriaError(f"component {label}: {error}") from error
+        low, high = part_blocks(plan, part)
+        for row in rows:
+            block = int(row["block_number"])
+            if not low <= block <= high:
+                raise AlexandriaError(
+                    f"component {label} holds a row at block {block}, outside its blocks "
+                    f"{low} to {high}"
+                )
+
+
+def _check_part_capture(plan, name: str, part, capture, document) -> None:
+    """A part's capture is the one the builder writes: derived, header-bound, counting `/rows`.
+
+    The fields are compared with the ones the plan gives every part, and the
+    coverage has to count the part's rows under `/rows` and name its shards
+    and blocks in the sentence the plan derives. Every refusal names the part.
+    """
+    label = part_label(name, part)
+    interval = plan["interval"]
+    expected = {
+        "chain": plan["chain"],
+        "component": name,
+        "evidence_class": "header-bound",
+        "scope": {
+            "deployment": plan["deployment"],
+            "finality": "provider-reported",
+            "interval": {"end": interval["end"], "kind": "block-range", "start": interval["start"]},
+            "kind": "full-dataset",
+        },
+        "source": {
+            "kind": "local-fixture",
+            "locator_class": "local-fixture",
+            "reference": f"derived offline from the collected interval, {name}",
+        },
+        "venue": plan["venue"],
+    }
+    for field, value in expected.items():
+        if capture.get(field) != value:
+            raise AlexandriaError(
+                f"the {label} capture's {field} is not the one the plan gives every part"
+            )
+    coverage = capture["coverage"]
+    if attribution_part_gap(plan, part) not in coverage["gaps"]:
+        raise AlexandriaError(
+            f"the {label} coverage does not name the shards and blocks the plan derives for it"
+        )
+    count = len(document["rows"])
+    counted = {
+        "collections": [{"name": PART_CLASS, "record_count": count, "selector": "/rows"}],
+        "record_count": count,
+        "status": "partial",
+        "unsupported_collections": [],
+    }
+    if any(coverage.get(field) != value for field, value in counted.items()):
+        raise AlexandriaError(
+            f"the {label} coverage does not count its {count} rows under /rows as a partial part"
+        )
+
+
+def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False):
+    """Replay the release's `epoch-evidence` records against its plan, offline.
+
+    The staged logs are read from every `logs` component in shard order, so a
+    split journal reaches the opening phase exactly as its unsplit twin would.
+    """
     logs = []
     if "logs" in classes:
-        for record in documents["logs"]["records"]:
-            envelope = load_bytes(
-                record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
-            )
-            result = envelope.get("result") if isinstance(envelope, dict) else None
-            if isinstance(result, list):
-                logs.extend(result)
-    phase = OpeningPhase(plan, logs)
+        for name, part in journal_parts.items():
+            if part["class"] != "logs":
+                continue
+            for record in documents[name]["records"]:
+                envelope = load_bytes(
+                    record["response"].encode(), f"{name} response",
+                    max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
+                )
+                result = envelope.get("result") if isinstance(envelope, dict) else None
+                if isinstance(result, list):
+                    logs.extend(result)
+    # A venue that owns its opening reads derives them from the release's own
+    # registry component, which it validates against its pinned digest first.
+    phase = opening_phase(plan, logs, registry=documents["registry"], legacy=legacy)
     entries = documents[OPENING_CLASS]["records"]
     position = 0
     for read in phase.reads():
@@ -1943,7 +5298,7 @@ def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
                 "the epoch-evidence journal stops short of the opening reads the plan names"
             )
         entry = entries[position]
-        if entry["request"].encode() != phase.request(position, read):
+        if entry["request"].encode() != opening_request(plan, position, read):
             raise AlexandriaError(
                 f"epoch-evidence record {position} is not the opening read the plan names there"
             )
@@ -1958,7 +5313,7 @@ def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
     return phase
 
 
-def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
+def _recheck_implementation_code(receipt, epoch_entries, component, data: bytes) -> dict:
     """Re-hash the component and every implementation's bytes; refuse by name what disagrees."""
     named = receipt["implementation_code"]
     if not isinstance(named, dict) or set(named) != {"component", "sha256"}:
@@ -1994,7 +5349,7 @@ def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
             raise AlexandriaError(f"the implementation-code component holds {address} twice")
         codes[address] = hashlib.sha256(runtime_code(record["code"], address)).hexdigest()
     implementations = {}
-    for epoch in receipt["epochs"]:
+    for epoch in epoch_entries:
         address = epoch["implementation"]
         if address not in codes:
             raise AlexandriaError(
@@ -2072,8 +5427,16 @@ def _check_scopes(manifest, plan, journal_names, first_hash: str, end_hash: str)
             )
 
 
-def _component(release_root: Path, manifest, name: str) -> bytes:
-    matches = [item for item in manifest["components"] if item["name"] == name]
+def _components_by_name(manifest) -> dict:
+    """Every manifest component entry, keyed by its name; a repeated name keeps each entry."""
+    by_name = {}
+    for item in manifest["components"]:
+        by_name.setdefault(item["name"], []).append(item)
+    return by_name
+
+
+def _component(release_root: Path, by_name, name: str) -> bytes:
+    matches = by_name.get(name, [])
     if len(matches) != 1:
         raise AlexandriaError(f"release component {name} is missing or duplicated")
     return read_confined_file(
@@ -2084,6 +5447,103 @@ def _component(release_root: Path, manifest, name: str) -> bytes:
 
 def _number(value) -> int:
     return int(value)
+
+
+def _trace_filter_recipient(entry):
+    """The address `trace_filter`'s own `toAddress` parameter would have matched, if any.
+
+    A call's `to`, a creation's `result.address`, a self-destruct's
+    `refundAddress`, a reward's `author`, in that priority order, whichever
+    the trace's own kind carries. `None` when the trace carries none of them,
+    such as a `create` whose init reverted and so has no `result`; such a
+    trace can never satisfy `toAddress`, on any provider, because there is no
+    address on it that filter could have matched.
+    """
+    if not isinstance(entry, dict):
+        return None
+    action = entry.get("action") if isinstance(entry.get("action"), dict) else {}
+    created = entry.get("result") if isinstance(entry.get("result"), dict) else {}
+    return next(
+        (
+            candidate
+            for candidate in (
+                action.get("to"),
+                created.get("address"),
+                action.get("refundAddress"),
+                action.get("author"),
+            )
+            if isinstance(candidate, str)
+        ),
+        None,
+    )
+
+
+def _matches_subjects(entry, subjects) -> bool:
+    """Whether `trace_filter`'s own `toAddress` parameter would have kept this frame.
+
+    `subjects` is a lowercase-address set. Used to filter one transaction's
+    `trace_transaction` frames down to the ones a blanket `trace_filter` call
+    would have returned -- see `Collector._targeted_traces`.
+    """
+    value = _trace_filter_recipient(entry)
+    return isinstance(value, str) and value.lower() in subjects
+
+
+def subject_transaction_hashes(logs_result) -> list:
+    """The distinct transaction hashes one shard's own `logs` result touched.
+
+    Ordered by `(blockNumber, transactionIndex)` ascending -- the order
+    `trace_filter` itself would have returned their frames in -- so a
+    per-transaction `trace_transaction` walk in this order, concatenated,
+    reproduces `trace_filter`'s own order. Every `logs` entry the plan's own
+    address filter could return already names a subject, so no further
+    address check is made here; the field this reads is `transactionHash`.
+    """
+    if not isinstance(logs_result, list):
+        raise AlexandriaError("a shard's logs result is not a list of entries")
+    seen = {}
+    for entry in logs_result:
+        if not isinstance(entry, dict):
+            raise AlexandriaError("a log entry is not an object")
+        tx_hash = entry.get("transactionHash")
+        if not isinstance(tx_hash, str) or HASH_RE.fullmatch(tx_hash.lower()) is None:
+            raise AlexandriaError("a log entry carries no transaction hash")
+        key = tx_hash.lower()
+        if key in seen:
+            continue
+        block = _entry_block(entry.get("blockNumber"), "a log entry block number")
+        tx_index = _hex(entry.get("transactionIndex"), "a log entry transaction index")
+        seen[key] = (block, tx_index, tx_hash)
+    return [value[2] for value in sorted(seen.values(), key=lambda value: value[:2])]
+
+
+def trace_identity(record) -> str:
+    """Identify a trace frame and bind every field of its preserved content.
+
+    The final digest includes action, result, error and location fields.
+    JSON key order is ignored; every value and omitted field stays significant.
+    Two providers must return the same content to record agreement.
+    """
+    if not isinstance(record, dict):
+        raise AlexandriaError("a trace record is not an object")
+    tx_hash = record.get("transactionHash")
+    if not isinstance(tx_hash, str) or not tx_hash:
+        raise AlexandriaError("a trace record has no transactionHash")
+    trace_address = record.get("traceAddress")
+    if not isinstance(trace_address, list) or any(
+        not isinstance(item, int) or isinstance(item, bool) for item in trace_address
+    ):
+        raise AlexandriaError("a trace record has no traceAddress")
+    kind = record.get("type")
+    recipient = _trace_filter_recipient(record)
+    fields = [
+        tx_hash.lower(),
+        ",".join(str(item) for item in trace_address),
+        kind.lower() if isinstance(kind, str) else "",
+        recipient.lower() if isinstance(recipient, str) else "",
+        hashlib.sha256(canonical_bytes(record)).hexdigest(),
+    ]
+    return "|".join(fields)
 
 
 def _entry_address(entry, name: str, label: str) -> str:
@@ -2099,21 +5559,7 @@ def _entry_address(entry, name: str, label: str) -> str:
     if name == "logs":
         value = entry.get("address")
     else:
-        action = entry.get("action") if isinstance(entry.get("action"), dict) else {}
-        created = entry.get("result") if isinstance(entry.get("result"), dict) else {}
-        value = next(
-            (
-                candidate
-                for candidate in (
-                    action.get("to"),
-                    created.get("address"),
-                    action.get("refundAddress"),
-                    action.get("author"),
-                )
-                if isinstance(candidate, str)
-            ),
-            None,
-        )
+        value = _trace_filter_recipient(entry)
     if not isinstance(value, str) or ADDRESS_RE.fullmatch(value.lower()) is None:
         raise AlexandriaError(f"{label} names no address its read could have filtered on")
     return value.lower()
@@ -2147,16 +5593,70 @@ def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser(
         description="Collect a bounded Ethereum USDC Comet interval, resumably."
     )
-    commands = value.add_subparsers(dest="command", metavar="{collect,reconcile,build,check}")
+    commands = value.add_subparsers(dest="command", metavar="{collect,reconcile,recollect,build,check}")
     collect = commands.add_parser("collect", help="collect the plan's interval from the explicit RPC endpoint")
     collect.add_argument("--plan", required=True, type=Path)
     collect.add_argument("--staging", required=True, type=Path)
+    collect.add_argument(
+        "--registry", type=Path,
+        help="the deployment registry, for a venue that plans its opening reads from one",
+    )
+    collect.add_argument(
+        "--concurrency", type=int, default=DEFAULT_COLLECT_CONCURRENCY,
+        help=(
+            f"shards fetched at once, from 1 to {MAX_COLLECT_CONCURRENCY} "
+            f"(default {DEFAULT_COLLECT_CONCURRENCY}); commits still land strictly in "
+            "ascending shard order"
+        ),
+    )
     reconcile = commands.add_parser(
         "reconcile", help="run the collected interval past a second provider"
     )
     reconcile.add_argument("--plan", required=True, type=Path)
     reconcile.add_argument("--staging", required=True, type=Path)
     reconcile.add_argument("--provider-class", required=True)
+    reconcile.add_argument(
+        "--registry", type=Path,
+        help="the deployment registry, for a venue that plans its opening reads from one",
+    )
+    reconcile.add_argument(
+        "--concurrency", type=int, default=DEFAULT_COLLECT_CONCURRENCY,
+        help=f"shards prefetched at once, from 1 to {MAX_COLLECT_CONCURRENCY}; comparisons commit in order",
+    )
+    reconcile.add_argument(
+        "--carry-forward", action="store_true",
+        help=(
+            "compare again only the shards recollect changed since the record in "
+            "reconciliation/prior.json, and keep every other shard's comparison"
+        ),
+    )
+    recollect = commands.add_parser(
+        "recollect",
+        help="replace the traces of named shards of a complete one-shard-per-component collection",
+    )
+    recollect.add_argument("--plan", required=True, type=Path)
+    recollect.add_argument("--staging", required=True, type=Path)
+    recollect.add_argument(
+        "--shard", required=True, type=int, action="append", dest="shards", metavar="INDEX",
+        help="a shard index whose traces are re-collected; repeat for several",
+    )
+    recollect.add_argument(
+        "--registry", type=Path,
+        help="the deployment registry, for a venue that plans its opening reads from one",
+    )
+    for command in (collect, reconcile, recollect):
+        command.add_argument(
+            "--trace-concurrency", type=int, default=DEFAULT_TRACE_CONCURRENCY,
+            help=(
+                f"targeted trace requests in flight across every shard, from 1 to "
+                f"{MAX_TRACE_CONCURRENCY} (default {DEFAULT_TRACE_CONCURRENCY}), never more than "
+                "--rpc-concurrency allows; 1 requests serially"
+            ),
+        )
+        command.add_argument(
+            "--rpc-concurrency", type=int, default=DEFAULT_RPC_CONCURRENCY,
+            help=f"overall active RPC limit across all categories, from 1 to {MAX_RPC_CONCURRENCY} (default 8)",
+        )
     build = commands.add_parser("build", help="build the Alexandria release offline")
     build.add_argument("--plan", required=True, type=Path)
     build.add_argument("--staging", required=True, type=Path)
@@ -2181,19 +5681,39 @@ def main(argv=None) -> int:
         plan = load_control(args.plan, "interval plan")
         validate_plan(plan)
         if args.command == "build":
-            registry = load_control(args.registry, "Compound registry")
+            registry = load_control(args.registry, "deployment registry")
             release_id = Builder(
                 plan, args.staging, registry, created_at=args.created_at
             ).build(args.output)
             print(release_id)
             return 0
-        transport = HttpsTransport.from_environment(plan["provider"]["timeout_seconds"])
+        registry = (
+            None if args.registry is None else load_control(args.registry, "deployment registry")
+        )
+        # Refused before the endpoint is read: see `opening_phase`.
+        opening_phase(plan, [], registry=registry)
+        transport = transport_from_environment(plan["provider"]["timeout_seconds"])
         if args.command == "reconcile":
-            document = Reconciler(plan, args.staging, transport, args.provider_class).reconcile()
+            reconciler = Reconciler(
+                plan, args.staging, transport, args.provider_class, registry=registry,
+                trace_concurrency=args.trace_concurrency, concurrency=args.concurrency,
+                rpc_concurrency=args.rpc_concurrency,
+            )
+            document = reconciler.carry_forward() if args.carry_forward else reconciler.reconcile()
             sys.stdout.buffer.write(canonical_bytes(document))
             return 0
+        if args.command == "recollect":
+            summary = Collector(
+                plan, args.staging, transport, registry=registry,
+                trace_concurrency=args.trace_concurrency, rpc_concurrency=args.rpc_concurrency,
+            ).recollect(args.shards)
+            sys.stdout.buffer.write(canonical_bytes(summary))
+            return 0
         args.staging.mkdir(parents=True, exist_ok=True)
-        summary = Collector(plan, args.staging, transport).collect()
+        summary = Collector(
+            plan, args.staging, transport, registry=registry, concurrency=args.concurrency,
+            trace_concurrency=args.trace_concurrency, rpc_concurrency=args.rpc_concurrency,
+        ).collect()
         sys.stdout.buffer.write(canonical_bytes(summary))
         return 0
     except (AlexandriaError, OSError) as error:

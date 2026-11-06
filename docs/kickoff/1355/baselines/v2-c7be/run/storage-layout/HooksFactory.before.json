@@ -1,0 +1,168 @@
+{
+  "storage": [
+    {
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "label": "_hooksTemplates",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_array(t_address)dyn_storage"
+    },
+    {
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "label": "_hooksInstancesByBorrower",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+    },
+    {
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "label": "_marketsByHooksTemplate",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+    },
+    {
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "label": "_marketsByHooksInstance",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+    },
+    {
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "label": "_templateDetails",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_address,t_struct(HooksTemplate)_storage)"
+    },
+    {
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "label": "getHooksTemplateForInstance",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_address,t_address)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_address)dyn_storage": {
+      "base": "t_address",
+      "encoding": "dynamic_array",
+      "label": "address[]",
+      "numberOfBytes": "32"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_address,t_address)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => address)",
+      "numberOfBytes": "32",
+      "value": "t_address"
+    },
+    "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => address[])",
+      "numberOfBytes": "32",
+      "value": "t_array(t_address)dyn_storage"
+    },
+    "t_mapping(t_address,t_struct(HooksTemplate)_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct HooksTemplate)",
+      "numberOfBytes": "32",
+      "value": "t_struct(HooksTemplate)_storage"
+    },
+    "t_string_storage": {
+      "encoding": "bytes",
+      "label": "string",
+      "numberOfBytes": "32"
+    },
+    "t_struct(HooksTemplate)_storage": {
+      "encoding": "inplace",
+      "label": "struct HooksTemplate",
+      "members": [
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "originationFeeAsset",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_address"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "originationFeeAmount",
+          "offset": 20,
+          "slot": "0",
+          "type": "t_uint80"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "protocolFeeBips",
+          "offset": 30,
+          "slot": "0",
+          "type": "t_uint16"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "exists",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "enabled",
+          "offset": 1,
+          "slot": "1",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "index",
+          "offset": 2,
+          "slot": "1",
+          "type": "t_uint24"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "feeRecipient",
+          "offset": 5,
+          "slot": "1",
+          "type": "t_address"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "name",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_string_storage"
+        }
+      ],
+      "numberOfBytes": "96"
+    },
+    "t_uint16": {
+      "encoding": "inplace",
+      "label": "uint16",
+      "numberOfBytes": "2"
+    },
+    "t_uint24": {
+      "encoding": "inplace",
+      "label": "uint24",
+      "numberOfBytes": "3"
+    },
+    "t_uint80": {
+      "encoding": "inplace",
+      "label": "uint80",
+      "numberOfBytes": "10"
+    }
+  }
+}

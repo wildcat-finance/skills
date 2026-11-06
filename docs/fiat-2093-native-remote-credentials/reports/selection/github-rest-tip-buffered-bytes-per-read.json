@@ -1,0 +1,9 @@
+{
+  "candidate": "github-rest-tip",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate github-rest-tip --criterion buffered-bytes-per-read --out .hexaemeron/design/reports/selection/github-rest-tip-buffered-bytes-per-read.json",
+  "criterion": "buffered-bytes-per-read",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 73
+}

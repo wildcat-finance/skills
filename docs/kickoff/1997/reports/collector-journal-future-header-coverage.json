@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "collector-journal",
+  "criterion": "future-header-coverage",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate collector-journal --criterion future-header-coverage --report .hexaemeron/reports/collector-journal-future-header-coverage.json",
+  "exit": 0
+}

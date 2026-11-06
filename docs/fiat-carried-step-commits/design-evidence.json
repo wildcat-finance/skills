@@ -1,0 +1,449 @@
+{
+  "candidates": [
+    {
+      "id": "gained-range-ownership",
+      "summary": "For every unmerged step whose remote tip left its receipted head, enumerate the gained range once natively and refuse when it holds a commit another step's push receipt owns."
+    },
+    {
+      "id": "owned-commit-ancestry",
+      "summary": "For every unmerged lower step, ask native ancestry once per commit owned by every higher step's push receipt against the lower tip."
+    },
+    {
+      "id": "pull-request-merge-state",
+      "summary": "Read each unmerged step's pull request from GitHub and refuse when it reports merged into a base that is not the run branch."
+    },
+    {
+      "id": "merge-time-only",
+      "summary": "Leave next unchanged and refuse at done merge-step when the exact repaired range holds a commit another step's receipt owns."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "refuses-whole-carry",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "refuses-partial-carry",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "admits-honest-extension",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "admits-adopted-early-merge",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "no-new-github-reads",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "added-native-processes-per-next",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "max-child-output-bytes",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 2097152,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "unknown-refuses-as-unknown",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "product-refuses-specimen-stack",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "refuses-whole-carry",
+      "report": {
+        "path": "design/reports/gained-range-ownership-refuses-whole-carry.json",
+        "sha256": "d7adee73dc95eef50a981a5f844f2d18226a2ee7b34387c100c2512fad439567"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "refuses-partial-carry",
+      "report": {
+        "path": "design/reports/gained-range-ownership-refuses-partial-carry.json",
+        "sha256": "2a7e09b005f96377a4fe4b12f729f412cece89c630310673070cf3e24eaa687b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "admits-honest-extension",
+      "report": {
+        "path": "design/reports/gained-range-ownership-admits-honest-extension.json",
+        "sha256": "1a528bedad6cdda69d5f3a2e6350941aa55beab0eac7eef6248d2658f85b5ec3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "admits-adopted-early-merge",
+      "report": {
+        "path": "design/reports/gained-range-ownership-admits-adopted-early-merge.json",
+        "sha256": "91ba381501f9403f54e2b70453746edcb314fba36b1c5ba144851c720e29b348"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "no-new-github-reads",
+      "report": {
+        "path": "design/reports/gained-range-ownership-no-new-github-reads.json",
+        "sha256": "1b2b97025c4eef125f640f0c0a178edf83433bb7dba358901ef7953093fa03bd"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "added-native-processes-per-next",
+      "report": {
+        "path": "design/reports/gained-range-ownership-added-native-processes-per-next.json",
+        "sha256": "31358981285902a79d712c430cbbe9dcae8cd85d5264e6e5ba8a8109e1580345"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "max-child-output-bytes",
+      "report": {
+        "path": "design/reports/gained-range-ownership-max-child-output-bytes.json",
+        "sha256": "cd2cb4b96af41c5846f3a7adcf4c15f7ee79ff0528a908ffee10e44e2ee8d23d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gained-range-ownership",
+      "criterion": "unknown-refuses-as-unknown",
+      "report": {
+        "path": "design/reports/gained-range-ownership-unknown-refuses-as-unknown.json",
+        "sha256": "fba87064b1f017ad17c5d2879a4f2e34c1544309abdc639146d2a5491b6601d7"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "gained-range-ownership",
+      "criterion": "product-refuses-specimen-stack",
+      "report": "design/reports/gained-range-ownership-product-refuses-specimen-stack.json",
+      "resolver": "python3 .hexaemeron/design/conform_carry.py --candidate gained-range-ownership --out .hexaemeron/design/reports/gained-range-ownership-product-refuses-specimen-stack.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "refuses-whole-carry",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-refuses-whole-carry.json",
+        "sha256": "8b5f1805c449c87e84b74f3026c0ec18ca7d8a2523751c4ce7b9188bfec2b763"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "refuses-partial-carry",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-refuses-partial-carry.json",
+        "sha256": "d1da42cd42e130208ac6e2dc0a76bfa4d833150ccff1647f5e9dca50f8999ce5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "admits-honest-extension",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-admits-honest-extension.json",
+        "sha256": "9949ef49b814ba3fece9bf6aed24d6507e19cbf5ec1d3f1f3b64948f5ca44fae"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "admits-adopted-early-merge",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-admits-adopted-early-merge.json",
+        "sha256": "032913ad53e5a581a2a7578f66e470715bef92f09f1ab963d9fbec319618b2e5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "no-new-github-reads",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-no-new-github-reads.json",
+        "sha256": "22de5867da275575ad7992fb29bd065580e8ce3d97e0d55ab12778e4805f2f0c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "added-native-processes-per-next",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-added-native-processes-per-next.json",
+        "sha256": "5d470905036f8ece169e1c8acdc59cbb3d21c6e58587deaaa0d545871e67fdf0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "max-child-output-bytes",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-max-child-output-bytes.json",
+        "sha256": "1331e6354f40ca83de9e70e3c28b4450df0b01e2c4620258764af22b56c56b3b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "owned-commit-ancestry",
+      "criterion": "unknown-refuses-as-unknown",
+      "report": {
+        "path": "design/reports/owned-commit-ancestry-unknown-refuses-as-unknown.json",
+        "sha256": "45b5b4dec6952a6556cc9e0d0697fab4759eeff35ffb63831b43457a967474a8"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "owned-commit-ancestry",
+      "criterion": "product-refuses-specimen-stack",
+      "report": "design/reports/owned-commit-ancestry-product-refuses-specimen-stack.json",
+      "resolver": "python3 .hexaemeron/design/conform_carry.py --candidate owned-commit-ancestry --out .hexaemeron/design/reports/owned-commit-ancestry-product-refuses-specimen-stack.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "refuses-whole-carry",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-refuses-whole-carry.json",
+        "sha256": "c887add892b13dab4e9ea7c62539674ae591f9474915229e3d4e68caaf3e5221"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "refuses-partial-carry",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-refuses-partial-carry.json",
+        "sha256": "4a56046241e44cc315554f0ea8dcca1967bc920c18e095d47532186ab44c460e"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "admits-honest-extension",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-admits-honest-extension.json",
+        "sha256": "a2c6f6f2960b5f36a16d860f3325ab24a58ad827a2d60ba5c8bbbe6a14f6073a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "admits-adopted-early-merge",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-admits-adopted-early-merge.json",
+        "sha256": "39f2a12ce7312b2013522af58174d84754b7238ca3f9436a6317b30601899909"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "no-new-github-reads",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-no-new-github-reads.json",
+        "sha256": "7f1f167758dc49542d6953bfdc74e5d0db70561469cdbc74c176f189c478f1b7"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "added-native-processes-per-next",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-added-native-processes-per-next.json",
+        "sha256": "075b04985781ae03cdd7ab8662e0b9c24fb4f4347e4f22f33701b8138c91ee24"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "max-child-output-bytes",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-max-child-output-bytes.json",
+        "sha256": "93b8083303bb6d8311685ef247cf0028475251d9910a6bb657600d4486eb75e3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pull-request-merge-state",
+      "criterion": "unknown-refuses-as-unknown",
+      "report": {
+        "path": "design/reports/pull-request-merge-state-unknown-refuses-as-unknown.json",
+        "sha256": "00bacb2f36bdf9608eecacfb423debb2f02b60109da75675d198f76473c7256d"
+      },
+      "state": "fail"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "pull-request-merge-state",
+      "criterion": "product-refuses-specimen-stack",
+      "report": "design/reports/pull-request-merge-state-product-refuses-specimen-stack.json",
+      "resolver": "python3 .hexaemeron/design/conform_carry.py --candidate pull-request-merge-state --out .hexaemeron/design/reports/pull-request-merge-state-product-refuses-specimen-stack.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "refuses-whole-carry",
+      "report": {
+        "path": "design/reports/merge-time-only-refuses-whole-carry.json",
+        "sha256": "d7d879f509e9a85cc234503e848b34d3c96037f9ee372d3509b810db1218e173"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "refuses-partial-carry",
+      "report": {
+        "path": "design/reports/merge-time-only-refuses-partial-carry.json",
+        "sha256": "a91c6bee8d17c562fea69520527c289621050b25cf504357eb7aee97517e3f20"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "admits-honest-extension",
+      "report": {
+        "path": "design/reports/merge-time-only-admits-honest-extension.json",
+        "sha256": "f4f82599c0d1214cb5dde6d672dbd1b64df9ffa1be61852993fc215d508b842a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "admits-adopted-early-merge",
+      "report": {
+        "path": "design/reports/merge-time-only-admits-adopted-early-merge.json",
+        "sha256": "91823c921406a65f65314ffd420c16cf094c2884b7797d1824cb7440018bb598"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "no-new-github-reads",
+      "report": {
+        "path": "design/reports/merge-time-only-no-new-github-reads.json",
+        "sha256": "c591afb7ed9107dc0659d6a6e8914ee495bec88cd845e16ed086e227a9bbe709"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "added-native-processes-per-next",
+      "report": {
+        "path": "design/reports/merge-time-only-added-native-processes-per-next.json",
+        "sha256": "e46190605b14d29fc1e99976a24f0873fd6cde42937a762cf6e888cb7e08b38f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "max-child-output-bytes",
+      "report": {
+        "path": "design/reports/merge-time-only-max-child-output-bytes.json",
+        "sha256": "6a33f5350236a9209ad709037d2ecdc39b4e4c18249efdf8caced35acd682ecb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "merge-time-only",
+      "criterion": "unknown-refuses-as-unknown",
+      "report": {
+        "path": "design/reports/merge-time-only-unknown-refuses-as-unknown.json",
+        "sha256": "1ff306e83311bc87f564ded2ae284f76f1badad97603134c605e37ad50d84df4"
+      },
+      "state": "fail"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "merge-time-only",
+      "criterion": "product-refuses-specimen-stack",
+      "report": "design/reports/merge-time-only-product-refuses-specimen-stack.json",
+      "resolver": "python3 .hexaemeron/design/conform_carry.py --candidate merge-time-only --out .hexaemeron/design/reports/merge-time-only-product-refuses-specimen-stack.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "gained-range-ownership",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

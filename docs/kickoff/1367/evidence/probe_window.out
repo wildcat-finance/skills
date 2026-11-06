@@ -1,0 +1,5 @@
+withdrawalsRoot == L2ToL1MessagePasser storageHash at 51,579,258: True 0xbb9ac105fe768705b1afe90537fd37526369418eb612657c8eb775b8fd1f2c30
+withdrawalsRoot == L2ToL1MessagePasser storageHash at 51,500,000: True 0x401e10883ec49cfe2f873d2677ae45677753c65b14f6330e1937f6b4efe94bb5
+withdrawalsRoot == L2ToL1MessagePasser storageHash at 51,000,000: True 0xd354df227e327fc73a18c47e80d94798d856eeacb2f6ec34dc6ca24674b0ec61
+head 51,979,835 at 2026-09-30T06:16:57+00:00; oldest block with a served eth_getProof 50,683,549 (1,296,286 blocks, 30.01 days back)
+the route stops serving proofs for the pin when head reaches about 52,875,544, 20.7 days after this run

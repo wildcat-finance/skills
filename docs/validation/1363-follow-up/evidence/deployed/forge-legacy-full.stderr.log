@@ -1,0 +1,34 @@
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertToAndDelete(uint256): replaced by `revertToStateAndDelete`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: `testFail*` has been deprecated and will be removed in the next release. Consider changing to test_Revert[If|When]_Condition and expecting a revert. Found deprecated testFail* function(s): testFail_redeem, testFail_withdraw.
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`

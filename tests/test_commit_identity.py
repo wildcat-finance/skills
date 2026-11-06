@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from contextlib import contextmanager, redirect_stdout
 import importlib.util
 from io import StringIO
@@ -175,14 +176,18 @@ class AcceptedIdentityTests(unittest.TestCase):
             result = policy.evaluate(str(bare), base, head, "laurenceday")
         self.assertEqual(result["status"], "passed")
         self.assertEqual(result["commit_count"], 1)
-        self.assertEqual(result["shoggoth_author_count"], 1)
-        self.assertEqual(result["human_author_count"], 0)
+        # A pass says nothing about who authored the range, so the record
+        # carries no author classification.
+        self.assertEqual(
+            set(result),
+            {"schema", "status", "base", "head", "pull_request_login", "commit_count"},
+        )
 
     def test_a_human_contributor_needs_no_shoggoth_trailer(self):
         with candidate_repository([HUMAN]) as (_source, bare, base, head):
             result = policy.evaluate(str(bare), base, head, "radup1337")
-        self.assertEqual(result["human_author_count"], 1)
-        self.assertEqual(result["shoggoth_author_count"], 0)
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["commit_count"], 1)
 
     def test_the_base_commit_is_not_reclassified_as_pull_request_work(self):
         base_host = dict(
@@ -232,73 +237,21 @@ class RefusedIdentityTests(unittest.TestCase):
                 policy.evaluate(str(bare), base, head, login)
         return str(stopped.exception)
 
-    def test_known_host_author_name_or_address_refuses(self):
-        cases = (
-            dict(HUMAN, author_name="Claude"),
-            dict(HUMAN, author_email="noreply@anthropic.com"),
-            dict(HUMAN, author_name="Codex"),
-        )
-        for change in cases:
-            with self.subTest(change=change):
-                self.assertIn("runtime host as author", self.refusal(change))
-
-    def test_known_host_committer_refuses(self):
-        change = dict(
-            HUMAN,
-            committer_name="Codex",
-            committer_email="noreply@openai.com",
-        )
-        self.assertIn("runtime host as committer", self.refusal(change))
-
-    def test_known_host_coauthor_refuses(self):
-        change = dict(
-            HUMAN,
-            message=(
-                "change\n\nCo-authored-by: Claude <noreply@anthropic.com>"
-            ),
-        )
-        self.assertIn("runtime host as co-author", self.refusal(change))
-
-    def test_known_host_generated_by_byline_refuses(self):
-        change = dict(HUMAN, message="change\n\nGenerated with Claude Code")
-        self.assertIn("generated-by byline", self.refusal(change))
-
-    def test_known_host_pull_request_login_refuses(self):
-        for login in sorted(
-            policy.contributors.HOST_PR_LOGINS
-            | policy.contributors.HOST_IDENTITY_NAMES
-        ):
-            with self.subTest(login=login):
-                self.assertIn(
-                    "runtime-host account", self.refusal(HUMAN, login=login)
-                )
-
-    def test_ambiguous_shoggoth_identity_refuses(self):
-        change = dict(SHOGGOTH, author_email="other@example.com")
-        self.assertIn("ambiguous Shoggoth author", self.refusal(change))
-
-    def test_shoggoth_author_requires_each_exact_trailer_once(self):
-        missing = dict(SHOGGOTH, message="governed change")
-        duplicate = dict(
-            SHOGGOTH,
-            message=SHOGGOTH["message"] + "\nWildcat-Origin: shoggoth",
-        )
-        self.assertIn("co-author trailer", self.refusal(missing))
-        self.assertIn("Wildcat-Origin trailer", self.refusal(duplicate))
-
     def test_an_offending_middle_commit_cannot_hide_behind_a_clean_head(self):
-        host = dict(
+        offending = dict(
             HUMAN,
-            author_name="Claude",
-            author_email="noreply@anthropic.com",
+            message="change\n\nCo-authored-by: " + "a" * 257 + " <human@example.com>",
         )
-        with candidate_repository([HUMAN, host, SHOGGOTH]) as (
-            _source,
+        with candidate_repository([HUMAN, offending, SHOGGOTH]) as (
+            source,
             bare,
             base,
             head,
         ):
-            with self.assertRaisesRegex(policy.Refusal, "runtime host as author"):
+            middle = run("git", "rev-parse", "HEAD~1", cwd=source)
+            with self.assertRaisesRegex(
+                policy.Refusal, f"commit {middle} has malformed co-author identity"
+            ):
                 policy.evaluate(str(bare), base, head, "laurenceday")
 
     def test_a_head_that_does_not_contain_the_exact_base_refuses(self):
@@ -340,6 +293,39 @@ class RefusedIdentityTests(unittest.TestCase):
                 with self.assertRaisesRegex(policy.Refusal, "objects exceed 1 bytes"):
                     policy.evaluate(str(bare), base, head, "radup1337")
 
+    def test_the_coauthor_trailer_ceiling_refuses(self):
+        message = "change\n\n" + "\n".join(
+            f"Co-authored-by: Person {index} <person{index}@example.com>"
+            for index in range(policy.COAUTHOR_COUNT_MAX + 1)
+        )
+        self.assertIn(
+            f"exceeds {policy.COAUTHOR_COUNT_MAX} co-author trailers",
+            self.refusal(dict(HUMAN, message=message)),
+        )
+
+    def test_the_git_output_and_timeout_ceilings_refuse(self):
+        repository = Path("candidate.git")
+        at_ceiling = b"x" * policy.GIT_OUTPUT_MAX
+        completed = subprocess.CompletedProcess([], 0, stdout=at_ceiling, stderr=at_ceiling)
+        with mock.patch.object(policy.subprocess, "run", return_value=completed):
+            self.assertEqual(
+                policy._git(repository, ["rev-parse"], "probe"), (0, at_ceiling)
+            )
+        for stream in ("stdout", "stderr"):
+            with self.subTest(stream=stream):
+                streams = {"stdout": b"", "stderr": b"", stream: at_ceiling + b"x"}
+                over = subprocess.CompletedProcess([], 0, **streams)
+                with mock.patch.object(policy.subprocess, "run", return_value=over):
+                    with self.assertRaisesRegex(
+                        policy.Refusal, r"\Aprobe exceeded its output ceiling\Z"
+                    ):
+                        policy._git(repository, ["rev-parse"], "probe")
+        expired = subprocess.TimeoutExpired(["git"], policy.GIT_TIMEOUT_SECONDS)
+        with mock.patch.object(policy.subprocess, "run", side_effect=expired) as runner:
+            with self.assertRaisesRegex(policy.Refusal, r"\Aprobe could not complete\Z"):
+                policy._git(repository, ["rev-parse"], "probe")
+        self.assertEqual(runner.call_args.kwargs["timeout"], policy.GIT_TIMEOUT_SECONDS)
+
     def test_a_malformed_author_object_refuses(self):
         with candidate_repository([]) as (source, _bare, base, _head):
             tree = run("git", "show", "-s", "--format=%T", base, cwd=source)
@@ -362,31 +348,116 @@ class RefusedIdentityTests(unittest.TestCase):
                 policy.evaluate(str(bare), base, malformed, "radup1337")
 
 
+class WithdrawnRuleTests(unittest.TestCase):
+    """Each input here was refused at 59239072 by a rule since withdrawn."""
+
+    def accepted(self, change, *, login="laurenceday"):
+        with candidate_repository([change]) as (_source, bare, base, head):
+            try:
+                result = policy.evaluate(str(bare), base, head, login)
+            except policy.Refusal as refusal:
+                self.fail(f"refused under a withdrawn rule: {refusal}")
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["commit_count"], 1)
+
+    def test_a_runtime_host_author_name_or_address_is_accepted(self):
+        # 59239072:215, author role.
+        cases = (
+            dict(HUMAN, author_name="Claude"),
+            dict(HUMAN, author_email="noreply@anthropic.com"),
+            dict(HUMAN, author_name="Codex"),
+        )
+        for change in cases:
+            with self.subTest(change=change):
+                self.accepted(change)
+
+    def test_a_runtime_host_committer_is_accepted(self):
+        # 59239072:215, committer role.
+        self.accepted(
+            dict(HUMAN, committer_name="Codex", committer_email="noreply@openai.com")
+        )
+
+    def test_a_runtime_host_coauthor_trailer_is_accepted(self):
+        # 59239072:259.
+        self.accepted(
+            dict(HUMAN, message="change\n\nCo-authored-by: Claude <noreply@anthropic.com>")
+        )
+
+    def test_a_runtime_host_generated_by_byline_is_accepted(self):
+        # 59239072:244.
+        self.accepted(dict(HUMAN, message="change\n\nGenerated with Claude Code"))
+
+    def test_a_runtime_host_pull_request_login_is_accepted(self):
+        # 59239072:307. A declared host login outside GitHub's login grammar is
+        # still refused, and the refusal names that grammar rather than the host.
+        logins = sorted(contributors.HOST_PR_LOGINS | contributors.HOST_IDENTITY_NAMES)
+        self.assertTrue(logins)
+        with candidate_repository([HUMAN]) as (_source, bare, base, head):
+            for login in logins:
+                with self.subTest(login=login):
+                    if policy.GITHUB_LOGIN_RE.fullmatch(login) is None:
+                        with self.assertRaisesRegex(
+                            policy.Refusal, r"\Apull-request login is malformed\Z"
+                        ):
+                            policy.evaluate(str(bare), base, head, login)
+                        continue
+                    try:
+                        result = policy.evaluate(str(bare), base, head, login)
+                    except policy.Refusal as refusal:
+                        self.fail(f"refused under a withdrawn rule: {refusal}")
+                    self.assertEqual(result["pull_request_login"], login)
+
+    def test_a_shoggoth_author_missing_or_repeating_a_trailer_is_accepted(self):
+        # 59239072:269 without the co-author trailer; :273 without, or with a
+        # second, Wildcat-Origin trailer.
+        cases = (
+            dict(SHOGGOTH, message="governed change"),
+            dict(
+                SHOGGOTH,
+                message=(
+                    "governed change\n\n"
+                    "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
+                ),
+            ),
+            dict(SHOGGOTH, message=SHOGGOTH["message"] + "\nWildcat-Origin: shoggoth"),
+        )
+        for change in cases:
+            with self.subTest(change=change):
+                self.accepted(change)
+
+    def test_a_lookalike_shoggoth_identity_is_accepted(self):
+        # 59239072:213 as author and as committer; :265 as co-author.
+        cases = (
+            dict(SHOGGOTH, author_email="other@example.com"),
+            dict(HUMAN, committer_name="Shoggoth", committer_email="other@example.com"),
+            dict(
+                HUMAN,
+                message="change\n\nCo-authored-by: shoggoth <shoggoth@wildcat.finance>",
+            ),
+        )
+        for change in cases:
+            with self.subTest(change=change):
+                self.accepted(change)
+
+
 class PolicyParityTests(unittest.TestCase):
-    def test_host_sets_are_the_existing_fiat_and_contributor_sets(self):
-        for name in (
-            "HOST_IDENTITY_NAMES",
-            "HOST_IDENTITY_EMAILS",
-            "HOST_PR_LOGINS",
-        ):
-            self.assertEqual(
-                getattr(policy.contributors, name), getattr(contributors, name)
-            )
-            self.assertEqual(
-                getattr(policy.contributors, name), getattr(hexctl, name)
-            )
+    def test_policy_does_not_import_the_contributor_ranking(self):
+        imported = set()
+        for node in ast.walk(ast.parse(POLICY_PATH.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.partition(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module is None:
+                    imported.update(alias.name for alias in node.names)
+                else:
+                    imported.add(node.module.partition(".")[0])
+        self.assertNotIn("contributors", imported)
 
     def test_message_and_login_grammars_match_fiat(self):
         self.assertEqual(policy.COAUTHOR_RE.pattern, hexctl.COAUTHOR_RE.pattern)
         self.assertEqual(policy.COAUTHOR_RE.flags, hexctl.COAUTHOR_RE.flags)
-        self.assertEqual(policy.HOST_BYLINE_RE.pattern, hexctl.HOST_BYLINE_RE.pattern)
-        self.assertEqual(policy.HOST_BYLINE_RE.flags, hexctl.HOST_BYLINE_RE.flags)
         self.assertEqual(policy.GITHUB_LOGIN_RE.pattern, hexctl.GITHUB_LOGIN_RE.pattern)
         self.assertEqual(policy.GITHUB_LOGIN_RE.flags, hexctl.GITHUB_LOGIN_RE.flags)
-
-    def test_provenance_trailers_match_fiat(self):
-        self.assertEqual(policy.COAUTHOR_TRAILER, hexctl.COAUTHOR_TRAILER)
-        self.assertEqual(policy.ORIGIN_TRAILER, hexctl.ORIGIN_TRAILER)
 
 
 class WorkflowContractTests(unittest.TestCase):

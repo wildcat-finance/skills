@@ -1,0 +1,9 @@
+{
+  "candidate": "relative-schema",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate relative-schema --criterion projected-representation-bytes",
+  "criterion": "projected-representation-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 5263
+}

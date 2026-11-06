@@ -1,0 +1,170 @@
+{
+ "format": "lazarus-base-pin-preservation/v1",
+ "chain_id": "0x2105",
+ "block": "0x313097a",
+ "expected_block_hash": "0x0366446fd6fca93d511f0dd1700076670f0608a1dc73e6be2bd1329f217f611d",
+ "entries": [
+  {
+   "index": 1,
+   "name": "chainid",
+   "method": "eth_chainId",
+   "params": [],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "09fabe0af56b7726f1666ddd147482df4d951f86f66124b936716c53ab0e8471",
+   "response_sha256": "60a8e1c6a5247eee8b12ffe2450558e6199f6146acc9caed1be20cd1d373d45e",
+   "response_bytes": 43,
+   "observed_utc": "2026-09-30T08:10:17Z",
+   "retries": 0
+  },
+  {
+   "index": 2,
+   "name": "header",
+   "method": "eth_getBlockByNumber",
+   "params": [
+    "0x313097a",
+    false
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "0a49a27da1b38f219bb905697cac35fd3662f4146c7afd624a8266a9345e544f",
+   "response_sha256": "fd6175d9b95b8749eead9030e30a7f2804c023afd3b2be360411f2c80ad5e4ff",
+   "response_bytes": 13167,
+   "observed_utc": "2026-09-30T08:10:18Z",
+   "retries": 0
+  },
+  {
+   "index": 3,
+   "name": "header-same-number-as-ethereum-pin",
+   "method": "eth_getBlockByNumber",
+   "params": [
+    "0x18d10cd",
+    false
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "853da389a6e77fabf3cee44983f3b6b61ec1799f60d60bb2afd9263736f0cd2d",
+   "response_sha256": "5e7bd32b896c3d2633c3ec59a95ace81203337043d8ace8250311bb4295a27ca",
+   "response_bytes": 14648,
+   "observed_utc": "2026-09-30T08:10:19Z",
+   "retries": 0
+  },
+  {
+   "index": 4,
+   "name": "proof-multicall3",
+   "method": "eth_getProof",
+   "params": [
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    [],
+    "0x313097a"
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "48320900f7a23e731be9640fa1685e043bc6c623ba2b05d0afb6030203a97866",
+   "response_sha256": "9c287fd909e42f9478f9cfdab09eaa7ee37b2c6cc8b36bffbf191e94a908fffd",
+   "response_bytes": 8186,
+   "observed_utc": "2026-09-30T08:10:19Z",
+   "retries": 0
+  },
+  {
+   "index": 5,
+   "name": "code-multicall3",
+   "method": "eth_getCode",
+   "params": [
+    "0xcA11bde05977b3631167028862bE2a173976CA11",
+    "0x313097a"
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "6838a4bd9d10b6c187fef600e25d1d81f9457a7048bb5e3bf51b7d44f34e25f8",
+   "response_sha256": "82ead2285305dffe8d243892bd667f2ae8a4c35794d4cd6e22bf34b74dfba96d",
+   "response_bytes": 7655,
+   "observed_utc": "2026-09-30T08:10:20Z",
+   "retries": 0
+  },
+  {
+   "index": 6,
+   "name": "proof-permit2",
+   "method": "eth_getProof",
+   "params": [
+    "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    [],
+    "0x313097a"
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "2f06554b85aefae460d790f7cf65d86870565be2ebf0a3ff881716be20fc4453",
+   "response_sha256": "a74ffc1ab5e32ca066a980351fc5c44a9c778854eccad8038c8f1cf936634634",
+   "response_bytes": 8122,
+   "observed_utc": "2026-09-30T08:10:21Z",
+   "retries": 0
+  },
+  {
+   "index": 7,
+   "name": "code-permit2",
+   "method": "eth_getCode",
+   "params": [
+    "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "0x313097a"
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "83dfc4d555df8bd49331d53a31a5b2bc80a252ad72e25c94d312eb6bce6eb742",
+   "response_sha256": "a7fdfd79f198a69027b2c6f733e9acfc3319bcee698572dfa41f4bff1ebbd80d",
+   "response_bytes": 18343,
+   "observed_utc": "2026-09-30T08:10:21Z",
+   "retries": 0
+  },
+  {
+   "index": 8,
+   "name": "proof-usdc",
+   "method": "eth_getProof",
+   "params": [
+    "0x833589fCD6eDb6E08f4C7C32D4f71b54bDA02913",
+    [
+     "0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b",
+     "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+    ],
+    "0x313097a"
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "05b76774a7b7b5c99fad9611371e664b1d1e614029f1fc1596b592e5b3fce69b",
+   "response_sha256": "89ba9e3d8263ece99ddc68b1325cbfaa9b971c16a764669a8637dfa582b4cf03",
+   "response_bytes": 22524,
+   "observed_utc": "2026-09-30T08:10:38Z",
+   "retries": 3
+  },
+  {
+   "index": 9,
+   "name": "code-usdc",
+   "method": "eth_getCode",
+   "params": [
+    "0x833589fCD6eDb6E08f4C7C32D4f71b54bDA02913",
+    "0x313097a"
+   ],
+   "route": "primary",
+   "http_status": 200,
+   "request_sha256": "74453e1c7f77bd73e16193dc5c569f96aca4a4f9f074da62fc53cd807e1d927f",
+   "response_sha256": "7e470fb02129bb4d1d74475d3b641a77472ac231ba2669dcfd04dc95e774ea7e",
+   "response_bytes": 3743,
+   "observed_utc": "2026-09-30T08:10:38Z",
+   "retries": 0
+  },
+  {
+   "index": 10,
+   "name": "receipts",
+   "method": "eth_getBlockReceipts",
+   "params": [
+    "0x313097a"
+   ],
+   "route": "receipts",
+   "http_status": 200,
+   "request_sha256": "def3949748a1d7c08f887583d67f0982f0fb3aa3f6c21e634018de3e3e91402a",
+   "response_sha256": "644cb66412c5b82cf9aea8051f009faa3865454b9e395ace84d0dfdac68bfa96",
+   "response_bytes": 616364,
+   "observed_utc": "2026-09-30T08:10:39Z",
+   "retries": 0
+  }
+ ]
+}

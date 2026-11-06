@@ -14,7 +14,9 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -116,7 +118,7 @@ class AssignmentRepository:
     def plan(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ALLOCATOR),
                 "plan",
                 "--repo",
@@ -141,7 +143,7 @@ class AssignmentRepository:
     def materialize_result_tree(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ALLOCATOR),
                 "apply",
                 "--repo",
@@ -283,7 +285,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
                 stderr.getvalue(),
             )
 
-    def test_exact_report_candidate_and_ordered_trailers_are_receipted(self):
+    def test_exact_report_candidate_ordered_trailers_receipted(self):
         receipt = self.receipt()
         self.assertEqual(receipt["schema"], "fiat-decision-assignment-composition/v1")
         self.assertEqual(receipt["report_schema"], "fiat-decision-assignments/v1")
@@ -298,13 +300,61 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
     def test_repository_without_clean_filters_still_verifies(self):
         self.assertEqual(self.receipt()["candidate"], self.repo.candidate)
 
+    def test_amended_composition_requires_real_native_signature(self):
+        keygen = shutil.which("ssh-keygen", path=os.defpath)
+        if keygen is None:
+            self.skipTest("system ssh-keygen is required")
+        relative = "docs/decisions/ADR-060-existing.md"
+        record = self.repo.path / relative
+        amended = record.read_text(encoding="utf-8") + "\n## Amendment\n\nKeep history.\n"
+        write(self.repo.path, relative, amended)
+        self.repo.product = commit_all(self.repo.path, "append amendment")
+        self.repo.plan()
+        self.repo.report = self.repo.read_report()
+        self.repo.materialize_result_tree()
+        signer = self.repo.path / ".git/fixture-signing-key"
+        subprocess.run(
+            [keygen, "-q", "-t", "ed25519", "-N", "", "-f", str(signer)],
+            check=True, capture_output=True,
+        )
+        allowed = self.repo.path / ".git/fixture-allowed-signers"
+        allowed.write_text(
+            "fixture@example.invalid " + signer.with_suffix(".pub").read_text(),
+            encoding="utf-8",
+        )
+        git(self.repo.path, "config", "gpg.format", "ssh")
+        git(self.repo.path, "config", "user.signingkey", str(signer))
+        git(self.repo.path, "config", "gpg.ssh.allowedSignersFile", str(allowed))
+        candidate = git(
+            self.repo.path, "commit-tree", "-S", self.repo.report["result_tree"],
+            "-p", self.repo.product, "-m", self.repo.message(),
+        )
+        git(self.repo.path, "update-ref", "refs/heads/candidate", candidate)
+        receipt = self.module.decision_assignment_receipt(
+            str(self.repo.path), self.repo.report_path, candidate,
+            candidate_ref="refs/heads/candidate",
+        )
+        self.assertEqual(receipt["candidate"], candidate)
+        self.assertEqual(receipt["result_tree"], self.repo.report["result_tree"])
+        self.assertEqual(
+            git(self.repo.path, "show", f"{candidate}:{relative}"), amended.strip()
+        )
+        unsigned = self.repo.make_candidate()
+        git(self.repo.path, "update-ref", "refs/heads/candidate", unsigned)
+        refusal = self.refusal(
+            self.module.decision_assignment_receipt,
+            str(self.repo.path), self.repo.report_path, unsigned,
+            candidate_ref="refs/heads/candidate",
+        )
+        self.assertIn("no valid native local signature", refusal)
+
     def test_local_clean_filter_refuses_before_worktree_observation(self):
         self.assert_clean_filter_refuses_without_execution("--local")
 
-    def test_worktree_clean_filter_refuses_before_worktree_observation(self):
+    def test_worktree_clean_filter_refuses_before_observation(self):
         self.assert_clean_filter_refuses_without_execution("--worktree")
 
-    def test_filter_added_after_preflight_cannot_execute_during_status(self):
+    def test_filter_added_after_preflight_cannot_run_in_status(self):
         with tempfile.TemporaryDirectory() as outside:
             sentinel = Path(outside) / "clean-filter-executed"
             write(
@@ -325,6 +375,8 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
                 extra_env=None,
                 *,
                 environment=None,
+                output_max=self.module.GIT_OUTPUT_MAX,
+                timeout=self.module.GIT_TIMEOUT,
             ):
                 nonlocal config_probes, installed
                 is_status = program == "git" and "status" in argv
@@ -335,6 +387,8 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
                         argv,
                         extra_env,
                         environment=environment,
+                        output_max=output_max,
+                        timeout=timeout,
                     )
                 finally:
                     if is_status and installed:
@@ -533,7 +587,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             )
         self.assertEqual(replayed, receipt)
 
-    def test_recovery_replays_policy_without_requiring_the_mutable_base_ref(self):
+    def test_recovery_replays_policy_without_mutable_base_ref(self):
         receipt = self.receipt()
         base_tree = git(self.repo.path, "rev-parse", f"{self.repo.base}^{{tree}}")
         advanced_base = git(
@@ -626,7 +680,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             current,
         )
 
-    def test_every_superseded_assignment_is_excluded_from_active_ancestry(self):
+    def test_every_superseded_assignment_leaves_active_ancestry(self):
         first = self.receipt()
         sibling_candidate = self.repo.make_candidate(
             message=self.repo.message().replace(

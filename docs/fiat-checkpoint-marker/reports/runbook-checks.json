@@ -1,0 +1,44 @@
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "protasis-runbook",
+      "cmd": "/home/kethcode/.local/bin/python3.14 /home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/protasis/scripts/protasis.py .hexaemeron/runbook.md --gate-root .",
+      "result": {
+        "chunk_id": "03ba07",
+        "wall_time_seconds": 0.037269904,
+        "exit_code": 0,
+        "original_token_count": 2,
+        "output": "clean\n"
+      }
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "known-failure-inventory",
+      "cmd": "/home/kethcode/.local/bin/python3.14 /home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/protasis/scripts/known_failure_inventory.py .hexaemeron/study.md .hexaemeron/runbook.md --repository . --expected-id kf-1755-s2-r1b-01",
+      "result": {
+        "chunk_id": "5e7db6",
+        "wall_time_seconds": 0.000001913,
+        "exit_code": 0,
+        "original_token_count": 10,
+        "output": "known-failure-inventory: 0 finding(s)\n"
+      }
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "name": "hypomnema",
+      "cmd": "/home/kethcode/.local/bin/python3.14 /home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/hypomnema/scripts/hypomnema.py .hexaemeron/runbook.md",
+      "result": {
+        "chunk_id": "0a4da6",
+        "wall_time_seconds": 0.000002866,
+        "exit_code": 0,
+        "original_token_count": 2,
+        "output": "clean\n"
+      }
+    }
+  }
+]

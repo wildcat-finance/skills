@@ -131,7 +131,8 @@ The implemented entrypoints are:
 
 ```bash
 python3 scripts/lazarus.py capture \
-  --plan <plan-v2.json> --rpc-url <primary-url> \
+  --plan <plan-v2.json> --rpc-url-env PRIMARY_RPC_URL \
+  --bearer-env PRIMARY_RPC_BEARER \
   --anchor-rpc-env archive-a=ARCHIVE_A_RPC \
   --anchor-rpc-env archive-b=ARCHIVE_B_RPC \
   --out <fixture>
@@ -145,8 +146,16 @@ python3 scripts/lazarus.py replay <fixture>
 ```
 
 `capture` is the only command that receives provider URLs. The primary URL
-keeps its legacy argument; each anchor argument carries only a source ID and
-environment-variable name, never the URL value. Capture requires the mapping
+comes from exactly one of the legacy `--rpc-url` argument and `--rpc-url-env`,
+which names an environment variable so the URL need not enter argv.
+`--bearer-env` names a variable whose token capture sends on every primary
+request as `Authorization: Bearer <token>`. Each anchor argument carries only a
+source ID and environment-variable name, never the URL value. Capture checks
+every mapping's shape before it reads any variable, and refuses by variable
+name, never by value. The resolved URL and the bearer join the provider-secret
+union, so neither reaches output, diagnostics, the terminal result or fixture
+bytes. No relay is needed to keep the endpoint out of argv, and the scan still
+cannot recognise a secret that only an external relay holds. Capture requires the mapping
 set to equal the plan-v2 or plan-v3 anchor declarations, shares one request, byte and elapsed-time budget across
 all clients, brackets one fixed block, verifies captured proofs and code,
 removes provider error prose, scans for every provider secret and atomically

@@ -1,0 +1,26 @@
+test_creating_changing_and_removing_a_fixture_preserves_its_source (tests.test_joined_front_door.FixtureIsolationTests.test_creating_changing_and_removing_a_fixture_preserves_its_source) ... FAIL
+
+======================================================================
+FAIL: test_creating_changing_and_removing_a_fixture_preserves_its_source (tests.test_joined_front_door.FixtureIsolationTests.test_creating_changing_and_removing_a_fixture_preserves_its_source)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/tests/test_joined_front_door.py", line 331, in test_creating_changing_and_removing_a_fixture_preserves_its_source
+    self.assertEqual(_file_identity(source.stat()), identity)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (16777233, 529593642, 23, 1789269589680231657, 1789269589680677408) != (16777233, 529593642, 23, 1789269589680231657, 1789269589680231657)
+
+First differing element 4:
+1789269589680677408
+1789269589680231657
+
+- (16777233, 529593642, 23, 1789269589680231657, 1789269589680677408)
+?                                                               ----
+
++ (16777233, 529593642, 23, 1789269589680231657, 1789269589680231657)
+?                                                             +++ +
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+FAILED (failures=1)

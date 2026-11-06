@@ -3,22 +3,28 @@
 from datetime import datetime, timezone
 import re
 
-from .adapters import aave_v4, euler_v1, euler_v2
+from . import check_event_schema
+from .adapters import aave_v4, euler_v1, euler_v2, wildcat_v1, wildcat_v2
 from .core import TabulariumError, safe_integer, sha256_bytes
+from . import wildcat_validation
 
 
-MANIFEST_SCHEMA_VERSION = 2
-EVENT_SCHEMA_VERSION = 2
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 ADAPTERS = {
     aave_v4.ADAPTER: aave_v4,
     euler_v1.ADAPTER: euler_v1,
     euler_v2.ADAPTER: euler_v2,
+    wildcat_v1.ADAPTER: wildcat_v1,
+    wildcat_v2.ADAPTER: wildcat_v2,
 }
+WILDCAT_ADAPTERS = (wildcat_v1.ADAPTER, wildcat_v2.ADAPTER)
+LEGACY_EVENT_FAMILIES = ("borrowing", "repayment", "debt-resolution", "debt-transfer", "interest-accrual")
 EVIDENCE_CLASSES = {
     aave_v4.ADAPTER: "native-log",
     euler_v1.ADAPTER: "hosted-rpc-reported-log-scope",
     euler_v2.ADAPTER: "hosted-indexer-reported-query-scope",
+    wildcat_v1.ADAPTER: "hosted-rpc-reported-log-scope",
+    wildcat_v2.ADAPTER: "hosted-rpc-reported-log-scope",
 }
 KNOWN_GAPS = {
     aave_v4.ADAPTER: (
@@ -42,6 +48,8 @@ KNOWN_GAPS = {
         "Euler V2 is the protocol generation and Euler V3 is the source API version",
         "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity",
     ),
+    wildcat_v1.ADAPTER: wildcat_validation.KNOWN_GAPS,
+    wildcat_v2.ADAPTER: wildcat_validation.KNOWN_GAPS,
 }
 
 
@@ -93,7 +101,8 @@ def adapter_module(name):
         raise TabulariumError("unsupported release adapter %r" % name) from error
 
 
-def validate_capture(capture, source, source_bytes, expected_adapter=None):
+def validate_capture(capture, source, source_bytes, schema_version, expected_adapter=None):
+    check_event_schema(schema_version, "event schema version")
     capture = _exact(
         capture,
         (
@@ -107,6 +116,8 @@ def validate_capture(capture, source, source_bytes, expected_adapter=None):
     _text(capture["release"], "capture manifest.release")
     adapter = _exact(capture["adapter"], ("name", "version"), "capture manifest.adapter")
     module = adapter_module(_text(adapter["name"], "capture manifest.adapter.name"))
+    if module.ADAPTER in WILDCAT_ADAPTERS:
+        raise TabulariumError("Wildcat requires schema 3 and the verified raw-release wildcat-canonical route")
     if expected_adapter is not None and adapter["name"] != expected_adapter:
         raise TabulariumError("capture adapter does not match requested adapter")
     if adapter["version"] != module.ADAPTER_VERSION:
@@ -179,7 +190,7 @@ def validate_capture(capture, source, source_bytes, expected_adapter=None):
             raise TabulariumError("source window does not match the capture scope")
         if meta.get("source_api") != aave_v4.SOURCE_API:
             raise TabulariumError("source does not report a JSON-RPC capture")
-    else:
+    elif module is euler_v2:
         _exact(scope, ("chain", "owner", "from_timestamp", "to_timestamp", "event_types"), "capture manifest.scope")
         if str(scope["owner"]).lower() != scope["owner"] or not re.fullmatch(r"0x[0-9a-f]{40}", scope["owner"]):
             raise TabulariumError("capture owner is not a lowercase address")
@@ -207,15 +218,29 @@ def validate_capture(capture, source, source_bytes, expected_adapter=None):
         source_meta = _object(source.get("meta"), "Euler V3 response.meta")
         if _utc_timestamp(source_meta.get("timestamp"), "Euler V3 response.meta.timestamp") != captured_at:
             raise TabulariumError("capture timestamp does not match the Euler V3 response")
-    mapped = module.map_source(source, capture)
+    else:
+        raise TabulariumError("adapter has no registered generic capture route")
+    mapped = module.map_source(source, capture, schema_version)
     return module, mapped
 
 
 def make_manifest(release, adapter_name, source_path, source_bytes, capture_path,
-                  capture_bytes, canonical_path, canonical_bytes, capture, mapped):
+                  capture_bytes, canonical_path, canonical_bytes, capture, mapped,
+                  schema_version, adapter_version=None):
     module = adapter_module(adapter_name)
+    check_event_schema(schema_version, "event schema version")
+    if module.ADAPTER in WILDCAT_ADAPTERS:
+        if schema_version != 3:
+            raise TabulariumError("Wildcat releases require event schema 3")
+        version = wildcat_validation.checked_version(
+            capture.get("adapter", {}).get("version", module.ADAPTER_VERSION)
+            if adapter_version is None else adapter_version)
+    else:
+        version = module.ADAPTER_VERSION if adapter_version is None else adapter_version
+        if version != module.ADAPTER_VERSION:
+            raise TabulariumError("unsupported adapter version")
     return {
-        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "release": _text(release, "release"),
         "source": {
             "path": source_path,
@@ -243,8 +268,8 @@ def make_manifest(release, adapter_name, source_path, source_bytes, capture_path
             "unsupported_events": mapped.unmapped_counts,
         },
         "versions": {
-            "event_schema": EVENT_SCHEMA_VERSION,
-            "adapter": {"name": adapter_name, "version": module.ADAPTER_VERSION},
+            "event_schema": schema_version,
+            "adapter": {"name": adapter_name, "version": version},
             "mapping_rules": sorted({event["provenance"]["mapping_rule"] for event in mapped.events}),
         },
         "known_gaps": list(KNOWN_GAPS[adapter_name]),
@@ -259,7 +284,8 @@ def _artifact(value, where):
     return value
 
 
-def validate_manifest(manifest):
+def validate_manifest(manifest, schema_version):
+    check_event_schema(schema_version, "event schema version")
     manifest = _exact(
         manifest,
         (
@@ -268,8 +294,11 @@ def validate_manifest(manifest):
         ),
         "coverage manifest",
     )
-    if safe_integer(manifest["schema_version"], "coverage manifest.schema_version") != 2:
-        raise TabulariumError("unsupported coverage manifest schema version")
+    if safe_integer(manifest["schema_version"], "coverage manifest.schema_version") != schema_version:
+        raise TabulariumError(
+            "coverage manifest.schema_version %r is not the release schema version %d"
+            % (manifest["schema_version"], schema_version)
+        )
     _text(manifest["release"], "coverage manifest.release")
     source = _exact(
         manifest["source"],
@@ -293,22 +322,161 @@ def validate_manifest(manifest):
             _text(key, "coverage event name")
             safe_integer(value, "coverage count")
     versions = _exact(manifest["versions"], ("event_schema", "adapter", "mapping_rules"), "coverage manifest.versions")
-    if safe_integer(versions["event_schema"], "coverage manifest.versions.event_schema") != 2:
-        raise TabulariumError("unsupported event schema version")
+    event_schema = safe_integer(
+        versions["event_schema"], "coverage manifest.versions.event_schema"
+    )
+    check_event_schema(event_schema, "event schema version")
+    if event_schema != schema_version:
+        raise TabulariumError(
+            "coverage manifest.versions.event_schema %d is not coverage manifest.schema_version %d"
+            % (event_schema, schema_version)
+        )
     adapter = _exact(versions["adapter"], ("name", "version"), "coverage manifest.versions.adapter")
-    module = adapter_module(adapter["name"])
-    if adapter["version"] != module.ADAPTER_VERSION:
+    module = adapter_module(_text(adapter["name"], "coverage manifest.versions.adapter.name"))
+    if module.ADAPTER in WILDCAT_ADAPTERS and schema_version != 3:
+        raise TabulariumError("Wildcat releases require event schema 3")
+    if module.ADAPTER in WILDCAT_ADAPTERS:
+        wildcat_validation.checked_version(adapter["version"])
+    elif adapter["version"] != module.ADAPTER_VERSION:
         raise TabulariumError("unsupported adapter version")
     if source["evidence_class"] != EVIDENCE_CLASSES[adapter["name"]]:
-        raise TabulariumError("unsupported source evidence class")
+        raise TabulariumError(
+            "coverage manifest.source.evidence_class %r is not in the adapter tuple table"
+            % (source["evidence_class"],)
+        )
     if source["protocol_generation"] != module.PROTOCOL_GENERATION or source["source_api"] != module.SOURCE_API or source["chain"] != module.CHAIN:
         raise TabulariumError("source version fields do not match the adapter")
     rules = versions["mapping_rules"]
-    if not isinstance(rules, list) or rules != sorted(set(rules)) or not all(isinstance(rule, str) and rule for rule in rules):
+    if not isinstance(rules, list) or not all(isinstance(rule, str) and rule for rule in rules) or rules != sorted(set(rules)):
         raise TabulariumError("mapping-rule versions are not a sorted unique list")
-    allowed_rules = {mapping[2] for mapping in module.MAPPINGS.values()}
+    selected_mappings = (wildcat_validation.mappings(module.ADAPTER, adapter["version"])
+                         if module.ADAPTER in WILDCAT_ADAPTERS else module.MAPPINGS)
+    allowed_rules = {mapping[2] for mapping in selected_mappings.values()}
     if not set(rules) <= allowed_rules:
         raise TabulariumError("unsupported mapping-rule versions")
     if manifest["known_gaps"] != list(KNOWN_GAPS[adapter["name"]]):
         raise TabulariumError("known semantic gaps are incomplete or unsupported")
     return manifest
+
+
+# Every field the canonical-event schema documents require of provenance, so a
+# row that omits one is named here rather than reaching the byte rebuild, where
+# the refusal can only say that the ledger as a whole does not reproduce.
+PROVENANCE_FIELDS = (
+    "adapter",
+    "adapter_version",
+    "protocol_generation",
+    "source_api",
+    "mapping_rule",
+    "source_selector",
+    "source_kind",
+    "source_contract",
+    "source_entity",
+    "source_id",
+    "supporting_selectors",
+)
+
+# The row's own closed key set, which both schema documents require and close
+# with `additionalProperties: false`. The field checks below name a field they
+# know; this set is what lets a key nobody knows be named too, rather than
+# surfacing as a digest mismatch at the byte rebuild.
+EVENT_FIELDS = (
+    "schema_version",
+    "id",
+    "event_family",
+    "action",
+    "venue",
+    "chain",
+    "transaction",
+    "parties",
+    "instrument",
+    "amounts",
+    "provenance",
+    "native_record",
+)
+
+_PLAIN_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}")
+
+
+def _unknown_key(where, prefix, key, schema_version):
+    """Refuse one key the closed key set does not name, quoting any key that is not plain."""
+    name = key if isinstance(key, str) and _PLAIN_KEY.fullmatch(key) else repr(str(key)[:64])
+    return TabulariumError(
+        "%s carries field %s%s, which the schema %d key set does not name"
+        % (where, prefix, name, schema_version)
+    )
+
+
+def validate_event_row(row, adapter_module, schema_version, index=1):
+    """Refuse one canonical row by row number and field name.
+
+    The caller supplies the one-based row number so the refusal says which row
+    and which field is wrong instead of leaving the byte comparison to report
+    that the ledger as a whole does not rebuild. The row and its provenance are
+    held to their closed key sets, so a missing or unknown key is named too.
+    """
+
+    check_event_schema(schema_version, "event schema version")
+    where = "canonical row %d" % index
+    if not isinstance(row, dict):
+        raise TabulariumError("%s is not an object" % where)
+    if "schema_version" not in row:
+        raise TabulariumError("%s has no field schema_version" % where)
+    if row["schema_version"] != schema_version:
+        raise TabulariumError(
+            "%s field schema_version is %r, not the release schema version %d"
+            % (where, row["schema_version"], schema_version)
+        )
+    for field in EVENT_FIELDS:
+        if field not in row:
+            raise TabulariumError("%s has no field %s" % (where, field))
+    for key in sorted(set(row) - set(EVENT_FIELDS), key=str):
+        raise _unknown_key(where, "", key, schema_version)
+    if row.get("venue") != adapter_module.ADAPTER:
+        raise TabulariumError(
+            "%s field venue is %r, which is not in the adapter tuple table"
+            % (where, row.get("venue"))
+        )
+    provenance = row.get("provenance")
+    if not isinstance(provenance, dict):
+        raise TabulariumError("%s field provenance is not an object" % where)
+    for field in PROVENANCE_FIELDS:
+        if field not in provenance:
+            raise TabulariumError("%s has no field provenance.%s" % (where, field))
+    for key in sorted(set(provenance) - set(PROVENANCE_FIELDS), key=str):
+        raise _unknown_key(where, "provenance.", key, schema_version)
+    version = (wildcat_validation.checked_version(provenance["adapter_version"])
+               if adapter_module.ADAPTER in WILDCAT_ADAPTERS else adapter_module.ADAPTER_VERSION)
+    expected = {
+        "adapter": adapter_module.ADAPTER,
+        "adapter_version": version,
+        "protocol_generation": adapter_module.PROTOCOL_GENERATION,
+        "source_api": adapter_module.SOURCE_API,
+    }
+    for field, value in expected.items():
+        if provenance[field] != value:
+            raise TabulariumError(
+                "%s field provenance.%s is %r, which is not in the adapter tuple table"
+                % (where, field, provenance[field])
+            )
+    selected_mappings = (wildcat_validation.mappings(adapter_module.ADAPTER, version)
+                         if adapter_module.ADAPTER in WILDCAT_ADAPTERS else adapter_module.MAPPINGS)
+    rules = {mapping[2] for mapping in selected_mappings.values()}
+    if not isinstance(provenance["mapping_rule"], str) or provenance["mapping_rule"] not in rules:
+        raise TabulariumError(
+            "%s field provenance.mapping_rule is %r, which is not in the adapter tuple table"
+            % (where, provenance["mapping_rule"])
+        )
+    selector = provenance["source_selector"]
+    if not isinstance(selector, str) or not selector:
+        raise TabulariumError(
+            "%s field provenance.source_selector is not a non-empty string" % where
+        )
+    if adapter_module.ADAPTER in WILDCAT_ADAPTERS:
+        wildcat_validation.validate_row(row, adapter_module.ADAPTER, schema_version, index)
+    else:
+        if not isinstance(row["amounts"], list) or not row["amounts"]:
+            raise TabulariumError("%s field amounts must contain at least one financial amount" % where)
+        if row["event_family"] not in LEGACY_EVENT_FAMILIES:
+            raise TabulariumError("%s field event_family is not in the legacy schema vocabulary" % where)
+    return row

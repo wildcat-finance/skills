@@ -173,19 +173,20 @@ class LedgerRowTests(unittest.TestCase):
         self.assertEqual(rows[0]["axis"], "evolution")
 
     def test_the_row_digest_is_the_sha256_of_the_ledger_canonical_line(self):
+        # A later generation row keeps this frontier, so this row's digest
+        # still matches; plugins/hexaemeron/tests/test_evolution.py holds the
+        # newest row to the current version.
         text = ledger_text()
         canonical = "|".join(ledger_field(text, name) for name in FRONTIER_FIELDS) + "\n"
         recomputed = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        rows = ledger_rows(text)
-        self.assertTrue(rows, "the ephoros ledger has no compact history row")
-        self.assertEqual(rows[-1]["version"], LEDGER_ROW_VERSION)
-        self.assertEqual(rows[-1]["digest"], recomputed)
+        rows = [row for row in ledger_rows(text) if row["version"] == LEDGER_ROW_VERSION]
+        self.assertEqual(len(rows), 1, f"expected one {LEDGER_ROW_VERSION} row, found {len(rows)}")
+        self.assertEqual(rows[0]["digest"], recomputed)
 
     def test_the_skill_frontmatter_version_equals_the_ledger_current_version(self):
         metadata = re.search(r'(?m)^  version: "(\d+\.\d+\.\d+)"$', SKILL.read_text(encoding="utf-8"))
         self.assertIsNotNone(metadata, "ephoros SKILL.md has no metadata.version")
         self.assertEqual(f"ephoros-v{metadata.group(1)}", ledger_field(ledger_text(), "Current version"))
-        self.assertEqual(f"ephoros-v{metadata.group(1)}", LEDGER_ROW_VERSION)
 
     def test_the_row_names_the_clone_commit_and_the_e001_count(self):
         rows = [row for row in ledger_rows(ledger_text()) if row["version"] == LEDGER_ROW_VERSION]

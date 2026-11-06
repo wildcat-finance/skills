@@ -1,0 +1,33 @@
+{
+  "controller_sha256": "c87e0c455c50ff094b9607e17d9722f7ea8e506fe2159155d3b65e90d40a7c4f",
+  "measurements": {
+    "checkpoint.archive.bytes": 111860548,
+    "checkpoint.archive.expanded_bytes": 111771408,
+    "checkpoint.archive.export_peak_rss_bytes": 311836672,
+    "checkpoint.archive.export_wall_ms": 4899,
+    "checkpoint.archive.inspect_wall_ms": 2865,
+    "checkpoint.archive.restore_wall_ms": 6796
+  },
+  "method": {
+    "consumer_wall_ms": "one whole command under /usr/bin/time; no warm-up; verified private copy excluded",
+    "export_peak_rss_bytes": "saved whole producer command maximum RSS",
+    "export_wall_ms": "saved timing_ms.export controller interval"
+  },
+  "operations": {
+    "inspect": {
+      "exit": 0,
+      "stdout_sha256": "1db9f66da940c4aaec8876f89764641347d4fa8d58fb92db77f612447ec1d30e",
+      "time_output": "        2.86 real         2.99 user         1.16 sys\n           123240448  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n              102971  page reclaims\n                 622  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                 233  voluntary context switches\n               47139  involuntary context switches\n          8753294108  instructions retired\n          2758513770  cycles elapsed\n            72335840  peak memory footprint\n",
+      "wall_ms": 2865
+    },
+    "restore": {
+      "exit": 0,
+      "stdout_sha256": "74ac737bff6579bb8a2e44960549fc6a6aec1f513e6e34c9194f19c41d5d808d",
+      "time_output": "        6.79 real         5.91 user         3.10 sys\n           136937472  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n              299364  page reclaims\n                1732  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                1183  voluntary context switches\n               90014  involuntary context switches\n         14637533581  instructions retired\n          5199836782  cycles elapsed\n            77824480  peak memory footprint\n",
+      "wall_ms": 6796
+    }
+  },
+  "outer_sha256": "a0a20df6a688cb5aeaf0da5a1d6943af4b3e81edbce7c9aff53771073a4bbf18",
+  "platform": "darwin",
+  "schema": "fiat-checkpoint-measurements/v1"
+}

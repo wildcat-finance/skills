@@ -1,0 +1,2 @@
+{"identities": {"creation": 7, "read": 148, "state-changing": 62}, "out": "<scratch>/rerun/denominator-inputs.json", "outputs": {"MarketLensMixed": "d63965ae5f31d731fe765ab891a9238b649c63ebe0c4053c8d818046225abc6c", "WildcatArchController": "19605dc9eed17f9c69a22736db5cf6e508c038de3cdc4e15be6bd2c118d2b530", "WildcatMarketControllerFactory": "1cf68e057a7981d581804f4a34f452668beed5ffb64efad560727b0243a772db", "WildcatSanctionsSentinel": "a493a7d79ca05ece82bcdfe3dfee8b3117f90ec85018d7ddfb06a9a5b1f35bea"}}
+exit 0

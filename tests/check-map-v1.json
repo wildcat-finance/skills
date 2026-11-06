@@ -114,7 +114,8 @@
       "cwd": ".",
       "kind": "suite",
       "script": "plugins/hexaemeron/tests/run_tests.py",
-      "jobs_flag": "--jobs"
+      "jobs_flag": "--jobs",
+      "timeout_seconds": 4200
     },
     "imprimatur-suite": {
       "title": "Imprimatur suite",
@@ -158,6 +159,20 @@
       "kind": "suite",
       "script": "plugins/lemma/tests/test_markdown.py"
     },
+    "lemma-events": {
+      "title": "Lemma event agreement",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/lemma/tests", "-p", "test_*events.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/lemma/tests"
+    },
+    "lemma-preparation": {
+      "title": "Lemma captured input preparation and evidence suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/lemma/tests", "-p", "test_preparation.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/lemma/tests/test_preparation.py"
+    },
     "lemma-solidity": {
       "title": "Lemma Solidity chunker",
       "argv": ["python3", "plugins/lemma/tests/test_solidity.py"],
@@ -171,6 +186,24 @@
       "cwd": ".",
       "kind": "suite",
       "script": "plugins/pandects/tests"
+    },
+    "hexaemeron-forge-build": {
+      "title": "Hexaemeron harness forge build",
+      "argv": ["sh", "-c", "python3 fetch_protocol.py && python3 -m unittest discover -s ../tests -t ../tests -p 'test_harness_*.py' && python3 -m unittest discover -s ../tests -t ../tests -p 'harness_v1_*.py' && forge build && FOUNDRY_PROFILE=v1 forge build"],
+      "cwd": "plugins/hexaemeron/harness",
+      "kind": "build",
+      "requires_executable": "forge",
+      "group": "hexaemeron-forge",
+      "order": 1
+    },
+    "hexaemeron-forge-test": {
+      "title": "Hexaemeron harness forge test",
+      "argv": ["sh", "-c", "python3 fetch_protocol.py --check && forge test && FOUNDRY_PROFILE=v1 forge test"],
+      "cwd": "plugins/hexaemeron/harness",
+      "kind": "suite",
+      "requires_executable": "forge",
+      "group": "hexaemeron-forge",
+      "order": 2
     },
     "pandects-forge-build": {
       "title": "Pandects forge build",
@@ -255,6 +288,10 @@
     }
   },
   "groups": {
+    "hexaemeron-forge": {
+      "title": "Hexaemeron harness Solidity build then test",
+      "ordered": ["hexaemeron-forge-build", "hexaemeron-forge-test"]
+    },
     "pandects-forge": {
       "title": "Pandects Solidity build then test",
       "ordered": ["pandects-forge-build", "pandects-forge-test"]
@@ -304,12 +341,12 @@
     "brevitas": {"title": "Brevitas plugin", "checks": ["brevitas-suite"]},
     "dokimasia": {"title": "Dokimasia plugin", "checks": ["dokimasia-suite"]},
     "hermes": {"title": "Hermes plugin", "checks": ["hermes-suite"]},
-    "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite"]},
+    "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite", "hexaemeron-forge-build", "hexaemeron-forge-test"]},
     "homologia": {"title": "Homologia plugin", "checks": ["homologia-suite"]},
     "horos": {"title": "Horos plugin", "checks": ["horos-suite"]},
     "janus": {"title": "Janus plugin", "checks": ["janus-suite"]},
     "lazarus": {"title": "Lazarus plugin", "checks": ["lazarus-suite"]},
-    "lemma": {"title": "Lemma plugin", "checks": ["lemma-markdown", "lemma-solidity"]},
+    "lemma": {"title": "Lemma plugin", "checks": ["lemma-markdown", "lemma-solidity", "lemma-events", "lemma-preparation"]},
     "pandects": {"title": "Pandects plugin", "checks": ["pandects-suite", "pandects-forge-build", "pandects-forge-test"]},
     "probitas": {"title": "Probitas plugin", "checks": ["probitas-suite"]},
     "sapheneia": {"title": "Sapheneia plugin", "checks": ["sapheneia-suite"]},
@@ -325,7 +362,7 @@
     "promise-machine": ["root", "hexaemeron"],
     "marketplace": ["root", "repo-lints"],
     "ci": ["root"],
-    "alexandria": ["repo-lints"],
+    "alexandria": ["repo-lints", "tabularium", "probitas"],
     "anamnesis": ["repo-lints"],
     "ariadne": ["repo-lints"],
     "berean": ["repo-lints"],
@@ -342,7 +379,7 @@
     "probitas": ["repo-lints"],
     "sapheneia": ["repo-lints"],
     "synkrisis": ["repo-lints"],
-    "tabularium": ["repo-lints"]
+    "tabularium": ["repo-lints", "probitas"]
   },
   "owners": [
     {"path": ".dead-code", "scope": "dead-code"},
@@ -372,6 +409,12 @@
     {"path": "assets", "scope": "root"},
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
+    {"path": "docs/kickoff/1363", "scope": "root"},
+    {"path": "docs/kickoff/1963", "scope": "root"},
+    {"path": "docs/checkpoint-authority", "scope": "hexaemeron"},
+    {"path": "docs/protasis-success-criteria", "scope": "root"},
+    {"path": "docs/agent-instruction-reconciliation", "scope": "promise-machine"},
+    {"path": "docs/decisions/ADR-092-stage-reviewed-corpus-reconciliation.md", "scope": "promise-machine"},
     {"path": "docs/dead-code", "scope": "dead-code"},
     {"path": "docs/dead-code-checkout-suppressions", "scope": "dead-code"},
     {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
@@ -389,6 +432,9 @@
     {"path": "schemas/dead-code-report-v2.schema.json", "scope": "dead-code"},
     {"path": "schemas/dead-code-suppressions-v1.schema.json", "scope": "dead-code"},
     {"path": "scripts", "scope": "root"},
+    {"path": "scripts/agent_instruction_reconciliation.py", "scope": "promise-machine"},
+    {"path": "scripts/prove_agent_instruction_reconciliation.py", "scope": "promise-machine"},
+    {"path": "scripts/commit_gate_activation.py", "scope": "hexaemeron"},
     {"path": "scripts/demonstrations.py", "scope": "root"},
     {"path": "scripts/dead_code.py", "scope": "dead-code"},
     {"path": "scripts/suite_redundancy.py", "scope": "suite-redundancy"},
@@ -439,6 +485,11 @@
     {"path": "tests/test_promise_evaluation_driver.py", "scope": "promise-machine"},
     {"path": "tests/test_promise_machine_contract.py", "scope": "promise-machine"},
     {"path": "tests/test_skills_sh_package.py", "scope": "promise-machine"},
+    {"path": "tests/emit_main_root_recovery_report.py", "scope": "promise-machine"},
+    {"path": "tests/emit_agent_instruction_reconciliation_report.py", "scope": "promise-machine"},
+    {"path": "tests/test_agent_instruction_reconciliation.py", "scope": "promise-machine"},
+    {"path": "docs/main-root-suite-recovery", "scope": "promise-machine"},
+    {"path": "docs/decisions/ADR-090-omit-portable-decorative-portraits.md", "scope": "promise-machine"},
     {"path": "plugins/alexandria/PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "plugins/ariadne/PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "plugins/berean/PROMISE_MACHINE.md", "scope": "promise-machine"},
@@ -467,6 +518,7 @@
     {"path": "plugins/horos", "scope": "horos"},
     {"path": "plugins/janus", "scope": "janus"},
     {"path": "plugins/lazarus", "scope": "lazarus"},
+    {"path": "plugins/lemma/tests/emit_issue_1366_remaining_report.py", "scope": "lemma"},
     {"path": "plugins/lemma", "scope": "lemma"},
     {"path": "plugins/pandects", "scope": "pandects"},
     {"path": "plugins/probitas", "scope": "probitas"},

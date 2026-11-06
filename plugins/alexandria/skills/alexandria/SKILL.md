@@ -8,9 +8,10 @@ description: >
   Clearpool derivation, disposable indexing, address queries and a checked-in
   offline demonstration, unsigned in-toto release statements, a bounded
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
-  collector with a preserved live Ethereum mainnet capture are available.
+  collector with per-subject implementation epochs and preserved Compound,
+  Wildcat V1, Wildcat V2 and Aave V3 mainnet intervals are available.
 metadata:
-  version: "2.5.0"
+  version: "3.13.0"
 ---
 
 <p align="center">
@@ -31,7 +32,7 @@ another frontier pass after that ledger becomes mature.
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+**Current frontier.** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 Alexandria is the archive and catalogue behind durable lending-protocol
@@ -123,14 +124,37 @@ subject per manifest component, exact component metadata, and every capture's
 declared scope, coverage status and counts, unsupported collections and gaps.
 It includes one passed Alexandria offline-verification claim bound to the
 release digest and an empty command list.
-Canonical statement bytes above Ariadne's default 8 MiB bounded-input limit are
-refused before the output path is prepared. A successful output therefore stays
-inside Ariadne's default reader bound.
+A single statement must stay within Ariadne's 8,388,608-byte input limit and
+its 262,144-character key budget. A release past either bound is refused before
+the output path is prepared, by a line naming the bound and a line pointing to
+`--parts`, so a successful output stays inside Ariadne's default reader bounds.
 
-The statement is not a DSSE envelope and Alexandria does not run cosign. It
+Write such a release as a part set instead:
+
+```bash
+python3 "$SKILL_DIR/../../scripts/alexandria.py" statement release \
+  --parts release-statement-parts
+```
+
+The target directory must be absent. A directory beside it named
+`.<name>.tmp-<16 hexadecimal characters>`, with the target's own name and
+exactly 16 lowercase hexadecimal characters, refuses the run by name until it
+is removed by hand, whatever made it. The target receives `index.json` and
+`part/part-<k>.json`, each within 6,225,920 bytes and 262,144 key characters,
+so Ariadne reads each file with its default bounds, bare or inside a DSSE
+envelope whose own fields and signatures fit 87,380 bytes. Each part carries
+a contiguous run of components and their captures; the index binds every part
+by SHA-256. `--parts` refuses a release within both
+single bounds and names `--output`, so each release has one statement form.
+A holder checks the set with Ariadne `verify` on the index and on each part,
+and each part's SHA-256 against its index subject. The
+[release statement guide](../../docs/release-statements.md#part-sets) gives
+the wire shapes and limits.
+
+Neither form is a DSSE envelope, and Alexandria does not run cosign. It
 does not authenticate a publisher or prove provider completeness, consensus
-finality or canonical-chain membership. Ariadne can inspect the statement and
-run its core gates, but this predicate is unregistered, signatures remain
+finality or canonical-chain membership. Ariadne can inspect each statement and
+run its core gates, but these predicates are unregistered, signatures remain
 unchecked, and gates 2 and 5 remain unchecked.
 
 Derive the narrow Tabularium view into a new release:
@@ -215,7 +239,7 @@ The separate `capture` subcommand is networked. It requires
 and collects only the fixed corpus. Do not describe the result as an interval
 history, chain proof or independent finality check.
 
-## Collect an Ethereum USDC interval
+## Collect a declared lending interval
 
 Four commands, of which the first two reach a network:
 
@@ -228,12 +252,15 @@ python3 "$SKILL_DIR/../../scripts/usdc_interval.py" build --plan plan.json --sta
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" check release
 ```
 
-`collect` walks a declared block interval of the Ethereum USDC Comet in bounded
-shards, over the evidence classes the plan declares, binding its end boundary
+`collect` dispatches on the plan's registered venue: Compound v3, Wildcat V1,
+Wildcat V2 or Aave V3. Compound keeps its single proxy plan; a v2 plan names the exact
+subject set its pinned venue registry admits. It walks bounded shards over
+the evidence classes the plan declares, binding its end boundary
 under the plan's named finality policy before it asks for anything. It reads its
 endpoint from `ALEXANDRIA_COMPOUND_RPC_URL` alone and writes it nowhere, and
-sends exactly two headers, `Content-Type` and a constant `User-Agent` built from
-the package version, so no request can carry a credential. A checkpoint is
+sends `Content-Type` and a constant `User-Agent` built from the package version.
+An explicitly configured bearer credential may be supplied through the supported
+HTTPS transport; it never enters the plan, journal or diagnostic text. A checkpoint is
 written only after a shard's bytes are fsynced, so a killed run resumes to
 byte-identical journals; when a remembered boundary hash has changed, the run
 rewinds to the deepest one that still matches, and refuses a reorg deeper than
@@ -242,29 +269,99 @@ interval's first block, the implementation slot at that block and at each
 upgrade block, and each implementation's runtime code -- into a fourth
 `epoch-evidence` journal under the same checkpoint rule, so a `finalized` or
 `safe` plan now earns that finality class on every evidence scope with both
-boundary hashes bound. Every refused response leaves a receipt naming the code,
-the shard, the unresolved range and the provider class, and copying nothing the
-provider or the transport said.
+boundary hashes bound. Structured failure receipts name the code, shard, unresolved range and provider
+class without copying provider or transport text. CLI error strings may instead
+name only a read or shard; they do not universally include the provider class.
 
 `reconcile` runs the finished interval past a second provider and records
 agreement or dispute over boundary hashes, ordered transaction hashes and every
-log's identity tuple. It settles nothing: a disputed shard becomes `partial` or
-`failed`, both providers' bytes are kept, and a provider that cannot answer
-leaves the interval `unreconciled`.
+log's identity tuple. That tuple does not include the log's transaction index.
+It settles nothing: a disputed shard becomes `partial` or `failed`, both
+providers' bytes are kept, and a provider that cannot answer leaves the
+interval `unreconciled`.
+
+Both network commands take three concurrency limits. `--concurrency` (1 to 8,
+default 4) sets how many shards fetch at once; as many again may wait fetched
+behind a slower lower shard, and commits stay in shard order.
+`--trace-concurrency` (1 to 16, default 4) is one total across every shard in
+flight, not a window per shard. `--rpc-concurrency` (1 to 8, default 8) caps
+every request, traces included, so a trace limit above it adds no calls. Past
+512 MiB of request and response bytes, `collect` starts no new shard; shards
+already started finish and commit, up to a hard stop at 1 GiB.
 
 `build` emits an ordinary capture plan and calls `ingest`; `check` verifies the
 release offline, re-derives every shard's record counts from the journals, and
 re-hashes each implementation's runtime code out of the `implementation-code`
-component. Implementation epochs come from `discover_epochs` over the preserved
-`Upgraded` logs, EIP-1967 slot reads and runtime code reads in the
+component. Implementation epochs come from `discover_epochs` over every
+preserved proxy log, the EIP-1967 slot reads and the runtime code reads in the
 `epoch-evidence` journal, and are bound by code hash because the pinned
 `CometExt.version()` returns the constant string `0`. `build` takes no `--epochs`
 table: there is nothing left for an operator to supply.
 
+A new release carries `alexandria-interval-receipt/v2`. Its epochs tile
+exclusive positions of block, transaction index and log index,
+`log_attributions` names each log's owner, and `check` re-derives both. An
+ordinary log inside the upgrade transaction, an upgrade in the interval's first
+block and two upgrades in one block refuse. A v1 release keeps its block-only
+meaning, and an owner is an inference from the announcement's position, not
+proof of the emitting implementation.
+
+Wildcat releases carry one epoch table per subject, checked against that
+venue's registry and preserved code. A subject with no sourced deployment block
+uses preserved first-code evidence and retains the deployment-block gap.
+Each subject has its own epoch ceiling; the estate's sum is not the limit.
+Both mainnet captures use traces selected by matching subject logs, so a
+transaction with no such log is outside their trace coverage. Bounded concurrent
+requests share one global cap; completed shards alone advance the checkpoint.
+The [combined demonstration](../../examples/wildcat-estates-interval-v0/README.md)
+rebuilds both estates and Compound without opening a Python socket.
+
+A `wildcat-v2` plan may declare wrapper instances in `wildcat_v2_wrappers`,
+`{"rule": "wrapper-deployed/v1", "subjects": [...]}`, when its `subjects`
+include the registry's wrapper factory. The declared wrappers join every
+shard's address filter. After the shards, each one needs a preserved
+`WrapperDeployed` log from that factory that names it and a registry market.
+Its one epoch opens at that log's block, where the block's header and the
+wrapper's runtime code are read into `epoch-evidence`. The release binds the
+derived set as the `wrapper-subjects` component. `check` re-derives it byte
+for byte and lists each wrapper, a declared one with its epoch and attributed
+log count. Build and `check` refuse by name an unknown market, a declared
+wrapper with no `WrapperDeployed`, a declared wrapper's `WrapperDeployed` log
+whose block hash differs from the header read of its block, a declared
+wrapper with no code at its first block and a wrapper log before its epoch. A
+discovered wrapper the plan omits stays listed, and none of its logs is
+requested. Wrapper immutability and single-factory provenance are not
+established, and every wrapper release says so. Only constructed data has
+exercised this path.
+
+The `aave-v3` venue captures the Ethereum main market's 356 subjects as twelve
+segment releases, each a plan pinned by digest in reviewed code. Its epochs are
+chosen per subject by registry role, and only this venue owns an ordinary log in
+its upgrade transaction by position. The twelve staging trees are held outside
+the repository as one archive bound by one committed manifest;
+[`aave-v3-interval-v0`](../../examples/aave-v3-interval-v0/README.md)
+`verify-preserved` checks that metadata and rebuilds nothing, and the
+[proof](../../docs/aave-v3-interval/proof.md) records each segment's results.
+
+A subject-set plan that declares `shards_per_component` may also declare
+`"log_attribution_parts": "journal-ranges"`. Its attribution rows then leave
+the epoch table: part `k` is the component `log-attributions.<k>` and holds the
+rows of every preserved log in the plan's `k`th journal range, the range
+`logs.<k>` covers. Such a release carries `alexandria-interval-receipt/v4`,
+which lists each part with its shards and row count, and `check` compares every
+part with the rows it re-derives for that range. `build` and `check` refuse a
+part above 67,108,864 bytes or 2,000,000 nodes. A release holds at most 16,384
+components and 16,384 captures. A plan without the field builds the same bytes
+it built before. The
+[collector document](../../docs/usdc-interval-collector.md#splitting-the-log-attributions-into-parts)
+states the rule in full.
+
 Read [the collector document](../../docs/usdc-interval-collector.md) for the
 finality, epoch and reconciliation boundaries, run
 [`examples/usdc-interval-v0`](../../examples/usdc-interval-v0/README.md) to see
-the whole path offline over synthetic fixtures, and
+the whole path offline over synthetic fixtures,
+[`examples/usdc-interval-epochs-v0`](../../examples/usdc-interval-epochs-v0/README.md)
+to see positional owners over a synthetic upgrade block, and
 [`examples/usdc-interval-live-v0`](../../examples/usdc-interval-live-v0/README.md)
 to rebuild the preserved live Ethereum mainnet interval. This release
 establishes no publisher identity, no provider completeness, no consensus

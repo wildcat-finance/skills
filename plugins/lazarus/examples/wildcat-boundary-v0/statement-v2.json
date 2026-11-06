@@ -1,0 +1,268 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "anchors.jsonl",
+      "digest": {
+        "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+      }
+    },
+    {
+      "name": "header.json",
+      "digest": {
+        "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+      }
+    },
+    {
+      "name": "plan.json",
+      "digest": {
+        "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+      }
+    },
+    {
+      "name": "proofs.jsonl",
+      "digest": {
+        "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+      }
+    },
+    {
+      "name": "receipt-witness.json",
+      "digest": {
+        "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+      }
+    },
+    {
+      "name": "rpc.jsonl",
+      "digest": {
+        "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+      }
+    },
+    {
+      "name": "wildcat-boundary-v2",
+      "digest": {
+        "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/state-fixture/v2",
+  "predicate": {
+    "chain": {
+      "chain_id": 1,
+      "block_number": 26022093,
+      "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+      "state_root": "0xbad68837d5e230b2301cacc598a139a89c57b936757bcf0f7ca6b57417343c8c",
+      "receipts_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1"
+    },
+    "capture": {
+      "tool": "lazarus",
+      "tool_version": "0.2.0",
+      "command": [
+        "python3",
+        "plugins/lazarus/examples/wildcat-boundary-v0/capture.py",
+        "capture",
+        "--generation",
+        "v2",
+        "--plan",
+        "<fresh-v2-plan>",
+        "--out",
+        "<custody>/v2-fixture"
+      ],
+      "parameters_digest": {
+        "sha256": "172726728e2fbc333f8c2c6e7fa394763eec6a18ab654e26f3f207a1f39dc8ab"
+      }
+    },
+    "fixture_subjects": [
+      {
+        "name": "anchors.jsonl",
+        "path": "anchors.jsonl",
+        "digest": {
+          "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+        },
+        "bytes": 563
+      },
+      {
+        "name": "header.json",
+        "path": "header.json",
+        "digest": {
+          "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+        },
+        "bytes": 18955
+      },
+      {
+        "name": "plan.json",
+        "path": "plan.json",
+        "digest": {
+          "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+        },
+        "bytes": 5788627
+      },
+      {
+        "name": "proofs.jsonl",
+        "path": "proofs.jsonl",
+        "digest": {
+          "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+        },
+        "bytes": 27478103
+      },
+      {
+        "name": "receipt-witness.json",
+        "path": "receipt-witness.json",
+        "digest": {
+          "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+        },
+        "bytes": 357148
+      },
+      {
+        "name": "rpc.jsonl",
+        "path": "rpc.jsonl",
+        "digest": {
+          "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+        },
+        "bytes": 15609268
+      }
+    ],
+    "evidence": {
+      "proof_backed": 9231,
+      "header_bound": 1,
+      "recorded_rpc": 14561,
+      "receipt_trie_proved": 2
+    },
+    "replay": {
+      "reaches_network": false,
+      "canonical_chain_claim": false,
+      "provider_independence_claim": false
+    },
+    "deltas": {
+      "baseline": null,
+      "current": {
+        "name": "wildcat-boundary-v2",
+        "digest": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        }
+      },
+      "reason": "first preservation release of the Wildcat V2 boundary fixture at its sealed interval end"
+    },
+    "claims": [
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "anchors.jsonl",
+          "bytes": 563
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "header.json",
+          "bytes": 18955
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "plan.json",
+          "bytes": 5788627
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "proofs.jsonl",
+          "bytes": 27478103
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "receipt-witness.json",
+          "bytes": 357148
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "rpc.jsonl",
+          "bytes": 15609268
+        }
+      },
+      {
+        "name": "evidence counts read from the manifest",
+        "subject": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        },
+        "disposition": "passed",
+        "detail": {
+          "proof_backed": 9231,
+          "header_bound": 1,
+          "recorded_rpc": 14561,
+          "receipt_trie_proved": 2
+        }
+      },
+      {
+        "name": "receipt-trie relations re-checked by this capture",
+        "subject": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        },
+        "disposition": "skipped",
+        "reason": "this capture reads local manifest evidence and component bytes; Lazarus verification owns receipt-trie proof"
+      },
+      {
+        "name": "independent providers established",
+        "subject": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        },
+        "disposition": "skipped",
+        "reason": "operator-chosen source labels do not establish provider independence"
+      },
+      {
+        "name": "transaction hash attributed by the receipt trie",
+        "subject": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        },
+        "disposition": "skipped",
+        "reason": "transaction hashes are recorded RPC decorations outside the consensus receipt and log-projection proof"
+      },
+      {
+        "name": "state proofs re-checked by this capture",
+        "subject": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        },
+        "disposition": "skipped",
+        "reason": "this capture reads what Lazarus recorded and does not re-verify a trie proof; the counts come from the manifest and re-deriving one would put a judgement in the statement that Ariadne did not make"
+      },
+      {
+        "name": "the pinned block placed on the canonical chain",
+        "subject": {
+          "sha256": "a6d3904b7a00667930f3bbaf993133c8761f9406281e68ba68aadda80344ebac"
+        },
+        "disposition": "skipped",
+        "reason": "neither tool re-derives a chain, so whether this block is canonical is not established here"
+      }
+    ],
+    "commands": []
+  }
+}

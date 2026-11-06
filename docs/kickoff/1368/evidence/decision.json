@@ -1,0 +1,96 @@
+{
+  "schema": "wildcat.kickoff-decision.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1487",
+  "evidence_class": "attested",
+  "decision_maker": {
+    "name": "Dr Laurence E. Day",
+    "role": "maintainer",
+    "date": "2026-09-16"
+  },
+  "channel": "four structured questions in the delivery session",
+  "recorded_by": "Shoggoth",
+  "record": {
+    "url": "https://github.com/wildcat-finance/skills/issues/1487#issuecomment-5695677707",
+    "posted_by": "laurenceday",
+    "created_at": "2026-09-16T10:03:56Z",
+    "body_bytes": 4900,
+    "body_sha256": "16ffcea67bbec46a2c7f100c730244dbfddc5190105870077ff1a0f1a359244a",
+    "body": "Decision for this issue, made by Dr Laurence E. Day (maintainer) on 2026-09-16. He answered four structured questions in the delivery session. Each question, every option offered and the option selected are reproduced below exactly as displayed. The delivery session posted this comment from his account; it is not a separate GitHub review.\n\n## 1. Audience\n\nQuestion: Who may receive a dossier or finding that names a real protocol-observed address?\n\n- **Not selected: Private; synthetic in public (Recommended).** Real observed-address findings go only to the requesting lender and Wildcat Labs reviewers. Anything committed to this public repo, including #1368's specimen dossier, uses synthetic addresses like the existing Acme Trading Ltd fixture. Trade: no public real-data demonstration of the tier.\n- **Selected: Public, address-level.** Findings drawn from public chain logs may be published, including in this repo, provided every prohibited claim stays out. Trade: a public credit dossier on an address that never asked for one can read as Wildcat vetting borrowers, which Probitas says Wildcat does not do.\n\n## 2. Conclusions\n\nQuestion: Which protocol-observed roles may feed a conclusion?\n\n- **Selected: Debtor of record only (Recommended).** Conclusion-bearing only where the venue's own log names the address as the account whose debt changed, and only for that address's own sourced events inside stated coverage. Every other role is recorded as context and feeds no conclusion.\n- **Not selected: None, like inferred.** Observed addresses get their own section and feed no conclusion. Trade: #1368's stated problem stays unsolved, because a dossier whose subjects were observed still cannot carry a conclusion.\n\nPreview shown with the selected option:\n\n```text\nRole              | Venue-native field in this repo          | Feeds a conclusion?\n------------------|------------------------------------------|------------------------------\nDebtor of record  | Wildcat market borrower; Aave v4         | Yes: that address's own\n                  | borrower; Euler v1 borrower; Euler V2    | sourced debt events, inside\n                  | EVC owner (sub-account XOR-checked);     | stated coverage only\n                  | Midnight seller on borrow, on_behalf on  |\n                  | primary exits, borrower on liquidation   |\nWrapper / router  | a debtor contract holding positions for  | Yes about its own position;\n/ vault           | other accounts                           | no about anyone behind it\nPayer             | Midnight payer                           | No; never becomes a borrower\nCaller / actor    | Aave v4 caller; Midnight caller;         | No\n                  | Euler V2 actor                           |\nLiquidator,       | Euler v1 liquidator; Midnight receiver,  | No\nreceiver, lender, | buyer; Euler V2 counterparty             |\ncounterparty      |                                          |\nRegistry / label  | registry entry, market name, ENS name,   | No; never names an entity or\n                  | explorer tag                             | upgrades a tier\n\nNever, for any role: a person; the counterparty declaring or\ncontrolling the address; a link between addresses from behaviour,\nfunding or timing; default, full repayment, a score or a Wildcat\nverdict; completeness beyond stated coverage.\n\nEvery observed address keeps: venue, chain id, contract, tx hash,\nblock, log index, event, the role field that names it, route\n(and release for archive), and the coverage window.\n```\n\n## 3. Entity name\n\nQuestion: What may name the entity in a dossier whose subjects are protocol-observed?\n\n- **Selected: Neutral role label (Recommended).** The entity field is built from role and venue, for example 'Borrower of record, Wildcat market 0x...'. No organisation name taken from a market name, registry entry, ENS name or explorer label. An organisation name appears only when it declares the address, which makes that address declared.\n- **Not selected: Venue label, marked.** A name the venue itself publishes, such as a Wildcat market name, may title the dossier, printed as the venue's label with its source and a sentence saying it does not establish who controls the address. Trade: a borrower-chosen string reads as an identity claim.\n\n## 4. Reviewer\n\nQuestion: Who should the record name as its reviewer?\n\n- **Selected: Independent agent (Recommended).** A fresh subagent checks every file:line, digest and claim in the record against the pinned main revision; its findings and verdict go in the PR body. You stay the named decision-maker, and I merge once the required invariants check passes.\n- **Not selected: You, in this session.** You read the finished record here and confirm it before merge; the record names you as reviewer. GitHub will not let you approve a PR opened from your own account, so the confirmation is recorded from this session.\n"
+  },
+  "questions": [
+    {
+      "id": "audience",
+      "header": "Audience",
+      "question": "Who may receive a dossier or finding that names a real protocol-observed address?",
+      "options": [
+        {
+          "label": "Private; synthetic in public (Recommended)",
+          "recommended": true,
+          "description": "Real observed-address findings go only to the requesting lender and Wildcat Labs reviewers. Anything committed to this public repo, including #1368's specimen dossier, uses synthetic addresses like the existing Acme Trading Ltd fixture. Trade: no public real-data demonstration of the tier."
+        },
+        {
+          "label": "Public, address-level",
+          "recommended": false,
+          "description": "Findings drawn from public chain logs may be published, including in this repo, provided every prohibited claim stays out. Trade: a public credit dossier on an address that never asked for one can read as Wildcat vetting borrowers, which Probitas says Wildcat does not do."
+        }
+      ],
+      "selected": "Public, address-level"
+    },
+    {
+      "id": "conclusions",
+      "header": "Conclusions",
+      "question": "Which protocol-observed roles may feed a conclusion?",
+      "options": [
+        {
+          "label": "Debtor of record only (Recommended)",
+          "recommended": true,
+          "description": "Conclusion-bearing only where the venue's own log names the address as the account whose debt changed, and only for that address's own sourced events inside stated coverage. Every other role is recorded as context and feeds no conclusion.",
+          "preview": "Role              | Venue-native field in this repo          | Feeds a conclusion?\n------------------|------------------------------------------|------------------------------\nDebtor of record  | Wildcat market borrower; Aave v4         | Yes: that address's own\n                  | borrower; Euler v1 borrower; Euler V2    | sourced debt events, inside\n                  | EVC owner (sub-account XOR-checked);     | stated coverage only\n                  | Midnight seller on borrow, on_behalf on  |\n                  | primary exits, borrower on liquidation   |\nWrapper / router  | a debtor contract holding positions for  | Yes about its own position;\n/ vault           | other accounts                           | no about anyone behind it\nPayer             | Midnight payer                           | No; never becomes a borrower\nCaller / actor    | Aave v4 caller; Midnight caller;         | No\n                  | Euler V2 actor                           |\nLiquidator,       | Euler v1 liquidator; Midnight receiver,  | No\nreceiver, lender, | buyer; Euler V2 counterparty             |\ncounterparty      |                                          |\nRegistry / label  | registry entry, market name, ENS name,   | No; never names an entity or\n                  | explorer tag                             | upgrades a tier\n\nNever, for any role: a person; the counterparty declaring or\ncontrolling the address; a link between addresses from behaviour,\nfunding or timing; default, full repayment, a score or a Wildcat\nverdict; completeness beyond stated coverage.\n\nEvery observed address keeps: venue, chain id, contract, tx hash,\nblock, log index, event, the role field that names it, route\n(and release for archive), and the coverage window."
+        },
+        {
+          "label": "None, like inferred",
+          "recommended": false,
+          "description": "Observed addresses get their own section and feed no conclusion. Trade: #1368's stated problem stays unsolved, because a dossier whose subjects were observed still cannot carry a conclusion."
+        }
+      ],
+      "selected": "Debtor of record only (Recommended)"
+    },
+    {
+      "id": "entity-name",
+      "header": "Entity name",
+      "question": "What may name the entity in a dossier whose subjects are protocol-observed?",
+      "options": [
+        {
+          "label": "Neutral role label (Recommended)",
+          "recommended": true,
+          "description": "The entity field is built from role and venue, for example 'Borrower of record, Wildcat market 0x...'. No organisation name taken from a market name, registry entry, ENS name or explorer label. An organisation name appears only when it declares the address, which makes that address declared."
+        },
+        {
+          "label": "Venue label, marked",
+          "recommended": false,
+          "description": "A name the venue itself publishes, such as a Wildcat market name, may title the dossier, printed as the venue's label with its source and a sentence saying it does not establish who controls the address. Trade: a borrower-chosen string reads as an identity claim."
+        }
+      ],
+      "selected": "Neutral role label (Recommended)"
+    },
+    {
+      "id": "reviewer",
+      "header": "Reviewer",
+      "question": "Who should the record name as its reviewer?",
+      "options": [
+        {
+          "label": "Independent agent (Recommended)",
+          "recommended": true,
+          "description": "A fresh subagent checks every file:line, digest and claim in the record against the pinned main revision; its findings and verdict go in the PR body. You stay the named decision-maker, and I merge once the required invariants check passes."
+        },
+        {
+          "label": "You, in this session",
+          "recommended": false,
+          "description": "You read the finished record here and confirm it before merge; the record names you as reviewer. GitHub will not let you approve a PR opened from your own account, so the confirmation is recorded from this session."
+        }
+      ],
+      "selected": "Independent agent (Recommended)"
+    }
+  ],
+  "boundary": "The delivery session posted these answers from the decision-maker's account; the comment is not a separate GitHub review. Labels are exactly as displayed. The answers decide the #1487 policy; they do not implement the tier, capture data or change any Probitas gate."
+}

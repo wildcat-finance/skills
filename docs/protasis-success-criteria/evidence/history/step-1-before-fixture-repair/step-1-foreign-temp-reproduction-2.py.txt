@@ -1,0 +1,41 @@
+"""Schedule a foreign directory between the existing cleanup test's snapshots."""
+from pathlib import Path
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+ROOT = Path(__file__).absolute().parents[2]
+sys.path.insert(0, str(ROOT / "plugins/hexaemeron/tests"))
+import test_hexctl_checkpoint_archive as archive
+
+foreign = []
+original = archive.CheckpointArchiveInspectTests.run_inspect
+with tempfile.TemporaryDirectory(prefix="fiat-1273-attribution-") as shared:
+    def with_foreign_activity(self, *args, **kwargs):
+        result = original(self, *args, **kwargs)
+        if kwargs.get("scratch") is None:
+            child = subprocess.run(
+                [sys.executable, "-c", "import sys,tempfile; print(tempfile.mkdtemp(prefix='.fiat-checkpoint-inspect-controlled-foreign-',dir=sys.argv[1]))", shared],
+                capture_output=True, text=True, check=True,
+                env={**os.environ, "TMPDIR": shared},
+            )
+            foreign.append(Path(child.stdout.strip()).name)
+        return result
+
+    method_name = "test_inspect_writes_nothing_outside_scratch"
+    original_test = getattr(archive.CheckpointArchiveInspectTests, method_name)
+    def observe_shared_parent(self):
+        with mock.patch.object(archive.tempfile, "gettempdir", return_value=shared), mock.patch.object(
+            archive.CheckpointArchiveInspectTests, "run_inspect", with_foreign_activity
+        ):
+            original_test(self)
+    with mock.patch.object(archive.CheckpointArchiveInspectTests, method_name, observe_shared_parent):
+        case = archive.CheckpointArchiveInspectTests(method_name)
+        result = unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite([case]))
+    print(json.dumps({"controlled_foreign_directories": foreign, "testsRun": result.testsRun,
+                      "failures": len(result.failures), "errors": len(result.errors)}, sort_keys=True))
+    raise SystemExit(2 if result.skipped or not foreign else (0 if result.wasSuccessful() else 1))

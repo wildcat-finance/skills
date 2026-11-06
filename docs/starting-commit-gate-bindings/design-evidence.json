@@ -1,0 +1,441 @@
+{
+  "candidates": [
+    {
+      "id": "base-commit-bindings",
+      "summary": "Admit a registered module whose bytes equal its blob at the run's starting commit under the pin that commit's adapter carried, and a receipt adapter digest equal to that commit's adapter digest; both derived from Git at check time, no table."
+    },
+    {
+      "id": "reviewed-prior-pins",
+      "summary": "Extend the reviewed tables: add ac527913 to REPLAY_COMPATIBLE_ADAPTERS and a prior-pin triple for protasis.py; one reviewed row set per later controller."
+    },
+    {
+      "id": "runbook-scoped-pins",
+      "summary": "Keep pin checks scoped to the modules the runbook names, which is already the case, and stop the diagnostic naming unused modules; no admission change."
+    },
+    {
+      "id": "recorded-controller-fork",
+      "summary": "Drive the run on its recorded controller rebuilt from the starting commit with supersede-commit backported; main's controller is unchanged."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "main-controller-replays-1872",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "edited-module-refuses",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "unknown-adapter-refuses",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "verify-writes-no-state",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "verify-wall-ms",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 5000,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "compatibility",
+      "id": "reviewed-rows-per-release",
+      "kind": "metric",
+      "owner": "hypomnema",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "older-controller-supersession-fixture",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "base-commit-controller-demonstration",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "released-adapter-tests-green",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "base-commit-bindings",
+      "criterion": "main-controller-replays-1872",
+      "report": {
+        "path": "reports/design/base-commit-bindings-main-controller-replays-1872.json",
+        "sha256": "2bc94305c90df9e9843dcdaa8e7e4af70620bf6c863e5158891556fa66d95267"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "base-commit-bindings",
+      "criterion": "edited-module-refuses",
+      "report": {
+        "path": "reports/design/base-commit-bindings-edited-module-refuses.json",
+        "sha256": "db87894081523297f6c568b0655c6a311042901dbc3da617c0582147dd8d279c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "base-commit-bindings",
+      "criterion": "unknown-adapter-refuses",
+      "report": {
+        "path": "reports/design/base-commit-bindings-unknown-adapter-refuses.json",
+        "sha256": "49496e1b766d52933a71a19ede9f71517a3774a00e462a6eb83e65dd29a8afd8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "base-commit-bindings",
+      "criterion": "verify-writes-no-state",
+      "report": {
+        "path": "reports/design/base-commit-bindings-verify-writes-no-state.json",
+        "sha256": "ae629ed99e57704ccfdb227b5e2dc341d32a96c11a2953097d911f5ba5040179"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "base-commit-bindings",
+      "criterion": "verify-wall-ms",
+      "report": {
+        "path": "reports/design/base-commit-bindings-verify-wall-ms.json",
+        "sha256": "bade8e60b289bf78efe2e4eeb530e3117be5ee2385d892804366d6a280b25b42"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "base-commit-bindings",
+      "criterion": "reviewed-rows-per-release",
+      "report": {
+        "path": "reports/design/base-commit-bindings-reviewed-rows-per-release.json",
+        "sha256": "1d6c38f098aa669713f8653228892f1b0b3b6fc93d057eb51cb6e525b7b37f8f"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "base-commit-bindings",
+      "criterion": "older-controller-supersession-fixture",
+      "report": "reports/design/base-commit-bindings-older-controller-supersession-fixture.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate base-commit-bindings --criterion older-controller-supersession-fixture --report .hexaemeron/reports/design/base-commit-bindings-older-controller-supersession-fixture.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "base-commit-bindings",
+      "criterion": "base-commit-controller-demonstration",
+      "report": "reports/design/base-commit-bindings-base-commit-controller-demonstration.json",
+      "resolver": "python3 docs/starting-commit-gate-bindings/demonstrate.py --candidate base-commit-bindings --criterion base-commit-controller-demonstration --report .hexaemeron/reports/design/base-commit-bindings-base-commit-controller-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "base-commit-bindings",
+      "criterion": "released-adapter-tests-green",
+      "report": "reports/design/base-commit-bindings-released-adapter-tests-green.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate base-commit-bindings --criterion released-adapter-tests-green --report .hexaemeron/reports/design/base-commit-bindings-released-adapter-tests-green.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "reviewed-prior-pins",
+      "criterion": "main-controller-replays-1872",
+      "report": {
+        "path": "reports/design/reviewed-prior-pins-main-controller-replays-1872.json",
+        "sha256": "f7bd359a47873ef95729b536a32e5183fe30a96f626b8e8190aa6a06b8f00dd7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-prior-pins",
+      "criterion": "edited-module-refuses",
+      "report": {
+        "path": "reports/design/reviewed-prior-pins-edited-module-refuses.json",
+        "sha256": "38428c200fe80c2fcde478888a44af82c9c5143d4658759506245c21f88cf4c8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-prior-pins",
+      "criterion": "unknown-adapter-refuses",
+      "report": {
+        "path": "reports/design/reviewed-prior-pins-unknown-adapter-refuses.json",
+        "sha256": "6b74a0e9ba731e39388d21f34b980b0c28b0ef5ad291873bd2de66ec2b9a21f4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-prior-pins",
+      "criterion": "verify-writes-no-state",
+      "report": {
+        "path": "reports/design/reviewed-prior-pins-verify-writes-no-state.json",
+        "sha256": "c40c6b5609f970c6a8bde6d75d193071085fb13714a10157a84190a68032de5c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-prior-pins",
+      "criterion": "verify-wall-ms",
+      "report": {
+        "path": "reports/design/reviewed-prior-pins-verify-wall-ms.json",
+        "sha256": "5bcfbd85987522fca7998f0cbc6fb1d7ad8aed323e01c6018186b982710e815e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-prior-pins",
+      "criterion": "reviewed-rows-per-release",
+      "report": {
+        "path": "reports/design/reviewed-prior-pins-reviewed-rows-per-release.json",
+        "sha256": "a7ff675383c000fbfcf7d4c4a1eb0e97958e14dd65afe01fa278313b44f465b3"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "reviewed-prior-pins",
+      "criterion": "older-controller-supersession-fixture",
+      "report": "reports/design/reviewed-prior-pins-older-controller-supersession-fixture.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate reviewed-prior-pins --criterion older-controller-supersession-fixture --report .hexaemeron/reports/design/reviewed-prior-pins-older-controller-supersession-fixture.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "reviewed-prior-pins",
+      "criterion": "base-commit-controller-demonstration",
+      "report": "reports/design/reviewed-prior-pins-base-commit-controller-demonstration.json",
+      "resolver": "python3 docs/starting-commit-gate-bindings/demonstrate.py --candidate reviewed-prior-pins --criterion base-commit-controller-demonstration --report .hexaemeron/reports/design/reviewed-prior-pins-base-commit-controller-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "reviewed-prior-pins",
+      "criterion": "released-adapter-tests-green",
+      "report": "reports/design/reviewed-prior-pins-released-adapter-tests-green.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate reviewed-prior-pins --criterion released-adapter-tests-green --report .hexaemeron/reports/design/reviewed-prior-pins-released-adapter-tests-green.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "runbook-scoped-pins",
+      "criterion": "main-controller-replays-1872",
+      "report": {
+        "path": "reports/design/runbook-scoped-pins-main-controller-replays-1872.json",
+        "sha256": "c09da27c42cbcc282779352788076b0c323b0d18aeb04a1196fb6793c67d735d"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "runbook-scoped-pins",
+      "criterion": "edited-module-refuses",
+      "report": {
+        "path": "reports/design/runbook-scoped-pins-edited-module-refuses.json",
+        "sha256": "5c4c6c158c880b2235288feb0c3a95976905c139c2b8ade63de7369c962e68bb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-scoped-pins",
+      "criterion": "unknown-adapter-refuses",
+      "report": {
+        "path": "reports/design/runbook-scoped-pins-unknown-adapter-refuses.json",
+        "sha256": "54b3a8601e2d00e2414e72f24578a58623528b5caed022d48b305205276d3a54"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-scoped-pins",
+      "criterion": "verify-writes-no-state",
+      "report": {
+        "path": "reports/design/runbook-scoped-pins-verify-writes-no-state.json",
+        "sha256": "d573e207740717c39fa4d4a9035ae2dfa81cf90e56f1a8f3fe72e142f0cd3a95"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-scoped-pins",
+      "criterion": "verify-wall-ms",
+      "report": {
+        "path": "reports/design/runbook-scoped-pins-verify-wall-ms.json",
+        "sha256": "865c77c5381c913557b9e0e538fa103d058956769d8ddf82f1205229bda4ad97"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-scoped-pins",
+      "criterion": "reviewed-rows-per-release",
+      "report": {
+        "path": "reports/design/runbook-scoped-pins-reviewed-rows-per-release.json",
+        "sha256": "02aa7c43d5f1a6e49be650fb0e54cae73af8e5beaa4f6cd1c0342e3d1df3cae2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "runbook-scoped-pins",
+      "criterion": "older-controller-supersession-fixture",
+      "report": "reports/design/runbook-scoped-pins-older-controller-supersession-fixture.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate runbook-scoped-pins --criterion older-controller-supersession-fixture --report .hexaemeron/reports/design/runbook-scoped-pins-older-controller-supersession-fixture.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "runbook-scoped-pins",
+      "criterion": "base-commit-controller-demonstration",
+      "report": "reports/design/runbook-scoped-pins-base-commit-controller-demonstration.json",
+      "resolver": "python3 docs/starting-commit-gate-bindings/demonstrate.py --candidate runbook-scoped-pins --criterion base-commit-controller-demonstration --report .hexaemeron/reports/design/runbook-scoped-pins-base-commit-controller-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "runbook-scoped-pins",
+      "criterion": "released-adapter-tests-green",
+      "report": "reports/design/runbook-scoped-pins-released-adapter-tests-green.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate runbook-scoped-pins --criterion released-adapter-tests-green --report .hexaemeron/reports/design/runbook-scoped-pins-released-adapter-tests-green.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "recorded-controller-fork",
+      "criterion": "main-controller-replays-1872",
+      "report": {
+        "path": "reports/design/recorded-controller-fork-main-controller-replays-1872.json",
+        "sha256": "4257862f90a2748288e1ad1e4fd75b7054c1557d92b5b1379976be05b6358e1c"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "recorded-controller-fork",
+      "criterion": "edited-module-refuses",
+      "report": {
+        "path": "reports/design/recorded-controller-fork-edited-module-refuses.json",
+        "sha256": "21932e1ddd505b13761a6f1fb4807341a55f7058e1094cda2a3a3da5e8666b78"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "recorded-controller-fork",
+      "criterion": "unknown-adapter-refuses",
+      "report": {
+        "path": "reports/design/recorded-controller-fork-unknown-adapter-refuses.json",
+        "sha256": "f5348f1374d77655c014e97e308a96ceca3c6572d200bc3ff260114c6d06fef2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "recorded-controller-fork",
+      "criterion": "verify-writes-no-state",
+      "report": {
+        "path": "reports/design/recorded-controller-fork-verify-writes-no-state.json",
+        "sha256": "34ac627e1c005afc39e9b95d529ec0a2ad0f91802ef0adb92e478c09ad98ba06"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "recorded-controller-fork",
+      "criterion": "verify-wall-ms",
+      "report": {
+        "path": "reports/design/recorded-controller-fork-verify-wall-ms.json",
+        "sha256": "9eeda0f828fe9d8d47131ab86931750df80a649738cfb5aae1866723f384fd67"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "recorded-controller-fork",
+      "criterion": "reviewed-rows-per-release",
+      "report": {
+        "path": "reports/design/recorded-controller-fork-reviewed-rows-per-release.json",
+        "sha256": "f9408b46eb29e29a342542d0a6505a60a507736b4607c5c13b63184a8de9bff4"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "recorded-controller-fork",
+      "criterion": "older-controller-supersession-fixture",
+      "report": "reports/design/recorded-controller-fork-older-controller-supersession-fixture.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate recorded-controller-fork --criterion older-controller-supersession-fixture --report .hexaemeron/reports/design/recorded-controller-fork-older-controller-supersession-fixture.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "recorded-controller-fork",
+      "criterion": "base-commit-controller-demonstration",
+      "report": "reports/design/recorded-controller-fork-base-commit-controller-demonstration.json",
+      "resolver": "python3 docs/starting-commit-gate-bindings/demonstrate.py --candidate recorded-controller-fork --criterion base-commit-controller-demonstration --report .hexaemeron/reports/design/recorded-controller-fork-base-commit-controller-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "recorded-controller-fork",
+      "criterion": "released-adapter-tests-green",
+      "report": "reports/design/recorded-controller-fork-released-adapter-tests-green.json",
+      "resolver": "python3 plugins/hexaemeron/tests/fiat_starting_commit_bindings_proof.py --candidate recorded-controller-fork --criterion released-adapter-tests-green --report .hexaemeron/reports/design/recorded-controller-fork-released-adapter-tests-green.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "base-commit-bindings",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

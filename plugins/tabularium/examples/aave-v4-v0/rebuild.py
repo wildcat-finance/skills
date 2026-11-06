@@ -31,6 +31,7 @@ def main():
             "--out", rebuilt / "events.jsonl",
             "--manifest", rebuilt / "coverage.json",
             "--release", RELEASE_ID,
+            "--event-schema", "2",
         )
         for name in ("source.json", "capture.json", "events.jsonl", "coverage.json"):
             (rebuilt / name).chmod(0o444)

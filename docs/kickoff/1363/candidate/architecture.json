@@ -1,0 +1,244 @@
+{
+  "title": "Wildcat V2 \u2014 candidate source bea503c",
+  "nodes": [
+    {
+      "id": "lender",
+      "label": "Lender",
+      "subtitle": "Deposits and claims",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "borrower",
+      "label": "Borrower",
+      "subtitle": "Market operations",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "owner",
+      "label": "ArchController owner",
+      "subtitle": "Registration authority",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "spherex_authority",
+      "label": "SphereX admin / operator",
+      "subtitle": "Separate protection roles",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "wrapper",
+      "label": "Wildcat4626Wrapper",
+      "subtitle": "WrapperFactory / market-token shares",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "market",
+      "label": "WildcatMarket / WildcatMarketRevolving",
+      "subtitle": "Base / Token / Config / Withdrawals",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "factory",
+      "label": "HooksFactory / HooksFactoryRevolving",
+      "subtitle": "Templates and deployment",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "arch",
+      "label": "WildcatArchController",
+      "subtitle": "Owner-controlled registry",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "hooks",
+      "label": "OpenTermHooks / FixedTermHooks / PeriodicTermHooks",
+      "subtitle": "BaseAccessControls / MarketConstraintHooks",
+      "type": "protocol",
+      "row": 2
+    },
+    {
+      "id": "sentinel",
+      "label": "WildcatSanctionsSentinel",
+      "subtitle": "Borrower-specific overrides",
+      "type": "protocol",
+      "row": 2
+    },
+    {
+      "id": "asset",
+      "label": "Underlying ERC20",
+      "subtitle": "External token behavior",
+      "type": "external",
+      "row": 2
+    },
+    {
+      "id": "engine",
+      "label": "SphereX engine",
+      "subtitle": "Mutable external validator",
+      "type": "external",
+      "row": 2
+    },
+    {
+      "id": "identity",
+      "label": "WildcatBorrowerIdentityRegistry",
+      "subtitle": "Operational account \u2192 principal",
+      "type": "protocol",
+      "row": 2
+    },
+    {
+      "id": "providers",
+      "label": "Role providers",
+      "subtitle": "AccessList / Merkle / token adapters",
+      "type": "protocol",
+      "row": 3
+    },
+    {
+      "id": "escrow",
+      "label": "WildcatSanctionsEscrow",
+      "subtitle": "Account-bound custody",
+      "type": "protocol",
+      "row": 3
+    },
+    {
+      "id": "oracle",
+      "label": "Chainalysis list",
+      "subtitle": "External sanctions source",
+      "type": "external",
+      "row": 3
+    },
+    {
+      "id": "provider_factories",
+      "label": "Provider factories",
+      "subtitle": "AccessList / Merkle / token adapters",
+      "type": "protocol",
+      "row": 3
+    },
+    {
+      "id": "provider_tokens",
+      "label": "Credential tokens",
+      "subtitle": "ERC20 / ERC721 / ERC1155 / ERC4626",
+      "type": "external",
+      "row": 4
+    }
+  ],
+  "edges": [
+    {
+      "from": "lender",
+      "to": "wrapper",
+      "label": "wrap claims"
+    },
+    {
+      "from": "lender",
+      "to": "market",
+      "label": "deposit withdraw"
+    },
+    {
+      "from": "borrower",
+      "to": "market",
+      "label": "borrow repay"
+    },
+    {
+      "from": "borrower",
+      "to": "factory",
+      "label": "deploy market"
+    },
+    {
+      "from": "owner",
+      "to": "arch",
+      "label": "manage registry"
+    },
+    {
+      "from": "wrapper",
+      "to": "market",
+      "label": "transfer claims"
+    },
+    {
+      "from": "factory",
+      "to": "market",
+      "label": "create code"
+    },
+    {
+      "from": "factory",
+      "to": "arch",
+      "label": "register market"
+    },
+    {
+      "from": "factory",
+      "to": "hooks",
+      "label": "create hook"
+    },
+    {
+      "from": "market",
+      "to": "hooks",
+      "label": "run callback"
+    },
+    {
+      "from": "market",
+      "to": "sentinel",
+      "label": "check sanctions"
+    },
+    {
+      "from": "market",
+      "to": "asset",
+      "label": "move assets"
+    },
+    {
+      "from": "market",
+      "to": "engine",
+      "label": "validate action"
+    },
+    {
+      "from": "arch",
+      "to": "engine",
+      "label": "allow sender"
+    },
+    {
+      "from": "hooks",
+      "to": "providers",
+      "label": "check credential"
+    },
+    {
+      "from": "sentinel",
+      "to": "escrow",
+      "label": "create custody"
+    },
+    {
+      "from": "sentinel",
+      "to": "oracle",
+      "label": "read sanctions"
+    },
+    {
+      "from": "escrow",
+      "to": "asset",
+      "label": "release assets"
+    },
+    {
+      "from": "spherex_authority",
+      "to": "arch",
+      "label": "manage protection"
+    },
+    {
+      "from": "hooks",
+      "to": "provider_factories",
+      "label": "create provider"
+    },
+    {
+      "from": "market",
+      "to": "identity",
+      "label": "resolve borrower"
+    },
+    {
+      "from": "providers",
+      "to": "provider_tokens",
+      "label": "read eligibility"
+    }
+  ],
+  "groups": []
+}

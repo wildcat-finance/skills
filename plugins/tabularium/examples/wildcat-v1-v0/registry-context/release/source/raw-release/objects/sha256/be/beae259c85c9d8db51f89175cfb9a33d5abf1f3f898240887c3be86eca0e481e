@@ -1,0 +1,1 @@
+{"class":"traces","format":"alexandria-interval-journal/v1","interval":{"end":"18743514","start":"18743513"},"records":[{"class":"traces","request":"{\"id\":3,\"jsonrpc\":\"2.0\",\"method\":\"trace_transaction\",\"params\":[\"0x39a1f3eae205d0ccb0daa9bd8f1259cdb9058779188fca145824742c431c8929\"]}\n","response":"{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":[]}\n","shard":0}]}

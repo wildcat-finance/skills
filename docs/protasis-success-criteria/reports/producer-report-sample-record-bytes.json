@@ -1,0 +1,9 @@
+{
+  "candidate": "producer-report",
+  "command": "python3 selection_probe.py --candidate producer-report --criterion sample-record-bytes --report reports/producer-report-sample-record-bytes.json",
+  "criterion": "sample-record-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 345
+}

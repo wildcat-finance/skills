@@ -1,0 +1,30 @@
+{
+  "generator": "plan_v3.py",
+  "note": "Each entry is what plan_v3.py printed when run from the repository root with the named probe and no other flag; the plan bytes themselves are not committed.",
+  "plans": {
+    "v1": {
+      "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+      "block_number": 22074622,
+      "bytes": 196264,
+      "max_elapsed_seconds": 3600,
+      "probe": "probe-v1.json",
+      "proof_targets": 21,
+      "requests": 434,
+      "sha256": "13770a6987eed0c819809c6d68c8874a1fe243b148021a9cbee29511b736fa1c",
+      "slots": 244
+    },
+    "v2": {
+      "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+      "block_number": 26022093,
+      "bytes": 7041376,
+      "max_elapsed_seconds": 7200,
+      "probe": "probe-v2.json",
+      "proof_targets": 151,
+      "requests": 14561,
+      "sha256": "0dcfbc330633ceb29e4c67819e33639681ef58e9ce4a0628bb7de316f20c285a",
+      "slots": 9080
+    }
+  },
+  "schema": "wildcat-boundary-plans/v1",
+  "value_map": "docs/kickoff/1384"
+}

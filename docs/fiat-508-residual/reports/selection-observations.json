@@ -1,0 +1,24 @@
+{
+  "boundary": "Two synthetic child-writer routes only; no complete worker dispatch, model connectivity, IPC closure or lifecycle claim.",
+  "command": "python3 /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/design-probe.py --output-dir /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports",
+  "observations": [
+    {
+      "candidate": "whole-worker-sandbox",
+      "inside_exit": 0,
+      "inside_written": true,
+      "outside_denied": true,
+      "outside_exit": 1,
+      "outside_written": false
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "inside_exit": 0,
+      "inside_written": true,
+      "outside_denied": false,
+      "outside_exit": 0,
+      "outside_written": true
+    }
+  ],
+  "schema": "fiat-508-selection-observations/v1",
+  "script_sha256": "9bea0649f2df86db66d749e4961bd7ee736c4e65cbb1f795e5b3d44d1f8d41b0"
+}

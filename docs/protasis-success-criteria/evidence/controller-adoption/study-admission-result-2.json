@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "--dir",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+    "amend",
+    "study",
+    "--artifact",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/study-controller-adoption.md"
+  ],
+  "exit": 0,
+  "wall_seconds": 1.3317386249545962,
+  "log_sha256": "26f7ae1aff598f60a233c3450cf313df50a67e20eecb4ef3598d6fee5bb979e3",
+  "original_controller_unchanged": true
+}

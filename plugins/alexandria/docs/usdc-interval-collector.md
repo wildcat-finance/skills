@@ -1,7 +1,7 @@
 # The resumable Ethereum USDC interval collector
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 `docs/compound-v3-harvest.md` specifies the production harvester. This document
@@ -25,14 +25,42 @@ file handed in at build time; it is now derived from bytes the collector read
 and journaled itself, so there is nothing left for an operator to supply and
 the argument is retired rather than deprecated.
 
+`collect` and `reconcile` also accept `--registry <registry>`. A venue that
+plans its opening reads from its deployment registry requires it; see
+[per-subject epochs](#per-subject-epochs-under-an-immutable-code-venue).
+
 `collect` and `reconcile` are the two network paths, and each reads its endpoint
 from `ALEXANDRIA_COMPOUND_RPC_URL` alone. The endpoint reaches no file, no
 receipt and no message. `build` and `check` are offline.
 
-Two demonstrations run the whole path with no network at all:
+An optional bearer credential rides the hosted path alone: set
+`ALEXANDRIA_RPC_BEARER` and the transport adds it as one `Authorization` header
+on every request, over HTTPS only. It lives on that one transport instance,
+never on a module constant, and it reaches no file, no receipt and no message
+any more than the endpoint does.
+
+A second, bounded path exists beside the hosted one: an explicit opt-in local
+loopback path, for a node reachable only from this machine. Set
+`ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` together with an
+`ALEXANDRIA_COMPOUND_RPC_URL` whose host is the literal `127.0.0.1` or `::1`
+-- not `localhost`, not a hostname that merely resolves there by DNS, and not
+a differently-written form of the same address. That path carries no bearer,
+ignores `HTTP_PROXY`/`http_proxy`, follows no redirect, and refuses every
+other host, URL user information and malformed authority before opening a
+connection. Any other `ALEXANDRIA_COMPOUND_RPC_URL` still falls to the hosted
+path's own HTTPS-only rule.
+
+Two historical demonstrations run the whole path with no network at all:
 `examples/usdc-interval-v0/demo.py` over synthetic fixtures, and
 `examples/usdc-interval-live-v0/demo.py` over the preserved bytes of a real
-Ethereum mainnet interval.
+Ethereum mainnet interval. Their confined reconstruction paths preserve the
+original v1 release identifiers. Ordinary `build` emits
+`alexandria-interval-receipt/v2`; it has no public legacy-build option.
+`examples/usdc-interval-epochs-v0/demo.py` demonstrates v2 offline: literal
+owners over a synthetic upgrade block, a v2 rebuild of the live staging bytes
+under its own identifier, and the refusals the positional rules require. Its
+[proof](usdc-interval-epochs/proof.md) records the guard's failure on the
+parent and the four production conformance reports.
 
 ## What a request carries
 
@@ -42,11 +70,14 @@ version>`, built at import from the plugin manifest. Two of the five providers
 the study probed answer HTTP 403 to Python's default `User-Agent`, so a
 constant one is the difference between a run and a refusal.
 
-No header value comes from the environment, and there is no argument, variable
-or plan field that adds one. A provider that requires a credential header is
-therefore out of scope rather than awkward: the collector cannot send one. The
-only thing the environment supplies is the endpoint, and that is never written
-down.
+Every request over the hosted path also carries an `Authorization` header once
+`ALEXANDRIA_RPC_BEARER` is set; the local loopback path never adds one, and
+refuses to build at all if one is present. No other header value comes from
+the environment, and there is no argument or plan field that adds one. Neither
+the bearer token nor the endpoint reaches a log, a receipt, an error message
+or any file the collector, reconciler or builder writes: the environment
+supplies both, and the token reaches exactly one HTTP header on the request
+that needs it.
 
 A release names the provider by class, not by operator. The plan carries a
 non-secret `provider.class` string, such as `archive gateway, public tier, no
@@ -65,7 +96,7 @@ and refuses a reversed, empty, zero-width or unbounded interval by name.
 
 The plan also declares its evidence classes: a non-empty subset of
 `boundary-blocks`, `logs` and `traces`, in the order the collector requests
-them. A shard asks one question per declared class -- the block at its end, the
+them. A shard normally asks one question per declared class -- the block at its end, the
 proxy's logs across its range, the traces of calls into the proxy across the
 same range -- and the collector issues no request and opens no journal for a
 class the plan omits. An omitted class is not silence: the release names it as a
@@ -77,6 +108,64 @@ Declaring the classes in the plan is what makes a `traces` omission a stated
 scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
+
+If a node refuses `eth_getLogs` with a recognised max-results error, `collect`
+retries contiguous subranges using a valid suggested endpoint or halves the
+range. It keeps one logs record for the shard, with the raw successful
+subrequests and responses beside their joined response. The shard receipt
+lists the subranges. Offline `check` verifies their coverage, each request and
+response, each log's block, and the joined order by block and log index. A cap
+on one block still refuses the shard; other JSON-RPC errors still fail.
+
+Before any evidence read for a new shard, `collect` calls `eth_syncing` with
+no parameters. Both collection paths require the literal JSON value `false`.
+A syncing object refuses with `node-syncing`; another result refuses with
+`invalid-sync-state`. RPC failures also stop that shard. Rerun `collect` after
+the node reports that syncing has finished; the last committed shard remains
+the resume point, and each new shard checks again.
+
+The boundary journal records `node_syncing: false` beside that shard's exchange.
+Reconciliation and the release shard receipt retain the field, and offline
+`check` compares it with the boundary journal. Absence means the sync state was
+not recorded, as in older captures. This is the provider's response before
+the shard began. It neither guarantees the node stayed synced during collection
+nor establishes trace correctness; reconciliation remains necessary.
+
+## Splitting a journal across components
+
+Every staging journal and every release component is capped at 67,108,864
+bytes. The two ceilings are `MAX_JOURNAL_BYTES` in `alexandria_lib/interval.py`
+and `MAX_RAW_COMPONENT_BYTES` in `alexandria_lib/release.py`. A long interval's
+logs can outgrow that, so a plan may declare `shards_per_component`, an integer
+from 1 to 4,096. Each shard class's journal is then kept and released as one
+component per contiguous range of at most that many shards. The components are
+named `<class>.<k>` in shard order: `logs.0`, `logs.1` and so on. The component
+count is derived from the shard count and that one field, so the boundaries are
+fixed by the plan and move only when the plan changes. A byte-driven split
+would move them whenever a re-collection returned one more record. The release
+would then stop being reproducible from its plan.
+
+The staging tree carries the same partition. It holds one file per class and
+component, each under `MAX_JOURNAL_BYTES` on its own while the class's logical
+journal may pass it. Its checkpoint is in the `alexandria-interval-checkpoint/v2`
+format, with offsets keyed by those files. A record no single file can hold
+still refuses where it would be written. Resume, reorg rewind, reconciliation,
+the opening reads, `build` and `check` all read the components in shard order,
+one file at a time. Nothing joins them into one oversized file. The
+`epoch-evidence` journal is never split, because its records sit under the
+virtual shard index rather than in any shard range.
+
+A plan without the field declares no split. It produces exactly one component
+per class under the class's own name, as every release before the field did,
+so the preserved demonstrations verify unchanged. `check` re-derives the
+ranges from the plan alone. It refuses a component the plan does not derive, a
+component the release lacks, one holding a shard outside its range, one
+holding a shard twice, and one whose coverage does not name the shards it
+holds. It also compares every component's byte count in the manifest with the
+ceiling and refuses one above it by name. Each split component's scope binds
+the whole interval's two boundary hashes, because those are the hashes the
+collector read. Its coverage names which shards and blocks the component holds
+and says the journal's other components hold the rest.
 
 ## The opening reads
 
@@ -129,15 +218,15 @@ given. It is not consensus finality and not canonical-chain membership.
 cannot tell two implementations apart. An epoch is bound instead by the SHA-256
 of its implementation's runtime bytecode.
 
-`discover_epochs` takes the ordered `Upgraded(address)` logs for the proxy, the
+`discover_epochs` takes all preserved proxy logs, including `Upgraded(address)`, the
 EIP-1967 implementation slot read at each boundary and the runtime code read at
-each implementation, and returns epochs that tile the declared interval with no
-gap and no overlap. `build` takes all three out of the `epoch-evidence` journal
-the collector committed, so the table is derived from preserved bytes and there
-is nothing for an operator to assert. A boundary with no slot read of its own
+each implementation. V2 epochs tile transaction positions across the declared
+interval with no gap or overlap. `build` reads the logs from committed shard
+journals and the slot and code evidence from `epoch-evidence`, so the table is
+derived from preserved bytes. A boundary with no slot read of its own
 does not inherit the implementation beside it: it refuses. So do a zero-address slot, an empty code
-read, a slot that is not a left-padded address, a log from another contract, a
-log carrying another topic, unordered logs, a log outside the interval and a
+read, a slot that is not a left-padded address, a log from another contract,
+malformed upgrade topics, unordered logs, a log outside the interval and a
 missing block hash. Where the log's announced implementation and the slot read
 disagree, or the log's own block hash and the preserved block disagree, the
 epoch table refuses rather than choosing.
@@ -147,12 +236,433 @@ rather than computed values, because the standard library carries no keccak.
 Both are attested by the Phase 0 capture preserved in this repository, and a
 test binds them to it.
 
+## Transaction-position ownership
+
+Each v2 epoch adds `start_position` and exclusive `end_position`. A position
+contains exactly `block_number`, `transaction_index` and `log_index`: a decimal
+block string and non-negative integer indexes. Both indexes are null together
+only for a block-edge sentinel, meaning before every log in that block. The
+first epoch starts at the interval's first block; the last ends at the block
+after the interval's inclusive end. Interior boundaries use the preserved
+upgrade's transaction and log indexes, and adjacent epoch positions match.
+
+The existing `start_block`, `end_block`, `start_hash` and `end_hash` describe
+each epoch's block envelope. Adjacent envelopes share the upgrade block;
+exclusive positions determine ownership inside it. A non-null `upgrade` also
+carries `transaction_index`, and its coordinates match the epoch's start.
+
+The receipt's `log_attributions` array records every preserved proxy log in
+validated order. Each row contains `block_number`, `block_hash`,
+`transaction_hash`, `transaction_index`, `log_index`, zero-based `epoch_index`
+and `kind`. An ordinary log has kind `proxy-log`; the upgrade announcement has
+kind `upgrade-boundary`. A log in an earlier transaction belongs to the preceding
+implementation, and one in a later transaction belongs to the replacement.
+The announcement records a boundary without claiming which implementation
+executed it.
+
+Missing, boolean, negative, malformed, duplicate, contradictory, unordered or
+out-of-range coordinates refuse. Transaction and log indexes retain the
+canonical JSON ceiling of 78 decimal digits, checked before conversion or
+diagnostic formatting. Within a block, transaction indexes cannot
+decrease and block-wide log indexes must increase; transaction indexes and
+hashes must agree, as must block hashes. Three unsupported histories also
+refuse: an upgrade in the interval's first block without prior implementation
+evidence, more than one upgrade in a block, and an ordinary proxy log in the
+upgrade transaction, whether before or after the announcement. Only the
+`aave-v3` venue admits the third, under the order rule in its section below.
+End-of-block slot reads and log order cannot establish intermediate execution
+state.
+
+A plan omitting logs keeps its omission gap and an empty attribution array.
+It claims neither unpreserved log coverage nor the absence of unseen upgrades.
+`check` re-derives the positions and ownership from preserved journals and
+compares the complete attribution array. Rebinding a changed receipt to new
+component digests does not make invented ownership pass.
+
+The check result names `receipt_semantics` as `v1-block-only` or
+`v2-positional`. V1 verification retains its block-only meaning and immutable
+schema; a valid v1 release gains no positional guarantee. The reasons for the v2 format and
+these refusals live in the [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision).
+
+## Per-subject epochs under an immutable-code venue
+
+A venue module names its epoch model. `compound-v3` names `eip1967-proxy`, the
+model every section above describes. `wildcat-v2` names `immutable-code` and
+owns its opening reads and its epoch derivation, in
+`alexandria_lib/venues/wildcat_v2.py`. Every path that plans, replays or
+re-derives opening reads dispatches on the plan's venue first: `collect`,
+`reconcile`, `build` and `check`. A subject-set plan under `compound-v3` and a
+single-proxy plan under `wildcat-v2` both refuse by name before any request is
+made.
+
+The rule is one epoch per declared subject. The epoch names no upgrade, and
+its implementation is the subject's own address. Its code digest is the
+SHA-256 of the runtime code read at the epoch's first block. That block is the
+later of the interval's start and the subject's own deployment block, which
+the venue's pinned registry carries. The epoch runs through the interval's end
+and opens at a block sentinel, so every log in its first block has an owner.
+A subject deployed after the interval's end has no epoch and no row in the
+table. Every evidence scope names it as outside the interval. A log from a
+subject before its own first block refuses, because no epoch owns it.
+
+The `wildcat-v2` registry is pinned by digest. `collect` and `build` accept
+only the current registry. `check` also accepts the registry that V2 releases
+built before #1880 carry. That registry named the private commit as the
+OpenAccessRoleProvider's source, and #1880 moved the entry to the public
+v2-protocol commit.
+
+One `wildcat-v2` subject has no creation block in the merged records: the
+collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
+The rule below holds for any subject without one. `collect` reads its code at
+the interval's start. With runtime code there, its epoch opens at the start
+with that one read. With none, `collect` reads the interval's end. Empty code
+there too means the subject has no extent inside the interval, and the
+collection refuses by name with error receipt code `no-code-at-interval-end`.
+Otherwise it bisects between a block it read as empty and a block it read
+with code until the two are adjacent. The epoch opens at the second of that
+pair. One subject costs at most two reads plus the base-2 logarithm of the
+interval's length, rounded up.
+
+The probes happen before the first shard request, so that refusal costs no
+shard. A checkpoint cannot commit an opening read while a shard is
+uncollected, so their bytes are held and written as the first `epoch-evidence`
+records after the last shard. A run stopped among the shards asks them again.
+
+This establishes an observed boundary inside the interval: empty code at one
+block and runtime code at the next, both read and preserved. It does not
+establish the contract's first creation. Code destroyed before the interval's
+start, or between two blocks the bisection did not read, is not seen. The receipt's `first_code`
+rows say which opening applied, `interval-start` or `observed-block`, and name
+the pair. The registry capture names the missing deployment block as a gap
+rather than guess it.
+Every evidence scope does too, and says which opening applied, so an observed
+block is never presented as a recorded one. `reconcile` asks the second
+provider for every probe; a different answer is a `code-digest` dispute.
+`check` replays the probes, re-derives the rows, and refuses rows the reads do
+not give or a pair that does not bracket the epoch's first block.
+
+A subject with a recorded creation block is never probed. Empty code at its
+recorded first block means the registry is wrong, and the collection refuses
+by name with error receipt code `no-code-at-recorded-block`.
+
+The opening reads are those probes, then the interval's first header, one
+header per distinct later first block, and each recorded in-interval
+subject's `eth_getCode` at its own first block. This model issues no `eth_getStorageAt` and compares no log topic
+with the ERC-1967 announcement. A subject's log carrying that topic is an
+ordinary `proxy-log`. `reconcile` asks the second provider for every one of
+these reads, header and code alike. A disagreement is recorded as
+`first-block-hash` or `code-digest`.
+
+Because the first blocks come from the registry, `collect` and `reconcile`
+take `--registry <registry>` for this venue and refuse without it. The
+registry is validated against the digest pinned in
+`alexandria_lib/wildcat_registry.py` before any of it is read. `check`
+validates the release's own `registry` component the same way before it
+re-derives the table.
+
+A subject-set release carries `alexandria-interval-receipt/v3`. Its `epochs`
+is one list with a row per in-interval subject, `{"epochs": [...], "subject":
+"<address>"}`, in ascending subject order. `check` refuses a repeated subject,
+rows out of order and an undeclared subject. The list is one coverage
+collection at `/epochs` whose count is its number of rows, so a release's
+collections do not grow with its subjects and the plan's 4096-subject limit is
+the bound. Every `log_attributions` row names the `subject` that emitted the
+log, and its `epoch_index` counts within that subject's own list. Two subjects that emit in one block and one transaction each
+reach their own epoch. `check` reports `receipt_semantics` as
+`v3-subject-positional`. It refuses a v3 receipt under a single-proxy plan and
+a v2 receipt under a subject-set plan.
+
+The venue also contributes gaps to every evidence scope, and `check` refuses a
+release that drops one. The first is the constructed-staging gap: the venue
+module holds the set of `deployment` names it admits as preserved, and that
+set is empty today. Every `wildcat-v2` release therefore says its staging
+bytes are declared constructed rather than collected from a chain. The second
+compares the HooksFactory's preserved `MarketDeployed` logs with the 80
+markets the registry declares. A declared market deployed inside the interval
+with no such log is named as a gap. So is a log naming a market the registry
+does not declare, and a log that deploys a declared market at another block
+than the registry records. A plan that omits the factory says the markets were
+not compared.
+
+A capture holds at most 256 gap sentences, so four kinds of gap are bounded:
+subjects deployed after the interval's end, declared markets with no deploy
+log, deploy logs at another block, and deploy logs naming an undeclared
+market. Each kind names up to 16, and one further sentence per kind counts the
+rest and the total. `check` re-derives the same sentences.
+
+Every code read lands in the one `epoch-evidence` journal, which holds at most
+67,108,864 bytes. From the registry's code lengths, `collect`, `reconcile` and
+`build` refuse a subject set whose code cannot fit while the plan is
+validated, before any request. The Wildcat V2 estate's 137 subjects need about
+5.6 MB of it read once each. The estimate also charges a subject with no
+recorded creation block its whole code at every probe it could need, which
+makes about 6.0 MB over an interval of 4.1 million blocks.
+
+## Wildcat V2 wrapper instances
+
+A `wildcat-v2` plan may declare wrapper instances in one optional field:
+
+```json
+"wildcat_v2_wrappers": {"rule": "wrapper-deployed/v1", "subjects": ["0x...", "0x..."]}
+```
+
+The field is admitted only on an `alexandria-interval-plan/v2` plan whose
+evidence classes include `logs` and whose `subjects` include the registry's
+`wrapper-factory` entry. Its list is non-empty, lowercase and strictly
+ascending. It shares no address with `subjects` or with any registry entry,
+and the two lists together hold at most 4,096 addresses. A malformed
+declaration refuses before any request.
+
+Every shard's `eth_getLogs` filters on `subjects` followed by the declared
+wrappers, and targeted traces keep a frame whose recipient is in either list.
+After the last shard, the opening phase reads the preserved logs the factory
+emitted under the `WrapperDeployed(address,address)` topic,
+`0x317d343bad96f4924450e809267dcfa70e37270e3bb036b5d6d04e3befd47a64`. Each
+such log carries three topics: the event topic, then the market and the
+wrapper as zero-padded addresses. Its market must be a registry `market`
+entry. Its wrapper must not be a registry entry or appear in a second such
+log. One of these logs must name each declared wrapper. Each log is read on
+its own; nothing is inferred from other logs in its transaction.
+
+A declared wrapper's epoch opens at the block of the log that names it, at a
+block sentinel, so a log the wrapper emits earlier in that block still has an
+owner. The epoch runs to the interval's end under the `immutable-code` model,
+names the wrapper as proxy and implementation, and names no upgrade. The
+opening phase reads that block's header into the same `epoch-evidence`
+journal, unless another opening read already covers the block. It also reads
+the wrapper's runtime code there into that journal. `reconcile` compares both
+with the second provider. The registry records no wrapper code length, so the
+journal estimate charges each declared wrapper 24,576 bytes, the EIP-170
+limit. Each wrapper log is attributed to that wrapper's own epoch and to no
+other subject's.
+
+`build` writes the derived set as the `wrapper-subjects` component, format
+`alexandria-wildcat-v2-wrapper-subjects/v1`, which
+[its schema](../schemas/wildcat-v2-wrapper-subjects-v1.schema.json)
+describes. It lists the factory, the topic, the interval as the discovery
+window and every wrapper the logs name. Each row gives the wrapper's market,
+its deployment log's block, transaction hash, transaction index and log
+index, and whether the plan declared it. `check` requires the component
+exactly when the plan carries the field. It re-derives the component from the
+release's own logs and registry and refuses bytes that differ. Its result
+gains a `wrappers` list. Each declared wrapper appears with its market,
+deployment log, epoch start block, end block and runtime-code SHA-256, and
+`attributed_logs`, the number of its logs in the `logs` journal. An
+undeclared wrapper appears with `epoch` and `attributed_logs` null. A plan
+without the field makes the same requests, builds the same bytes and gets
+the same check result as before.
+
+Build and `check` refuse each of these by name and write nothing:
+
+1. a `WrapperDeployed` naming a market the registry does not list, naming the
+   market, its block and the wrapper;
+2. a declared wrapper that no preserved `WrapperDeployed` names, naming the
+   wrapper, the factory and the interval;
+3. a declared wrapper with no runtime code at its first block, naming the
+   wrapper and the block;
+4. a wrapper log before its epoch's first block, naming the wrapper, the
+   log's block and the epoch's first block;
+5. a declared wrapper's `WrapperDeployed` log whose block hash is not the
+   hash the header read of its block returns, naming the wrapper and the
+   block.
+
+`collect` refuses all but the fourth when its opening phase reaches them,
+after the last shard. The third leaves error receipt code
+`no-code-at-wrapper-deployment` and the fifth
+`wrapper-deployed-log-mismatch`. The fourth refuses at `build`.
+
+Every evidence scope and the `wrapper-subjects` capture name what the wrapper
+set does not establish, and `check` re-derives each sentence. Each discovered
+wrapper the plan did not declare gets one saying none of its logs was
+requested: 16 by name, then one counting the rest. When the factory's
+recorded deployment block precedes the interval's start, one more says its
+earlier `WrapperDeployed` logs were not requested. Two always follow. Wrapper
+immutability is not established, because no read checks a wrapper's code
+after its first block. Single-factory provenance is not established, because
+only this factory's logs are read.
+
+## Per-subject epochs under the Aave V3 venue
+
+`aave-v3` names `aave-v3-role-keyed`: its epoch model is chosen per subject by
+the role the pinned registry records. The 172 subjects with a proxy role
+(`pool-proxy`, `pool-configurator-proxy`, `aToken-proxy`,
+`variableDebtToken-proxy`, `stableDebtToken-proxy`) follow the EIP-1967 slot
+and their `Upgraded` positions. The other 184 have one immutable epoch whose
+implementation is the subject itself and whose code digest is the SHA-256 of
+the runtime code read at its opening block. `derive_epochs` in
+`alexandria_lib/venues/aave_v3.py` builds the table from preserved reads alone.
+
+The venue plans those reads itself, after the last shard, in an order the staged
+logs fix: the plan's first block header; a header at each later opening block
+and each upgrade block, in ascending order; the implementation slot of each
+proxy at its opening block and at each block it announces an upgrade in; then
+the runtime code of each subject and each implementation those slots hold, read
+once per address at the first block an epoch needs it. An upgrade block's header
+has to carry the block hash its `Upgraded` logs name. An `Upgraded` log from a
+subject with an immutable role, or an upgrade shape the rules below refuse
+without a read, refuses before any opening read is made. A plan whose opening
+reads could exceed the one epoch-evidence journal refuses when the plan is
+checked.
+
+A subject opens at the later of the plan's start and the creation block the
+registry records, at a block sentinel. A proxy opens with the implementation
+its slot holds at the end of that block. Each later `Upgraded` log from that
+proxy opens a new epoch at its own block, transaction index and log index, and
+the slot read at the end of that block must equal the announced
+implementation. A subject created after the plan's end has no epoch in it.
+`MAX_EPOCHS` in `alexandria_lib/interval.py` bounds each subject's table; the
+largest the registry records is the Pool's 11.
+
+**The order rule.** Inside a subject's own upgrade transaction, an ordinary
+log from that subject is owned by log index: before its `Upgraded`, the old
+epoch; after it, the new one. The pinned source of `aave/aave-v3-core` at
+`9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` establishes it:
+
+- `BaseUpgradeabilityProxy._upgradeTo` sets the implementation slot and then
+  emits `Upgraded`, at
+  [lines 44 to 46](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46);
+- `BaseImmutableAdminUpgradeabilityProxy.upgradeToAndCall` calls `_upgradeTo`
+  and only then delegatecalls the new implementation, at
+  [lines 69 to 77](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L77);
+- `InitializableUpgradeabilityProxy.initialize` sets the slot without emitting
+  `Upgraded`, at
+  [lines 20 to 25](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L25),
+  which is why a proxy's first implementation is read from the slot.
+
+Those lines are `aave-v3-core`'s, the source of `set-003`, which compiles two
+of the seven reviewed codes and 101 of the 172 proxies. The other 71 compile
+from `aave-dao/aave-v3-origin`, in five source sets. The pinned `source_match`
+full record names the git blob of every file each set compiled, and each link
+below is at a commit holding that exact blob. `BaseUpgradeabilityProxy.sol` is
+blob `aec817cb346ac6b178a806394c33a8ecc2145ce1` and
+`InitializableUpgradeabilityProxy.sol` is blob
+`4b43fa6a87dd84be15fc77b3ea4b1a88350c4175` under both origin paths;
+`BaseImmutableAdminUpgradeabilityProxy.sol` is blob
+`252b4a4ba0c05dae0b28eb0d23f9a80fc2a8f7aa` under `src/contracts/misc` and
+`06d2f82789af01b12e5df87e11ff5c259a5a2e35` under `src/core`. In every set,
+`_upgradeTo` sets the slot and then emits `Upgraded`, `upgradeToAndCall` calls
+`_upgradeTo` before its delegatecall, and `initialize` emits nothing.
+
+| Source set | Proxies | `_upgradeTo` | `upgradeToAndCall` | `initialize` |
+| --- | --- | --- | --- | --- |
+| `set-003` | 101 | [core L44-L46](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [core L69-L77](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L77) | [core L20-L28](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-078` | 36 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-079` | 4 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-080` | 20 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-081` | 2 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-121` | 9 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+
+So the slot changes at the moment `Upgraded` is logged, and log order is
+execution order. The shared walk, `proxy_log_positions` and `attribute_logs`,
+takes the rule as the keyword `order_upgrade_transactions`, off by default.
+The Aave module sets `ORDER_UPGRADE_TRANSACTIONS`, which the collector's
+reconcile, build and check paths read from the plan's venue module and pass
+on; no other venue module sets it. `compound-v3` still refuses an ordinary log
+in its upgrade transaction, and the Wildcat venues read no upgrade topic at
+all.
+
+The rule is admitted only for a proxy whose runtime code is one of the seven
+reviewed proxy codes: the distinct keccak-256 digests among the registry's 172
+proxy entries, which the module holds as `REVIEWED_PROXY_CODES` and a test
+recomputes from the registry. The standard library carries no keccak-256, so
+the module carries its own, tested against SHA3-256 through the same
+permutation and against the two constants it can derive, the slot and the
+`Upgraded` topic.
+
+**Refusals.** Each names the rule, the subject, the block, the transaction
+index and the log index, which read `none` where the refusal concerns a
+subject's opening rather than one log:
+
+- `upgrade-in-opening-block`: an `Upgraded` log in the subject's opening block.
+- `upgrade-before-opening-block`: an `Upgraded` log before the subject's opening block.
+- `two-upgrades-in-one-block`: a second `Upgraded` log from one subject in one block.
+- `slot-disagrees-with-announcement`: a slot read at the end of the block that differs from the announcement.
+- `unrecorded-implementation`: an opening or announced implementation the registry does not record for that subject.
+- `unrecognised-role`: a registry role that is neither a proxy role nor an immutable one.
+- `unreviewed-proxy-code`: a proxy runtime code outside the seven reviewed.
+- `upgrade-from-immutable-subject`: an `Upgraded` log from a subject with an immutable role.
+- `epoch-limit`: more announcements than `MAX_EPOCHS` epochs can hold.
+- `malformed-upgrade-log`: an `Upgraded` log whose topics are not the event topic and one left-padded, non-zero address.
+
+A missing slot read, code read or block hash refuses by what it needed rather
+than being inferred. The pinned registry holds only the fourteen roles it
+counts, so `unrecognised-role` is reached only by calling
+`derive_subject_epochs` with entries the pinned registry does not hold.
+
+## Splitting the log attributions into parts
+
+A v3 receipt keeps one attribution row per preserved log in the one
+`epoch-table` component. Measured on Wildcat V2, a row costs 327.51 bytes, so
+the component ceiling holds 202,417 rows beside the rest of that table. A
+subject-set plan that declares `shards_per_component` may therefore also
+declare `log_attribution_parts` with its one admitted value, `journal-ranges`.
+`validate_plan` refuses the field by name on a single-proxy plan, on a plan
+without `shards_per_component`, and with any other value. `plan_digest` covers
+it like every other plan field. The measurements and the three rejected designs
+are in the [study](epoch-table-split/study.md).
+
+Under the field, the rows leave the epoch table. Part `k` is the component
+`log-attributions.<k>`. It holds, in `attribute_logs` order, the rows of every
+preserved log in the shards of the plan's `k`th journal range, the range
+`logs.<k>` covers. A range with no preserved log gives an empty part. Each
+part is an `alexandria-interval-log-attributions/v1` document,
+`{first_shard, format, last_shard, part, rows}`. Its capture is header-bound
+like the epoch table's, counts `/rows`, and names the part's shards and blocks
+in one gap sentence the plan derives. `build` refuses a part above 67,108,864
+bytes or 2,000,000 nodes and names the part and its shard range.
+
+The receipt becomes `alexandria-interval-receipt/v4`. It keeps v3's `epochs`,
+`first_code`, `implementation_code`, `reconciliation` and `shards`. It drops
+`log_attributions` and adds `log_attribution_parts`, with one
+`{component, first_shard, last_shard, rows}` entry per part, in order. `build`
+still calls `attribute_logs` once and slices the list it returns by each
+range's blocks, so the parts hold exactly the rows an unsplit build writes.
+
+A split release carries 6 fixed components, the `epoch-evidence` journal, one
+journal per class per range and one part per range. `journal_components` counts
+all of them against the release's 16,384-component cap before any request. The
+collector, the reconciler and the builder each refuse a plan above it, naming
+the journal and part counts, the total and the limit. With three classes and
+the part rule, a plan derives 7 components plus 4 per range, so it carries at
+most 4,094 ranges. At one shard per range the 4,096-shard limit would derive
+16,391 components, seven above the cap. Parts are not staging journals, so the
+staging tree and its checkpoint are the ones the same plan writes without the
+field, apart from the plan digest they record.
+
+`check` requires receipt v4 exactly when the plan declares the field, and
+reports `receipt_semantics` as `v4-subject-positional-parts`. It derives the
+part list from the plan, never from the manifest, and the receipt's list has to
+equal it. Each part has to carry its own index and shard range. Its rows have to
+pass the attribution validator, sit inside its blocks and equal the rows the
+unchanged `attribute_logs` call derives for its shards. A missing or extra part
+reaches the existing component refusals. The one for a missing part names its
+shard range. The one for an extra part names the component alone, because the
+plan derives no range for it. So does the refusal of a receipt entry past the
+plan's last part. Every other part refusal from `check` names the part and its
+shard range. `verify` runs first and knows no ranges, so its refusals
+of a part's bytes, digest or coverage counts name at most the component.
+
+A plan without the field takes the unchanged path and builds today's bytes.
+
+Every release, split or not, is read only as the bytes `verify` accepted. The
+manifest has to hash to the identity `verify` returned before `check` reads any
+field of it, and the plan and every component have to carry the size and
+SHA-256 that manifest records. A release replaced after verification, a
+manifest rewritten as a list or with a text byte count, and a component changed
+after verification each refuse by name. Each component carries exactly one
+capture, filed under the component's own name. A capture filed under one name
+over another component, or a second capture beside the own-named one, refuses
+by name.
+
 ## Resuming, and rewinding
 
 A checkpoint is written only after a shard's bytes are flushed and fsynced. It
 records the next shard, the last accepted block and hash, each journal's
 committed byte offset, and a bounded trail of the sixteen most recent accepted
-boundaries. It is working state; no release names it.
+boundaries. It is working state; no release names it. It is written and read
+under 8,388,608 bytes and 2,000,000 nodes, which holds a full trail for the
+12,283 journals of the largest plan the release cap admits. A checkpoint past
+either limit is refused with its size and the limit.
 
 Resume truncates every journal back to its committed offset, so a process
 killed between a record and its checkpoint leaves nothing a resumed run keeps.
@@ -165,6 +675,93 @@ started from.
 
 `reconcile`, `build` and `check` read the checkpoint without truncating
 anything, so none of them can lose a record it declined to use.
+
+## Re-collecting one shard's traces
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py recollect --plan <plan> --staging <directory> \
+  --shard <index> [--shard <index> ...] [--registry <registry>]
+```
+
+`recollect` repairs a complete collection whose staged traces for a shard are
+wrong while its boundary block and logs are right, as when the primary node
+answered `trace_transaction` during pipeline catch-up. It reads the same
+endpoint and bearer variables as `collect`, and it accepts the same
+`--trace-concurrency` and `--rpc-concurrency` bounds.
+
+It refuses a plan whose `shards_per_component` is not 1, a tree whose
+checkpoint has not committed every shard and every opening read, and an index
+outside the plan. Each named shard is fetched whole through the collector's own
+request path, so it first requires `eth_syncing` to return `false` and refuses
+with `node-syncing` or `invalid-sync-state` before any evidence read. If the
+boundary block or logs request or response is not byte-identical to the staged
+entry, the shard is refused and nothing is written. The staged boundary record
+keeps its bytes, including any `node_syncing` field. Otherwise its
+`traces.<index>` journal is replaced, and every other journal keeps its bytes.
+The checkpoint moves only that journal's offset, in `offsets` and in each
+history entry at or after the shard. Shards are replaced in ascending order,
+and a refusal keeps every earlier replacement. The run stops by name before a
+shard once the 536,870,912-byte collect budget is spent.
+
+The replacement survives a kill at any point. The new journal is fsynced beside
+the old, `recollection-pending.json` records both digests, and the rename,
+checkpoint and record follow. `resume`, and `recollect` itself, finish a
+replacement the intent names. `reconcile` and `build` refuse the tree while the
+intent exists.
+
+Each replacement appends one line to `receipts/recollections.jsonl` naming the
+shard, the old and new SHA-256 of the traces journal, the UTC time, the plan's
+provider class and `node_syncing: false`, the node's answer before that shard. No endpoint or bearer is recorded. `build` carries these
+records into the release's `error-receipts` component, which becomes
+`alexandria-interval-errors/v2` with a `recollections` list. `check` requires
+each record's `node_syncing` to be `false` and its new digest to match the
+traces journal the release carries. A
+tree that was never re-collected keeps the v1 document, so its release
+identifier does not move.
+
+The first replacement moves `reconciliation/reconciliation.json` to
+`reconciliation/prior.json` and removes the reconcile checkpoint, because both
+describe bytes the tree no longer holds. With no record to move, an earlier
+`prior.json` stays. `build` and a plain `reconcile` never read `prior.json`, so
+`build` refuses until `reconcile` runs again. The disputed-response file stays
+as the second provider's record of the earlier disagreement.
+
+## Carrying a reconciliation forward
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py reconcile --plan <plan> --staging <directory> \
+  --provider-class <class> --carry-forward [--registry <registry>]
+```
+
+`--carry-forward` compares again only the shards whose journals changed since
+the record in `reconciliation/prior.json`. It refuses by name when that record
+is absent, has no journal digest binding, names another plan or provider class,
+is `unreconciled`, or names another boundary hash for any shard. It also
+refuses when a journal's digest moved without recorded recollections that lead,
+in order, from the bound digest to the current one.
+
+Each changed shard is compared as a full `reconcile` compares it. Every other
+shard keeps its earlier status, and the opening reads are not asked again. The
+earlier record holds totals, not per-shard counts, so each carried shard is
+counted again from its unchanged staged bytes and its recorded disputes. A
+carried shard with no dispute agreed on every identity it staged. A disputed
+identity the primary never staged, or staged fewer times than it is disputed,
+belongs to the second provider alone. Any other carried dispute could belong to
+either provider, so the command refuses and names a full `reconcile` instead of
+estimating the count. It also refuses when the earlier disputes reached the
+1,024-entry limit, or when its totals are smaller than the carried shards and
+opening reads account for, or differ from them with no changed shard.
+
+The record it writes is a normal reconciliation. It binds every journal's
+current digest, and its totals, disputes and shard table equal those a full
+`reconcile` over the same tree gives. It adds one `carry_forward` field naming
+`carried_forward_shards`, `recompared_shards` and the SHA-256 of `prior.json`.
+`check` requires the two lists to name every shard once, requires a
+recollection record in the release for each re-compared shard, and reports
+`reconciliation_carry_forward`. A record without the field is byte-identical to
+one written before the flag existed, so no earlier release identifier moves. A
+failed second-provider read appends an error receipt, writes no record and
+leaves `prior.json` in place.
 
 ## What a refusal leaves behind
 
@@ -188,6 +785,19 @@ shard's boundary hash, the ordered transaction hashes in that block, and the
 identity tuple `(blockHash, transactionHash, logIndex, address, topics, data)`
 for every log.
 
+Both log streams undergo coordinate validation, but the preserved comparison
+tuple does not include `transactionIndex`. V2 ownership is derived from the
+primary journal; an `agreed` reconciliation does not establish second-provider
+agreement on transaction indexes.
+
+An `aave-v3` release says so itself. Every evidence scope carries the venue's
+`POSITIONAL_VERIFICATION_LIMIT` among its gaps: provider agreement over logs
+excludes `transactionIndex`, and the held `transaction-index-reconciliation`
+job owns that comparison. `check` refuses an Aave release whose evidence scope
+omits the sentence. A second provider that differs from the first only in one
+log's `transactionIndex` still records `agreed`; the collector tests keep that
+specimen.
+
 A disagreement is recorded, not resolved. Neither provider wins by answering
 first or by being in a majority of two. A shard whose boundary hash disagrees is
 `failed`; one whose logs or transaction order disagree is `partial`; the second
@@ -195,14 +805,33 @@ provider's bytes for that shard are kept beside the first's. A second provider
 that cannot answer leaves the interval `unreconciled`, keeps the counts it
 reached, and says so.
 
+New reconciliation records carry `journal_sha256`, one SHA-256 per physical
+journal, including `epoch-evidence` and every split component. The map binds
+the exact JSONL bytes read before comparison. Reconciliation refuses a changed
+journal before writing its result. `build` checks both the staged bytes and
+the journal records it will release; `check` reconstructs each canonical JSONL
+journal from its released records and checks the same digest. A mismatch names
+the journal. Missing, extra or malformed entries in a present map refuse.
+
+A historical record without the map remains readable. Its release bytes and
+identifier stay unchanged; `check` reports `reconciliation_binding.status` as
+`absent` and states the missing binding in `reconciliation_binding.gaps`.
+A verified binding establishes byte identity, including on an `unreconciled`
+record; it does not establish provider agreement or authenticate a writer who
+could also replace the record. The [Wildcat recomputation](reconciliation-binding/README.md)
+records the preserved V1 match and V2's absent checkpoint digest.
+
 ## The release, and what it claims
 
 `build` emits an ordinary `alexandria-capture-plan/v1` document and calls the
 existing `ingest`. Its components are one JSON journal per declared evidence
-class, each carrying the interval and one record per preserved exchange; the
+class, each carrying the interval and one record per preserved exchange, or one
+per plan-derived shard range when the plan declares `shards_per_component`; the
 `epoch-evidence` journal of opening reads; and six more -- the interval receipt,
 the implementation code, the reconciliation record, the error receipts, the plan
-and the pinned registry.
+and the pinned registry. A plan that declares `log_attribution_parts` adds one
+`log-attributions.<k>` part per journal range; see
+[splitting the log attributions into parts](#splitting-the-log-attributions-into-parts).
 
 Two of those are new with the opening reads. `epoch-evidence` preserves the
 exchanges the epoch table was derived from, so a reader can rebuild the table
@@ -216,14 +845,19 @@ every shard's record counts from the journals, because a release rebuilt with an
 inflated receipt would otherwise be self-consistent.
 
 `check` runs Alexandria's own verification first, then the things only an
-interval release can be wrong about: shards contiguous and non-overlapping
-across the declared interval, epochs tiling it and naming this market's proxy,
-each epoch's declared code hash re-derived from the `implementation-code`
-component's bytes, the opening reads replayed against the plan so the journal
-holds exactly the reads the plan names and no others, a finality boundary with
-its hash above the interval's end, a reconciliation record for the same plan
-agreeing with the receipt about every shard, and every shard that is not
-complete named in the coverage of every evidence component.
+interval release can be wrong about: every component at or below the byte
+ceiling, journal components tiling the plan's shard range exactly, shards
+contiguous and non-overlapping across the declared interval, epochs tiling it
+under their declared receipt version and naming this market's proxy, each
+epoch's declared code hash re-derived from the `implementation-code` component's
+bytes, the opening reads replayed against the plan so the journal holds exactly
+the reads the plan names and no others, a finality boundary with its hash above
+the interval's end, a reconciliation record for the same plan agreeing with the
+receipt about every shard, and every shard that is not complete named in the
+coverage of every evidence component. For v2, it also compares freshly derived
+log ownership with every attribution row. For v4, it compares each part with the
+rows derived for its own shards. A v1 result remains block-only; it does not
+inherit that stronger check.
 
 ## The interval it has actually collected
 
@@ -245,12 +879,14 @@ demonstration rebuilds it offline to release identifier
 `sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32`.
 Neither provider's endpoint or hostname appears anywhere in it.
 
-One thing that interval does not settle. The epoch table tiles by block, so a
+The historical v1 epoch table tiles by block, so a
 proxy log emitted earlier in an upgrade block than the upgrade itself would be
 attributed to the implementation that replaced the one which produced it. Block
 25,904,935 here carries only the upgrade, at transaction index 193 and log index
-524, so nothing in this capture is misattributed; the gap is open in the
-derivation, not in these bytes.
+524, so nothing in this capture is misattributed. These preserved bytes do not
+demonstrate the before-upgrade defect, and their original identifier retains
+the v1 scope. A v2 reconstruction has its own identifier,
+`sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a`.
 
 ## What this does not establish
 
@@ -267,3 +903,91 @@ derivation, not in these bytes.
   Phase 1.
 - No market other than the Ethereum mainnet USDC Comet. The other 27 markets at
   the registry pin are each a declared gap.
+- No staging integrity after reconcile under a record without
+  `journal_sha256`. `build` refuses a staging journal that is missing, shorter
+  than its committed offset or no longer parses. A record made before the
+  journal binding binds no staging digest, so a well-formed, length-preserving
+  edit made after `reconcile` still builds under it, and its release checks
+  with `reconciliation_binding.status` `absent`. A record that carries the map
+  refuses that edit and names the journal.
+
+## Wildcat estate delivery
+
+The registered `wildcat-v1` and `wildcat-v2` modules use the same collector,
+builder and checker as `compound-v3`. Their version-2 plans name 16 and 137
+subjects. Each subject's epochs begin at its own established deployment or
+preserved first-code position, with a per-subject ceiling. Unknown venues,
+registry-format disagreement and a changed registry pin refuse by name.
+The [whole offline proof](wildcat-interval/proof.md) binds both retained captures,
+Compound compatibility, the eight conformance reports and the collection timings.
+
+The production runs use targeted `trace_transaction` reads for transactions
+with matching subject logs. They make no claim about logless transactions.
+The paired subject Sentinel has zero preserved logs in both intervals; constructed
+positive tests are labelled separately. Provider agreement is not a chain proof.
+
+Correction recorded 2026-09-22: the historical Step 8 claim that every error
+string names a provider class was too broad. Structured error and reconciliation
+records carry `provider_class`; a CLI error can name only its read or shard.
+The previous audit and specification remain unchanged as historical records.
+
+## Aave V3 interval delivery
+
+The registered `aave-v3` module uses the same collector, builder and checker.
+Twelve segment plans tile blocks 16,291,071 to 26,022,093 over the registry's
+356 subjects; each plan digest is pinned in reviewed code, and a plan under the
+production name whose digest is not pinned refuses. Every segment reconciled
+`agreed` with 0 disputed items. Segment 4's release has no journal binding, so
+it reports `reconciliation_binding.status` `absent`.
+
+The twelve staging trees are one archive held outside the repository, bound by
+one committed manifest, and each segment rebuilt from a fresh extraction with
+Python sockets denied. The [proof](aave-v3-interval/proof.md) holds the
+executed criteria, the fifteen conformance reports and the per-segment
+measurements against the segment table. A join across the twelve releases is
+not built here; [#1373](https://github.com/wildcat-finance/skills/issues/1373)
+owns it. Reconciliation still omits the transaction index, so agreement does
+not establish positional agreement.
+
+## Preserve Wildcat event block timestamps
+
+A Wildcat V1/V2 plan with `logs` may opt in with
+`"wildcat_event_headers": "selected-event-blocks/v1"`. The collector derives
+sorted, distinct block number/hash pairs from the selected subjects' Borrow,
+DebtRepaid, MarketClosed and generation-specific MarketDeployed logs, with
+market and deployment-emitter registry roles checked. An exact number/hash
+header with a valid supplied timestamp already in the opening or boundary
+evidence is reused at its original component and response selector. Conflicting
+matching timestamps refuse. For each remaining pair it requests the header by
+number, requires the exact returned number and hash, and preserves its raw
+JSON-RPC envelope in `event-block-headers`. A supplied canonical
+hexadecimal timestamp, including `0x0`, is admitted; missing or malformed
+values refuse collection. MarketClosed's argument does not supply the header.
+
+The additive journal uses the virtual shard index and remains unsplit. The
+plan's component cap counts it; the 100,000-distinct-header ceiling, existing
+per-response and per-journal byte caps, and run byte/time budgets still apply.
+A split plan partitions its shard journals while preserving this one bounded
+header inventory. Exceeding a bound refuses; the collector does not silently
+omit headers to fit it. The summary's `event_header_reads` records issued,
+retained-prefix, missing-inventory total and reused counts; stderr reports the
+completed missing inventory.
+
+Every admitted envelope is fsynced and checkpointed before the next request.
+Resume replays the committed prefix against the same selected identities and
+issues only the missing suffix. An interrupted capture remains incomplete;
+build and reconciliation refuse an incomplete inventory. Wrong requests,
+number/hash mismatches and malformed timestamps refuse without replacing the
+retained prefix. The opted-in checkpoint binds the committed journal prefix by
+SHA-256 and verifies it before truncation, including altered offsets or bytes.
+It also checks request/response consistency. This unsigned checkpoint is not
+an authenticated receipt against an editor who changes
+both the evidence and its checkpoint coherently.
+
+Build and `check` reconstruct the complete inventory offline and require its
+exact component. The new header evidence is provider-reported, is not compared
+against the second provider and is not independently proved against Ethereum.
+The existing reconciliation status covers its established shard/opening reads;
+the new scope names the header qualification explicitly. No endpoint or
+credential enters the retained journal or error receipt. A plan without the
+marker retains its previous journal inventory and exact opening-read sequence.

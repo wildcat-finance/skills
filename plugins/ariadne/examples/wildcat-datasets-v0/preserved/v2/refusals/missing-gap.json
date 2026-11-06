@@ -1,0 +1,70 @@
+{
+  "gates": [
+    {
+      "detail": "128 claim(s), each naming a subject of this statement",
+      "gate": 1,
+      "name": "subject-naming",
+      "passed": true
+    },
+    {
+      "detail": "alexandria source:104f6f82c390003fb61039d3023d07c1abe05086;python:3.14.6, 38 input(s), 128 released file(s)",
+      "gate": 2,
+      "name": "environment",
+      "passed": true
+    },
+    {
+      "detail": "128 passed",
+      "gate": 3,
+      "name": "absence",
+      "passed": true
+    },
+    {
+      "detail": "no verdict keys in the statement",
+      "gate": 4,
+      "name": "no-conclusions",
+      "passed": true
+    },
+    {
+      "detail": "wildcat-v2-full-release, no baseline: First Ariadne statement for this accepted Wildcat v2 estate. No previous statement is supplied; V1 and V2 are separate estates, not a baseline pair.",
+      "gate": 5,
+      "name": "deltas",
+      "passed": true
+    },
+    {
+      "detail": "no commands recorded",
+      "gate": 6,
+      "name": "determinism",
+      "passed": true
+    },
+    {
+      "detail": "the payload claims no author of its own",
+      "gate": 7,
+      "name": "authorship",
+      "passed": true
+    },
+    {
+      "detail": "no fields outside the shape",
+      "gate": null,
+      "name": "predicate-fields",
+      "passed": true
+    },
+    {
+      "detail": "coverage has no gaps block; an absent record is not an empty one",
+      "gate": null,
+      "name": "coverage",
+      "passed": false
+    },
+    {
+      "detail": "38 input(s), 38 digested, 0 recorded absent",
+      "gate": null,
+      "name": "inputs",
+      "passed": true
+    }
+  ],
+  "ok": false,
+  "predicateGatesChecked": true,
+  "predicateType": "https://ariadne.wildcat.finance/dataset/v1",
+  "predicateTypeKnown": true,
+  "signatureState": "unsigned: a bare statement, with no envelope and no author",
+  "unchecked": []
+}

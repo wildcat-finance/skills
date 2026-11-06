@@ -1,0 +1,117 @@
+{
+  "global-transaction-order-rule": {
+    "spec": {
+      "entry_points": [
+        "collect",
+        "reconcile",
+        "build",
+        "check"
+      ],
+      "order_rule_scope": "every-venue",
+      "releases": "segments",
+      "shared_edit_sites": [
+        "alexandria_lib/venues/__init__.py, the aave-v3 _MODULES row",
+        "alexandria_lib/interval.py, the removed ordinary-log refusal in proxy_log_positions",
+        "examples/usdc-interval-epochs-v0, the refusal probe and expected.json",
+        "tests/test_epoch_positions_demo.py, the upgrade-transaction refusal assertion"
+      ],
+      "subject_pin": "reviewed-code",
+      "subject_set": "registry-before-collection"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "largest-release-estimate": 2638240682,
+      "largest-release-within-ceiling": 2638240682,
+      "shared-module-edit-sites": 4,
+      "subject-pin-in-reviewed-code": true,
+      "subject-set-frozen-before-collection": true,
+      "upgrade-order-rule-venue-scoped": false
+    }
+  },
+  "log-discovered-subjects": {
+    "spec": {
+      "entry_points": [
+        "collect",
+        "reconcile",
+        "build",
+        "check"
+      ],
+      "order_rule_scope": "venue",
+      "releases": "segments",
+      "shared_edit_sites": [
+        "alexandria_lib/venues/__init__.py, the aave-v3 _MODULES row",
+        "alexandria_lib/interval.py, an opt-in upgrade-transaction order parameter on proxy_log_positions",
+        "usdc_interval.py, passing the venue's upgrade-transaction rule to attribution in build and check",
+        "usdc_interval.py Collector.collect, a discovery pass that widens the subject set between shards",
+        "alexandria_lib/interval.py validate_plan, a subject set that grows after the plan digest is bound"
+      ],
+      "subject_pin": "provider-responses",
+      "subject_set": "discovered-during-collection"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "largest-release-estimate": 2638240682,
+      "largest-release-within-ceiling": 2638240682,
+      "shared-module-edit-sites": 5,
+      "subject-pin-in-reviewed-code": false,
+      "subject-set-frozen-before-collection": false,
+      "upgrade-order-rule-venue-scoped": true
+    }
+  },
+  "segmented-proxy-set-venue": {
+    "spec": {
+      "entry_points": [
+        "collect",
+        "reconcile",
+        "build",
+        "check"
+      ],
+      "order_rule_scope": "venue",
+      "releases": "segments",
+      "shared_edit_sites": [
+        "alexandria_lib/venues/__init__.py, the aave-v3 _MODULES row",
+        "alexandria_lib/interval.py, an opt-in upgrade-transaction order parameter on proxy_log_positions",
+        "usdc_interval.py, passing the venue's upgrade-transaction rule to attribution in build and check"
+      ],
+      "subject_pin": "reviewed-code",
+      "subject_set": "registry-before-collection"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "largest-release-estimate": 2638240682,
+      "largest-release-within-ceiling": 2638240682,
+      "shared-module-edit-sites": 3,
+      "subject-pin-in-reviewed-code": true,
+      "subject-set-frozen-before-collection": true,
+      "upgrade-order-rule-venue-scoped": true
+    }
+  },
+  "single-interval-venue": {
+    "spec": {
+      "entry_points": [
+        "collect",
+        "reconcile",
+        "build",
+        "check"
+      ],
+      "order_rule_scope": "venue",
+      "releases": "one",
+      "shared_edit_sites": [
+        "alexandria_lib/venues/__init__.py, the aave-v3 _MODULES row",
+        "alexandria_lib/interval.py, an opt-in upgrade-transaction order parameter on proxy_log_positions",
+        "usdc_interval.py, passing the venue's upgrade-transaction rule to attribution in build and check"
+      ],
+      "subject_pin": "reviewed-code",
+      "subject_set": "registry-before-collection"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "largest-release-estimate": 62394008738,
+      "largest-release-within-ceiling": 62394008738,
+      "shared-module-edit-sites": 3,
+      "subject-pin-in-reviewed-code": true,
+      "subject-set-frozen-before-collection": true,
+      "upgrade-order-rule-venue-scoped": true
+    }
+  }
+}

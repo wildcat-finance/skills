@@ -1,0 +1,704 @@
+{
+  "schema": "wildcat.kickoff-targets.source-match-1590.v1",
+  "observed_on": "2026-09-18",
+  "recovery_issue": "https://github.com/wildcat-finance/skills/issues/1590",
+  "method": {
+    "blob_equality": "Git blob SHA-1 per path from the GitHub trees API at each candidate commit",
+    "solc_reproduction": "solc --standard-json over the recorded or reconstructed input; creation and deployed bytecode compared with output.json or the chain",
+    "runtime_modulo_immutables": "every differing byte between on-chain runtime and compiled deployedBytecode lies inside an immutableReferences range; the immutable values read off the chain are recorded where they identify a dependency",
+    "forge_profile_build": "forge build under the repository's own foundry.toml profile with the compiler pinned; the artefact's rawMetadata settings are recorded",
+    "stored_init_code": "on-chain code at an init-code storage address equals 0x00 followed by a compiled creation bytecode whose keccak256 equals the factory's recorded hash"
+  },
+  "tools": {
+    "solc-0.8.25": {
+      "version": "0.8.25+commit.b61c2a91.Darwin.appleclang",
+      "sha256": "cc3f94a70ac681b0304084acc1980aabe2a1bb3240d44ce76a8df0e1e77a2110",
+      "note": "macOS build fetched by forge; the Linux build used in the 2026-09-12 pass is c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d; both reproduce the recorded outputs"
+    },
+    "solc-0.8.28": {
+      "version": "0.8.28+commit.7893614a.Darwin.appleclang",
+      "sha256": "81515b0e53deaa266d549545ccaac0a5a96e6d4e8201c77f673b2c710976d9ea"
+    },
+    "forge": "1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)"
+  },
+  "wildcat_fee_recipient": {
+    "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+    "repository": "https://github.com/wildcat-finance/fee-recipient-contract",
+    "repository_visibility": "private to the wildcat-finance organisation",
+    "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+    "commit_date": "2025-02-15T23:19:44Z",
+    "commit_message": "add deployment",
+    "blobs": {
+      "src/WildcatFeeRecipient.sol": "baf1d44ff3b4c5db74570e157886a940350eb4b6",
+      "src/libraries/LibERC20.sol": "b31a43cda80b78c09e3b0c521875b5f4feeef865",
+      "deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/standard-input.json": "3c6c62e5b5f755b953b49930cc290338682c14aa",
+      "deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/output.json": "b24d323a655d92297f6dae8d85fe2e3b2e07511c",
+      "deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/constructor-args": "1e7f322afc684a658482cd743654da78259dbf38",
+      "deployments/mainnet/deployments.json": "3e908c7741023c3299525b069faed7db77d7655c",
+      "foundry.toml": "25b918f9c9a96afb107fd052f6aa5cbacc3d5111",
+      "script/Deploy.sol": "8fcfcacee30aa1a5bfecd9d2975334f80b006c93"
+    },
+    "sha256": {
+      "standard-input.json": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d",
+      "output.json": "7d0ca0983ab75a8be71dfcb796d59bdfc47a7d26d5f16378a9001b9aaef0e41c",
+      "src/WildcatFeeRecipient.sol": "c6db10888d89758db9d61192a9000b5ee5bb3d847c1bb370cd10b68ab0ebb431",
+      "src/libraries/LibERC20.sol": "057c005cf32355e727ee234cae733f64895f7f1a3440e220fd5b3d4ec671cfc2"
+    },
+    "submodules": {
+      "lib/forge-std": "3b20d60d14b343ee4f908cb8079495c07f5e8981",
+      "lib/solady": "be154cdd703f345d378b9934e8f7e3d73c42283a"
+    },
+    "compiler": {
+      "solc": "0.8.25+commit.b61c2a91",
+      "evm_version": "cancun",
+      "optimizer_runs": 200,
+      "via_ir": true,
+      "bytecode_hash": "none",
+      "append_cbor": true,
+      "compilation_target": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient"
+    },
+    "constructor_args": "0x000000000000000000000000c15be5214978d1fc509ecdd4f9d5bc067c94d9ae000000000000000000000000c15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+    "sources_equal_sourcify": true,
+    "sourcify": {
+      "match": "match",
+      "creationMatch": "match",
+      "runtimeMatch": "match",
+      "deployment": {
+        "transactionHash": "0x73c699aeaab6114275145e74de6e95acff50714e376393e20aaaeabf9cda24dd",
+        "blockNumber": "21854968",
+        "transactionIndex": "75",
+        "deployer": "0xb4B9f935bf0189c2FF46165F04b0D517e9553FBc"
+      }
+    },
+    "deployed_bytecode": {
+      "bytes": 1649,
+      "sha256": "6c8e5ded8f4e992665178a490a7ae1c5b3c69560789be0224ba87a0a5fafaca6",
+      "equals_onchain_runtime": true,
+      "onchain_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+      "immutable_slots": 0
+    },
+    "creation_bytecode": {
+      "bytes": 1826,
+      "sha256": "efd069eba4ee9174988ab4bc7c1bd86d039a105aa11b7c483cfe22785eff2c77"
+    },
+    "result": "source located and deployed identity established: recompiling the repository verification input with solc 0.8.25 reproduces the recorded output.json creation and deployed bytecode byte for byte, and that deployed bytecode equals the on-chain runtime byte for byte with no immutables; the input sources equal the Sourcify full-match sources byte for byte",
+    "reproduction": {
+      "command": "solc --standard-json < deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/standard-input.json, with settings.outputSelection widened to evm.bytecode.object, evm.deployedBytecode.object and evm.deployedBytecode.immutableReferences",
+      "solc": "0.8.25+commit.b61c2a91.Darwin.appleclang, sha256 cc3f94a70ac681b0304084acc1980aabe2a1bb3240d44ce76a8df0e1e77a2110",
+      "ran_on": "2026-09-19",
+      "compiled_deployed_equals_recorded_output_json": true,
+      "compiled_creation_equals_recorded_output_json": true,
+      "compiled_deployed_equals_onchain_runtime": true,
+      "deployed_bytes": 1649,
+      "immutable_references": {}
+    }
+  },
+  "collateral": {
+    "repository": "https://github.com/wildcat-finance/collateral-contract",
+    "repository_visibility": "public",
+    "branch": "multi-exchange",
+    "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+    "commit_date": "2025-11-24T22:29:44Z",
+    "source_commits_for_matched_blobs": {
+      "src/WildcatMarketCollateralFactory.sol and src/SimpleMarketCollateralMultiParty.sol": "86fc3ccf7d3c90bcda7ca84c62370e717d4ca0a5 (2025-11-24)",
+      "src/lens/CollateralLens.sol": "c31150de7db985e2e7536b42546ff502f628de6c (2025-11-24)",
+      "foundry.toml ir profile": "e0bb0ef46b00276fdfbfe2e71519eccb56e56f98 (2025-11-24)"
+    },
+    "commit_postdates_deployment": "the matched sources were committed on 2025-11-24; the factory, its init-code storage and the lens were deployed on 2025-08-18, so the deployer built from a tree committed later; the branches audit_2026_feb and kethic/underflow-fix carry the same factory and lens blobs but a different SimpleMarketCollateralMultiParty blob (854f88e418263e26ebf2251bc01f72b1a9bafd0a) whose creation code does not hash to the stored init code; the default branch main (6f8c1213b4ee339eaab4b34b5d73e7b12e2ee7fe) carries none of the three deployed sources",
+    "blobs": {
+      "src/WildcatMarketCollateralFactory.sol": "94c5228482e0eaa804a47e63f7fc0367b37eef30",
+      "src/SimpleMarketCollateralMultiParty.sol": "c745896b8a9e44a4e423eda8d81306826adb42bc",
+      "src/lens/CollateralLens.sol": "707ff2b8a547dc30249b74eb87113c4643ec3c76",
+      "src/lens/CollateralContractData.sol": "eb3f5e3173abc268d2266017099d69d8dfb2007c",
+      "src/lens/TokenData.sol": "e0c397f73c9bc889fbd4e0dd38a4ea1de6b9eb54",
+      "src/ReentrancyGuard.sol": "f754e51382059d4ebf63663dd77262a5a286fadc",
+      "src/SimpleMarketCollateral.sol": "32e22d340716d0f3251ce9308a0689784b005765",
+      "src/interfaces/CollateralStruct.sol": "c249c71b81ae9a2b877a4d43a20373c33907a678",
+      "src/interfaces/IERC20.sol": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+      "src/interfaces/IWildcatArchController.sol": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+      "src/interfaces/IWildcatMarket.sol": "b30c34eceede4fac9bb3704a8ceb87168745e88f",
+      "src/libraries/Errors.sol": "bf3293f81e78a7c04ae63027cbe2ca4cc87ef3c3",
+      "src/libraries/FunctionTypeCasts.sol": "769b0f9ba15a2ebf5c0209e17b3960bcfb372b79",
+      "src/libraries/LibERC20.sol": "ae55a4e27d6c2a61fd1d520126d56ad34a69b94b",
+      "src/libraries/LibStoredInitCode.sol": "21ad823f4cfa9f64d296be8770470baae120c234",
+      "src/libraries/StringQuery.sol": "325c1e26f89b301ccbdaa6ebf23fcfbe63552d19",
+      "src/types/TransientBytesArray.sol": "183b92f3b9543cd8e23bbd92b0d98a0951273c90",
+      "foundry.toml": "9306d1ffc5687adc7c9442072a588569fc162d0d",
+      "remappings.txt": "3de18e1845af61573b2775aa5c8970b76bbf9a95",
+      ".gitmodules": "badfcd59999d4205bf14992f8b628638b4632123",
+      "script/DeployCollateralSepolia.sol": "a24c3c5058ab42a7b13bb3d6f1a7d670bbe9b26e",
+      "script/DeployLens.sol": "1279c7196f31ddb1eb6c64f9c121f03b87f867f2",
+      "script/LibDeployment.sol": "63caac0cedf053001e44c5f28091407a9536734a"
+    },
+    "submodules": {
+      "lib/forge-std": "1eea5bae12ae557d589f9f0f0edae2faa47cb262",
+      "lib/openzeppelin-contracts": "69c8def5f222ff96f2b5beff05dfba996368aa79",
+      "lib/solady": "513f581675374706dbe947284d6b12d19ce35a2a",
+      "lib/solmate": "c93f7716c9909175d45f6ef80a34a650e2d24e56",
+      "lib/v2-protocol": "f5c39bcd224c558d18cb53568c785efac0db0835"
+    },
+    "build": {
+      "command": "FOUNDRY_PROFILE=ir FOUNDRY_SOLC=0.8.28 FOUNDRY_EVM_VERSION=cancun forge build --skip test --skip script",
+      "profile_ir": {
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "bytecode_hash": "none"
+      },
+      "compiler": "0.8.28+commit.7893614a",
+      "evm_version": "cancun",
+      "onchain_cbor_metadata": "{solc: 0.8.28} only, consistent with bytecode_hash none",
+      "settings_from_artifact_rawMetadata": {
+        "optimizer": {
+          "enabled": true,
+          "runs": 50000
+        },
+        "viaIR": true,
+        "evmVersion": "cancun",
+        "metadata": {
+          "bytecodeHash": "none"
+        }
+      }
+    },
+    "rejected_builds": "profile default with optimizer off (8815 bytes), on at 200 runs (5634), 1000 (5809) and 10000 (6154) do not reproduce the 7615-byte runtime; main (d2f37095029c8d2350fc5d6e59e3122fb99b3376) compiles to 3586 (optimizer on) or 6058 (off) bytes and lacks the exchange-approval selectors the chain carries",
+    "factory": {
+      "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+      "name_view": "WildcatCollateralFactoryV1",
+      "compilation_target": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "deployed_bytecode": {
+        "bytes": 7615,
+        "sha256": "398660dcc25f24f6ec76df88d796c32436437d7a7a3a9b30af8a57a6cac06266"
+      },
+      "creation_bytecode": {
+        "bytes": 8542,
+        "sha256": "66a9b66aca15faceb332e650c29648d076e7016e2f42d187020136d5a827731e"
+      },
+      "runtime_modulo_immutables": {
+        "immutable_slots": 4,
+        "differing_bytes_outside_immutables": 0
+      },
+      "immutables_read_from_chain": {
+        "ownCreate2Prefix": "0x0000000000000000000000ffbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+        "collateralInitCodeStorage": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+        "collateralInitCodeHash": "0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52",
+        "archController": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4"
+      },
+      "views_at_latest": {
+        "archController": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+        "collateralInitCodeStorage": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+        "collateralInitCodeHash": "0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52"
+      },
+      "onchain_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+      "creation_receipt_logs": [
+        {
+          "topic0_prefix": "0x77397f61c6eacf2a7a",
+          "data_address": "0xbbbbbbb520d69a9775e85b458c58c648259fad5f",
+          "reading": "an approval event for the Bebop settlement address"
+        },
+        {
+          "topic0_prefix": "0xe0a91202898d5ae273",
+          "data_address": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+          "reading": "an owner or executor event naming the arch controller owner Safe"
+        }
+      ]
+    },
+    "collateral_init_code_storage": {
+      "address": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+      "code_length": 9581,
+      "code_keccak256": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+      "leading_byte": "0x00",
+      "init_code_keccak256": "0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52",
+      "equals_factory_collateralInitCodeHash": true,
+      "compilation_target": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "compiled_creation_bytecode": {
+        "bytes": 9580,
+        "sha256": "0a0e4aae34ab93ba19fbcc4b404c97c1d30b6f908ab88db5145cf8228e4b28cc",
+        "keccak256_equals_stored_init_code": true
+      },
+      "compiled_deployed_bytecode": {
+        "bytes": 9040,
+        "sha256": "3e2e94b6690cd93b4fc5fa9e393c43bf7a80586fe3947895b792d650240557ea"
+      }
+    },
+    "lens": {
+      "address": "0x422489ba6bddd5954c379c41b6c97ab0e4494f90",
+      "compilation_target": "src/lens/CollateralLens.sol:CollateralLens",
+      "deployed_bytecode": {
+        "bytes": 8287,
+        "sha256": "5a734cde62fa4bbc3765e5da25c8339a8daf7d2a570299d1a979d4d495b60f03"
+      },
+      "creation_bytecode": {
+        "bytes": 8455,
+        "sha256": "d45372fdcf5bf2f83050af9f962339df355c07c258b8271e1ee3e42b26fc2027"
+      },
+      "runtime_modulo_immutables": {
+        "immutable_slots": 1,
+        "differing_bytes_outside_immutables": 0
+      },
+      "immutables_read_from_chain": {
+        "factory": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c"
+      },
+      "onchain_keccak256": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8"
+    },
+    "sourcify": "none of the three addresses is on Sourcify",
+    "result": "source located and deployed identity established for the factory, the stored collateral init code and the lens from one branch head; the collateral instances the factory deployed were not enumerated"
+  },
+  "open_access_role_provider": {
+    "address": "0x5620553d8881335f74ad19259daacd1d9b373101",
+    "repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
+    "repository_visibility": "private to the wildcat-finance organisation",
+    "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+    "commit_date": "2025-02-08T20:53:24Z",
+    "blob": {
+      "src/OpenAccessRoleProvider.sol": "5d2597a098d871857898389af97ef31831c3aa01"
+    },
+    "blob_sha256": "07bc4c91edb64b1255d61173c35e0523ee33f12f49a59d320834256f510e3b9d",
+    "sourcify": {
+      "match": "match",
+      "creationMatch": "match",
+      "runtimeMatch": "match",
+      "deployment": {
+        "transactionHash": "0x11fbd050956fcec7a1d8f90a0ca083c5d195f6703dd33b85d0c384d2e355325f",
+        "blockNumber": "21825574",
+        "transactionIndex": "125",
+        "deployer": "0xb4B9f935bf0189c2FF46165F04b0D517e9553FBc"
+      },
+      "compiler": "0.8.25+commit.b61c2a91",
+      "settings": {
+        "optimizer": {
+          "runs": 200,
+          "enabled": true
+        },
+        "viaIR": true,
+        "evmVersion": "cancun"
+      },
+      "source_sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f",
+      "constructor_argument": "0x40c57923924b5c5c5455c48d93317139addac8fb"
+    },
+    "repository_source_versus_sourcify_source": "same declarations; the repository blob differs in indentation, an UNLICENSED rather than MIT SPDX line, and isPullProvider declared view rather than pure",
+    "reproduction": {
+      "input": "the repository blob compiled alone with the Sourcify settings (solc 0.8.25, optimizer 200 runs, viaIR, cancun, bytecodeHash none)",
+      "deployed_bytecode": {
+        "bytes": 564,
+        "sha256": "e3bd792e6598e796afb5da0d576448862632e308f72e2ce7cfe0030890a1a360"
+      },
+      "runtime_modulo_immutables": {
+        "immutable_slots": 2,
+        "differing_bytes_outside_immutables": 0
+      },
+      "immutable_read_from_chain": {
+        "chainalysisOracle": "0x40c57923924b5c5c5455c48d93317139addac8fb"
+      }
+    },
+    "onchain_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+    "used_by_instances": 37,
+    "time_to_live_seconds": 7776000,
+    "result": "source located; Sourcify full match; the repository blob reproduces the runtime modulo the two oracle immutable slots"
+  },
+  "third_fixed_term_template": {
+    "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+    "created": {
+      "block_number": 22081282,
+      "block_hash": "0xd4e20352256172826e2343bf935eb7da7ef6343634b7acaa5f5973ad8a44a15a",
+      "timestamp": 1742391719,
+      "transaction": "0x74fa1c86c2104d22308b83f183ad199337f073062ca1224f4a921840152545d0",
+      "sender": "0xb4b9f935bf0189c2ff46165f04b0d517e9553fbc",
+      "sender_nonce": 43
+    },
+    "registered": {
+      "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+      "name": "FixedTermHooks",
+      "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+      "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+      "origination_fee_amount": 0,
+      "protocol_fee_bips": 500,
+      "block_number": 22094295,
+      "block_hash": "0x7af87a9f2f35e572ad92f4b3b65a8ab2cb28a2584397188de09a9193dee9b87c",
+      "transaction": "0x1d9aee83f68194a287314d553f72f96e742a6b917a30ae1799199504117d7175",
+      "log_index": 86,
+      "sender": "0x4f4ebf556cfdc21c3424f85ff6572c77c514fcae"
+    },
+    "registration_transaction_target": {
+      "to": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+      "selector": "0x6a761202",
+      "reading": "Safe execTransaction from the arch controller owner; the factory's addHooksTemplate requires the arch controller owner"
+    },
+    "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+    "source_blob": {
+      "src/access/FixedTermHooks.sol": "6c486910069ca36eea0731f23ae0ca0b35876bbc"
+    },
+    "diff_against_v2_0_0": "one line: MaximumLoanTerm = 365 days becomes 730 days",
+    "reproduction": {
+      "input": "the v2.0.0 FixedTermHooks verification input (blob 813f522c2c4c8f311775b21abeda69f7fb8da7cd) with src/access/FixedTermHooks.sol replaced by the 5838b2f3 blob, outputSelection widened",
+      "solc": "0.8.25+commit.b61c2a91",
+      "creation_bytecode_keccak256": "0x1e2fdf1700fe20e2e903b5c459c8b9db04798942ab7fe1ad49a88421dbd47a77",
+      "equals_stored_init_code": true,
+      "deployed_bytecode": {
+        "bytes": 19751,
+        "sha256": "bd2f1794058cd7c409fd34b00f30985457c5ba604cd57f8e865423b22347b773",
+        "immutable_slots": 15
+      }
+    },
+    "instances": 11,
+    "markets": 16,
+    "protected_set_reading": "registered by the arch controller owner at block 22094295 and enabled at the observed block; its 11 instances and 16 markets are part of the deployed estate"
+  },
+  "hooks_instances_versus_templates": {
+    "instances": 42,
+    "matching_modulo_immutables": 42,
+    "immutable_slots": {
+      "OpenTermHooks": 14,
+      "FixedTermHooks": 15
+    },
+    "deployed_bytecode_sources": {
+      "OpenTermHooks": "deployments/mainnet/OpenTermHooks-0x4c62b4844c8371f321541e8d564a4b3896cecec7/output.json at a70f297f, blob af36b124f5f8745a39c1942c6c9e2ad1aef14a4a",
+      "FixedTermHooks 365": "deployments/mainnet/FixedTermHooks-0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36/output.json at a70f297f, blob 10a7e0622014c1da9648f21d5431916fbebee584",
+      "FixedTermHooks 730": "the reproduction above"
+    }
+  },
+  "markets_versus_init_code": {
+    "markets": 80,
+    "matching_modulo_immutables": 80,
+    "immutable_slots": 63,
+    "immutable_bytes": 2016,
+    "deployed_bytecode_source": "deployments/mainnet/WildcatMarket-0xac3216fa28f81b8fae150fb5626ca79c7a570daf/output.json at a70f297f, blob ef18536250430f3adbac855dbd4ef4fa68cddd5e"
+  },
+  "market_lens_epochs_and_consumers": {
+    "0xc672760757da93b5f3275dc97203d145806dae33": {
+      "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "created": {
+        "block_number": 21788205,
+        "block_hash": "0x0c96fd132fc9965640efef16a3b588a441e5ea597a38f41713b3e4c92930cdb2",
+        "timestamp": 1738853843,
+        "transaction": "0x24c560dc5e31be3d00f36cc8d2717cf8fdc61b5ab5ef5db5fd615b28ea85cf09",
+        "sender": "0x240334405021f4242d57a3785df39edc23e1b607",
+        "sender_nonce": 9
+      },
+      "epoch": "the core deployment set, blocks 21788178 to 21788205, deployer 0x240334405021f4242d57a3785df39edc23e1b607 nonces 1 to 9",
+      "consumers": [
+        {
+          "repository": "https://github.com/wildcat-finance/v2-protocol",
+          "path": "deployments/mainnet/deployments.json",
+          "key": "MarketLens",
+          "head": "f5a26146987926f4811b72a795d662813dedfe85"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/project-aleph",
+          "path": "manifest.yaml",
+          "head": "06cd4ea1f31b54bcd5bab48910002c1aedb9921c",
+          "note": "lists it under the deployments.json source as a stale in-repo book"
+        }
+      ],
+      "reading": "in-repo deployment book only; no application, SDK, docs or claims consumer read in this pass points at it"
+    },
+    "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7": {
+      "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "created": {
+        "block_number": 23121577,
+        "block_hash": "0xd17ea37bd047c7a7cac180423a3705f0b21659601682b4626a066aece825b134",
+        "timestamp": 1754960855,
+        "transaction": "0x4ff504d910ed5cc4c8ab2cea8298e6333c4b5ec3b2291c9dd5e37aaa70eac09d",
+        "sender": "0xb4b9f935bf0189c2ff46165f04b0d517e9553fbc",
+        "sender_nonce": 47
+      },
+      "epoch": "operations account nonce 47, 2025-08-11",
+      "consumers": [
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat.ts",
+          "path": "src/constants.ts",
+          "key": "MarketLensV2",
+          "head": "b12f36b1677c8c9989527c002d3ccceabd8997ab"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat-app-v2",
+          "path": "src/app/[locale]/lender/hooks/refreshLenderMarketAccounts.ts",
+          "note": "getLensV2Contract through the SDK constants"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat-docs",
+          "path": "technical-overview/contract-deployments.md",
+          "key": "MarketLens",
+          "head": "636b1dcba90c816e699c0d876c22d39be2c58b06"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat-juris",
+          "path": "wildcat-claims/src/wildcat/config.ts",
+          "key": "marketLens",
+          "head": "8c20413ddc96fccebc71503b9b32ce8a001dae14"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/project-aleph",
+          "path": "manifest.yaml",
+          "key": "MarketLensV2",
+          "head": "06cd4ea1f31b54bcd5bab48910002c1aedb9921c"
+        }
+      ],
+      "reading": "the lens every application-facing consumer reads; both lenses stay in the row because both are deployed, source-matched code"
+    },
+    "0xf1d516954f96c1363f8b0ae48d79c8dde6237847": {
+      "note": "the V1 MarketLens (operations account nonce 8, block 18687391), keyed MarketLens in the SDK and deprecated in Wildcat's own release map; outside this V2 row, listed here so the three lens names are told apart"
+    }
+  },
+  "emitter_pin_binding": {
+    "pin": {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+      "record": "PR #1460"
+    },
+    "commits_compared": {
+      "v2.0.0 a70f297f": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "emitter pin f5a26146": "f5a26146987926f4811b72a795d662813dedfe85",
+      "plasma 5838b2f3 (730d template)": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "plasma e1f77540 (lens fda5)": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "v2.1.0 c7be4039": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "deploy-era 8dc8e449": "8dc8e449a0029927c70ad39efcf196315071f324"
+    },
+    "paths": [
+      {
+        "path": "src/libraries/MarketEvents.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+          "f5a26146987926f4811b72a795d662813dedfe85": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "80d93961d74cfa36feee0fe34a423c989d9ca034"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/spherex/SphereXProtectedEvents.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+          "f5a26146987926f4811b72a795d662813dedfe85": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/interfaces/IMarketEventsAndErrors.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+          "f5a26146987926f4811b72a795d662813dedfe85": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "dd6d3838b2990610b7914bc3f49103c082fd2784"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/spherex/SphereXConfig.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "1656e5bc5844d2bec95ea454d1577996c80770b0",
+          "f5a26146987926f4811b72a795d662813dedfe85": "1656e5bc5844d2bec95ea454d1577996c80770b0",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "1656e5bc5844d2bec95ea454d1577996c80770b0",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "1656e5bc5844d2bec95ea454d1577996c80770b0",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "1656e5bc5844d2bec95ea454d1577996c80770b0",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "1656e5bc5844d2bec95ea454d1577996c80770b0"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/IHooksFactory.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7",
+          "f5a26146987926f4811b72a795d662813dedfe85": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/interfaces/IWildcatArchController.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+          "f5a26146987926f4811b72a795d662813dedfe85": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "2ee945fb20874de2da96c79b0dc5fe0056132268"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/access/IHooks.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "14e80db27ffcd53597d1aefef4e9d3082c253659",
+          "f5a26146987926f4811b72a795d662813dedfe85": "14e80db27ffcd53597d1aefef4e9d3082c253659",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "14e80db27ffcd53597d1aefef4e9d3082c253659",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "14e80db27ffcd53597d1aefef4e9d3082c253659",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "14e80db27ffcd53597d1aefef4e9d3082c253659",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "14e80db27ffcd53597d1aefef4e9d3082c253659"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/access/IRoleProvider.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "904b886f6d22798451b9f83ee347eeafd5422866",
+          "f5a26146987926f4811b72a795d662813dedfe85": "904b886f6d22798451b9f83ee347eeafd5422866",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "904b886f6d22798451b9f83ee347eeafd5422866",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "904b886f6d22798451b9f83ee347eeafd5422866",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "904b886f6d22798451b9f83ee347eeafd5422866",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "904b886f6d22798451b9f83ee347eeafd5422866"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/access/BaseAccessControls.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "acb94765c627584ec9de9a4c0bd1fe87087e2b56",
+          "f5a26146987926f4811b72a795d662813dedfe85": "acb94765c627584ec9de9a4c0bd1fe87087e2b56",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "acb94765c627584ec9de9a4c0bd1fe87087e2b56",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "acb94765c627584ec9de9a4c0bd1fe87087e2b56",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "acb94765c627584ec9de9a4c0bd1fe87087e2b56",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "acb94765c627584ec9de9a4c0bd1fe87087e2b56"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/access/FixedTermHooks.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "9f6b82ee45b9a9be38b152e794f76c7988ee689c",
+          "f5a26146987926f4811b72a795d662813dedfe85": "9f6b82ee45b9a9be38b152e794f76c7988ee689c",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "6c486910069ca36eea0731f23ae0ca0b35876bbc",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "6c486910069ca36eea0731f23ae0ca0b35876bbc",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "9f6b82ee45b9a9be38b152e794f76c7988ee689c",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "9f6b82ee45b9a9be38b152e794f76c7988ee689c"
+        },
+        "identical_at_all_six": false
+      },
+      {
+        "path": "src/access/OpenTermHooks.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "49ca9a5cba7f9cb85556ef58556dc5fab33fa9ed",
+          "f5a26146987926f4811b72a795d662813dedfe85": "49ca9a5cba7f9cb85556ef58556dc5fab33fa9ed",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "49ca9a5cba7f9cb85556ef58556dc5fab33fa9ed",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "49ca9a5cba7f9cb85556ef58556dc5fab33fa9ed",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "49ca9a5cba7f9cb85556ef58556dc5fab33fa9ed",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "49ca9a5cba7f9cb85556ef58556dc5fab33fa9ed"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/lens/MarketLens.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "9419637f9c4bf9098a48b822fa5818281a6439c0",
+          "f5a26146987926f4811b72a795d662813dedfe85": "9419637f9c4bf9098a48b822fa5818281a6439c0",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "9419637f9c4bf9098a48b822fa5818281a6439c0",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "9419637f9c4bf9098a48b822fa5818281a6439c0",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "9419637f9c4bf9098a48b822fa5818281a6439c0",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "9419637f9c4bf9098a48b822fa5818281a6439c0"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/interfaces/IERC20.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+          "f5a26146987926f4811b72a795d662813dedfe85": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "9ee5c3aecc25e36414b022353b3126524d3049bc"
+        },
+        "identical_at_all_six": true
+      },
+      {
+        "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+        "blobs_by_commit": {
+          "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "8e9078e846875d8de0df1979f726a6a9af9c1b64",
+          "f5a26146987926f4811b72a795d662813dedfe85": "8e9078e846875d8de0df1979f726a6a9af9c1b64",
+          "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa": "8e9078e846875d8de0df1979f726a6a9af9c1b64",
+          "e1f77540fef65736374de6c847743d8ca2233fb4": "8e9078e846875d8de0df1979f726a6a9af9c1b64",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "8e9078e846875d8de0df1979f726a6a9af9c1b64",
+          "8dc8e449a0029927c70ad39efcf196315071f324": "8e9078e846875d8de0df1979f726a6a9af9c1b64"
+        },
+        "identical_at_all_six": true
+      }
+    ],
+    "reading": "every emitter, interface and hooks-base path has the same blob at the pin, at the deployed v2.0.0 tag, at the deploy-era commit, at v2.1.0 and at both plasma-line commits that supplied the 730-day template and the MarketLens at 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7; only src/access/FixedTermHooks.sol differs, on the plasma line, by the 730-day constant. The pin therefore binds to every deployed epoch of this estate: the market init code from block 21788178, the two v2.0.0 templates from blocks 21788183 and 21788194, the 730-day template from block 22081282, and both lenses"
+  },
+  "deployer_accounts": {
+    "0x240334405021f4242d57a3785df39edc23e1b607": {
+      "kind": "externally owned account, no code at the observed block",
+      "created": [
+        "0xac3216fa28f81b8fae150fb5626ca79c7a570daf (nonce 1)",
+        "0xdd7dd3b5076cf89440d05585ff56d246386207be (nonce 2)",
+        "0x4c62b4844c8371f321541e8d564a4b3896cecec7 (nonce 3)",
+        "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36 (nonce 4)",
+        "0xc672760757da93b5f3275dc97203d145806dae33 (nonce 9)"
+      ],
+      "also": "sent the two v2.0.0 addHooksTemplate transactions (nonces 7 and 8) and was the initial template fee recipient at 1000 bips until the fee update at block 21873682"
+    },
+    "0xb4b9f935bf0189c2ff46165f04b0d517e9553fbc": {
+      "kind": "externally owned account, no code at the observed block",
+      "created": [
+        "0xf1d516954f96c1363f8b0ae48d79c8dde6237847 (nonce 8, V1 lens)",
+        "0x5620553d8881335f74ad19259daacd1d9b373101 (nonce 31)",
+        "0x35a5d1bd68f3139971027b92c1ee9384a0708554 (nonce 32)",
+        "0x731c775385d0efb2cac61074ba2d885d343a09cd (nonce 43)",
+        "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7 (nonce 47)",
+        "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c (nonce 51)",
+        "0x422489ba6bddd5954c379c41b6c97ab0e4494f90 (nonce 52)"
+      ],
+      "method": "cast compute-address --nonce N over the account agrees with each creation receipt"
+    },
+    "0x3634a3adfac5143a5874eaac196c258fcfcf1746": {
+      "created": [
+        "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a (nonce 70)"
+      ]
+    },
+    "0x4f4ebf556cfdc21c3424f85ff6572c77c514fcae": {
+      "kind": "account that submits the arch controller owner Safe's execTransaction calls; 23 bytes of code at the observed block",
+      "sent": "the fee update at block 21873682 and the third template registration at block 22094295, both to the Safe 0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae"
+    }
+  },
+  "third_party_dependencies_read": {
+    "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae": {
+      "role": "arch controller owner; fee recipient owner and fee-collection role in the WildcatFeeRecipient constructor arguments",
+      "code_keccak256": "0xd7d408ebcd99b2b70be43e20253d6d92a8ea8fab29bd3be7f55b10032331fb4c",
+      "code_length": 171,
+      "sourcify": "exact_match contracts/proxies/SafeProxy.sol:SafeProxy",
+      "created": {
+        "block_number": 20873209,
+        "transaction": "0x4c66bede01cbcafcd8133c8ec7c40aba1702ba940827e8987ad4d243ce962634",
+        "sender": "0xce999635dea25abbb6676d54e27e072a0cf39d5e"
+      }
+    },
+    "0x40c57923924b5c5c5455c48d93317139addac8fb": {
+      "role": "Chainalysis sanctions oracle, the OpenAccessRoleProvider's immutable",
+      "code_keccak256": "0x2aaadc77051849ed229924451464917ee65dbb52dbd5bb63fa088e60313b8875",
+      "code_length": 3557,
+      "sourcify": "match SanctionsList.sol:SanctionsList, deployment block 14356508"
+    },
+    "0x4f90c0a26cc2ad22ee98398dcc02bbe314a1766a": {
+      "role": "SphereX engine set on the HooksFactory in its creation transaction",
+      "code_keccak256": "0xfbbbec550b6fd2e2c246863ed50dda2dbb10dd3350b422b8e1bfeb9aff455bf6",
+      "code_length": 8470,
+      "sourcify": "match src/SphereXEngine.sol:SphereXEngine, deployment block 18986540"
+    },
+    "0xbbbbbbb520d69a9775e85b458c58c648259fad5f": {
+      "role": "Bebop settlement address approved in the collateral factory's creation transaction",
+      "read": "address only; code not read"
+    }
+  },
+  "documentation_currency": {
+    "wildcat-docs technical-overview/contract-deployments.md": {
+      "blob": "8384e46a150d91327833559f46aabd5f1c426aed",
+      "head": "636b1dcba90c816e699c0d876c22d39be2c58b06",
+      "unchanged_since_2026_09_13": true
+    },
+    "subgraph networks.json": {
+      "blob": "bf864d9e2a02ac9b48cc013342a7519d1f59ba2a",
+      "head": "63f399e6ceff76a85c14ed26017a792e15513efd",
+      "unchanged_since_2026_09_13": true
+    }
+  }
+}

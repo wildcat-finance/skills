@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bounded-material",
+  "criterion": "scan-time",
+  "value": 196,
+  "unit": "milliseconds",
+  "command": "python3 .hexaemeron/measure_design.py --candidate bounded-material --criterion scan-time --report .hexaemeron/reports/bounded-material-scan-time.json",
+  "exit": 0
+}

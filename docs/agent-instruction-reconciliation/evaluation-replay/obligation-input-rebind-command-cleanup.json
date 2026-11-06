@@ -1,0 +1,35 @@
+{
+  "changed": [
+    {
+      "new": {
+        "bytes": 260456,
+        "path": "tests/promise_machine_coverage.json",
+        "sha256": "8a550334659bafae580ce5b620440a22caf58627bd3e82a0aa27868ecc27c43c"
+      },
+      "old": {
+        "bytes": 260456,
+        "path": "tests/promise_machine_coverage.json",
+        "sha256": "ad8582aff9a199b307a139a4a0c516f9fd83cc5b930bf56b5f98828afa830942"
+      }
+    },
+    {
+      "new": {
+        "bytes": 3231,
+        "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "sha256": "d38217adea9836bc7a20023a5e52a96c3ef47dbb2ca908964e6cb5e57e34021e"
+      },
+      "old": {
+        "bytes": 3231,
+        "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "sha256": "efc42165c63dfbed3b930432f5aa300e148c0bb090256f050942b7783ac20a06"
+      }
+    }
+  ],
+  "historical_commands_outcomes_date_unchanged": true,
+  "new_execution_claim": false,
+  "new_record_sha256": "1b2276aec9c8197492d8fc5d48eb26101a69ebb55006587bab14c1bbd2d7d4d4",
+  "old_record_sha256": "a157234381372bfaa6516642c8a2eb80328f0573722ca3b24d5e0054e7855f83",
+  "operation": "recompute-owned-demonstration-input-descriptors",
+  "owner": "tests/test_obligation_gate_demonstration.py",
+  "prose_changes": "only the two rendered input digest/byte descriptors"
+}

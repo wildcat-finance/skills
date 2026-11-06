@@ -1,0 +1,9 @@
+{
+  "candidate": "source-bound-reports",
+  "command": "python3 .hexaemeron/design-selection/probe.py --candidate source-bound-reports --criterion source-identity --report .hexaemeron/design-reports/source-bound-reports-source-identity.json",
+  "criterion": "source-identity",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

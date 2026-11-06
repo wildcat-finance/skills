@@ -1,0 +1,50 @@
+{
+  "block_hash": "0xbf7b6ae562060883f3a8f92a62cf072d94e80e4862de02c5bd31c98dbd236120",
+  "block_number": 22839362,
+  "example": {
+    "log_indexes": [
+      [
+        152,
+        "ordinary"
+      ],
+      [
+        156,
+        "ordinary"
+      ],
+      [
+        160,
+        "Upgraded"
+      ],
+      [
+        161,
+        "ordinary"
+      ],
+      [
+        169,
+        "ordinary"
+      ],
+      [
+        170,
+        "ordinary"
+      ],
+      [
+        474,
+        "ordinary"
+      ],
+      [
+        475,
+        "ordinary"
+      ]
+    ],
+    "subject": "0x00907f9921424583e7ffbfedf84f92b7b2be4977"
+  },
+  "logs_in_transaction": 433,
+  "method": "eth_getTransactionReceipt from the local archive node; logs grouped by emitting subject among the 356; the Upgraded topic is the ERC-1967 announcement",
+  "subjects_emitting": 100,
+  "subjects_upgraded": 98,
+  "subjects_with_two_upgrades": 0,
+  "transaction": "0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9",
+  "transaction_index": 19,
+  "upgraded_subjects_with_an_ordinary_log_after_their_upgrade": 98,
+  "upgraded_subjects_with_an_ordinary_log_before_their_upgrade": 2
+}

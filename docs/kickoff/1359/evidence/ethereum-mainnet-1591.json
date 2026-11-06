@@ -1,0 +1,929 @@
+{
+ "schema": "wildcat.kickoff-targets.observations.v1",
+ "chain_id": 1,
+ "chain": "Ethereum mainnet",
+ "issue": "https://github.com/wildcat-finance/skills/issues/1591",
+ "produced_on": "2026-09-23",
+ "producer": "Shoggoth as Surveyor under Protasis",
+ "rpc": "authenticated Ethereum archive JSON-RPC endpoint; its URL and credential are not recorded",
+ "rpc_note": "every read is a standard archive method any Ethereum archive node answers: eth_getLogs in 30,000-block chunks from block 16291071 to 26022093 (325 chunks per filter), eth_getStorageAt of the EIP-1967 implementation slot, eth_getCode and eth_call pinned to a block number, eth_getTransactionByHash, eth_getTransactionReceipt, eth_getBlockByNumber and trace_block",
+ "tools": {
+  "cast": "cast Version: 1.7.1",
+  "python": "3.14 urllib JSON-RPC",
+  "keccak": "pycryptodome Crypto.Hash.keccak"
+ },
+ "observations": [
+  {
+   "label": "aave-v3-ethereum-main-1591",
+   "block": {
+    "number": 26022093,
+    "hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+    "timestamp": 1789947863
+   },
+   "method": "block and hash fixed by the #1591 consumer comment; eth_getBlockByNumber at 26022093 returned the same hash"
+  }
+ ],
+ "market": {
+  "name": "Aave V3 Ethereum main (Core) market",
+  "addresses_provider": "0x2f39d218133afab8f2b819b1066c7e434ad94e9e",
+  "pool_proxy": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+  "pool_configurator_proxy": "0x64b761d848206f447fe2dd461b0c635ec39ebb27",
+  "acl_manager": "0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0",
+  "discovery_revision": {
+   "repository": "https://github.com/aave-dao/aave-address-book",
+   "commit": "052099461ec3ec22e66187aee8c6d3c9c157f361",
+   "path": "src/AaveV3Ethereum.sol"
+  },
+  "launch": {
+   "addresses_provider_created": {
+    "block": 16291071,
+    "block_hash": "0x158e948f1db260e95adf7d0a23685226c7081b0fb8a3d9c1e6d731f2dc34172c",
+    "timestamp": 1672324811,
+    "tx": "0x75fb6e6be55226712f896ae81bbfc86005b2521adb7555d28ce6fe8ab495ef73",
+    "via": "sourcify",
+    "tx_block_ok": true,
+    "absent_before": true,
+    "present_at": true,
+    "receipt_contract": false,
+    "sender": "0xb90594ea5128a8178e132286dc2b7fbac7d7266c",
+    "to": "0x2401ae9bbef67458362710f90302eb52b5ce835a",
+    "address": "0x2f39d218133afab8f2b819b1066c7e434ad94e9e"
+   },
+   "pool_proxy_created": {
+    "block": 16291127,
+    "block_hash": "0xb5cc06eb5df1e84f6c9a6a72efe9f083fc0dec6bfcfdb2f8f01085e46bf354f5",
+    "timestamp": 1672325495,
+    "tx": "0xf2089a3c2a24f512214691c5a51dd57d1a5545758486360f3a1e24547723525d",
+    "via": "sourcify",
+    "tx_block_ok": true,
+    "absent_before": true,
+    "present_at": true,
+    "receipt_contract": false,
+    "sender": "0xb90594ea5128a8178e132286dc2b7fbac7d7266c",
+    "to": "0x2f39d218133afab8f2b819b1066c7e434ad94e9e",
+    "address": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2"
+   },
+   "first_reserve_initialized": {
+    "block_number": 16496792,
+    "transaction": "0xbe53b103b9ba1b0552e2d3a0b13346c6b080376b57c4ce3fb968bcc27fbd035d",
+    "asset": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+   },
+   "earliest_subject_code": {
+    "address": "0x666835b336a3a5198b2895d94109131d1b23ad11",
+    "block": 16291009,
+    "block_hash": "0x3305a2dfbf17129033288d68d63cf085fd54c25b859ca904da4c59f9e990973a",
+    "timestamp": 1672324055,
+    "tx": "0xe294417f912282a1f68bcbcc8c2a6d59b4354d3e7a41d7b4c25fee64873edbe4",
+    "via": "sourcify",
+    "tx_block_ok": true,
+    "absent_before": true,
+    "present_at": true,
+    "receipt_contract": false,
+    "sender": "0xb90594ea5128a8178e132286dc2b7fbac7d7266c",
+    "to": "0x2401ae9bbef67458362710f90302eb52b5ce835a"
+   }
+  },
+  "periphery_note": "read from provider events and aToken RESERVE_TREASURY_ADDRESS(); recorded by address, not admitted as subjects"
+ },
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "516a64f6e45598597d129057a0e254a97653f690",
+  "path": "evidence/aave-v3-ethereum-main-source-map-2026-09-23/ethereum-mainnet-1591.json",
+  "sha256": "cb0cfc4ff5d89115a05510ead274b0ba81f71a6770aaff7d8dae62fa43c1e22c",
+  "bytes": 505575
+ },
+ "full_subject_set": {
+  "count": 356,
+  "sha256": "289bbdf765e2e66f335f46706269dfbcc63600108d0ef5eb22ba814ecbcf8d64",
+  "form": "sha256 of the lowercase addresses of the full record's code array, sorted, newline-joined with a trailing newline"
+ },
+ "code": [
+  {
+   "address": "0x1f64488c2c4686771dafa75915274d27878b667a",
+   "block_number": 26022093,
+   "code_length": 22029,
+   "code_keccak256": "0x1b0344fc0caa484f5d008b8d505d4eb45371fbab5252856f7034dde4ead9f975"
+  },
+  {
+   "address": "0x2f39d218133afab8f2b819b1066c7e434ad94e9e",
+   "block_number": 26022093,
+   "code_length": 9846,
+   "code_keccak256": "0x0f8c7f9c735ac0f3f35b1e78882a617380549def43faeca0d959d5aadd81dee4"
+  },
+  {
+   "address": "0x34339f94350ec5274ea44d0c37dae9e968c44081",
+   "block_number": 26022093,
+   "code_length": 22796,
+   "code_keccak256": "0xe6562f64fa6db70d2dd488bef0e5a0d49257be519066fc78203bc5d23bb3a806"
+  },
+  {
+   "address": "0x419226e0ad27f3b2019123f7246a364622b018e5",
+   "block_number": 26022093,
+   "code_length": 21068,
+   "code_keccak256": "0xef7c3004037095c85de5024107ac5ab06f70b1aa8f1c840510addfcd29d91da3"
+  },
+  {
+   "address": "0x4816b2c2895f97fb918f1ae7da403750a0ee372e",
+   "block_number": 26022093,
+   "code_length": 19821,
+   "code_keccak256": "0x1bba09545c6665b4d37ad7d6b1d97544de406eea8f0fc1867562197e145a2bce"
+  },
+  {
+   "address": "0x5793fe4de34532f162b4e207af872729880ec2b6",
+   "block_number": 26022093,
+   "code_length": 16911,
+   "code_keccak256": "0x05d9d073ab4bbf130c306a7b73a78687e359764f2b496f1f1ecbc09fb037a98a"
+  },
+  {
+   "address": "0x5faab9e1adbddad0a08734be8a52185fd6558e14",
+   "block_number": 26022093,
+   "code_length": 17753,
+   "code_keccak256": "0x0fa847465426a62889d1982f9796154d78ff4bdee227b8d4d288fd14793d2245"
+  },
+  {
+   "address": "0x64b761d848206f447fe2dd461b0c635ec39ebb27",
+   "block_number": 26022093,
+   "code_length": 2400,
+   "code_keccak256": "0x96107dc4006b4c7fecd1827cfb275ffeef31e6194cd50466f85f8eb24ccf2679"
+  },
+  {
+   "address": "0x6fddde45f777a4e461b0721a578b169b44579623",
+   "block_number": 26022093,
+   "code_length": 18972,
+   "code_keccak256": "0xb41495f2532dc86b4e12e742b722b67e5f11f86af248b7c2f3c26a2054286243"
+  },
+  {
+   "address": "0x728a138a4823392c2efa55e028d434f526fe03cf",
+   "block_number": 26022093,
+   "code_length": 21146,
+   "code_keccak256": "0x530cdbba5eb9487cd5d041bb74b7a1936ad3230bf9e361893ecd025373c7fbe5"
+  },
+  {
+   "address": "0x8147b99df7672a21809c9093e6f6ce1a60f119bd",
+   "block_number": 26022093,
+   "code_length": 21461,
+   "code_keccak256": "0xada432f9527d362b7ff827020ffa32ef30a365e839112431cfe02db46e822286"
+  },
+  {
+   "address": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+   "block_number": 26022093,
+   "code_length": 2400,
+   "code_keccak256": "0x96107dc4006b4c7fecd1827cfb275ffeef31e6194cd50466f85f8eb24ccf2679"
+  },
+  {
+   "address": "0x947f0054faed3481ff4e76ca35f12fbe36cc665b",
+   "block_number": 26022093,
+   "code_length": 21220,
+   "code_keccak256": "0xf689d03fb2997d29c65c449bed4b7f3efa166773274040c9c8dae105d6436c15"
+  },
+  {
+   "address": "0x97287a4f35e583d924f78ad88db8afce1379189a",
+   "block_number": 26022093,
+   "code_length": 21286,
+   "code_keccak256": "0x0d795c8e6f638a30729ec5981f45fe4f8218856a6356b77d24a9a46e8204f507"
+  },
+  {
+   "address": "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327",
+   "block_number": 26022093,
+   "code_length": 21457,
+   "code_keccak256": "0xa87c123fc6ccf5e52ec2301ad5a0b9edb98b498f51b90e0ca6c0f321ebc3a06d"
+  },
+  {
+   "address": "0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0",
+   "block_number": 26022093,
+   "code_length": 4943,
+   "code_keccak256": "0x8f5149c586070246e4a0090b78d2a0b6737a3453399f3e5bdfa6203999990c26"
+  },
+  {
+   "address": "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b",
+   "block_number": 26022093,
+   "code_length": 19769,
+   "code_keccak256": "0xd34a48f92f223f710c36cc28961b325d1bbc956b297bf5c7e0f19ac0cc94ece9"
+  },
+  {
+   "address": "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd",
+   "block_number": 26022093,
+   "code_length": 22060,
+   "code_keccak256": "0x8472e9b07aa1efcec7ea2822edaecbe86f463499a32aaa1ec6c9f54ebc2b0a15"
+  },
+  {
+   "address": "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621",
+   "block_number": 26022093,
+   "code_length": 17673,
+   "code_keccak256": "0xe31adcd9a983c10c27dffdd5b4d22d15235c7478fdb343923aefcad518b829c8"
+  },
+  {
+   "address": "0xfcc00a1e250644d89af0df661bc6f04891e21585",
+   "block_number": 26022093,
+   "code_length": 21678,
+   "code_keccak256": "0xdfe5bedad94dfc79f6d4d17b39b30769a54c6eb2dc2597326bb976591ae61e9c"
+  },
+  {
+   "address": "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2",
+   "block_number": 26022093,
+   "code_length": 24267,
+   "code_keccak256": "0x3f1e049412e5d9f738c76a5184c75b43501f4a0ccb0efa8e1e494c497fd0d477"
+  },
+  {
+   "address": "0xff42ce30054dce7dc7c1282a9a497aa58eabce99",
+   "block_number": 26022093,
+   "code_length": 20920,
+   "code_keccak256": "0xc1d3a6e33d4d2389125d6147f34be001a5252b34f84888fdbdd60dddbc1e94d3"
+  }
+ ],
+ "provider_events": [
+  {
+   "event": "OwnershipTransferred",
+   "block_number": 16291071,
+   "transaction": "0x75fb6e6be55226712f896ae81bbfc86005b2521adb7555d28ce6fe8ab495ef73",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0x2401ae9bbef67458362710f90302eb52b5ce835a"
+   ]
+  },
+  {
+   "event": "MarketIdSet",
+   "block_number": 16291071,
+   "transaction": "0x75fb6e6be55226712f896ae81bbfc86005b2521adb7555d28ce6fe8ab495ef73",
+   "args": [
+    "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+    "0x044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d"
+   ]
+  },
+  {
+   "event": "OwnershipTransferred",
+   "block_number": 16291071,
+   "transaction": "0x75fb6e6be55226712f896ae81bbfc86005b2521adb7555d28ce6fe8ab495ef73",
+   "args": [
+    "0x2401ae9bbef67458362710f90302eb52b5ce835a",
+    "0xb90594ea5128a8178e132286dc2b7fbac7d7266c"
+   ]
+  },
+  {
+   "event": "MarketIdSet",
+   "block_number": 16291072,
+   "transaction": "0x080a45008272f3886a9b4207729cf2f87c795f647658cae5f16f761109013901",
+   "args": [
+    "0x044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d",
+    "0x17356a212e92d0b26187805024f9f094126bfb1ad9a230a8023b0b8b5b0188ea"
+   ]
+  },
+  {
+   "event": "PoolDataProviderUpdated",
+   "block_number": 16291081,
+   "transaction": "0x921beece30023b524218d36922e00c4c8f501e10b9e9cf85c7e57b90f9237a2a",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0x7b4eb56e7cd4b454ba8ff71e4518426369a138a3"
+   ]
+  },
+  {
+   "event": "ACLAdminUpdated",
+   "block_number": 16291116,
+   "transaction": "0x2cfa9495b88fd769d7678e3b3d34357547144d19d5efbeed533e4d068bd3b3a2",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0xb90594ea5128a8178e132286dc2b7fbac7d7266c"
+   ]
+  },
+  {
+   "event": "ACLManagerUpdated",
+   "block_number": 16291119,
+   "transaction": "0x4076914742e839d4e9515b8b9bf00efdd85dda396c18660d84f35b72cab3fc8a",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0"
+   ]
+  },
+  {
+   "event": "PriceOracleUpdated",
+   "block_number": 16291126,
+   "transaction": "0x8b110c1e4954ffc4523681f2c07404a57fc4f2445d43176731a39b60ad24126f",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0x54586be62e3c3580375ae3723c145253060ca0c2"
+   ]
+  },
+  {
+   "event": "ProxyCreated",
+   "block_number": 16291127,
+   "transaction": "0xf2089a3c2a24f512214691c5a51dd57d1a5545758486360f3a1e24547723525d",
+   "args": [
+    "0x504f4f4c00000000000000000000000000000000000000000000000000000000",
+    "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+    "0xfcc00a1e250644d89af0df661bc6f04891e21585"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 16291127,
+   "transaction": "0xf2089a3c2a24f512214691c5a51dd57d1a5545758486360f3a1e24547723525d",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0xfcc00a1e250644d89af0df661bc6f04891e21585"
+   ]
+  },
+  {
+   "event": "ProxyCreated",
+   "block_number": 16291130,
+   "transaction": "0xc590e86def129b46f0c85eaefaf3b7057da7becd975a67d2088eb83bf95f9c89",
+   "args": [
+    "0x504f4f4c5f434f4e464947555241544f52000000000000000000000000000000",
+    "0x64b761d848206f447fe2dd461b0c635ec39ebb27",
+    "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 16291130,
+   "transaction": "0xc590e86def129b46f0c85eaefaf3b7057da7becd975a67d2088eb83bf95f9c89",
+   "args": [
+    "0x0000000000000000000000000000000000000000",
+    "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2"
+   ]
+  },
+  {
+   "event": "ProxyCreated",
+   "block_number": 16291136,
+   "transaction": "0x967678e5e347f990c8da187bd9c483688356518eaa7c403284adf5b26dbf0273",
+   "args": [
+    "0x703c2c8634bed68d98c029c18f310e7f7ec0e5d6342c590190b3cb8b3ba54532",
+    "0x8164cc65827dcfe994ab23944cbc90e0aa80bfcb",
+    "0xe7b67f44ea304dd7f6d215b13686637ff64cd2b2"
+   ]
+  },
+  {
+   "event": "AddressSetAsProxy",
+   "block_number": 16291136,
+   "transaction": "0x967678e5e347f990c8da187bd9c483688356518eaa7c403284adf5b26dbf0273",
+   "args": [
+    "0x703c2c8634bed68d98c029c18f310e7f7ec0e5d6342c590190b3cb8b3ba54532",
+    "0x0000000000000000000000000000000000000000",
+    "0xe7b67f44ea304dd7f6d215b13686637ff64cd2b2"
+   ]
+  },
+  {
+   "event": "ACLAdminUpdated",
+   "block_number": 16291281,
+   "transaction": "0xf11cbc90b6eed95be0f1d32b0cad5fcadc8207e8d218d86ff0127ad617d3e905",
+   "args": [
+    "0xb90594ea5128a8178e132286dc2b7fbac7d7266c",
+    "0xee56e2b3d491590b5b31738cc34d5232f378a8d5"
+   ]
+  },
+  {
+   "event": "OwnershipTransferred",
+   "block_number": 16291281,
+   "transaction": "0x9c29fd03724675dc6b5b8c4e64b7aada6d56b87a0e70e8327ce813c51b49fc1b",
+   "args": [
+    "0xb90594ea5128a8178e132286dc2b7fbac7d7266c",
+    "0xee56e2b3d491590b5b31738cc34d5232f378a8d5"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 17214196,
+   "transaction": "0x012b6d5e9be9ae815f6d4af51adc11aed782a6979eca66f9afbf4d122245f342",
+   "args": [
+    "0xfcc00a1e250644d89af0df661bc6f04891e21585",
+    "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621"
+   ]
+  },
+  {
+   "event": "ACLAdminUpdated",
+   "block_number": 18454069,
+   "transaction": "0x7e7f7adda9ab6af8fc05a248ed2bb0eaf9b53886cfb461d2fb768ce4d0d02a8c",
+   "args": [
+    "0xee56e2b3d491590b5b31738cc34d5232f378a8d5",
+    "0x5300a1a15135ea4dc7ad5a167152c01efc9b192a"
+   ]
+  },
+  {
+   "event": "OwnershipTransferred",
+   "block_number": 18454069,
+   "transaction": "0x7e7f7adda9ab6af8fc05a248ed2bb0eaf9b53886cfb461d2fb768ce4d0d02a8c",
+   "args": [
+    "0xee56e2b3d491590b5b31738cc34d5232f378a8d5",
+    "0x5300a1a15135ea4dc7ad5a167152c01efc9b192a"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 18979695,
+   "transaction": "0x22bf91c32a91bcd1a5450038847613b0f11cc6a580d0538bd65618fde9b7294a",
+   "args": [
+    "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621",
+    "0x5faab9e1adbddad0a08734be8a52185fd6558e14"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 20398674,
+   "transaction": "0x65b6eb75203176f6ee38823219f4e46c0d1c56230dfb82d98964c089fc3ef174",
+   "args": [
+    "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2",
+    "0x419226e0ad27f3b2019123f7246a364622b018e5"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 20398674,
+   "transaction": "0x65b6eb75203176f6ee38823219f4e46c0d1c56230dfb82d98964c089fc3ef174",
+   "args": [
+    "0x5faab9e1adbddad0a08734be8a52185fd6558e14",
+    "0x34339f94350ec5274ea44d0c37dae9e968c44081"
+   ]
+  },
+  {
+   "event": "PoolDataProviderUpdated",
+   "block_number": 20398674,
+   "transaction": "0x65b6eb75203176f6ee38823219f4e46c0d1c56230dfb82d98964c089fc3ef174",
+   "args": [
+    "0x7b4eb56e7cd4b454ba8ff71e4518426369a138a3",
+    "0x20e074f62ecbd8bc5e38211adcb6103006113a22"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 20920979,
+   "transaction": "0xefcf3c57b91d919da3f2e7e8d6af041d9cb5c1a4b58e913ebc9aaeba238947eb",
+   "args": [
+    "0x419226e0ad27f3b2019123f7246a364622b018e5",
+    "0x4816b2c2895f97fb918f1ae7da403750a0ee372e"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 20920979,
+   "transaction": "0xefcf3c57b91d919da3f2e7e8d6af041d9cb5c1a4b58e913ebc9aaeba238947eb",
+   "args": [
+    "0x34339f94350ec5274ea44d0c37dae9e968c44081",
+    "0x1f64488c2c4686771dafa75915274d27878b667a"
+   ]
+  },
+  {
+   "event": "PoolDataProviderUpdated",
+   "block_number": 20920979,
+   "transaction": "0xefcf3c57b91d919da3f2e7e8d6af041d9cb5c1a4b58e913ebc9aaeba238947eb",
+   "args": [
+    "0x20e074f62ecbd8bc5e38211adcb6103006113a22",
+    "0x41393e5e337606dc3821075af65aee84d7688cbd"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 20977092,
+   "transaction": "0x201ee5baadd6b86834fa16ed403c8a8227e8de2c6b914607757c2582fbe45ea0",
+   "args": [
+    "0x1f64488c2c4686771dafa75915274d27878b667a",
+    "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd"
+   ]
+  },
+  {
+   "event": "AddressSet",
+   "block_number": 20977092,
+   "transaction": "0x201ee5baadd6b86834fa16ed403c8a8227e8de2c6b914607757c2582fbe45ea0",
+   "args": [
+    "0x4d4f434b5f535441424c455f4445425400000000000000000000000000000000",
+    "0x0000000000000000000000000000000000000000",
+    "0x102633152313c81cd80419b6ecf66d14ad68949a"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 21917056,
+   "transaction": "0x8e51d324a562bf6ad767f10bff457e310d5b89f76482bc68c05e977ad4c5100b",
+   "args": [
+    "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd",
+    "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 21917056,
+   "transaction": "0x8e51d324a562bf6ad767f10bff457e310d5b89f76482bc68c05e977ad4c5100b",
+   "args": [
+    "0x4816b2c2895f97fb918f1ae7da403750a0ee372e",
+    "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b"
+   ]
+  },
+  {
+   "event": "PoolDataProviderUpdated",
+   "block_number": 21917056,
+   "transaction": "0x8e51d324a562bf6ad767f10bff457e310d5b89f76482bc68c05e977ad4c5100b",
+   "args": [
+    "0x41393e5e337606dc3821075af65aee84d7688cbd",
+    "0x497a1994c46d4f6c864904a9f1fac6328cb7c8a6"
+   ]
+  },
+  {
+   "event": "AddressSet",
+   "block_number": 22638170,
+   "transaction": "0xaa900e1ac9ece8a1a0db38c111ccfe5b5fb735a838278995a7e6534a8fc32a63",
+   "args": [
+    "0x554d4252454c4c41000000000000000000000000000000000000000000000000",
+    "0x0000000000000000000000000000000000000000",
+    "0xd400fc38ed4732893174325693a63c30ee3881a8"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 22839362,
+   "transaction": "0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9",
+   "args": [
+    "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b",
+    "0x5793fe4de34532f162b4e207af872729880ec2b6"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 22839362,
+   "transaction": "0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9",
+   "args": [
+    "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327",
+    "0x947f0054faed3481ff4e76ca35f12fbe36cc665b"
+   ]
+  },
+  {
+   "event": "PoolDataProviderUpdated",
+   "block_number": 22839362,
+   "transaction": "0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9",
+   "args": [
+    "0x497a1994c46d4f6c864904a9f1fac6328cb7c8a6",
+    "0x0a16f2fcc0d44fae41cc54e079281d84a363becd"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 23088584,
+   "transaction": "0xa17567fa201a78b66c43e6ab178559f8c1d5d308fe944c0bd2c39b5e585097dc",
+   "args": [
+    "0x947f0054faed3481ff4e76ca35f12fbe36cc665b",
+    "0x97287a4f35e583d924f78ad88db8afce1379189a"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 24247927,
+   "transaction": "0x675614a89363292b6e21adb878b830ff1987bee5e33ba9c34021a14a93b89b3f",
+   "args": [
+    "0x97287a4f35e583d924f78ad88db8afce1379189a",
+    "0x8147b99df7672a21809c9093e6f6ce1a60f119bd"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 24247927,
+   "transaction": "0x675614a89363292b6e21adb878b830ff1987bee5e33ba9c34021a14a93b89b3f",
+   "args": [
+    "0x5793fe4de34532f162b4e207af872729880ec2b6",
+    "0x6fddde45f777a4e461b0721a578b169b44579623"
+   ]
+  },
+  {
+   "event": "PoolUpdated",
+   "block_number": 25199939,
+   "transaction": "0xe9949c36e86fc9f481897dbac8de33d655bff20b267955a303e2e5643fbc2b35",
+   "args": [
+    "0x8147b99df7672a21809c9093e6f6ce1a60f119bd",
+    "0x728a138a4823392c2efa55e028d434f526fe03cf"
+   ]
+  },
+  {
+   "event": "PoolConfiguratorUpdated",
+   "block_number": 25199939,
+   "transaction": "0xe9949c36e86fc9f481897dbac8de33d655bff20b267955a303e2e5643fbc2b35",
+   "args": [
+    "0x6fddde45f777a4e461b0721a578b169b44579623",
+    "0xff42ce30054dce7dc7c1282a9a497aa58eabce99"
+   ]
+  }
+ ],
+ "provider_events_note": "indexed arguments only; raw topics, data and block hashes are in the full record",
+ "pool_implementation_epochs": [
+  {
+   "implementation": "0xfcc00a1e250644d89af0df661bc6f04891e21585",
+   "from_block": 16291127,
+   "tx": "0xf2089a3c2a24f512214691c5a51dd57d1a5545758486360f3a1e24547723525d",
+   "via": "PoolAddressesProvider ProxyCreated",
+   "to_block": 17214195,
+   "revision": 1,
+   "source_set": "set-013"
+  },
+  {
+   "implementation": "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621",
+   "from_block": 17214196,
+   "tx": "0x012b6d5e9be9ae815f6d4af51adc11aed782a6979eca66f9afbf4d122245f342",
+   "via": "proxy Upgraded(address)",
+   "to_block": 18979694,
+   "revision": 2,
+   "source_set": "set-032"
+  },
+  {
+   "implementation": "0x5faab9e1adbddad0a08734be8a52185fd6558e14",
+   "from_block": 18979695,
+   "tx": "0x22bf91c32a91bcd1a5450038847613b0f11cc6a580d0538bd65618fde9b7294a",
+   "via": "proxy Upgraded(address)",
+   "to_block": 20398673,
+   "revision": 3,
+   "source_set": "set-034"
+  },
+  {
+   "implementation": "0x34339f94350ec5274ea44d0c37dae9e968c44081",
+   "from_block": 20398674,
+   "tx": "0x65b6eb75203176f6ee38823219f4e46c0d1c56230dfb82d98964c089fc3ef174",
+   "via": "proxy Upgraded(address)",
+   "to_block": 20920978,
+   "revision": 4,
+   "source_set": "set-073"
+  },
+  {
+   "implementation": "0x1f64488c2c4686771dafa75915274d27878b667a",
+   "from_block": 20920979,
+   "tx": "0xefcf3c57b91d919da3f2e7e8d6af041d9cb5c1a4b58e913ebc9aaeba238947eb",
+   "via": "proxy Upgraded(address)",
+   "to_block": 20977091,
+   "revision": 5,
+   "source_set": "set-072"
+  },
+  {
+   "implementation": "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd",
+   "from_block": 20977092,
+   "tx": "0x201ee5baadd6b86834fa16ed403c8a8227e8de2c6b914607757c2582fbe45ea0",
+   "via": "proxy Upgraded(address)",
+   "to_block": 21917055,
+   "revision": 6,
+   "source_set": "set-048"
+  },
+  {
+   "implementation": "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327",
+   "from_block": 21917056,
+   "tx": "0x8e51d324a562bf6ad767f10bff457e310d5b89f76482bc68c05e977ad4c5100b",
+   "via": "proxy Upgraded(address)",
+   "to_block": 22839361,
+   "revision": 7,
+   "source_set": "set-049"
+  },
+  {
+   "implementation": "0x947f0054faed3481ff4e76ca35f12fbe36cc665b",
+   "from_block": 22839362,
+   "tx": "0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9",
+   "via": "proxy Upgraded(address)",
+   "to_block": 23088583,
+   "revision": 8,
+   "source_set": "set-068"
+  },
+  {
+   "implementation": "0x97287a4f35e583d924f78ad88db8afce1379189a",
+   "from_block": 23088584,
+   "tx": "0xa17567fa201a78b66c43e6ab178559f8c1d5d308fe944c0bd2c39b5e585097dc",
+   "via": "proxy Upgraded(address)",
+   "to_block": 24247926,
+   "revision": 9,
+   "source_set": "set-047"
+  },
+  {
+   "implementation": "0x8147b99df7672a21809c9093e6f6ce1a60f119bd",
+   "from_block": 24247927,
+   "tx": "0x675614a89363292b6e21adb878b830ff1987bee5e33ba9c34021a14a93b89b3f",
+   "via": "proxy Upgraded(address)",
+   "to_block": 25199938,
+   "revision": 10,
+   "source_set": "set-046"
+  },
+  {
+   "implementation": "0x728a138a4823392c2efa55e028d434f526fe03cf",
+   "from_block": 25199939,
+   "tx": "0xe9949c36e86fc9f481897dbac8de33d655bff20b267955a303e2e5643fbc2b35",
+   "via": "proxy Upgraded(address)",
+   "to_block": null,
+   "revision": 11,
+   "source_set": "set-038"
+  }
+ ],
+ "pool_configurator_implementation_epochs": [
+  {
+   "implementation": "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2",
+   "from_block": 16291130,
+   "tx": "0xc590e86def129b46f0c85eaefaf3b7057da7becd975a67d2088eb83bf95f9c89",
+   "via": "PoolAddressesProvider ProxyCreated",
+   "to_block": 20398673,
+   "revision": 1,
+   "source_set": "set-014"
+  },
+  {
+   "implementation": "0x419226e0ad27f3b2019123f7246a364622b018e5",
+   "from_block": 20398674,
+   "tx": "0x65b6eb75203176f6ee38823219f4e46c0d1c56230dfb82d98964c089fc3ef174",
+   "via": "proxy Upgraded(address)",
+   "to_block": 20920978,
+   "revision": 3,
+   "source_set": "set-054"
+  },
+  {
+   "implementation": "0x4816b2c2895f97fb918f1ae7da403750a0ee372e",
+   "from_block": 20920979,
+   "tx": "0xefcf3c57b91d919da3f2e7e8d6af041d9cb5c1a4b58e913ebc9aaeba238947eb",
+   "via": "proxy Upgraded(address)",
+   "to_block": 21917055,
+   "revision": 4,
+   "source_set": "set-021"
+  },
+  {
+   "implementation": "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b",
+   "from_block": 21917056,
+   "tx": "0x8e51d324a562bf6ad767f10bff457e310d5b89f76482bc68c05e977ad4c5100b",
+   "via": "proxy Upgraded(address)",
+   "to_block": 22839361,
+   "revision": 5,
+   "source_set": "set-044"
+  },
+  {
+   "implementation": "0x5793fe4de34532f162b4e207af872729880ec2b6",
+   "from_block": 22839362,
+   "tx": "0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9",
+   "via": "proxy Upgraded(address)",
+   "to_block": 24247926,
+   "revision": 6,
+   "source_set": "set-069"
+  },
+  {
+   "implementation": "0x6fddde45f777a4e461b0721a578b169b44579623",
+   "from_block": 24247927,
+   "tx": "0x675614a89363292b6e21adb878b830ff1987bee5e33ba9c34021a14a93b89b3f",
+   "via": "proxy Upgraded(address)",
+   "to_block": 25199938,
+   "revision": 7,
+   "source_set": "set-045"
+  },
+  {
+   "implementation": "0xff42ce30054dce7dc7c1282a9a497aa58eabce99",
+   "from_block": 25199939,
+   "tx": "0xe9949c36e86fc9f481897dbac8de33d655bff20b267955a303e2e5643fbc2b35",
+   "via": "proxy Upgraded(address)",
+   "to_block": null,
+   "revision": 8,
+   "source_set": "set-037"
+  }
+ ],
+ "creation": {
+  "0x2f39d218133afab8f2b819b1066c7e434ad94e9e": {
+   "block": 16291071,
+   "transaction": "0x75fb6e6be55226712f896ae81bbfc86005b2521adb7555d28ce6fe8ab495ef73",
+   "proven": true
+  },
+  "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2": {
+   "block": 16291127,
+   "transaction": "0xf2089a3c2a24f512214691c5a51dd57d1a5545758486360f3a1e24547723525d",
+   "proven": true
+  },
+  "0x64b761d848206f447fe2dd461b0c635ec39ebb27": {
+   "block": 16291130,
+   "transaction": "0xc590e86def129b46f0c85eaefaf3b7057da7becd975a67d2088eb83bf95f9c89",
+   "proven": true
+  },
+  "0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0": {
+   "block": 16291117,
+   "transaction": "0x1039621cd43af29c690b1b689c395a63c0eeb9de88dbd1c482d57c9c0b0bd014",
+   "proven": true
+  },
+  "0xfcc00a1e250644d89af0df661bc6f04891e21585": {
+   "block": 16291093,
+   "transaction": "0x54a92bffaba86f6ac0ea8689d9650302f315ff403059ec46239958cb9097addc",
+   "proven": true
+  },
+  "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621": {
+   "block": 16988017,
+   "transaction": "0xbb1c83a169f500df3253bebd56d0343c40173eb83d7293ecacf7e8f48f41712c",
+   "proven": true
+  },
+  "0x5faab9e1adbddad0a08734be8a52185fd6558e14": {
+   "block": 18979624,
+   "transaction": "0x7028803c2d91be4b10ac53357a212da0ddc58f3691b2c584bafa087b32dd4ce6",
+   "proven": true
+  },
+  "0x34339f94350ec5274ea44d0c37dae9e968c44081": {
+   "block": 20261936,
+   "transaction": "0x99aa48e4b63ad78ebc5c04885b47ccc3d9b55db585106100b1d09d11279f5375",
+   "proven": true
+  },
+  "0x1f64488c2c4686771dafa75915274d27878b667a": {
+   "block": 20827144,
+   "transaction": "0xb5496d472aa1416e4a50ecb4a8a548fe1d7d6d5427c8f3cdf18bab6deeeeec52",
+   "proven": true
+  },
+  "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd": {
+   "block": 20930819,
+   "transaction": "0xa0f2d0ae874924d9a6ad24c3307e3853475b3fcaec8bac3d685abc43ea4c5697",
+   "proven": true
+  },
+  "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327": {
+   "block": 21780615,
+   "transaction": "0x2cd5297dd5da4c4481fb232df7a2afcd853a63ebbedaf47d504dcb92069bef5f",
+   "proven": true
+  },
+  "0x947f0054faed3481ff4e76ca35f12fbe36cc665b": {
+   "block": 22686776,
+   "transaction": "0xccf27fe074509e8f38d68f44f56faef35ab3e9ce421c130751748250c79e5acb",
+   "proven": true
+  },
+  "0x97287a4f35e583d924f78ad88db8afce1379189a": {
+   "block": 22973148,
+   "transaction": "0x43f588cc3a135fa8c63fbf8a1c7309d9c8b02edc0c2770f887451b2ff3e8b287",
+   "proven": true
+  },
+  "0x8147b99df7672a21809c9093e6f6ce1a60f119bd": {
+   "block": 23839434,
+   "transaction": "0xe8612d136c168db18cedf35eab24b3c00527e6944932b44eeb7f6eed99c279f0",
+   "proven": true
+  },
+  "0x728a138a4823392c2efa55e028d434f526fe03cf": {
+   "block": 24776283,
+   "transaction": "0xa4927f8b315d1280bc8175b884d3b00d37b388c8c82c2dcaa2fdbb7bfee88a16",
+   "proven": true
+  },
+  "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2": {
+   "block": 16291096,
+   "transaction": "0x630a9328e513462fc16de79712cd560ed4d17cf170bdd364ff37a849e8a63279",
+   "proven": true
+  },
+  "0x419226e0ad27f3b2019123f7246a364622b018e5": {
+   "block": 20261938,
+   "transaction": "0xa72d60a3d24fe225180fcfef74b9f291ffdc49ba702efefa8caec17a2887b638",
+   "proven": true
+  },
+  "0x4816b2c2895f97fb918f1ae7da403750a0ee372e": {
+   "block": 20827146,
+   "transaction": "0xfdb390ba8825326e22affd2efec80f08a519324717e99508b914f21e1aba4918",
+   "proven": true
+  },
+  "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b": {
+   "block": 21780264,
+   "transaction": "0x298b0a3d4105c667907786ab0c6c13d38d252b59cefa6896fb44a70220efae1e",
+   "proven": true
+  },
+  "0x5793fe4de34532f162b4e207af872729880ec2b6": {
+   "block": 22686777,
+   "transaction": "0xdb0e1cb88cb7ef6d7a684dcb49875a4894e1b877d89c653c5b2d9812961b4f72",
+   "proven": true
+  },
+  "0x6fddde45f777a4e461b0721a578b169b44579623": {
+   "block": 23975159,
+   "transaction": "0x5bb0b0b9eb75825d3f5861ae732e38d4c369fd66946807a4bcfc1d77260e109c",
+   "proven": true
+  },
+  "0xff42ce30054dce7dc7c1282a9a497aa58eabce99": {
+   "block": 24776284,
+   "transaction": "0x94114aa2a45a6613308bfe0f28e62c975c32a7847325ebaac320f63c1d21bb87",
+   "proven": true
+  }
+ },
+ "end_state_check": {
+  "method": "cast call Pool getReservesList() and getReserveData(asset) at block 26022093",
+  "reserves_listed": 67,
+  "reserves_initialized": 67,
+  "dropped": 0,
+  "a_token_variable_debt_and_strategy_agree": 67
+ },
+ "periphery_not_subjects": {
+  "price_oracle": "0x54586be62e3c3580375ae3723c145253060ca0c2",
+  "pool_data_providers": [
+   "0x0a16f2fcc0d44fae41cc54e079281d84a363becd",
+   "0x20e074f62ecbd8bc5e38211adcb6103006113a22",
+   "0x41393e5e337606dc3821075af65aee84d7688cbd",
+   "0x497a1994c46d4f6c864904a9f1fac6328cb7c8a6",
+   "0x7b4eb56e7cd4b454ba8ff71e4518426369a138a3"
+  ],
+  "incentives_controller_proxy": "0x8164cc65827dcfe994ab23944cbc90e0aa80bfcb",
+  "mock_stable_debt": "0x102633152313c81cd80419b6ecf66d14ad68949a",
+  "umbrella": "0xd400fc38ed4732893174325693a63c30ee3881a8",
+  "treasury": "0x464c71f6c2f760dda6093dcb91c24c39e5d6e18c"
+ },
+ "summary": {
+  "subjects": 356,
+  "by_role": {
+   "addresses-provider": 1,
+   "pool-proxy": 1,
+   "pool-configurator-proxy": 1,
+   "acl-manager": 1,
+   "pool-implementation": 11,
+   "pool-configurator-implementation": 7,
+   "aToken-proxy": 67,
+   "variableDebtToken-proxy": 67,
+   "stableDebtToken-proxy": 36,
+   "interest-rate-strategy": 71,
+   "aToken-implementation": 11,
+   "variableDebtToken-implementation": 10,
+   "stableDebtToken-implementation": 2,
+   "library": 70
+  },
+  "pool_implementations": 11,
+  "pool_configurator_implementations": 7,
+  "reserves": 67,
+  "token_proxies": 170,
+  "token_proxy_epochs": 489,
+  "strategy_epochs": 191,
+  "creation_blocks_proven": 356
+ }
+}

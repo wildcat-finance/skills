@@ -1,0 +1,9 @@
+{
+ "candidate": "full-map-archive-repo",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate full-map-archive-repo --criterion no-provider-coordinate-in-plan --report .hexaemeron/design/reports/full-map-archive-repo-no-provider-coordinate-in-plan.json",
+ "criterion": "no-provider-coordinate-in-plan",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "boolean",
+ "value": true
+}

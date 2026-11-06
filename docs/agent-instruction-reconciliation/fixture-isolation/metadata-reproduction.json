@@ -1,0 +1,26 @@
+{
+  "schema": "issue1513-file-metadata-reproduction/v1",
+  "source_path": "plugins/lazarus/examples/aave-v4-spoke-v1/demo.py",
+  "source_sha256": "d8c1da22a04dd12b1db19b3ae47dcbfe7d70e8f2a1a19907b3c82780719e0d00",
+  "copied_sha256_after": "d8c1da22a04dd12b1db19b3ae47dcbfe7d70e8f2a1a19907b3c82780719e0d00",
+  "link_change_during_read": true,
+  "source_bytes_written": false,
+  "before_identity": [
+    16777233,
+    529241836,
+    37248,
+    1789269227772515926,
+    1789269227772515926
+  ],
+  "after_identity": [
+    16777233,
+    529241836,
+    37248,
+    1789269227772515926,
+    1789269227773096344
+  ],
+  "before_links": 1,
+  "after_links": 2,
+  "error": "file-changed-during-read: disposable demo source changed while it was read ('demo.py')",
+  "conclusion": "Creating a hard link during the read changes ctime and causes the existing fail-closed reader to refuse unchanged bytes. The historical failing process was not instrumented, so its writer is inferred from concurrent joined-front-door hard-link fixtures."
+}

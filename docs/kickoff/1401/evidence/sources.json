@@ -1,0 +1,119 @@
+[
+ {
+  "id": "v2@a70f297f:src/HooksFactory.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/HooksFactory.sol",
+  "sha256": "f3a2ca3b4f9f239a07eb924ea1e4db73eeb44867a782ca48e4d59c157b8eada9",
+  "bytes": 24468,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/HooksFactory.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/access/BaseAccessControls.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/access/BaseAccessControls.sol",
+  "sha256": "9850505ebbc026be35e45a3426c52298be2c5a823f4bc6e27ed8fc581e240fa4",
+  "bytes": 30742,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/BaseAccessControls.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/access/FixedTermHooks.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/access/FixedTermHooks.sol",
+  "sha256": "03436e22b1585d82ade2e418ea25e72d717d4f64e247130edc7c1d02db0e1502",
+  "bytes": 17366,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/FixedTermHooks.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/access/IHooks.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/access/IHooks.sol",
+  "sha256": "b7c2028d5670c62fbbe43805f36576b638e6cced3507e773b8d158e66dcc193c",
+  "bytes": 3169,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/IHooks.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/access/OpenTermHooks.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/access/OpenTermHooks.sol",
+  "sha256": "abe128fa4fddc24a44eb05e93b404fe1d18f973b0f1f4587313b13592d057b89",
+  "bytes": 14212,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/access/OpenTermHooks.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/market/WildcatMarket.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/market/WildcatMarket.sol",
+  "sha256": "e208fce7c2d9126df9a400f4d4aee7e47f0a767a710826a3b679f924c923d39f",
+  "bytes": 11010,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarket.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/market/WildcatMarketBase.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/market/WildcatMarketBase.sol",
+  "sha256": "f84d6137bccb554b25e9563362d5a0155579f89e4f9073d95df80b14a318353a",
+  "bytes": 29065,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarketBase.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/market/WildcatMarketConfig.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/market/WildcatMarketConfig.sol",
+  "sha256": "4249e124541a9abbb8e6d0dac3342c0b68f3c8a9530ce944ebece84335f858d0",
+  "bytes": 7126,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarketConfig.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/market/WildcatMarketWithdrawals.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/market/WildcatMarketWithdrawals.sol",
+  "sha256": "f1428b3eb479bba19b6b332c75953ed8d236ef72abb2d17f4c0bc933b73c22d4",
+  "bytes": 12472,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/market/WildcatMarketWithdrawals.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/spherex/SphereXProtectedRegisteredBase.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+  "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2",
+  "bytes": 13725,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/spherex/SphereXProtectedRegisteredBase.sol"
+ },
+ {
+  "id": "v2@a70f297f:src/types/HooksConfig.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "path": "src/types/HooksConfig.sol",
+  "sha256": "ed5734a684ca96f502294930de30885c2fa9d924948a4a1a75aa628b5b3512e2",
+  "bytes": 36475,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657/src/types/HooksConfig.sol"
+ },
+ {
+  "id": "v2@5838b2f3:src/OpenAccessRoleProvider.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+  "path": "src/OpenAccessRoleProvider.sol",
+  "sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f",
+  "bytes": 786,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa/src/OpenAccessRoleProvider.sol"
+ },
+ {
+  "id": "v2@5838b2f3:src/access/FixedTermHooks.sol",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "revision": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+  "path": "src/access/FixedTermHooks.sol",
+  "sha256": "3e1e34ceee0ac324c3367f6590ed37544cb53f867efafb3a4978e6946f262772",
+  "bytes": 17366,
+  "url": "https://github.com/wildcat-finance/v2-protocol/blob/5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa/src/access/FixedTermHooks.sol"
+ }
+]

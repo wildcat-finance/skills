@@ -1,0 +1,151 @@
+{
+  "head": "393196e68febd6bce203d0b411c128be33e1d49a",
+  "test_file_unchanged_from_start": true,
+  "local_python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "local_git": "git version 2.50.1 (Apple Git-155)",
+  "hosted_versions": [
+    "2026-09-26T11:47:12.3850638Z git version 2.55.0",
+    "2026-09-26T11:47:24.4008228Z Successfully set up CPython (3.14.6)",
+    "2026-09-26T11:53:33.5887363Z git version 2.55.0"
+  ],
+  "cases": 50,
+  "runs": [
+    {
+      "run": "serial",
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-m",
+        "unittest",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "-v"
+      ],
+      "exit": 0,
+      "stderr_sha256": "b8e74df1406f99a3608b8ea5313ab55f8cb24742ac6d01b0cac9a29ed85fa50b",
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 10 tests in 1.035s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "run": 0,
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-m",
+        "unittest",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "-v"
+      ],
+      "exit": 0,
+      "stderr_sha256": "0ee25901b592a78bca8362346649f6c7bbc80e94733f5df5427aea56e001770b",
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 10 tests in 1.506s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "run": 1,
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-m",
+        "unittest",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "-v"
+      ],
+      "exit": 0,
+      "stderr_sha256": "0ee25901b592a78bca8362346649f6c7bbc80e94733f5df5427aea56e001770b",
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 10 tests in 1.506s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "run": 2,
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-m",
+        "unittest",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "-v"
+      ],
+      "exit": 0,
+      "stderr_sha256": "0ee25901b592a78bca8362346649f6c7bbc80e94733f5df5427aea56e001770b",
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 10 tests in 1.506s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "run": 3,
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "-m",
+        "unittest",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "tests.test_dead_code.CheckoutSuppressionCommandTests.test_dirty_tree_refuses_without_a_validation_result",
+        "-v"
+      ],
+      "exit": 0,
+      "stderr_sha256": "0ee25901b592a78bca8362346649f6c7bbc80e94733f5df5427aea56e001770b",
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 10 tests in 1.506s",
+        "",
+        "OK"
+      ]
+    }
+  ],
+  "cause": "Unresolved. Hosted failure is in temporary .git-directory cleanup; local serial and concurrent attempts are diagnostic only.",
+  "repair_commit": null
+}

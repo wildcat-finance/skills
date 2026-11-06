@@ -5,8 +5,9 @@
 <!-- marketplace-context:end -->
 
 Fifteen venues in the registry, five of them with adapters. The other ten
-still get a row in every dossier, saying plainly that nobody checked. That is
-gate 2 doing its job.
+still get a row in every dossier, saying plainly that nobody checked unless the
+archive route answered, which it can for Aave v4 and Clearpool. That is gate 2
+doing its job.
 
 [Adding a venue](../../../docs/adding-a-venue.md) covers what each gap is and
 what closing one takes. This file is the short form.
@@ -28,7 +29,7 @@ All five adapters name their chain in the coverage note. Wildcat is deployed on
 Plasma as well and Morpho on several chains, and a row that says only `checked`
 would let a reader take one chain's silence for all of them.
 
-These four are the adapter route. Goldfinch and Clearpool are reachable through
+These five are the adapter route. Aave v4 and Clearpool are reachable through
 the archive route instead, from verified Alexandria releases, and one `collect`
 run can ask for both: `--fixtures DIR` or `--live` backs the adapter route and
 `--alexandria-index X` adds the archive one. Every coverage row names which
@@ -106,6 +107,18 @@ What the adapter emits, one record per event, each citing its own transaction:
 | `delinquency_cured` | It came back, how long it took, and whether that ran past the grace period |
 | `withdrawal_batch_expired_unpaid` | A lender asked for money and did not get it |
 | `market_closed` | The borrower closed the market |
+
+The local Wildcat archive route supports deployment terms, native borrow and
+repayment amounts, and `MarketClosed` occurrence. Its integer `observed_at`
+requires a preserved header with exactly the native event's block number and
+hash. The archive keeps component, request and response digests and selectors
+in `date_N_*` values. Missing, malformed, conflicting or out-of-range dates stay undated with
+a record-specific reason and dossier gap. The dossier admits timestamps from
+zero through 253402300799, the last UTC second of year 9999; matched header
+provenance survives a date refusal. A neighbouring header or emitted
+`MarketClosed` timestamp cannot fill the date. Legacy captures can reuse their
+original exact opening or boundary headers. Provider-recorded evidence remains
+partial and is not independent chain proof or a present-standing conclusion.
 
 Two readings this adapter gets right and a naive one does not.
 

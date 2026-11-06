@@ -1,0 +1,1 @@
+{"language":"Solidity","settings":{"compilationTarget":{"Target.sol":"Target"},"outputSelection":{"Target.sol":{"Target":["abi"]}}},"sources":{"Target.sol":{"content":"// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\ncontract Target { event Changed(uint indexed value); }\n"}}}

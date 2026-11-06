@@ -1,0 +1,8 @@
+digests: 10 request/response pairs match the manifest
+header: hash recomputes to the pin, fields 21
+same-number request: block 26022093 has hash 0xf9a59c286251…, not the pin
+proof multicall3: account_included=True storage_included=0
+proof permit2: account_included=True storage_included=0
+proof usdc: account_included=True storage_included=2
+receipts: 165 receipts rebuild the header's receiptsRoot
+ALL PASS

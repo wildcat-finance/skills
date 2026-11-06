@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bounded-material",
+  "criterion": "input-preservation",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/measure_design.py --candidate bounded-material --criterion input-preservation --report .hexaemeron/reports/bounded-material-input-preservation.json",
+  "exit": 0
+}

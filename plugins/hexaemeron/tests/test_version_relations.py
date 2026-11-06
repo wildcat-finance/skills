@@ -10,6 +10,7 @@ import hashlib
 import io
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,13 @@ class VersionRelationTests(HexctlCase):
         # shim is for signature and GitHub topology tests and deliberately
         # replaces ordinary ``git show`` output.
         self.env["PATH"] = os.pathsep.join(self.env["PATH"].split(os.pathsep)[1:])
+
+    @contextlib.contextmanager
+    def replacement_objects_enabled(self):
+        """Opt into the fixture's replacement ref under Fiat's closed runner."""
+        with mock.patch.dict(os.environ):
+            os.environ.pop("GIT_NO_REPLACE_OBJECTS", None)
+            yield
 
     def test_parser_admits_the_version_resolution_receipt(self):
         parser = hexctl_module().build_parser()
@@ -69,6 +77,95 @@ class VersionRelationTests(HexctlCase):
         self.git("add", "-A")
         self.git("commit", "-m", message)
         return self.git("rev-parse", "HEAD").stdout.strip()
+
+    def _evolved_candidate(self, epoch=3):
+        module, origin, anchor = self._capture_chain_anchor()
+        old = self.chain_ledger("fiat", (2,)).split("## History\n\n")[1]
+        if epoch != 3:
+            old += old.replace("v1.2.3", f"v1.2.{epoch}").replace("| baseline |", "| epoch |")
+        evolved = self.chain_ledger(
+            "fiat", (2, 3), evolution=2, epoch=epoch, revision="new-frontier",
+            frontier="The next held frontier.", job="Complete the next job.",
+        )
+        header, rows = evolved.split("## History\n\n")
+        rows = rows.replace("| baseline |", "| evolution |")
+        base_text = header.replace(f"v2.3.{epoch}", f"v2.2.{epoch}") + "## History\n\n" + old + rows.splitlines(True)[0]
+        self.write(self.ledger_path("fiat"), base_text)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (2, 2, epoch)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "evolution on base")
+        base = self.git("rev-parse", "HEAD").stdout.strip()
+        self.write(self.ledger_path("fiat"), header + "## History\n\n" + old + rows)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (2, 3, epoch)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "candidate after evolution")
+        head = self.git("rev-parse", "HEAD").stdout.strip()
+        return module, origin, base, head, anchor
+
+    def test_recovery_keeps_original_anchor_current_frontier(self):
+        module, origin, base, head, anchor = self._evolved_candidate()
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(self.dir, origin, base, head, anchor)
+        result = module.resolve_version_relation_target(
+            self.dir, origin, base, head, anchor, allow_evolution=True,
+        )
+        self.assertEqual(result["anchor_version"], "fiat-v1.2.3")
+        self.assertEqual(result["base_version"], "fiat-v2.2.3")
+        self.assertEqual(result["resolved_version"], "fiat-v2.3.3")
+
+    def test_evolution_recovery_does_not_admit_epoch_changes(self):
+        module, origin, base, head, anchor = self._evolved_candidate(epoch=4)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(
+                self.dir, origin, base, head, anchor, allow_evolution=True,
+            )
+
+    def test_evolution_recovery_declaration_is_exact_and_bounded(self):
+        module = hexctl_module()
+        base, head = "a" * 40, "b" * 40
+        declaration = {"base_commit": base, "head_commit": head,
+                       "authority": "maintainer", "reason": "Approved evolution recovery"}
+        self.assertEqual(module.validate_evolution_recovery(declaration, base, head), declaration)
+        mutations = [dict(declaration, base_commit="c" * 40),
+                     dict(declaration, head_commit="c" * 40),
+                     dict(declaration, authority=""), dict(declaration, reason=" "),
+                     dict(declaration, reason="x" * 2049), dict(declaration, authority="x\ny"),
+                     dict(declaration, waived_checks=True)]
+        for value in mutations:
+            with self.subTest(value=value), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                module.validate_evolution_recovery(value, base, head)
+
+    def test_recovery_receipt_roundtrip_keeps_operator_anchor(self):
+        module, origin, base, head, anchor = self._evolved_candidate()
+        relations = {"schema": SCHEMA, "source_sha256": "a" * 64,
+                     "anchor_commit": origin, "targets": [anchor]}
+        declaration = {"base_commit": base, "head_commit": head,
+                       "authority": "maintainer", "reason": "Approved evolution recovery"}
+        state = {"phase": "integrate", "base": "main", "run_branch": "fiat/test",
+                 "receipts": {"runbook": {"sha256": "b" * 64}},
+                 "integrate": {"sync": {"commit": head, "base_head": base}}}
+        with contextlib.ExitStack() as stack:
+            for name, result in (("receipted_source", "runbook"),
+                                 ("receipted_version_relations", relations),
+                                 ("final_product_head", origin)):
+                stack.enter_context(mock.patch.object(module, name, return_value=result))
+            sync_check = stack.enter_context(mock.patch.object(module, "_require_resolution_sync"))
+            stack.enter_context(mock.patch.object(module, "remote_branch_tip", side_effect=[base, head, head, base] * 2))
+            receipt = module.build_version_resolution(self.dir, state, evolution_recovery=declaration)
+            self.assertEqual(receipt["schema"], "fiat-version-resolution/v2")
+            self.assertEqual(receipt["evolution_recovery"], declaration)
+            self.assertEqual(receipt["targets"][0]["anchor_version"], anchor["anchor_version"])
+            state["integrate"]["version_resolutions"] = [receipt]
+            replay = module.build_version_resolution(self.dir, state)
+            self.assertEqual(module._resolution_without_timestamp(receipt), module._resolution_without_timestamp(replay))
+            self.assertEqual(sync_check.call_count, 2)
+        module.validate_version_resolution_shape(receipt, "test")
+        self.assertEqual(module.version_resolution_event(receipt)["schema"], receipt["schema"])
+        for altered in (dict(receipt, schema="fiat-version-resolution/v1"),
+                        dict(receipt, head_commit="c" * 40)):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                module.validate_version_resolution_shape(altered, "test")
 
     def test_resolution_accepts_zero_compatible_generation_drift(self):
         module, anchor_commit, anchor = self._capture_chain_anchor()
@@ -145,7 +242,7 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("rewrites its required prefix", stderr.getvalue())
 
-    def test_resolution_refuses_a_generation_row_inside_a_fenced_specimen(self):
+    def test_resolution_refuses_generation_row_in_fenced_block(self):
         module, anchor_commit, anchor = self._capture_chain_anchor()
         candidate = self.chain_ledger("fiat", (2, 3))
         generation = next(
@@ -170,7 +267,137 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("header does not match its final history row", stderr.getvalue())
 
-    def test_resolution_history_enforces_evolution_and_epoch_digest_rules(self):
+    def _stray_row_ledger(self, generations=(2, 3)):
+        """The chain ledger with its last generation row after a later section.
+
+        The header still names that row, which is the shape Alexandria's
+        ledger had when skills#2092 anchored on it (skills#2117).
+        """
+        candidate = self.chain_ledger("fiat", generations)
+        label = f"fiat-v1.{generations[-1]}.3"
+        row = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if f"`{label}` | generation" in line
+        )
+        moved = (
+            candidate.replace(row, "")
+            + "\n## Later section\n\nProse that follows the table.\n\n"
+            + row
+        )
+        line_number = moved.splitlines().index(row.rstrip("\n")) + 1
+        return moved, label, line_number
+
+    def test_history_refuses_a_governed_row_after_a_later_section(self):
+        module = hexctl_module()
+        ledger, label, line_number = self._stray_row_ledger()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._ledger_history_records(ledger, "fiat", "version resolution fixture")
+        self.assertIn(
+            "version resolution fixture carries governed history row "
+            f"{label} outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_history_refuses_governed_row_before_its_heading(self):
+        module = hexctl_module()
+        candidate = self.chain_ledger("fiat", (2, 3))
+        row = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if "`fiat-v1.3.3` | generation" in line
+        )
+        header, rows = candidate.split("## History\n\n")
+        moved = header + "## Notes\n\n" + row + "\n## History\n\n" + rows.replace(row, "")
+        line_number = moved.splitlines().index(row.rstrip("\n")) + 1
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._ledger_history_records(moved, "fiat", "version resolution fixture")
+        self.assertIn(
+            f"carries governed history row fiat-v1.3.3 outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_history_skips_other_skill_and_fenced_nontable_rows(self):
+        module = hexctl_module()
+        candidate = self.chain_ledger("fiat", (2, 3))
+        row = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if "`fiat-v1.3.3` | generation" in line
+        )
+        text = (
+            candidate
+            + "\n## Later section\n\n"
+            + row.replace("fiat-v1.3.3", "protasis-v1.3.3")
+            + "\n```markdown\n"
+            + row
+            + "```\n"
+        )
+        rows = module._ledger_history_records(text, "fiat", "version resolution fixture")
+        self.assertEqual([entry["version"] for entry in rows], ["fiat-v1.2.3", "fiat-v1.3.3"])
+
+    def test_anchor_refuses_header_naming_row_outside_table(self):
+        module = hexctl_module()
+        ledger, label, line_number = self._stray_row_ledger()
+        self.write(self.ledger_path("fiat"), ledger)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (1, 3, 3)))
+        anchor_commit = self.commit_seed()
+        source = {
+            "source_sha256": "a" * 64,
+            "targets": [
+                {
+                    "skill": "fiat",
+                    "ledger": self.ledger_path("fiat"),
+                    "relation": RELATION,
+                }
+            ],
+        }
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.capture_version_relations(self.dir, source, anchor_commit)
+        self.assertIn(
+            "version relation target ledger carries governed history row "
+            f"{label} outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_resolution_refuses_a_candidate_row_outside_the_table(self):
+        module, anchor_commit, anchor = self._capture_chain_anchor()
+        ledger, label, line_number = self._stray_row_ledger((2, 3))
+        self.write(self.ledger_path("fiat"), ledger)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (1, 3, 3)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "candidate row after a later section")
+        head_commit = self.git("rev-parse", "HEAD").stdout.strip()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(
+                self.dir, anchor_commit, anchor_commit, head_commit, anchor
+            )
+        self.assertIn(
+            "version resolution candidate carries governed history row "
+            f"{label} outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_every_governed_ledger_in_tree_parses_to_header_row(self):
+        module = hexctl_module()
+        root = Path(__file__).resolve().parents[3]
+        ledgers = sorted(root.glob("plugins/*/skills/*/EVOLUTION.md"))
+        self.assertGreaterEqual(len(ledgers), 27)
+        for ledger in ledgers:
+            skill = ledger.parent.name
+            text = ledger.read_text(encoding="utf-8")
+            with self.subTest(skill=skill):
+                current, _ = module._ledger_field_bytes(text, "Current version", skill)
+                rows = module._ledger_history_records(
+                    text, skill, ledger.relative_to(root).as_posix()
+                )
+                self.assertEqual(rows[-1]["version"], current)
+
+    def test_history_enforces_evolution_and_epoch_digest_rules(self):
         module = hexctl_module()
         unchanged = "a" * 64
         changed = "b" * 64
@@ -202,7 +429,7 @@ class VersionRelationTests(HexctlCase):
                     )
                 self.assertNotIn("fiat-v", stderr.getvalue())
 
-    def test_each_non_generation_compatibility_field_blocks_resolution(self):
+    def test_each_non_generation_compat_field_blocks_resolution(self):
         module, _, anchor = self._capture_chain_anchor()
         snapshot = {
             "parts": (anchor["evolution"], anchor["generation"], anchor["epoch"]),
@@ -254,7 +481,7 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("metadata does not match its ledger", stderr.getvalue())
 
-    def test_resolution_refuses_missing_and_oversized_candidate_objects(self):
+    def test_resolution_refuses_missing_oversized_candidates(self):
         module, anchor_commit, anchor = self._capture_chain_anchor()
         os.unlink(os.path.join(self.dir, self.ledger_path("fiat")))
         self.git("add", "-A")
@@ -368,7 +595,7 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(receipt["base_commit"], anchor_commit)
         self.assertEqual(receipt["head_commit"], head_commit)
 
-    def test_555_collision_topology_requires_signed_sync_before_resolution(self):
+    def test_555_collision_topology_needs_signed_sync_first(self):
         self.install_chain("fiat", (2,))
         anchor_commit = self.commit_seed()
         _, state = self.receipt_runbook("fiat")
@@ -482,7 +709,7 @@ class VersionRelationTests(HexctlCase):
             receipt["targets"][0]["resolved_version"], "fiat-v1.4.3"
         )
 
-    def test_literal_only_run_cannot_manufacture_a_resolution_receipt(self):
+    def test_literal_only_run_cannot_make_resolution_receipt(self):
         self.commit_seed()
         _, state = self.receipt_runbook()
         state = self.integrate_state(state, "a" * 40)
@@ -518,7 +745,7 @@ class VersionRelationTests(HexctlCase):
         )
         return module, state, receipt
 
-    def test_done_resolve_versions_records_one_atomic_event_without_product_edit(self):
+    def test_done_resolve_versions_atomic_event_no_product_edit(self):
         module, state, receipt = self._persistable_resolution()
         before_head = self.git("rev-parse", "HEAD").stdout.strip()
         before_status = self.git("status", "--short").stdout
@@ -722,7 +949,7 @@ class VersionRelationTests(HexctlCase):
         )
         module.verify_run(self.target)
 
-    def test_durable_resolution_clears_pending_before_live_evidence_reread(self):
+    def test_durable_resolution_clears_pending_before_reread(self):
         module, state, receipt = self._persistable_resolution()
         candidate, marker = self._resolution_marker(module, state, receipt)
         module.write_version_resolution_pending(self.target, marker)
@@ -896,7 +1123,7 @@ class VersionRelationTests(HexctlCase):
             os.path.exists(module.version_resolution_pending_path(self.target))
         )
 
-    def test_resolution_state_and_ledger_shapes_are_closed_and_joined(self):
+    def test_resolution_state_ledger_shapes_closed_and_joined(self):
         module, state, receipt = self._persistable_resolution()
         malformed = json.loads(json.dumps(receipt))
         malformed["targets"][0].pop("row_sha256")
@@ -959,7 +1186,7 @@ class VersionRelationTests(HexctlCase):
         ).stdout.strip()
         return module, state, receipt, merge_commit
 
-    def test_terminal_resolution_replays_exact_base_candidate_parents(self):
+    def test_terminal_replays_exact_base_candidate_parents(self):
         module, state, receipt, merge_commit = self._terminal_resolution_fixture()
         with mock.patch.object(
             module, "remote_branch_tip", return_value=merge_commit
@@ -995,10 +1222,11 @@ class VersionRelationTests(HexctlCase):
             receipt["base_commit"],
         ).stdout.strip()
         self.git("replace", merge_commit, replacement)
-        self.assertEqual(
-            self.git("show", "-s", "--format=%P", merge_commit).stdout.strip(),
-            f"{receipt['head_commit']} {receipt['base_commit']}",
-        )
+        with self.replacement_objects_enabled():
+            self.assertEqual(
+                self.git("show", "-s", "--format=%P", merge_commit).stdout.strip(),
+                f"{receipt['head_commit']} {receipt['base_commit']}",
+            )
         with mock.patch.object(
             module, "remote_branch_tip", return_value=merge_commit
         ):
@@ -1016,6 +1244,212 @@ class VersionRelationTests(HexctlCase):
             with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
                 module.terminal_version_resolution(self.target, state, merge_commit)
         self.assertIn("base branch moved again", stderr.getvalue())
+
+    def _tree_with(self, commit, *, remove=(), add=()):
+        environment = {
+            name: value
+            for name, value in os.environ.items()
+            if not name.startswith("GIT_")
+        }
+        with tempfile.TemporaryDirectory() as scratch:
+            environment["GIT_INDEX_FILE"] = os.path.join(scratch, "index")
+
+            def run(*args):
+                return subprocess.run(
+                    ["git", *args],
+                    cwd=self.target,
+                    env=environment,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+
+            run("read-tree", commit)
+            for path in remove:
+                run("update-index", "--force-remove", "--", path)
+            for path, blob in add:
+                run("update-index", "--add", "--cacheinfo", f"100644,{blob},{path}")
+            return run("write-tree")
+
+    def _assignment_sync_fixture(self):
+        """A resolved run whose signed base sync numbers one decision draft."""
+        anchor_commit, _, state = self._relation_run_with_candidate()
+        module = hexctl_module()
+        draft = "docs/decisions/drafts/alpha-choice.md"
+        final = "docs/decisions/ADR-061-alpha-choice.md"
+        report = ".hexaemeron/assignments.json"
+        self.write(draft, "# Decision: Alpha choice\n\nStatus: proposed\n")
+        self.git("add", "-A")
+        self.git("commit", "-m", "draft decision")
+        product = self.git("rev-parse", "HEAD").stdout.strip()
+        state = self.integrate_state(state, product)
+        existing = self.hash_object("# ADR-060: Existing\n\nStatus: accepted\n")
+        base = self.git(
+            "commit-tree",
+            self._tree_with(
+                anchor_commit,
+                add=[("docs/decisions/ADR-060-existing.md", existing)],
+            ),
+            "-p",
+            anchor_commit,
+            "-m",
+            "upstream decision",
+        ).stdout.strip()
+        self.git("update-ref", "refs/remotes/origin/main", base)
+        merged_tree = self.git(
+            "merge-tree", "--write-tree", product, base
+        ).stdout.splitlines()[0]
+        unnumbered = self.git(
+            "commit-tree", merged_tree, "-p", product, "-p", base, "-m", "sync"
+        ).stdout.strip()
+        subprocess.run(
+            [
+                sys.executable,
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    "..",
+                    "skills",
+                    "hypomnema",
+                    "scripts",
+                    "decision_assignments.py",
+                ),
+                "plan",
+                "--repo",
+                self.target,
+                "--base",
+                base,
+                "--base-ref",
+                "refs/remotes/origin/main",
+                "--product",
+                unnumbered,
+                "--report",
+                report,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        with open(os.path.join(self.target, report), encoding="ascii") as handle:
+            result_tree = json.load(handle)["result_tree"]
+        numbered = self.hash_object("# ADR-061: Alpha choice\n\nStatus: proposed\n")
+        self.assertEqual(
+            self._tree_with(unnumbered, remove=[draft], add=[(final, numbered)]),
+            result_tree,
+        )
+        candidate = self.git(
+            "commit-tree",
+            result_tree,
+            "-p",
+            product,
+            "-p",
+            base,
+            "-m",
+            "Assign decision records\n\n"
+            f"ADR-Assignment-Base: {base}\n"
+            "ADR-Assignment: adr/alpha-choice=ADR-061",
+        ).stdout.strip()
+        base_before = module._native_relation_merge_base(self.target, product, base)
+        paths = {
+            "product_paths": module._native_relation_diff_paths(
+                self.target, base_before, product
+            ),
+            "upstream_paths": module._native_relation_diff_paths(
+                self.target, base_before, base
+            ),
+            "composition_paths": module._native_relation_diff_paths(
+                self.target, product, candidate
+            ),
+        }
+        paths["overlap_paths"] = sorted(
+            set(paths["product_paths"]) & set(paths["upstream_paths"])
+        )
+        paths["affected_paths"] = sorted(
+            set(paths["composition_paths"]) | set(paths["overlap_paths"])
+        )
+        with mock.patch.object(
+            module, "verify_local_commit", return_value=candidate
+        ):
+            assignment = module.decision_assignment_receipt(
+                self.target,
+                report,
+                candidate,
+                expected_base=base,
+                expected_sync_parents=[product, base],
+            )
+            state["integrate"]["sync"] = {
+                "commit": candidate,
+                "base": "main",
+                "starting_base": state["base"],
+                "base_head": base,
+                "parents": [product, base],
+                "github_verified": [candidate],
+                "product_evidence": module.product_evidence_record(state, product),
+                "revalidation": {
+                    "schema": module.INTEGRATION_REVALIDATION_SCHEMA,
+                    "artifact": ".hexaemeron/integration-revalidation.json",
+                    "sha256": "d" * 64,
+                    "base_before": base_before,
+                    "base_after": base,
+                    **paths,
+                    "checks": [
+                        {
+                            "id": "composition",
+                            "command": "python3 -m unittest",
+                            "paths": paths["affected_paths"],
+                            "exit": 0,
+                        }
+                    ],
+                },
+                "resolution_guard": module.sync_resolution_guard_record(
+                    self.target,
+                    product,
+                    base,
+                    candidate,
+                    current_sync=None,
+                    acknowledgements=[],
+                ),
+                module.DECISION_ASSIGNMENT_SYNC_KEY: assignment,
+            }
+            resolution = module.build_version_resolution(
+                self.target, state, exact_base=base, exact_head=candidate
+            )
+        state["integrate"]["version_resolutions"] = [resolution]
+        merge = self.git(
+            "commit-tree",
+            f"{candidate}^{{tree}}",
+            "-p",
+            base,
+            "-p",
+            candidate,
+            "-m",
+            "integration merge",
+        ).stdout.strip()
+        # What `git fetch origin main` does once the integration merge lands.
+        self.git("update-ref", "refs/remotes/origin/main", merge)
+        return module, state, resolution, base, candidate, merge
+
+    def test_terminal_replays_assignment_sync_after_merge_fetch(
+        self,
+    ):
+        # skills#1665: done integrate refused here, after an irreversible merge.
+        module, state, resolution, base, candidate, merge = (
+            self._assignment_sync_fixture()
+        )
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(module, "verify_local_commit", return_value=candidate),
+            mock.patch.object(module, "remote_branch_tip", return_value=merge),
+        ):
+            replayed = module.terminal_version_resolution(self.target, state, merge)
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+                module.build_version_resolution(
+                    self.target, state, exact_base=base, exact_head=candidate
+                )
+        self.assertEqual(replayed, resolution)
+        self.assertIn(
+            "decision assignment base ref moved during evidence collection",
+            stderr.getvalue(),
+        )
 
     def test_next_withholds_integration_until_a_resolution_exists(self):
         _, _, state = self._relation_run_with_candidate()
@@ -1064,7 +1498,7 @@ class VersionRelationTests(HexctlCase):
                 module.active_version_resolution(self.target, state)
         self.assertIn("stale", stderr.getvalue())
 
-    def test_status_distinguishes_active_stale_and_terminal_resolution(self):
+    def test_status_tells_active_stale_terminal_resolution(self):
         anchor_commit, head_commit, state = self._relation_run_with_candidate()
         module = hexctl_module()
         receipt = module.build_version_resolution(
@@ -1153,7 +1587,7 @@ class VersionRelationTests(HexctlCase):
         }
         return module, state, relation, sync, product_head, base_commit, sync_head
 
-    def test_resolution_accepts_only_a_signed_covered_product_base_sync(self):
+    def test_resolution_accepts_only_signed_covered_base_sync(self):
         (
             module,
             state,
@@ -1308,7 +1742,7 @@ class VersionRelationTests(HexctlCase):
             native_relation=True,
         )
 
-    def test_native_resolution_signature_ignores_repository_verifier_config(self):
+    def test_native_signature_ignores_repo_verifier_config(self):
         module = hexctl_module()
         parent = self.git("rev-parse", "HEAD").stdout.strip()
         tree = self.git("rev-parse", f"{parent}^{{tree}}").stdout.strip()
@@ -1359,7 +1793,7 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("valid native local signature", stderr.getvalue())
 
-    def test_resolution_path_proof_disables_repository_rename_detection(self):
+    def test_resolve_path_proof_disables_repo_rename_detection(self):
         module = hexctl_module()
         self.write("old-target.txt", "before\n")
         self.git("add", "old-target.txt")
@@ -1379,7 +1813,7 @@ class VersionRelationTests(HexctlCase):
             expected,
         )
 
-    def test_resolution_path_proof_disables_repository_submodule_ignores(self):
+    def test_resolve_path_proof_disables_repo_submodule_ignores(self):
         module = hexctl_module()
         self.write("gitlink-source.txt", "before\n")
         self.git("add", "gitlink-source.txt")
@@ -1491,7 +1925,7 @@ class VersionRelationTests(HexctlCase):
         ):
             module.done_sync_run(args, state)
 
-    def test_sync_receipt_parent_proof_ignores_git_replacement_objects(self):
+    def test_sync_receipt_parent_proof_ignores_git_replacements(self):
         module = hexctl_module()
         root = self.git("rev-parse", "HEAD").stdout.strip()
         tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
@@ -1511,9 +1945,10 @@ class VersionRelationTests(HexctlCase):
         ).stdout.strip()
         self.git("replace", sync, replacement)
 
-        self.assertEqual(
-            module.commit_parents(self.target, sync, "fixture"), [product, base]
-        )
+        with self.replacement_objects_enabled():
+            self.assertEqual(
+                module.commit_parents(self.target, sync, "fixture"), [product, base]
+            )
         self.assertEqual(
             module._native_relation_parents(self.target, sync, "fixture"),
             [base, product],
@@ -1525,7 +1960,7 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("parents", stderr.getvalue())
 
-    def test_sync_receipt_refuses_shallow_history_before_native_path_proof(self):
+    def test_sync_receipt_refuses_shallow_history_before_proof(self):
         module = hexctl_module()
         root = self.git("rev-parse", "HEAD").stdout.strip()
         tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
@@ -1552,7 +1987,7 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("history is shallow", stderr.getvalue())
 
-    def test_sync_receipt_remote_proof_ignores_inherited_git_repository(self):
+    def test_sync_receipt_remote_proof_ignores_inherited_repo(self):
         module = hexctl_module()
         root = self.git("rev-parse", "HEAD").stdout.strip()
         tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
@@ -1630,7 +2065,7 @@ class VersionRelationTests(HexctlCase):
                     )
                 self.assertIn("remote run branch tip", stderr.getvalue())
 
-    def test_resolution_sync_refuses_missing_path_or_green_check_coverage(self):
+    def test_sync_refuses_missing_path_or_green_check_coverage(self):
         (
             module,
             state,
@@ -1818,7 +2253,7 @@ class VersionRelationTests(HexctlCase):
                         relation,
                     )
 
-    def test_resolution_sync_replay_requires_every_affected_path_covered(self):
+    def test_sync_replay_requires_every_affected_path_covered(self):
         (
             module,
             state,
@@ -1871,7 +2306,7 @@ class VersionRelationTests(HexctlCase):
                 relation,
             )
 
-    def test_two_target_resolution_is_all_or_nothing_and_skill_sorted(self):
+    def test_two_target_resolution_all_or_nothing_skill_sorted(self):
         self.install_chain("fiat", (2,))
         self.install_chain("protasis", (7,), evolution=4, epoch=0)
         anchor_commit = self.commit_seed()
@@ -2140,7 +2575,7 @@ class VersionRelationTests(HexctlCase):
         ) as handle:
             self.assertEqual(handle.read(), before_ledger)
 
-    def test_one_target_captures_every_anchor_field_without_reserving(self):
+    def test_one_target_captures_all_anchor_fields_no_reserving(self):
         self.install_target("fiat")
         anchor = self.commit_seed()
         _, state = self.receipt_runbook("fiat")
@@ -2197,7 +2632,7 @@ class VersionRelationTests(HexctlCase):
             ["fiat", "protasis"],
         )
 
-    def test_partial_target_coverage_captures_only_the_declared_skill(self):
+    def test_partial_coverage_captures_only_declared_skill(self):
         self.install_target("fiat")
         self.install_target("protasis", (4, 7, 0))
         self.commit_seed()
@@ -2385,7 +2820,7 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(relation["anchor_commit"], original)
         self.assertNotEqual(relation["anchor_commit"], moved)
 
-    def test_run_branch_recreation_refuses_a_legacy_branch_based_anchor(self):
+    def test_run_branch_recreation_refuses_legacy_branch_anchor(self):
         self.install_target("fiat")
         original = self.commit_seed()
         self.init()
@@ -2430,7 +2865,7 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(relation["anchor_commit"], anchor)
         self.assertEqual(relation["targets"][0]["anchor_version"], "fiat-v1.2.3")
 
-    def test_sha256_repository_anchor_replays_across_packets_and_verify(self):
+    def test_sha256_repo_anchor_replays_across_packets_verify(self):
         controller = os.path.realpath(
             os.path.join(
                 os.path.dirname(__file__),
@@ -2461,6 +2896,13 @@ class VersionRelationTests(HexctlCase):
                 handle.write(self.ledger("fiat"))
             with open(skill, "w", encoding="utf-8") as handle:
                 handle.write(self.skill("fiat"))
+            cli = "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
+            source_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+            destination = os.path.join(repository, cli)
+            os.makedirs(os.path.dirname(destination), exist_ok=True)
+            with open(os.path.join(source_root, cli), "rb") as source:
+                with open(destination, "wb") as target:
+                    target.write(source.read())
             for argv in (("add", "-A"), ("commit", "-q", "-m", "seed")):
                 subprocess.run(
                     ["git", *argv],
@@ -2512,7 +2954,8 @@ class VersionRelationTests(HexctlCase):
                     self.design_lock_block(state)
                     + "\n# Runbook\n\n"
                     + self.relation_block("fiat")
-                    + "\n## Step 1: Build\n\n**Goal.** Build.\n"
+                    + "\n## Step 1: Build\n\n**Goal.** Build.\n\n"
+                    + "**Exit.** `python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py draft.md`\n"
                 )
             with open(
                 os.path.join(worktree, "steps.json"), "w", encoding="utf-8"
@@ -2617,7 +3060,7 @@ class VersionRelationTests(HexctlCase):
         )
         self.assertIn("rewritten by a graft", result.stderr)
 
-    def test_relation_git_environment_cannot_redirect_anchor_repository(self):
+    def test_relation_git_env_cannot_redirect_anchor_repo(self):
         self.install_target("fiat")
         anchor = self.commit_seed()
         self.init()
@@ -2709,7 +3152,7 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(relation["anchor_commit"], anchor)
         self.assertEqual(relation["targets"][0]["anchor_version"], "fiat-v1.2.3")
 
-    def test_repository_alternate_object_store_refuses_anchor_capture(self):
+    def test_repo_alternate_object_store_refuses_anchor_capture(self):
         self.install_target("fiat")
         anchor = self.commit_seed()
         self.init(base=anchor)
@@ -2760,7 +3203,7 @@ class VersionRelationTests(HexctlCase):
         )
         self.assertIn("starting history is shallow", result.stderr)
 
-    def test_anchor_derivation_refuses_history_that_turns_shallow_mid_read(self):
+    def test_anchor_refuses_history_that_turns_shallow_mid_read(self):
         self.install_target("fiat")
         anchor = self.commit_seed()
         self.init()
@@ -2908,6 +3351,14 @@ class VersionRelationTests(HexctlCase):
             "merge_now": False,
             "state_sha256": hexctl_module().state_fingerprint(state),
             "agent": "mason",
+            "task_identity": {
+                "schema": "fiat-task-identity/v1",
+                "handle": "fiat-test-topic-step-1-mason",
+                "task": "test-topic",
+                "step": 1,
+                "round": None,
+                "role": "mason",
+            },
             "brief": {
                 "runbook_step": {
                     "markdown": step_markdown,
@@ -3028,7 +3479,7 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(packet["targets"][0]["anchor_version"], "fiat-v7.99.13")
         self.assertEqual(packet["targets"][0]["projection"], "fiat-v7.100.13")
 
-    def test_projection_refuses_an_unrepresentable_generation_successor(self):
+    def test_projection_refuses_unrepresentable_next_generation(self):
         maximum = "9" * 128
         self.install_target("fiat", (1, maximum, 0))
         self.commit_seed()
@@ -3107,7 +3558,7 @@ class VersionRelationTests(HexctlCase):
         scribe = self.next_json()
         self.assertEqual(scribe["brief"]["version_relations"], expected)
 
-    def test_ledger_and_skill_metadata_mismatch_refuses_without_partial_state(self):
+    def test_ledger_skill_metadata_mismatch_refuses_atomically(self):
         self.install_target("fiat")
         self.write(self.skill_path("fiat"), self.skill("fiat", (1, 2, 4)))
         self.commit_seed()

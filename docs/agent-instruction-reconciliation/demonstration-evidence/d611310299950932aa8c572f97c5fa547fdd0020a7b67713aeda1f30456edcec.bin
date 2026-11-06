@@ -1,0 +1,37 @@
+from pathlib import Path
+import json,sys,zlib,subprocess,shutil
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+OUT=ROOT/'.hexaemeron/demo-build'
+BASE='cbcf3c6bf9cdb5c6cca45cddd8e87c98d24e90a0'
+with a.Root(ROOT) as r:
+ baseline,manifest,files=a.accepted_baseline(r,BASE)
+objects=dict(baseline.cache)
+(OUT/'baseline-objects.json').write_bytes(a.encoded({kind+':'+oid:a.sha(body) for (kind,oid),body in objects.items()}))
+blobdir=OUT/'objects';blobdir.mkdir(exist_ok=True)
+for body in objects.values():
+ path=blobdir/a.sha(body)
+ if not path.exists():path.write_bytes(body)
+rows=[]
+for fixture in manifest['fixtures']:
+ for placement in ['before','after']:
+  case=fixture['id']+'-'+placement
+  root=OUT/case
+  if root.exists():raise SystemExit('exclusive case exists: '+case)
+  root.mkdir()
+  for name,body in files.items():
+   dest=root/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(body)
+  subprocess.run(['/usr/bin/git','init','--quiet',str(root)],check=True,env={'PATH':'/usr/bin:/bin','GIT_CONFIG_GLOBAL':'/dev/null','GIT_CONFIG_NOSYSTEM':'1'})
+  for (kind,oid),body in objects.items():
+   dest=root/'.git/objects'/oid[:2]/oid[2:];dest.parent.mkdir(exist_ok=True)
+   dest.write_bytes(zlib.compress(kind.encode()+b' '+str(len(body)).encode()+b'\0'+body))
+  (root/'.git/HEAD').write_text(BASE+'\n')
+  source=fixture['source']['path'];body=files[source]
+  marker=b'\n<!-- #1513 disposable out-of-span demonstration -->\n'
+  (root/source).write_bytes(marker+body if placement=='before' else body+marker)
+  result=a.prepare(root,baseline=BASE,source=source,stage='tmp/stage')
+  (OUT/(case+'.prepare.json')).write_bytes(a.encoded(result))
+  rows.append({'id':case,'fixture':fixture['id'],'placement':placement,'root':str(root),'prepare':result})
+(OUT/'cases.json').write_bytes(a.encoded({'cases':rows,'baseline':BASE,'baseline_tree':baseline.tree}))
+print(json.dumps({'cases':len(rows),'law_root':str(OUT/'promise-machine-router-selection-before')}))

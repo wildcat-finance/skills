@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "run_dir": "/private/tmp/fiat1355-hermes/runs/v1-488b-baseline",
+  "schema": "hermes/v1",
+  "skill": "hermes",
+  "status": "baseline_ready"
+}

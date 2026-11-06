@@ -69,7 +69,9 @@ class FixtureProvider:
             raise Interrupted(label)
         envelope = json.loads(payload)
         method = envelope["method"]
-        if method == "eth_getBlockByNumber":
+        if method == "eth_syncing":
+            result = False
+        elif method == "eth_getBlockByNumber":
             tag = envelope["params"][0]
             number = (
                 int(self.state["plan"]["finality"]["block_number"])
@@ -97,6 +99,39 @@ def _read(path: Path, label: str):
     if not path.is_file():
         raise AlexandriaError(f"the demonstration's {label} is missing at {path}")
     return load_bytes(path.read_bytes(), label)
+
+
+class _HistoricalFixtureBuilder(Builder):
+    """Reconstruct only this demonstration's immutable block-only receipt."""
+
+    def _reconciliation(self):
+        document = super()._reconciliation()
+        # This fixture predates journal binding; keep its pinned release bytes.
+        document.pop("journal_sha256", None)
+        for shard in document["shards"]:
+            shard.pop("node_syncing", None)
+        return document
+
+    def _journal(self, name, component=None):
+        document = super()._journal(name, component)
+        for record in document["records"]:
+            record.pop("node_syncing", None)
+        return document
+
+    def _epochs(self, phase, end_hash):
+        from usdc_interval import epochs_from_opening
+        return epochs_from_opening(self.plan, phase, end_hash, legacy=True)
+
+    def _validate_epoch_table(self, epochs, start, end):
+        from alexandria_lib.interval import validate_block_epochs
+        validate_block_epochs(epochs, start, end)
+
+    def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
+        import hashlib
+        return {"format": "alexandria-interval-receipt/v1", "epochs": epochs,
+                "implementation_code": {"component": "implementation-code",
+                                        "sha256": hashlib.sha256(code_bytes).hexdigest()},
+                "reconciliation": reconciliation["reconciliation"], "shards": shards}
 
 
 def build(output: Path) -> dict:
@@ -135,7 +170,7 @@ def build(output: Path) -> dict:
             secondary["provider_class"],
         ).reconcile()
 
-        release_id = Builder(plan, staging, registry, created_at=CREATED_AT).build(output / "release")
+        release_id = _HistoricalFixtureBuilder(plan, staging, registry, created_at=CREATED_AT).build(output / "release")
         checked = check_interval(output / "release")
 
         summary = {

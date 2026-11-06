@@ -1,0 +1,12 @@
+ethereum Multicall3 code_hash=0xd5c15df687b1… slots=0 -> PASS account_included=True storage_included=0
+ethereum Permit2    code_hash=0xc67d1657868a… slots=0 -> PASS account_included=True storage_included=0
+ethereum USDC       code_hash=0xd80d4b7c890c… slots=2 -> PASS account_included=True storage_included=2
+base     Multicall3 code_hash=0xd5c15df687b1… slots=0 -> PASS account_included=True storage_included=0
+base     Permit2    code_hash=0xa67739abc3ed… slots=0 -> PASS account_included=True storage_included=0
+base     USDC       code_hash=0xa6705a10bb75… slots=2 -> PASS account_included=True storage_included=2
+NEG base Multicall3 proof vs Ethereum stateRoot -> IntegrityError: trie proof root does not match the expected root
+NEG base Multicall3 proof vs Ethereum block hash -> IntegrityError: proof record block hash does not match the fixture
+NEG base Permit2 proof vs Ethereum stateRoot -> IntegrityError: trie proof root does not match the expected root
+NEG base Permit2 proof vs Ethereum block hash -> IntegrityError: proof record block hash does not match the fixture
+NEG base USDC proof vs Ethereum stateRoot -> IntegrityError: trie proof root does not match the expected root
+NEG base USDC proof vs Ethereum block hash -> IntegrityError: proof record block hash does not match the fixture

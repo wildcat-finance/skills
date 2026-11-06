@@ -1,0 +1,1 @@
+{"candidate":"shared-input-index","command":"python3 .hexaemeron/research/design_probe.py --candidate shared-input-index --criterion recoverable-input-identities --report .hexaemeron/design-reports/shared-input-index-recoverable-input-identities.json","criterion":"recoverable-input-identities","exit":0,"schema":"protasis-design-report/v1","unit":"count","value":4}

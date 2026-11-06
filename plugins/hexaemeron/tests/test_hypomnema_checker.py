@@ -5,9 +5,11 @@ reads as though the reason exists and was checked.
 """
 
 import importlib.util
+import contextlib
 import io
 import json
 import os
+import random
 import tempfile
 import time
 import unittest
@@ -82,7 +84,7 @@ class Links(unittest.TestCase):
     def test_it_ignores_an_image(self):
         self.assertEqual([], codes("![diagram](missing.png)"))
 
-    def test_clean_pointer_check_does_not_establish_record_correctness(self):
+    def test_clean_pointers_do_not_prove_record_correctness(self):
         self.assertEqual(
             [],
             codes(
@@ -95,6 +97,159 @@ class Links(unittest.TestCase):
         source = "See [the decision](decision.md)."
         self.assertIn("H001", codes(source))
         self.assertEqual([], codes(source, siblings=("decision.md",)))
+
+
+class AllocatedLegacyLinks(unittest.TestCase):
+    slug = "stable-link"
+    record = "docs/decisions/drafts/stable-link.md"
+
+    def tree(self, base):
+        root = Path(base).resolve()
+        final = root / "docs/decisions/ADR-042-stable-link.md"
+        final.parent.mkdir(parents=True)
+        final.write_text(COMPLETE_RECORD, encoding="utf-8")
+        source = root / "plugins/example/skills/example/EVOLUTION.md"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            "[decision](../../../../docs/decisions/drafts/stable-link.md)\n",
+            encoding="utf-8",
+        )
+        return root, source, final
+
+    def findings(self, root, source):
+        with contextlib.chdir(root):
+            return [finding.code for finding in hypomnema.check(source)]
+
+    def test_an_absent_canonical_draft_link_resolves_one_final(self):
+        for drafts in (False, True):
+            with self.subTest(drafts=drafts), tempfile.TemporaryDirectory() as base:
+                root, source, _final = self.tree(base)
+                if drafts:
+                    (root / "docs/decisions/drafts").mkdir()
+                before = source.read_bytes()
+                self.assertEqual([], self.findings(root, source))
+                self.assertEqual(before, source.read_bytes())
+
+    def test_both_historical_locators_resolve_after_allocation(self):
+        repository = ROOT.parent.parent
+        cases = (
+            ("plugins/alexandria/skills/alexandria/EVOLUTION.md",
+             "split-a-release-statement-into-parts"),
+            ("plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+             "admit-starting-commit-gate-bindings"),
+        )
+        for ledger, slug in cases:
+            with self.subTest(ledger=ledger), tempfile.TemporaryDirectory() as base:
+                root = Path(base).resolve()
+                raw = (repository / ledger).read_bytes()
+                locator = "../../../../docs/decisions/drafts/" + slug + ".md"
+                self.assertIn(locator.encode(), raw)
+                source = root / ledger
+                source.parent.mkdir(parents=True)
+                source.write_text("[historical decision](" + locator + ")\n", encoding="utf-8")
+                final = root / ("docs/decisions/ADR-042-" + slug + ".md")
+                final.parent.mkdir(parents=True)
+                final.write_text(COMPLETE_RECORD, encoding="utf-8")
+                self.assertEqual([], self.findings(root, source))
+                self.assertEqual(raw, (repository / ledger).read_bytes())
+
+    def test_a_missing_stable_home_still_reports_h001(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, final = self.tree(base)
+            final.unlink()
+            self.assertEqual(["H001"], self.findings(root, source))
+
+    def test_two_stable_finals_still_report_h001(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, final = self.tree(base)
+            (final.parent / "ADR-043-stable-link.md").write_bytes(final.read_bytes())
+            self.assertEqual(["H001"], self.findings(root, source))
+
+    def test_a_present_draft_keeps_existence_authority(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, _final = self.tree(base)
+            draft = root / self.record
+            draft.parent.mkdir()
+            draft.write_text("ordinary existing link target\n", encoding="utf-8")
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assertEqual([], self.findings(root, source))
+                stable.assert_not_called()
+
+    def test_dangling_existing_draft_symlink_selects_no_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, _final = self.tree(base)
+            draft = root / self.record
+            draft.parent.mkdir()
+            draft.symlink_to(root / "missing-target")
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assertEqual(["H001"], self.findings(root, source))
+                stable.assert_not_called()
+
+    def test_a_symlinked_final_still_reports_h001(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, final = self.tree(base)
+            final.unlink()
+            final.symlink_to(source)
+            self.assertEqual(["H001"], self.findings(root, source))
+
+    def test_a_symlinked_draft_directory_does_not_select_a_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, _final = self.tree(base)
+            outside = root / "outside"
+            outside.mkdir()
+            (root / "docs/decisions/drafts").symlink_to(outside, target_is_directory=True)
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assertEqual(["H001"], self.findings(root, source))
+                stable.assert_not_called()
+
+    def test_a_symlinked_source_namespace_does_not_select_a_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, _final = self.tree(base)
+            old = root / "plugins"
+            old.rename(root / "outside-plugins")
+            old.symlink_to(root / "outside-plugins", target_is_directory=True)
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assertEqual(["H001"], self.findings(root, source))
+                stable.assert_not_called()
+
+    def test_malformed_and_escaping_locators_keep_h001(self):
+        targets = (
+            "../../../../docs/decisions/drafts/Stable-link.md",
+            "../../../../docs/decisions/drafts/stable_link.md",
+            "../../../../docs/decisions/drafts/nested/stable-link.md",
+            "../../../../docs/decisions/drafts/./stable-link.md",
+            "../../../../docs/other/stable-link.md",
+            "../../../../docs/decisions/drafts/" + "a" * 97 + ".md",
+            "../../../../../docs/decisions/drafts/stable-link.md",
+        )
+        for target in targets:
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as base:
+                root, source, _final = self.tree(base)
+                source.write_text("[decision](" + target + ")\n", encoding="utf-8")
+                with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                    self.assertEqual(["H001"], self.findings(root, source))
+                    stable.assert_not_called()
+
+    def test_an_ordinary_missing_link_does_not_select_a_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, _final = self.tree(base)
+            source.write_text("[ordinary](missing.md)\n", encoding="utf-8")
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assertEqual(["H001"], self.findings(root, source))
+                stable.assert_not_called()
+
+    def test_an_unstable_allocated_link_still_reports_h001(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, source, final = self.tree(base)
+            original = hypomnema._read_repo_file
+
+            def unstable(repository, supplied, maximum):
+                if supplied == final.relative_to(root):
+                    return None, supplied, "changed while being read"
+                return original(repository, supplied, maximum)
+
+            with mock.patch.object(hypomnema, "_read_repo_file", side_effect=unstable):
+                self.assertEqual(["H001"], self.findings(root, source))
 
 
 class Superseding(unittest.TestCase):
@@ -194,7 +349,7 @@ class Runbooks(unittest.TestCase):
         self.assertEqual([], codes(
             "The row links `[study and runbook](../../docs/study/)` from the ledger."))
 
-    def test_a_bare_relative_link_on_the_same_kind_of_line_stays_live(self):
+    def test_bare_relative_link_on_same_kind_of_line_stays_live(self):
         self.assertEqual(["H001"], codes(
             "The row links [study and runbook](../../docs/study/) from the ledger."))
         self.assertEqual(["H001"], codes(
@@ -256,6 +411,72 @@ class Runbooks(unittest.TestCase):
         self.assertLess(time.perf_counter() - started, 2.0)
 
 
+class PointerScanCost(unittest.TestCase):
+    @staticmethod
+    def recorded_lines(repeats):
+        """The line shapes step 2 round 1 of the skills#1086 run timed."""
+        return (
+            ("openers", "[" * repeats),
+            ("link-openers", "[a](" * repeats),
+            ("shared-closer", "[" * repeats + "](" + "a" * repeats),
+            ("quoted-links", "`[a](b)` " * repeats),
+            ("quoted-runbooks", "`runbook: a/b.md` " * repeats),
+        )
+
+    @staticmethod
+    def reading(matches):
+        return [(match.span(), match.groupdict()) for match in matches]
+
+    def test_each_recorded_quadratic_line_is_read_in_linear_time(self):
+        # At 20,000 repeats this lint took 0.70 s, 19.2 s, 10.3 s, 3.36 s and
+        # 3.42 s on these lines before skills#1656, in this order, and under
+        # 30 ms each after it, on an Apple M5 Max.
+        for shape, line in self.recorded_lines(20000):
+            with self.subTest(shape=shape):
+                started = time.perf_counter()
+                self.assertEqual([], codes(line))
+                self.assertLess(time.perf_counter() - started, 1.0)
+
+    def test_the_link_scan_yields_exactly_the_matches_of_the_pattern(self):
+        # Tokens rather than characters: a wrong skip can show only once a later
+        # link starts inside an earlier target, a dozen characters in, and every
+        # string that long over an eight-character alphabet is too many to try.
+        tokens = ("[", "]", "(", ")", "](", "!", '"', " ", "\t", "\xa0", "a", "b.md")
+        generator = random.Random(1656)
+        lines = [line for _, line in self.recorded_lines(200)] + [
+            "".join(generator.choice(tokens)
+                    for _ in range(generator.randint(0, 24)))
+            for _ in range(20000)
+        ]
+        for line in lines:
+            self.assertEqual(
+                self.reading(hypomnema.LINK.finditer(line)),
+                self.reading(hypomnema._links(line)),
+                line[:80],
+            )
+
+    def test_merged_spans_hold_exactly_the_offsets_the_pairs_hold(self):
+        # Runs of one and two backticks pair independently, so these overlap.
+        self.assertEqual([(2, 17)], hypomnema._code_spans("a `` b ` c `` d ` e"))
+        generator = random.Random(1656)
+        for _ in range(2000):
+            pairs = []
+            for _ in range(generator.randint(0, 8)):
+                start = generator.randint(0, 40)
+                pairs.append((start, start + generator.randint(1, 12)))
+            spans = hypomnema._disjoint_spans(pairs)
+            self.assertTrue(all(
+                left[0] < left[1] <= right[0]
+                for left, right in zip(spans, spans[1:])
+            ))
+            for index in range(-1, 54):
+                self.assertEqual(
+                    any(start <= index < end for start, end in pairs),
+                    hypomnema._within(spans, index),
+                    (pairs, index),
+                )
+
+
 class YamlRunbooks(unittest.TestCase):
     def test_a_dangling_yaml_pointer_reports_h003(self):
         findings = hypomnema.check(ALERT_FIXTURES / "dangling.yaml")
@@ -274,7 +495,7 @@ class YamlRunbooks(unittest.TestCase):
             siblings=("config/runbooks/pending.md",),
         ))
 
-    def test_the_yaml_pass_is_generic_and_accepts_a_top_level_pointer(self):
+    def test_yaml_pass_is_generic_and_accepts_top_level_pointer(self):
         source = "runbook: runbooks/pending.md\n"
         self.assertEqual([], yaml_codes(source, siblings=("runbooks/pending.md",)))
 
@@ -309,7 +530,7 @@ class YamlRunbooks(unittest.TestCase):
         self.assertEqual(["H000"], [finding.code for finding in findings])
         self.assertEqual(hypomnema.MAX_YAML_BYTES + 1, reader.requested)
 
-    def test_bare_sequence_block_scalars_do_not_create_runbook_pointers(self):
+    def test_bare_sequence_block_scalars_yield_no_pointers(self):
         for marker in ("|", ">"):
             with self.subTest(marker=marker):
                 source = f"examples:\n  - {marker}\n    runbook: runbooks/example.md\n"
@@ -318,7 +539,7 @@ class YamlRunbooks(unittest.TestCase):
     def test_yaml_runbook_keys_are_case_sensitive(self):
         self.assertEqual([], yaml_codes("Runbook: runbooks/wrong-case.md\n"))
 
-    def test_an_unseparated_hash_is_preserved_in_a_missing_runbook_path(self):
+    def test_unseparated_hash_is_kept_in_missing_runbook_path(self):
         source = "runbook: runbooks/missing#book.md\n"
         self.assertEqual(["H003"], yaml_codes(source))
 
@@ -330,7 +551,7 @@ class YamlRunbooks(unittest.TestCase):
                           f"  {quote}\n")
                 self.assertEqual([], yaml_codes(source))
 
-    def test_quotes_inside_plain_scalars_do_not_hide_runbook_pointers(self):
+    def test_quotes_inside_plain_scalars_hide_no_pointers(self):
         for quote, value in (("'", "O'Brien"), ('"', 'six" pipe')):
             with self.subTest(quote=quote):
                 source = f"note: {value}\nrunbook: runbooks/missing.md\n"
@@ -344,7 +565,7 @@ class YamlRunbooks(unittest.TestCase):
                               "runbook: runbooks/missing.md\n")
                     self.assertEqual(["H003"], yaml_codes(source))
 
-    def test_plain_scalar_continuation_quotes_do_not_hide_runbook_pointers(self):
+    def test_plain_scalar_continuation_quotes_hide_no_pointers(self):
         for quote in ("'", '"'):
             with self.subTest(quote=quote):
                 source = ("note: first\n"
@@ -352,7 +573,7 @@ class YamlRunbooks(unittest.TestCase):
                           "runbook: runbooks/missing.md\n")
                 self.assertEqual(["H003"], yaml_codes(source))
 
-    def test_a_folded_plain_runbook_cannot_resolve_through_a_first_line_decoy(self):
+    def test_folded_plain_runbook_ignores_first_line_decoy(self):
         source = "runbook: runbooks/present.md\n  extra\n"
         self.assertEqual(
             ["H003"], yaml_codes(source, siblings=("runbooks/present.md",)))
@@ -430,7 +651,7 @@ class RunbookShape(unittest.TestCase):
                 self.assertEqual(["H007"], [f.code for f in findings])
                 self.assertIn("empty", findings[0].message)
 
-    def test_a_markdown_file_outside_a_runbooks_directory_is_out_of_scope(self):
+    def test_markdown_outside_runbooks_dir_is_out_of_scope(self):
         self.assertEqual([], runbook_findings("", directory="docs", name="runbook.md"))
 
     def test_a_heading_inside_a_fence_does_not_count(self):
@@ -447,11 +668,11 @@ class RunbookShape(unittest.TestCase):
         )
         self.assertEqual(["H007"], [f.code for f in runbook_findings(source)])
 
-    def test_a_reasoned_pragma_on_the_first_line_suppresses_all_shape_findings(self):
+    def test_reasoned_first_line_pragma_suppresses_all_findings(self):
         source = "<!-- hypomnema: allow generated downstream -->\n"
         self.assertEqual([], runbook_findings(source))
 
-    def test_a_reasoned_pragma_on_the_relevant_heading_suppresses_its_finding(self):
+    def test_reasoned_pragma_on_heading_suppresses_its_finding(self):
         source = COMPLETE_RUNBOOK.replace(
             "## First check\n\nCheck the oldest pending item.",
             "## First check <!-- hypomnema: allow supplied during deployment -->",
@@ -497,6 +718,31 @@ class Suppression(unittest.TestCase):
 
 
 class OverTheMarketplace(unittest.TestCase):
+    def test_generated_runtime_skipped_direct_inputs_checked(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = Path(base)
+            runtime = root / ".agents/skills/promise-machine/runtime"
+            runtime.mkdir(parents=True)
+            copy = runtime / "record.md"
+            copy.write_text("[missing](absent.md)\n", encoding="utf-8")
+            source = runtime.parent / "SKILL.md"
+            source.write_text("[missing](absent.md)\n", encoding="utf-8")
+            unrelated = root / "runtime/record.md"
+            unrelated.parent.mkdir()
+            unrelated.write_text("[missing](absent.md)\n", encoding="utf-8")
+            for parent in (root, root / ".agents", runtime.parent):
+                for vendored in (False, True):
+                    with self.subTest(parent=parent, include_vendored=vendored):
+                        paths = hypomnema.walk([str(parent)], vendored)
+                        self.assertNotIn(copy, paths)
+                        self.assertIn(source, paths)
+            self.assertIn(unrelated, hypomnema.walk([str(root)]))
+            with contextlib.chdir(runtime.parent):
+                self.assertEqual([Path("SKILL.md")], hypomnema.walk(["."]))
+            for explicit in (runtime, copy):
+                self.assertEqual([copy], hypomnema.walk([str(explicit)]))
+                self.assertEqual(["H001"], [f.code for f in hypomnema.check(copy)])
+
     def test_the_vendored_suite_is_skipped_by_default(self):
         marketplace = ROOT.parents[1]
         paths = hypomnema.walk([str(marketplace / "plugins" / "hexaemeron" / "skills")])
@@ -575,7 +821,7 @@ class RecordShape(unittest.TestCase):
         source = COMPLETE_RECORD.replace("## Alternatives\n", "## Options\n")
         self.assertEqual([], record_codes(source, name="notes.md"))
 
-    def test_a_record_name_outside_a_decisions_directory_earns_no_shape_verdict(self):
+    def test_record_name_outside_decisions_dir_gets_no_verdict(self):
         source = COMPLETE_RECORD.replace("## Alternatives\n", "## Options\n")
         self.assertEqual([], record_codes(source, directory="drafts"))
 
@@ -585,7 +831,7 @@ class RecordShape(unittest.TestCase):
             "```markdown\n## Alternatives\n```\n")
         self.assertEqual(["H004"], record_codes(source))
 
-    def test_a_pragma_on_the_first_line_suppresses_the_missing_section(self):
+    def test_pragma_on_first_line_suppresses_missing_section(self):
         source = COMPLETE_RECORD.replace(
             "# ADR-051: A complete specimen",
             "# ADR-051: A complete specimen "
@@ -593,7 +839,7 @@ class RecordShape(unittest.TestCase):
         ).replace("## Alternatives\n", "## Options\n")
         self.assertEqual([], record_codes(source))
 
-    def test_a_pragma_on_the_status_heading_suppresses_the_dated_check(self):
+    def test_pragma_on_status_heading_suppresses_dated_check(self):
         source = COMPLETE_RECORD.replace(
             "## Status", "## Status <!-- hypomnema: allow imported undated -->"
         ).replace("Accepted, 2026-08-21.", "Accepted.")
@@ -745,6 +991,187 @@ class DesignBridge(unittest.TestCase):
     def test_a_valid_governed_ledger_bridge_is_clean(self):
         self.assertEqual([], design_bridge_findings("studies/valid-ledger.md"))
 
+    def test_a_unique_stable_draft_bridge_is_clean(self):
+        selector = "adr/stable-bridge"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=selector),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "draft record")
+            (root / "docs/decisions/drafts/stable-bridge.md").write_text(
+                COMPLETE_RECORD.replace("# ADR-051: A complete specimen", "# Decision: Stable bridge"),
+                encoding="utf-8",
+            )
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_a_unique_stable_numbered_final_bridge_is_clean(self):
+        selector = "adr/stable-bridge"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=selector),
+                record="docs/decisions/ADR-042-stable-bridge.md",
+            )
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_a_dangling_stable_selector_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "no canonical"
+            )
+
+    def test_malformed_and_oversized_stable_selectors_refuse(self):
+        selectors = (
+            "adr/Stable-bridge",
+            "adr/stable_bridge",
+            "adr/stable/bridge",
+            "adr/" + "a" * (hypomnema.MAX_SLUG_BYTES + 1),
+        )
+        for selector in selectors:
+            with self.subTest(selector=selector), tempfile.TemporaryDirectory() as base:
+                root = write_design_bridge_tree(base, bridge_block(record=selector))
+                self.assert_h008(design_bridge_findings("study.md", root=root))
+
+    def test_a_malformed_direct_draft_path_refuses(self):
+        record = "docs/decisions/drafts/stable-bridge.md"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record=record), record=record
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "draft record"
+            )
+
+    def test_a_stable_draft_and_final_duplicate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            (root / "docs/decisions/ADR-042-stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "more than one"
+            )
+
+    def test_multiple_stable_numbered_finals_refuse(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/ADR-042-stable-bridge.md",
+            )
+            (root / "docs/decisions/ADR-043-stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "more than one"
+            )
+
+    def test_noncanonical_stable_near_matches_do_not_resolve(self):
+        near_matches = (
+            "docs/decisions/ADR-42-stable-bridge.md",
+            "docs/decisions/ADR-0042-stable-bridge.md",
+            "docs/decisions/drafts/Stable-bridge.md",
+            "docs/other/ADR-042-stable-bridge.md",
+        )
+        for record in near_matches:
+            with self.subTest(record=record), tempfile.TemporaryDirectory() as base:
+                root = write_design_bridge_tree(
+                    base, bridge_block(record="adr/stable-bridge"), record=record
+                )
+                self.assert_h008(
+                    design_bridge_findings("study.md", root=root), "no canonical"
+                )
+
+    def test_a_symlinked_stable_candidate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            target = root / "real.md"
+            target.write_text("record\n", encoding="utf-8")
+            link = root / "docs/decisions/drafts/stable-bridge.md"
+            link.parent.mkdir(parents=True)
+            link.symlink_to(target)
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "ordinary"
+            )
+
+    def test_a_symlinked_stable_directory_component_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            outside = root / "outside-drafts"
+            outside.mkdir()
+            (outside / "stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            drafts = root / "docs/decisions/drafts"
+            drafts.parent.mkdir(parents=True)
+            drafts.symlink_to(outside, target_is_directory=True)
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "unsafe"
+            )
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires a POSIX FIFO")
+    def test_a_special_stable_candidate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            fifo = root / "docs/decisions/drafts/stable-bridge.md"
+            fifo.parent.mkdir(parents=True)
+            os.mkfifo(fifo)
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "ordinary"
+            )
+
+    def test_an_oversized_stable_candidate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            (root / "docs/decisions/drafts/stable-bridge.md").write_bytes(
+                b"x" * (hypomnema.MAX_RECORD_BYTES + 1)
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "input limit"
+            )
+
+    def test_an_unstable_stable_candidate_read_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            original = hypomnema._stat_identity
+            calls = 0
+
+            def changed(value):
+                nonlocal calls
+                calls += 1
+                identity = original(value)
+                if calls == 11:
+                    return identity[:-1] + (identity[-1] + 1,)
+                return identity
+
+            with mock.patch.object(hypomnema, "_stat_identity", side_effect=changed):
+                self.assert_h008(
+                    design_bridge_findings("study.md", root=root), "changed"
+                )
+
     def test_a_valid_numberless_draft_bridge_is_clean(self):
         record = "docs/decisions/drafts/keep-the-draft-home.md"
         source = COMPLETE_RECORD.replace(
@@ -808,6 +1235,239 @@ class DesignBridge(unittest.TestCase):
                 design_bridge_findings("study.md", root=root),
                 "outside an established",
             )
+
+    def legacy_final_tree(self, base, *, drafts=False):
+        record = "docs/decisions/drafts/stable-bridge.md"
+        root = write_design_bridge_tree(
+            base,
+            bridge_block(record=record),
+            record="docs/decisions/ADR-042-stable-bridge.md",
+        )
+        if drafts:
+            (root / "docs/decisions/drafts").mkdir()
+        return root, record
+
+    def test_allocated_legacy_draft_bridge_keeps_study_bytes(self):
+        for drafts in (False, True):
+            with self.subTest(drafts=drafts), tempfile.TemporaryDirectory() as base:
+                root, _record = self.legacy_final_tree(base, drafts=drafts)
+                before = (root / "study.md").read_bytes()
+                self.assertEqual([], design_bridge_findings("study.md", root=root))
+                self.assertEqual(before, (root / "study.md").read_bytes())
+
+    def test_a_present_legacy_draft_keeps_its_literal_home(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, record = self.legacy_final_tree(base, drafts=True)
+            (root / record).write_text(
+                COMPLETE_RECORD.replace(
+                    "# ADR-051: A complete specimen", "# Decision: Stable bridge"
+                ),
+                encoding="utf-8",
+            )
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assertEqual([], design_bridge_findings("study.md", root=root))
+                stable.assert_not_called()
+
+    def test_malformed_present_legacy_draft_selects_no_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, record = self.legacy_final_tree(base, drafts=True)
+            (root / record).write_text("malformed draft\n", encoding="utf-8")
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "draft record")
+                stable.assert_not_called()
+
+    def test_unstable_present_legacy_draft_selects_no_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, record = self.legacy_final_tree(base, drafts=True)
+            (root / record).write_text("present\n", encoding="utf-8")
+            original = hypomnema._read_repo_file
+
+            def unstable(repository, supplied, maximum):
+                if supplied == record:
+                    return None, Path(record), "changed while being read"
+                return original(repository, supplied, maximum)
+
+            with mock.patch.object(hypomnema, "_read_repo_file", side_effect=unstable), \
+                    mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
+                stable.assert_not_called()
+
+    def test_a_symlinked_legacy_draft_does_not_select_its_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, record = self.legacy_final_tree(base, drafts=True)
+            (root / record).symlink_to(root / "docs/decisions/ADR-042-stable-bridge.md")
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+                stable.assert_not_called()
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires a POSIX FIFO")
+    def test_a_special_legacy_draft_does_not_select_its_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, record = self.legacy_final_tree(base, drafts=True)
+            os.mkfifo(root / record)
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+                stable.assert_not_called()
+
+    def test_an_oversized_legacy_draft_does_not_select_its_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, record = self.legacy_final_tree(base, drafts=True)
+            (root / record).write_bytes(b"x" * (hypomnema.MAX_RECORD_BYTES + 1))
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "input limit")
+                stable.assert_not_called()
+
+    def test_a_nonmissing_legacy_probe_error_does_not_select_a_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base, drafts=True)
+            original = hypomnema.os.stat
+
+            def unavailable(path, *args, **kwargs):
+                if path == "stable-bridge.md" and "dir_fd" in kwargs:
+                    raise PermissionError("synthetic inaccessible draft slot")
+                return original(path, *args, **kwargs)
+
+            with mock.patch.object(hypomnema.os, "stat", side_effect=unavailable), \
+                    mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "unavailable")
+                stable.assert_not_called()
+
+    def test_a_symlinked_legacy_directory_does_not_select_a_final(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            decisions = root / "docs/decisions"
+            decisions.rename(root / "outside-decisions")
+            decisions.symlink_to(root / "outside-decisions", target_is_directory=True)
+            with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+                stable.assert_not_called()
+
+    def test_noncanonical_missing_legacy_paths_do_not_select_a_final(self):
+        records = (
+            "docs/decisions/drafts/Stable-bridge.md",
+            "docs/decisions/drafts/stable_bridge.md",
+            "docs/decisions/drafts/nested/stable-bridge.md",
+            "docs/decisions/drafts/stable-bridge.MD",
+            "docs/decisions/drafts/" + "a" * (hypomnema.MAX_SLUG_BYTES + 1) + ".md",
+        )
+        for record in records:
+            with self.subTest(record=record), tempfile.TemporaryDirectory() as base:
+                root, _legacy = self.legacy_final_tree(base)
+                (root / "study.md").write_text(bridge_block(record=record), encoding="utf-8")
+                with mock.patch.object(hypomnema, "_read_stable_adr") as stable:
+                    self.assert_h008(design_bridge_findings("study.md", root=root))
+                    stable.assert_not_called()
+
+    def test_an_absent_legacy_draft_without_a_final_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="docs/decisions/drafts/stable-bridge.md")
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "no canonical")
+
+    def test_an_absent_legacy_draft_with_two_finals_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            (root / "docs/decisions/ADR-043-stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "more than one")
+
+    def test_an_absent_legacy_draft_with_a_symlinked_final_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            final = root / "docs/decisions/ADR-042-stable-bridge.md"
+            final.unlink()
+            (root / "real.md").write_text("record\n", encoding="utf-8")
+            final.symlink_to(root / "real.md")
+            self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires a POSIX FIFO")
+    def test_an_absent_legacy_draft_with_a_special_final_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            final = root / "docs/decisions/ADR-042-stable-bridge.md"
+            final.unlink()
+            os.mkfifo(final)
+            self.assert_h008(design_bridge_findings("study.md", root=root), "ordinary")
+
+    def test_an_absent_legacy_draft_with_an_oversized_final_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            (root / "docs/decisions/ADR-042-stable-bridge.md").write_bytes(
+                b"x" * (hypomnema.MAX_RECORD_BYTES + 1)
+            )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "input limit")
+
+    def test_absent_legacy_draft_unstable_final_read_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            original = hypomnema._read_repo_file
+
+            def unstable(repository, supplied, maximum):
+                if supplied == Path("docs/decisions/ADR-042-stable-bridge.md"):
+                    return None, supplied, "changed while being read"
+                return original(repository, supplied, maximum)
+
+            with mock.patch.object(hypomnema, "_read_repo_file", side_effect=unstable):
+                self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
+
+    def test_absent_legacy_draft_unstable_candidate_set_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            original = hypomnema._stable_adr_candidates
+            calls = 0
+
+            def changed(repository, slug):
+                nonlocal calls
+                calls += 1
+                return original(repository, slug) if calls == 1 else ([], None)
+
+            with mock.patch.object(hypomnema, "_stable_adr_candidates", side_effect=changed):
+                self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
+
+    def test_a_legacy_draft_appearing_during_resolution_refuses(self):
+        for drafts in (False, True):
+            with self.subTest(drafts=drafts), tempfile.TemporaryDirectory() as base:
+                root, record = self.legacy_final_tree(base, drafts=drafts)
+                original = hypomnema._read_stable_adr
+
+                def appeared(repository, selector):
+                    result = original(repository, selector)
+                    (root / record).parent.mkdir(exist_ok=True)
+                    (root / record).write_text("new draft\n", encoding="utf-8")
+                    return result
+
+                with mock.patch.object(hypomnema, "_read_stable_adr", side_effect=appeared):
+                    self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
+
+    def test_missing_legacy_dir_appearing_in_resolution_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base)
+            original = hypomnema._read_stable_adr
+
+            def appeared(repository, selector):
+                result = original(repository, selector)
+                (root / "docs/decisions/drafts").mkdir()
+                return result
+
+            with mock.patch.object(hypomnema, "_read_stable_adr", side_effect=appeared):
+                self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
+
+    def test_a_legacy_directory_replaced_during_resolution_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root, _record = self.legacy_final_tree(base, drafts=True)
+            original = hypomnema._read_stable_adr
+
+            def replaced(repository, selector):
+                result = original(repository, selector)
+                drafts = root / "docs/decisions/drafts"
+                drafts.rename(root / "old-drafts")
+                drafts.mkdir()
+                return result
+
+            with mock.patch.object(hypomnema, "_read_stable_adr", side_effect=replaced):
+                self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
 
     def test_the_explicit_cli_mode_emits_one_clean_json_result(self):
         output = io.StringIO()

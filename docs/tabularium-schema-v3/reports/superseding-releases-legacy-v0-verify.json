@@ -1,0 +1,9 @@
+{
+  "candidate": "superseding-releases",
+  "command": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate superseding-releases --criterion legacy-v0-verify --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/superseding-releases-legacy-v0-verify.json",
+  "criterion": "legacy-v0-verify",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

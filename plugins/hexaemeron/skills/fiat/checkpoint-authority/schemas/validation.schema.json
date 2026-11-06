@@ -1,0 +1,517 @@
+{
+  "$id": "https://wildcat.finance/attestations/checkpoint-authority/v1/validation",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+      "type": "string"
+    },
+    "authorization": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "run-grant"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "candidate_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+      "type": "string"
+    },
+    "carrier_length": {
+      "maximum": 9223372036854775807,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "coverage": {
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "items": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "verified": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "commit": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+                "type": "string"
+              },
+              "enrollment": {
+                "additionalProperties": false,
+                "properties": {
+                  "sha256": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "key-enrollment",
+                      "key-rotation"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "sha256"
+                ],
+                "type": "object"
+              },
+              "evidence_class": {
+                "enum": [
+                  "local-signature",
+                  "platform-signature"
+                ]
+              }
+            },
+            "required": [
+              "commit",
+              "enrollment",
+              "evidence_class"
+            ],
+            "type": "object"
+          },
+          "maxItems": 64,
+          "minItems": 0,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "required",
+        "verified"
+      ],
+      "type": "object"
+    },
+    "ended_at": {
+      "maxLength": 20,
+      "minLength": 1,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z(?![\\s\\S])",
+      "type": "string"
+    },
+    "environment": {
+      "enum": [
+        "test",
+        "production"
+      ]
+    },
+    "identities": {
+      "additionalProperties": false,
+      "properties": {
+        "controller_manifest_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "outer_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "controller_manifest_sha256",
+        "outer_sha256"
+      ],
+      "type": "object"
+    },
+    "input_sha256": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+      "type": "string"
+    },
+    "issued_at": {
+      "maxLength": 20,
+      "minLength": 1,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z(?![\\s\\S])",
+      "type": "string"
+    },
+    "issuer": {
+      "oneOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "maxLength": 50,
+          "minLength": 1,
+          "pattern": "^SHA256:[A-Za-z0-9+/]{43}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[0-9A-F]{40}(?![\\s\\S])",
+          "type": "string"
+        }
+      ]
+    },
+    "lease_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+      "type": "string"
+    },
+    "native": {
+      "additionalProperties": false,
+      "properties": {
+        "executable_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+          "type": "string"
+        },
+        "source_commit": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_commit",
+        "executable_sha256",
+        "profile"
+      ],
+      "type": "object"
+    },
+    "native_results": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "exit": {
+            "enum": [
+              0
+            ]
+          },
+          "log_sha256": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+            "type": "string"
+          },
+          "output_sha256": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "inspect",
+              "restore",
+              "verify",
+              "identity"
+            ]
+          }
+        },
+        "required": [
+          "stage",
+          "exit",
+          "output_sha256",
+          "log_sha256"
+        ],
+        "type": "object"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "output_sha256": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+      "type": "string"
+    },
+    "parent": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "parent-link"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "policy": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "authority-policy"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "previous": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "sha256": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "authority-policy",
+                "enrollment-challenge",
+                "key-enrollment",
+                "key-rotation",
+                "key-revocation",
+                "run-grant",
+                "run-registration",
+                "upload-endorsement",
+                "validation",
+                "storage-copy",
+                "parent-link",
+                "acceptance",
+                "cancellation",
+                "publication-finalization",
+                "denial",
+                "authorized-removal",
+                "journal-entry",
+                "authority-head",
+                "stream-permit"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "sha256"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "protocol": {
+      "enum": [
+        "checkpoint-authority/v1"
+      ]
+    },
+    "release": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "fixture_corpus_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "schema_set_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "source_commit": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+          "type": "string"
+        },
+        "verifier_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_commit",
+        "artifact_sha256",
+        "schema_set_sha256",
+        "verifier_sha256",
+        "fixture_corpus_sha256"
+      ],
+      "type": "object"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "input_bytes": {
+          "maximum": 9223372036854775807,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "output_bytes": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "peak_rss_bytes": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "input_bytes",
+        "output_bytes",
+        "duration_ms",
+        "peak_rss_bytes"
+      ],
+      "type": "object"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "repository_id": {
+          "maximum": 9223372036854775807,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository_id",
+        "run_id"
+      ],
+      "type": "object"
+    },
+    "sequence": {
+      "maximum": 9223372036854775807,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "service": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+      "type": "string"
+    },
+    "started_at": {
+      "maxLength": 20,
+      "minLength": 1,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z(?![\\s\\S])",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "validation"
+      ]
+    }
+  },
+  "required": [
+    "protocol",
+    "environment",
+    "service",
+    "scope",
+    "type",
+    "sequence",
+    "previous",
+    "issued_at",
+    "issuer",
+    "policy",
+    "candidate_id",
+    "attempt_id",
+    "lease_id",
+    "identities",
+    "carrier_length",
+    "native",
+    "release",
+    "input_sha256",
+    "output_sha256",
+    "started_at",
+    "ended_at",
+    "native_results",
+    "coverage",
+    "authorization",
+    "parent",
+    "resources"
+  ],
+  "type": "object"
+}

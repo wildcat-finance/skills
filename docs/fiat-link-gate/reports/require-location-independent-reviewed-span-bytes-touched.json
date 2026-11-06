@@ -1,0 +1,9 @@
+{
+  "candidate": "require-location-independent",
+  "command": "python3 resolve.py --candidate require-location-independent --criterion reviewed-span-bytes-touched",
+  "criterion": "reviewed-span-bytes-touched",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

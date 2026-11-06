@@ -1,0 +1,128 @@
+{
+  "schema": "issue-1363-library-facts/v1",
+  "role": "candidate",
+  "producer": "root",
+  "files": [
+    {
+      "path": "src/libraries/BoolUtils.sol",
+      "sha256": "ffabe82868c74c9b703bc0bf5a9d19688fa38d3d0e9ea4b131e890d3cc85e700",
+      "bytes": 409,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal Boolean assembly helpers; no storage or events."
+    },
+    {
+      "path": "src/libraries/Errors.sol",
+      "sha256": "d3214f5893791ca873b6ec11cda0b6a528519a11aefdca4303e8a33b30c34ded",
+      "bytes": 1936,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Free pure functions encode custom errors and revert; no storage or events."
+    },
+    {
+      "path": "src/libraries/FIFOQueue.sol",
+      "sha256": "e62ed8a2e27fe41914db3a1a34b3284ce6c95e48e5aef97e0ef88f4819407409",
+      "bytes": 4222,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Caller-owned FIFO storage: push increases nextIndex and writes data; shift and shiftN clear consumed entries and increase startIndex. All removals check available length. Candidate packs eight uint32 values per word and deletes fully consumed words."
+    },
+    {
+      "path": "src/libraries/FeeMath.sol",
+      "sha256": "c734c10bb9278c41d5aabb1c07894ec32476d0df8ba7034cf6cad212a4969be9",
+      "bytes": 7088,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal helpers mutate a memory MarketState snapshot. applyProtocolFee increments accruedProtocolFees; updateTimeDelinquentAndGetPenaltyTime increases or saturating-decreases timeDelinquent; updateScaleFactorAndFees advances scaleFactor and lastInterestAccruedTimestamp. Caller owns persistence. Candidate advances delinquency timer even at zero fee."
+    },
+    {
+      "path": "src/libraries/FunctionTypeCasts.sol",
+      "sha256": "8182f9c35c530bf0dd2f6fd42b5811e18ea1aa680e6594c580a0f70d9d8ab7e1",
+      "bytes": 1772,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal assembly casts function pointers to avoid duplicate memory allocation; no storage or events."
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "sha256": "ab19a984048079033065c65b46e94942e9082c504d95314acca292f8ea2845cc",
+      "bytes": 8250,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal ERC20 low-level transfer and query wrappers; no local storage. Token calls may emit external token events, which are outside this source-only linkage. Empty or true transfer returndata accepted; token-code existence delegated to caller."
+    },
+    {
+      "path": "src/libraries/LibStoredInitCode.sol",
+      "sha256": "2c2b08c39c0b104b71270cffe0137275fe0d7c45d507117cf6fad21a2089f5b3",
+      "bytes": 8364,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal CREATE/CREATE2 helpers deploy inert STOP-prefixed init code, then copy bytes from offset one. Deployment failure reverts. No local storage or direct event."
+    },
+    {
+      "path": "src/libraries/MarketErrors.sol",
+      "sha256": "ad3db97213348d40e18c3c6f93e8f5c6d35d0e07319aa5f6b0b78bcf6fd71bd0",
+      "bytes": 10652,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Free pure custom-error assembly encoders; no storage or events. Candidate adds wrapper registration, APR execution, borrower transfer, collision and recipient errors."
+    },
+    {
+      "path": "src/libraries/MarketEvents.sol",
+      "sha256": "5d82cdf3cb7495f64dc40b23059eba1c3930ecaaa71f8cfc562b6fb3cf3d8d21",
+      "bytes": 9920,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Free assembly log emitters use their caller address as event emitter. Candidate replaces five event topics, combines APR/reserve update, adds borrower transfers and drawn-amount update. DebtRepaid payer topic remains unchanged."
+    },
+    {
+      "path": "src/libraries/MarketState.sol",
+      "sha256": "f2732c6a02ce42628c835f90329c5f28c0c949af9350aafda91a7dfdbfebd610",
+      "bytes": 9447,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Pure/view calculations on cached state; no independent state writes. Deployed half-up scaleAmount; candidate floor scaleAmountDown, maxScaledSettleableAmount, normalized reserve partition and saturating withdrawable-fee subtraction. Pending batch expiry is strictly earlier than block.timestamp."
+    },
+    {
+      "path": "src/libraries/MathUtils.sol",
+      "sha256": "69939bff1d3a970b6ac428774b661a6dea7a93e913a50ef3a3f16e08786549f2",
+      "bytes": 6992,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Pure fixed-point arithmetic with half-up ray/bip operations, floor/ceil mulDiv and checked overflow/zero-denominator assembly. Candidate satAdd additionally detects uint256 wraparound before saturating."
+    },
+    {
+      "path": "src/libraries/SafeCastLib.sol",
+      "sha256": "9959eaf5447427af2064f66c294618b15fac06736aefce741192b089de4b2e65",
+      "bytes": 4072,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Pure narrowed-integer conversions compare round-trip value and revert on overflow; no storage/events."
+    },
+    {
+      "path": "src/libraries/StringQuery.sol",
+      "sha256": "7afab44235a265edf5dc3a7b2599b2ccda898bd2f4900b855ead023e4b55647d",
+      "bytes": 4094,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Static metadata calls accept string or bytes32. Candidate fixes bytes32 sizing and validates dynamic offset/length with bounded padding before copying. No state writes/events."
+    },
+    {
+      "path": "src/libraries/Withdrawal.sol",
+      "sha256": "b5112dacd3ef89d3028ca9f1979b7eb2767d2cbba496b1ca6a78c501bc7db1f3",
+      "bytes": 2555,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Withdrawal and account claim data structs; internal calculations subtract earlier pending scaled claims, unclaimed normalized claims and fees from available liquidity. No own persistent writes/events."
+    },
+    {
+      "path": "src/types/LenderStatus.sol",
+      "sha256": "beaac9ca3578a06cf0c3196fe1f3587571105b50d54c7ccd3c1b1fc5e4922797",
+      "bytes": 2852,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal helpers mutate caller memory credential status. setCredential assigns timestamp/provider/refresh; unsetCredential zeros timestamp/provider and refresh, preserving deposit block. Candidate lastProvider retained NatSpec conflicts with actual zero assignment; code controls."
+    },
+    {
+      "path": "src/types/RoleProvider.sol",
+      "sha256": "003eaf87444dcd6fa5a21b42fc0a33843f7dd277eabedb7fde5c0db8f134a19a",
+      "bytes": 6480,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Packed pure provider address, TTL, indexes and sentinels. calculateExpiry saturates timestamp plus TTL at uint32 max through MathUtils.satAdd. No own storage/events."
+    },
+    {
+      "path": "src/types/TransientBytesArray.sol",
+      "sha256": "e5047f33abcf468b296f59b6168fed945ce5ee54da3ef334c8d18b1d1ed7aaa9",
+      "bytes": 4294,
+      "disposition": "read-internal-support-no-runtime-entrypoint",
+      "facts": "Internal transient-byte encoding read/write/reset; long data at keccak(slot), short inline word. Data lasts one transaction. setEmpty can be reversed by another write; not a permanent one-shot invariant."
+    }
+  ],
+  "public_actions": [],
+  "boundary": "Fresh full source reads at each pinned checkout. Internal effects are attributed to caller context, never separate callable actions. No invariant is promoted without caller write-site review."
+}

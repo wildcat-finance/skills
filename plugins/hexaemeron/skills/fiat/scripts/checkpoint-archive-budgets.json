@@ -1,0 +1,46 @@
+{
+  "budgets": [
+    {
+      "name": "checkpoint.archive.export_wall_ms",
+      "unit": "ms",
+      "limit": 15000,
+      "variance": 0.25,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "checkpoint.archive.inspect_wall_ms",
+      "unit": "ms",
+      "limit": 10000,
+      "variance": 0.25,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "checkpoint.archive.restore_wall_ms",
+      "unit": "ms",
+      "limit": 20000,
+      "variance": 0.25,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "checkpoint.archive.bytes",
+      "unit": "bytes",
+      "limit": 201581002,
+      "variance": 0.25,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "checkpoint.archive.expanded_bytes",
+      "unit": "bytes",
+      "limit": 209715200,
+      "variance": 0.25,
+      "direction": "lower_is_better"
+    },
+    {
+      "name": "checkpoint.archive.export_peak_rss_bytes",
+      "unit": "bytes",
+      "limit": 1073741824,
+      "variance": 0.25,
+      "direction": "lower_is_better"
+    }
+  ]
+}

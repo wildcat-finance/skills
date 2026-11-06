@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>GroupName</key>
+	<string>_wildcatpublishers</string>
+	<key>HardResourceLimits</key>
+	<dict>
+		<key>CPU</key>
+		<integer>60</integer>
+		<key>Core</key>
+		<integer>0</integer>
+	</dict>
+	<key>Label</key>
+	<string>finance.wildcat.issue-publisher</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Library/WildcatIssuePublisher/python3</string>
+		<string>-I</string>
+		<string>/Library/WildcatIssuePublisher/publisher-service.py</string>
+	</array>
+	<key>Sockets</key>
+	<dict>
+		<key>Listener</key>
+		<dict>
+			<key>SockPathGroup</key>
+			<integer>499</integer>
+			<key>SockPathMode</key>
+			<integer>432</integer>
+			<key>SockPathName</key>
+			<string>/var/run/wildcat-github-issue-publisher.sock</string>
+			<key>SockPathOwner</key>
+			<integer>499</integer>
+		</dict>
+	</dict>
+	<key>SoftResourceLimits</key>
+	<dict>
+		<key>CPU</key>
+		<integer>60</integer>
+		<key>Core</key>
+		<integer>0</integer>
+	</dict>
+	<key>StandardErrorPath</key>
+	<string>/dev/null</string>
+	<key>Umask</key>
+	<integer>63</integer>
+	<key>UserName</key>
+	<string>_wildcatpublisher</string>
+	<key>WorkingDirectory</key>
+	<string>/Library/WildcatIssuePublisher</string>
+	<key>inetdCompatibility</key>
+	<dict>
+		<key>Wait</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

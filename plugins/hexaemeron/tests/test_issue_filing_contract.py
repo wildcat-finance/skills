@@ -5,8 +5,10 @@ and the second is asked again of the run's own pull request body before its
 delivery merges.
 
 1. `Fiat-Required` is 1 when the work needs a Fiat run and 0 when one
-   independent pull request will do. `init` reads it and refuses to create any
-   state, worktree or branch on a 0, so the run does not get a chance to start.
+   independent pull request will do. `init` reads it and, on a 0, prints one
+   directive naming the pull-request route and exits 0, creating no state,
+   worktree or branch. It refused before
+   `adr/route-a-filed-zero-as-an-answer`.
 2. The `carryover` block gives every outstanding, carried-forward or
    unaddressed item an issue of its own, a pointer at the issue that already
    carries it, or a stated reason it earns neither.
@@ -303,7 +305,7 @@ class ContractParserTests(unittest.TestCase):
                 faults = self.faults(body(decision=f"Fiat-Required: {value}"))
                 self.assertTrue(faults, value)
 
-    def test_invisible_whitespace_around_the_value_decides_nothing_by_itself(self):
+    def test_invisible_whitespace_around_value_decides_nothing(self):
         """A trailing space is not a third answer."""
         record = self.record(body(decision="Fiat-Required: 1   "))
         self.assertEqual(record["fiat_required"], 1)
@@ -405,7 +407,7 @@ class ContractParserTests(unittest.TestCase):
 
 
 class IssueQueueContractTests(unittest.TestCase):
-    """A Fiat filing uses the same four queues as every other filing."""
+    """A Fiat filing uses the same five queues as every other filing."""
 
     @classmethod
     def setUpClass(cls):
@@ -416,11 +418,16 @@ class IssueQueueContractTests(unittest.TestCase):
             title, list(labels), body() if text is None else text, "candidate"
         )
 
-    def test_all_four_title_and_label_shapes_pass(self):
+    def test_all_five_title_and_label_shapes_pass(self):
         cases = (
             ("fiat-next: Bind reused task names", ["held-job"], body()),
             ("fiat-13: Add a bounded report", ["wish"], body()),
             ("fiat-wish: Keep a later improvement", [], body()),
+            (
+                "kickoff/hermes-5: Freeze the selector set",
+                ["held-job", "kickoff"],
+                body(),
+            ),
             (
                 "framework-96: Check prose quantities",
                 ["observation"],
@@ -435,7 +442,12 @@ class IssueQueueContractTests(unittest.TestCase):
 
     def test_a_bare_or_malformed_title_is_refused(self):
         for title in ("A useful follow-up", "fiat-wish - no colon",
-                      "Fiat-wish: wrong case", "fiat-wish:no space"):
+                      "Fiat-wish: wrong case", "fiat-wish:no space",
+                      "kickoff/hermes-0: zero ordinal",
+                      "kickoff/Hermes-5: wrong case",
+                      "kickoff/hermes-next: not an ordinal",
+                      "kickoff/hermes-5:no space",
+                      "kickoff hermes-5: no slash"):
             with self.subTest(title=title):
                 _, faults = self.check(title)
                 self.assertTrue(any("title is not one of" in fault
@@ -447,6 +459,12 @@ class IssueQueueContractTests(unittest.TestCase):
             ("fiat-13: One", ["observation"], "wish"),
             ("fiat-wish: One", ["wish"], "no queue label"),
             ("framework-96: One", ["wish"], "observation"),
+            ("kickoff/hermes-5: One", ["held-job"],
+             "requires `held-job`, `kickoff`; its queue labels are `held-job`"),
+            ("kickoff/hermes-5: One", ["kickoff"],
+             "requires `held-job`, `kickoff`; its queue labels are `kickoff`"),
+            ("kickoff/hermes-5: One", ["held-job", "kickoff", "wish"],
+             "its queue labels are `held-job`, `kickoff`, `wish`"),
         )
         for title, labels, expected in cases:
             text = body()
@@ -461,6 +479,29 @@ class IssueQueueContractTests(unittest.TestCase):
             "fiat-wish: One", ["origin:ai", "only-pr-needed"]
         )
         self.assertEqual(faults, [], faults)
+
+    def test_kickoff_keeps_held_job_semantics_and_names_skill(self):
+        """`kickoff` sits beside `held-job`; it does not replace it.
+
+        The 59 filings of 2026-09-06 (#1350 to #1409) all carry both labels,
+        and the ordinal after the skill is the entry's position in the list
+        the maintainer filed from, so the record keeps the skill as owner and
+        the queue name keeps the ordinal visible.
+        """
+        record, faults = self.check(
+            "kickoff/hermes-5: Freeze the selector set",
+            ["fiat-run-needed", "held-job", "kickoff", "origin:ai"],
+        )
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(record["queue"], "kickoff/{skill}-N")
+        self.assertEqual(record["owner"], "hermes")
+
+    def test_kickoff_is_a_queue_label_for_every_other_queue_too(self):
+        """A `{skill}-next` carrying `kickoff` is two queues, not one."""
+        _, faults = self.check("fiat-next: One", ["held-job", "kickoff"])
+        self.assertTrue(any(
+            "requires `held-job`; its queue labels are `held-job`, `kickoff`"
+            in fault for fault in faults), faults)
 
     def test_framework_uses_the_exact_required_opening(self):
         _, faults = self.check(
@@ -495,7 +536,7 @@ class IssueCheckCommandTests(HexctlCase):
             "--title", CANDIDATE_TITLE, *extra, expect=expect,
         )
 
-    def test_a_complete_candidate_reports_its_decision_and_dispositions(self):
+    def test_complete_candidate_reports_decision_dispositions(self):
         self.candidate(body(rows=f"plugin-ci | filed | {FILED}\n"
                                  f"xray-drift | duplicate | {EXISTING}\n"))
         proc = self.check_candidate()
@@ -564,6 +605,20 @@ class IssueCheckCommandTests(HexctlCase):
         self.assertIn("queue: {skill}-wish", proc.stdout)
         self.assertIn("1 pointing at an existing issue", proc.stdout)
 
+    def test_a_filed_kickoff_issue_reads_clean_over_rest(self):
+        self.env["FAKE_GH_ISSUES"] = json.dumps({FILED: {
+            "title": "kickoff/hermes-5: Freeze the selector set",
+            "labels": [{"name": "fiat-run-needed"}, {"name": "held-job"},
+                       {"name": "kickoff"}, {"name": "origin:ai"}],
+            "body": body(),
+        }})
+        proc = self.run_ctl("issue-check", "--issue", FILED)
+        self.assertIn("wildcat-finance/skills#1041: clean", proc.stdout)
+        self.assertIn(
+            "queue: kickoff/{skill}-N (queue labels: held-job, kickoff)",
+            proc.stdout,
+        )
+
     def test_a_live_issue_rejects_candidate_title_or_labels(self):
         proc = self.run_ctl("issue-check", "--issue", ISSUE,
                             "--title", CANDIDATE_TITLE, expect=2)
@@ -594,14 +649,29 @@ class InitFilingGateTests(HexctlCase):
                            "reference": FILED}])
         self.assertEqual(len(contract["sha256"]), 64)
 
-    def test_a_zero_refuses_before_any_state_worktree_or_branch_exists(self):
+    def test_zero_routes_before_state_worktree_or_branch_exists(self):
+        """A filed `0` is answered, not refused, and still builds nothing.
+
+        This case asked the same question before
+        `adr/route-a-filed-zero-as-an-answer`, when the answer was exit 1 and a
+        refusal whose closing sentence named the edit that turned it off. What
+        changed is the outcome, not the question: a `0` still reaches no run.
+        """
         self.set_issue(body("Fiat-Required: 0"))
         proc = self.run_ctl("init", "--topic", "Not a run", "--task-issue",
-                            ISSUE, expect=1)
-        self.assertIn("Fiat-Required: 0", proc.stderr)
-        self.assertIn("one independent pull request", proc.stderr)
-        self.assertIn("No run state, worktree or branch was created",
-                      proc.stderr)
+                            ISSUE, expect=0)
+        directive = json.loads(proc.stdout)
+        self.assertEqual(directive["do"], "pull-request")
+        self.assertEqual(directive["fiat_required"], 0)
+        self.assertIn("one independent pull request", directive["route"])
+        self.assertEqual(
+            directive["task_issue_closure"]["required_before_merge"],
+            "Closes wildcat-finance/example#74",
+        )
+        self.assertEqual(proc.stderr, "")
+        for grant in ("If that decision was wrong", "Fiat-Required: 1",
+                      "override"):
+            self.assertNotIn(grant, proc.stdout)
         self.assertFalse(
             os.path.exists(os.path.join(self.dir, ".hexaemeron", "state.json")))
         self.assertFalse(
@@ -611,7 +681,7 @@ class InitFilingGateTests(HexctlCase):
             cwd=self.dir, capture_output=True, text=True, check=True).stdout
         self.assertNotIn("fiat/74-not-a-run", branches.split())
 
-    def test_an_issue_that_declares_nothing_refuses_and_says_what_to_add(self):
+    def test_issue_declaring_nothing_refuses_saying_what_to_add(self):
         self.set_issue("An issue filed before the contract existed.\n")
         proc = self.run_ctl("init", "--topic", "t", "--task-issue", ISSUE,
                             expect=2)
@@ -622,7 +692,7 @@ class InitFilingGateTests(HexctlCase):
         self.assertFalse(
             os.path.exists(os.path.join(self.dir, ".hexaemeron", "state.json")))
 
-    def test_a_malformed_triage_block_refuses_even_when_the_decision_is_one(self):
+    def test_malformed_triage_refuses_even_if_decision_is_one(self):
         self.set_issue(body(rows="an-id | duplicate | soon\n"))
         proc = self.run_ctl("init", "--topic", "t", "--task-issue", ISSUE,
                             expect=2)
@@ -638,7 +708,7 @@ class InitFilingGateTests(HexctlCase):
         self.assertEqual(contract["carryover"], [])
         self.assertIn("no task issue", contract["reason"])
 
-    def test_a_tracker_that_is_not_github_records_the_gap_rather_than_a_one(self):
+    def test_non_github_tracker_records_gap_rather_than_a_one(self):
         proc = self.run_ctl("init", "--topic", "Elsewhere", "--task-issue",
                             "https://x/issues/74")
         self.assertIn("is not a GitHub issue", proc.stderr)
@@ -695,7 +765,7 @@ class IntegrationTriageGateTests(HexctlCase):
                 "https://github.com/wildcat-finance/example/pull/2",
                 "--merge-commit", "f" * 40]
 
-    def test_the_integrate_directive_states_the_shape_before_it_is_written(self):
+    def test_integrate_directive_states_shape_before_written(self):
         """The prose phase should not have to guess it from a refusal."""
         self.reach_integrate()
         required = self.next_json()["carried_forward"]
@@ -735,7 +805,7 @@ class IntegrationTriageGateTests(HexctlCase):
         proc = self.run_ctl(*args, expect=2)
         self.assertIn("carries no `carryover` block", proc.stderr)
 
-    def test_a_disposed_section_integrates_and_the_receipt_keeps_the_rows(self):
+    def test_disposed_section_integrates_and_receipt_keeps_rows(self):
         args = self.reach_integrate()
         self.write_run_pr(
             rows=f"plugin-ci | filed | {FILED}\n"
@@ -770,7 +840,7 @@ class IntegrationTriageGateTests(HexctlCase):
         self.assertIn("does not satisfy the publication contract", proc.stderr)
         self.assertIn("title is not one of", proc.stderr)
 
-    def test_a_newly_filed_issue_without_fiat_required_stops_integration(self):
+    def test_new_issue_without_fiat_required_stops_integration(self):
         args = self.reach_integrate()
         self.write_run_pr(rows=f"plugin-ci | filed | {FILED}\n")
         self.env["FAKE_GH_ISSUES"] = json.dumps({FILED: {
@@ -782,7 +852,7 @@ class IntegrationTriageGateTests(HexctlCase):
         proc = self.run_ctl(*args, expect=2)
         self.assertIn("Fiat-Required", proc.stderr)
 
-    def test_a_newly_filed_issue_with_the_wrong_queue_label_stops_integration(self):
+    def test_new_issue_with_wrong_queue_label_stops_integration(self):
         args = self.reach_integrate()
         self.write_run_pr(rows=f"plugin-ci | filed | {FILED}\n")
         self.env["FAKE_GH_ISSUES"] = json.dumps({FILED: {
@@ -816,6 +886,192 @@ class IntegrationTriageGateTests(HexctlCase):
         self.assertEqual(receipt["filed_issue_contracts"], [])
         self.assertEqual([row["id"] for row in receipt["carryover"]], ["none"])
         self.run_ctl("verify")
+
+
+class FrameworkNumberUniquenessTests(HexctlCase):
+    """`framework-N` has to resolve to one issue.
+
+    ADR-009 left who assigns `N` to #370, which closed without answering it.
+    The number is how this repository cites these issues in prose and it is far
+    from the issue number, so two issues holding one number make the citation
+    ambiguous rather than merely untidy.
+    """
+
+    OPENING = (
+        "Protasis decides which skill or skills this observation upgrades. "
+        "The filer is the wrong party to guess."
+    )
+
+    def setUp(self):
+        super().setUp()
+        subprocess.run(
+            ["git", "remote", "add", "origin",
+             "https://github.com/wildcat-finance/skills.git"],
+            cwd=self.dir, check=True, capture_output=True,
+        )
+
+    def framework_body(self):
+        return (
+            f"{self.OPENING}\n\nAn observation.\n\nFiat-Required: 0\n\n"
+            "```carryover\nnone | none | nothing is carried\n```\n"
+        )
+
+    def holders(self, *rows):
+        self.env["FAKE_GH_FRAMEWORK_HOLDERS"] = json.dumps(list(rows))
+
+    def candidate_check(self, title, expect=0):
+        self.write("candidate.md", self.framework_body())
+        return self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", title, "--label", "observation", expect=expect,
+        )
+
+    def test_a_free_number_is_clean(self):
+        self.holders()
+        proc = self.candidate_check("framework-161: a number nobody holds")
+        self.assertIn("candidate.md: clean", proc.stdout)
+        self.assertIn("queue: framework-N", proc.stdout)
+
+    def test_a_held_number_refuses_and_names_the_holder(self):
+        self.holders({"number": 1437, "state": "open",
+                      "title": "framework-108: the first claim"})
+        proc = self.candidate_check(
+            "framework-108: a second claim on one number", expect=1,
+        )
+        self.assertIn("claims framework-108", proc.stderr)
+        self.assertIn("#1437 (open) already holds", proc.stderr)
+        self.assertIn("1 finding(s)", proc.stderr)
+
+    def test_two_holders_are_both_named_and_agree_in_number(self):
+        self.holders(
+            {"number": 1437, "state": "open", "title": "framework-108: one"},
+            {"number": 1531, "state": "open", "title": "framework-108: two"},
+        )
+        proc = self.candidate_check("framework-108: a third claim", expect=1)
+        self.assertIn("#1437 (open), #1531 (open) already hold", proc.stderr)
+
+    def test_a_closed_holder_still_holds_the_number(self):
+        """Closing an issue does not free the shorthand the tree cites."""
+        self.holders({"number": 962, "state": "closed",
+                      "title": "framework-65: closed but cited"})
+        proc = self.candidate_check("framework-65: reusing a closed number",
+                                    expect=1)
+        self.assertIn("#962 (closed) already holds", proc.stderr)
+
+    def test_a_longer_number_sharing_a_prefix_is_not_a_duplicate(self):
+        """`in:title` tokenises, so the search returns neighbours; the exact
+        parsed number decides, not the substring."""
+        self.holders(
+            {"number": 900, "state": "open", "title": "framework-11: eleven"},
+            {"number": 901, "state": "open", "title": "framework-1100: many"},
+        )
+        proc = self.candidate_check("framework-110: one hundred and ten")
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_an_em_dash_title_still_holds_its_number(self):
+        """#1558: eleven closed issues hold numbers in the older separator."""
+        self.holders({"number": 370, "state": "closed",
+                      "title": "framework-1 \u2014 give the issues a run spins off a title convention"})
+        proc = self.candidate_check("framework-1: a second claim on one", expect=1)
+        self.assertIn("claims framework-1", proc.stderr)
+        self.assertIn("#370 (closed) already holds", proc.stderr)
+
+    def test_em_dash_neighbour_sharing_prefix_is_not_duplicate(self):
+        self.holders({"number": 510, "state": "closed",
+                      "title": "framework-11 \u2014 eleven, in the older form"})
+        proc = self.candidate_check("framework-1: one, not eleven")
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_a_new_filing_in_the_em_dash_form_is_still_refused(self):
+        """Reading the older form as held does not admit it for a new title."""
+        self.holders()
+        self.write("candidate.md", self.framework_body())
+        proc = self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", "framework-161 \u2014 the older separator",
+            "--label", "observation", expect=1,
+        )
+        self.assertIn("title is not one of", proc.stderr)
+
+    def test_a_filed_issue_is_not_its_own_duplicate(self):
+        url = "https://github.com/wildcat-finance/skills/issues/1476"
+        self.env["FAKE_GH_ISSUES"] = json.dumps({url: {
+            "title": "framework-151: nothing allocates the number",
+            "labels": [{"name": "observation"}],
+            "body": self.framework_body(),
+        }})
+        self.holders({"number": 1476, "state": "open",
+                      "title": "framework-151: nothing allocates the number"})
+        proc = self.run_ctl("issue-check", "--issue", url)
+        self.assertIn("#1476: clean", proc.stdout)
+
+    def test_a_filed_issue_colliding_with_another_refuses(self):
+        url = "https://github.com/wildcat-finance/skills/issues/1531"
+        self.env["FAKE_GH_ISSUES"] = json.dumps({url: {
+            "title": "framework-108: the second claim",
+            "labels": [{"name": "observation"}],
+            "body": self.framework_body(),
+        }})
+        self.holders(
+            {"number": 1437, "state": "open", "title": "framework-108: first"},
+            {"number": 1531, "state": "open", "title": "framework-108: second"},
+        )
+        proc = self.run_ctl("issue-check", "--issue", url, expect=1)
+        # The issue under check names itself as the subject of the refusal; the
+        # holder list after `which` is where its own number must not appear.
+        held = proc.stderr.split("which ", 1)[1].split(" already hold", 1)[0]
+        self.assertEqual("#1437 (open)", held)
+
+    def test_a_skill_queue_title_asks_no_uniqueness_question(self):
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        self.write("candidate.md", body("Fiat-Required: 0"))
+        proc = self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", CANDIDATE_TITLE,
+        )
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_another_repository_asks_no_uniqueness_question(self):
+        subprocess.run(
+            ["git", "remote", "set-url", "origin",
+             "https://github.com/wildcat-finance/example.git"],
+            cwd=self.dir, check=True, capture_output=True,
+        )
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        self.write("candidate.md", self.framework_body())
+        proc = self.run_ctl("issue-check", "--body", "candidate.md")
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_a_shape_fault_is_reported_before_any_uniqueness_read(self):
+        """An ill-formed title carries no number to be unique about."""
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        self.write("candidate.md", "Neither answer.\n")
+        proc = self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", "framework-0: a number the shape rule rejects",
+            "--label", "observation", expect=1,
+        )
+        self.assertIn("title is not one of", proc.stderr)
+        self.assertNotIn("already holds", proc.stderr)
+
+    def test_an_incomplete_search_refuses_rather_than_reading_clean(self):
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        proc = self.candidate_check("framework-161: a number nobody holds",
+                                    expect=2)
+        self.assertIn("incomplete search result", proc.stderr)
+
+    def test_a_malformed_search_payload_refuses(self):
+        for mode, detail in (
+            ("search-items-not-array", "items that are not an array"),
+            ("search-row-not-object", "not one object"),
+            ("search-row-untyped", "without a title and number"),
+        ):
+            with self.subTest(mode=mode):
+                self.env["FAKE_GH_MODE"] = mode
+                proc = self.candidate_check(
+                    "framework-161: a number nobody holds", expect=2,
+                )
+                self.assertIn(detail, proc.stderr)
 
 
 if __name__ == "__main__":

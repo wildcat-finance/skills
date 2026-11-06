@@ -1,0 +1,9 @@
+{
+  "candidate": "declared-wrapper-subjects",
+  "command": "python3 .hexaemeron/design/conformance.py wrapper-refusals-fire --candidate declared-wrapper-subjects",
+  "criterion": "wrapper-refusals-fire",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

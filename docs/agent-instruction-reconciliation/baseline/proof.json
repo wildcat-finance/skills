@@ -1,0 +1,36 @@
+[
+  {
+    "id": "corpus-check",
+    "argv": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "scripts/agent_instruction.py",
+      "check",
+      "--root",
+      ".",
+      "--manifest",
+      "tests/fixtures/agent-instruction-v1/manifest.json"
+    ],
+    "exit": 0,
+    "seconds": 0.2553810409735888,
+    "head": "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
+    "tree": "5f48caffde9c41846e13dfdda5c5f10165d3e274",
+    "stdout_sha256": "da111897dbb03969fef912819ce62b7911d805df3b7bd7eb2eb48f605afe77a1",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "id": "focused-tests",
+    "argv": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "-m",
+      "unittest",
+      "tests.test_agent_instruction",
+      "tests.test_agent_instruction_corpus"
+    ],
+    "exit": 0,
+    "seconds": 47.03753620805219,
+    "head": "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
+    "tree": "5f48caffde9c41846e13dfdda5c5f10165d3e274",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "605768747f4f6342035966627646f706a402b6787f92454e745780c35feacef5"
+  }
+]

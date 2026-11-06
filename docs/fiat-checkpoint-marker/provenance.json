@@ -1,0 +1,438 @@
+{
+  "baseline_helpers": [
+    {
+      "bytes": 1247580,
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "sha256": "7633f59421ea1e648e2d1f86b5a268caf60fea7b177525f59b4c70d3d800b35a"
+    },
+    {
+      "bytes": 224156,
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+      "sha256": "85edbbecc1cb830ee1ccec36bd0ef7f13f31f4a2b7b09b2ac618a593b2e2ebd2"
+    },
+    {
+      "bytes": 262133,
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "sha256": "149ad2344aa3706c9109eb3e569cd085909c57802d41d9f5e51cbb161a53cb33"
+    },
+    {
+      "bytes": 1508,
+      "path": "plugins/hexaemeron/tests/fixture_tools.py",
+      "sha256": "331eaca59a9077ccf2cd99cf70f1a19cdb25ea40b4e77564e059c00fe5a2b96e"
+    }
+  ],
+  "boundary_probes": 10,
+  "copies": [
+    {
+      "bytes": 28081,
+      "copy": "docs/fiat-checkpoint-marker-study.md",
+      "sha256": "ac26a0b6a72ddf60fb2b196464526af478c1832d37d2d199d4eae9d26332c86f",
+      "source": ".hexaemeron/study.md"
+    },
+    {
+      "bytes": 17806,
+      "copy": "docs/fiat-checkpoint-marker-runbook.md",
+      "sha256": "8b22576f49bf4f49c5fc51508353362af88eb0c5b40b5b1976a09583cf290082",
+      "source": ".hexaemeron/runbook.md"
+    },
+    {
+      "bytes": 13251,
+      "copy": "docs/fiat-checkpoint-marker-measure-design.py",
+      "sha256": "9210186811edc6f965b48ae166f96a812016eb1cd5350ee5d0e202085bc0da4d",
+      "source": ".hexaemeron/measure_design.py"
+    },
+    {
+      "bytes": 13364,
+      "copy": "docs/fiat-checkpoint-marker/design-evidence.json",
+      "sha256": "6df3280312489ce0c45a3281c776a782d59f3ec3bdb9324b11e009d9e6f4e6a8",
+      "source": ".hexaemeron/design-evidence.json"
+    },
+    {
+      "bytes": 338,
+      "copy": "docs/fiat-checkpoint-marker/reports/audit-synopsis-currency.json",
+      "sha256": "942ad4a607f109bb813d8e8b41194d995d6b8e41a321017324f967ce855e36f1",
+      "source": ".hexaemeron/reports/audit-synopsis-currency.json"
+    },
+    {
+      "bytes": 0,
+      "copy": "docs/fiat-checkpoint-marker/reports/audit-synopsis-currency.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/reports/audit-synopsis-currency.stderr"
+    },
+    {
+      "bytes": 34812,
+      "copy": "docs/fiat-checkpoint-marker/reports/audit-synopsis-currency.stdout",
+      "sha256": "9ebaee2a01eb97a57815d5507d5e2088784696632e9567ac8bdbf621d3a317f5",
+      "source": ".hexaemeron/reports/audit-synopsis-currency.stdout"
+    },
+    {
+      "bytes": 2321,
+      "copy": "docs/fiat-checkpoint-marker/reports/boundary-observations.json",
+      "sha256": "f30e3a147cbbfddac82ae623a7a20f33ffd371447ad080b00084a487ceeb9b0d",
+      "source": ".hexaemeron/reports/boundary-observations.json"
+    },
+    {
+      "bytes": 343,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-benign-acceptance.json",
+      "sha256": "40fe577ae05bd009725b78f50211f36bb5e58a6aa941b74d032799e9dbb83015",
+      "source": ".hexaemeron/reports/bounded-material-benign-acceptance.json"
+    },
+    {
+      "bytes": 493,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-benign-acceptance.observation.json",
+      "sha256": "fe4dead23ff0098acfa4cfb04b8f59d01b7644bb3234ffec436abc80872ec618",
+      "source": ".hexaemeron/reports/bounded-material-benign-acceptance.observation.json"
+    },
+    {
+      "bytes": 351,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-input-preservation.json",
+      "sha256": "c7c2e67793d21949fb7a56bfabc28c3a9a52f988675ff3d80552617422690ef5",
+      "source": ".hexaemeron/reports/bounded-material-input-preservation.json"
+    },
+    {
+      "bytes": 586,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-input-preservation.observation.json",
+      "sha256": "cec1e2c90a7a35bdee9150b8c4748ec3f1e65a2d871ce67b7bf25d7fe1300d57",
+      "source": ".hexaemeron/reports/bounded-material-input-preservation.observation.json"
+    },
+    {
+      "bytes": 343,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-material-refusals.json",
+      "sha256": "ea10c40117b9724e789ce0730d61f66e782730366e3b8c943a6cd5587f3cdd2d",
+      "source": ".hexaemeron/reports/bounded-material-material-refusals.json"
+    },
+    {
+      "bytes": 493,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-material-refusals.observation.json",
+      "sha256": "8388679dcfeb6f33cd9689b04960f2867674a7678203c610390aa9f97cf982ef",
+      "source": ".hexaemeron/reports/bounded-material-material-refusals.observation.json"
+    },
+    {
+      "bytes": 342,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-peak-allocation.json",
+      "sha256": "85f6c66702d443df299f6c04a16ed8b5a52fa7b0ebea3650c2d35e7ff249bb7d",
+      "source": ".hexaemeron/reports/bounded-material-peak-allocation.json"
+    },
+    {
+      "bytes": 618,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-peak-allocation.observation.json",
+      "sha256": "ffd59611d36da3345b4597f24303876365241b5c7d4d1753cbd279ce66b7e5f9",
+      "source": ".hexaemeron/reports/bounded-material-peak-allocation.observation.json"
+    },
+    {
+      "bytes": 328,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-scan-time.json",
+      "sha256": "b3a04531c8e7f96b6f8ebcd30b9873516fc0f6c50eb5bf6b9f219cfde711b68d",
+      "source": ".hexaemeron/reports/bounded-material-scan-time.json"
+    },
+    {
+      "bytes": 714,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-scan-time.observation.json",
+      "sha256": "88f13ac45e9b94a8c703a8806967c1f27f31e18fcc1eaed58be283360fb23fee",
+      "source": ".hexaemeron/reports/bounded-material-scan-time.observation.json"
+    },
+    {
+      "bytes": 333,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-token-parity.json",
+      "sha256": "a93861001323bdd787ac66594323845cd8c156c4e8482074c9db0bc5741f65b2",
+      "source": ".hexaemeron/reports/bounded-material-token-parity.json"
+    },
+    {
+      "bytes": 489,
+      "copy": "docs/fiat-checkpoint-marker/reports/bounded-material-token-parity.observation.json",
+      "sha256": "2aa773176842b34d3938fc95082a304cb6c2ba869af6e6dd32a43f23e9becc4d",
+      "source": ".hexaemeron/reports/bounded-material-token-parity.observation.json"
+    },
+    {
+      "bytes": 343,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-benign-acceptance.json",
+      "sha256": "b760cd3fa954f126ef9b1bae2975ded03fd83aa9ecf282f46f3346f886ebedcb",
+      "source": ".hexaemeron/reports/complete-decoder-benign-acceptance.json"
+    },
+    {
+      "bytes": 493,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-benign-acceptance.observation.json",
+      "sha256": "ce8c96952961c11103af399cb7293b77da93b023135e3dd0d53eecc1bf99b572",
+      "source": ".hexaemeron/reports/complete-decoder-benign-acceptance.observation.json"
+    },
+    {
+      "bytes": 351,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-input-preservation.json",
+      "sha256": "cf1da55b7f0f229438ca296bfc3c3913d7d30c4b839d626d2ef5fefb98a949e5",
+      "source": ".hexaemeron/reports/complete-decoder-input-preservation.json"
+    },
+    {
+      "bytes": 586,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-input-preservation.observation.json",
+      "sha256": "9e6d7b4340539714b385f80c3691244b6e7f60d5794fb3a57a90fdb87f2452ec",
+      "source": ".hexaemeron/reports/complete-decoder-input-preservation.observation.json"
+    },
+    {
+      "bytes": 345,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-material-refusals.json",
+      "sha256": "99fdb0e9dbbbff0900b402060a26baf8ecc4f141142db6d6d4cbcb43abd169c5",
+      "source": ".hexaemeron/reports/complete-decoder-material-refusals.json"
+    },
+    {
+      "bytes": 13504,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-material-refusals.observation.json",
+      "sha256": "47ee1ca53bfe8914d171e2d2824f9752045068b48642f551dfa4dda70611c6a9",
+      "source": ".hexaemeron/reports/complete-decoder-material-refusals.observation.json"
+    },
+    {
+      "bytes": 342,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-peak-allocation.json",
+      "sha256": "186b1ba077484d7d9e1de4f3377ede1481e085dd7c95e0068ae2fcde8838bf95",
+      "source": ".hexaemeron/reports/complete-decoder-peak-allocation.json"
+    },
+    {
+      "bytes": 618,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-peak-allocation.observation.json",
+      "sha256": "279b00fe3c43c9a9754d331c0e33c27d0430ddfa1a6486dd4a6e755479219d47",
+      "source": ".hexaemeron/reports/complete-decoder-peak-allocation.observation.json"
+    },
+    {
+      "bytes": 327,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-scan-time.json",
+      "sha256": "9bd5e1a1063e3040337e085b5cf730d068a6c2fff9e5fadaabdf8808798f4aa3",
+      "source": ".hexaemeron/reports/complete-decoder-scan-time.json"
+    },
+    {
+      "bytes": 709,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-scan-time.observation.json",
+      "sha256": "1b02a8b648c49d5900d4637dcb26ffbc59282054172f8fd25e747ee7e3940e78",
+      "source": ".hexaemeron/reports/complete-decoder-scan-time.observation.json"
+    },
+    {
+      "bytes": 333,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-token-parity.json",
+      "sha256": "6efd73b10b035e4ab2b63346b6589c5c285b05ee2cfcd4e427e61cc7b25a5cbb",
+      "source": ".hexaemeron/reports/complete-decoder-token-parity.json"
+    },
+    {
+      "bytes": 489,
+      "copy": "docs/fiat-checkpoint-marker/reports/complete-decoder-token-parity.observation.json",
+      "sha256": "0f864e3ec1d76fd504f00fba18c736eb54d8faaba4a1d5a52a7a7773848ec4d7",
+      "source": ".hexaemeron/reports/complete-decoder-token-parity.observation.json"
+    },
+    {
+      "bytes": 345,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-benign-acceptance.json",
+      "sha256": "354fe088f6d77af54904239d4b38db6c12d2ea0f64b07c04daddde5e75af33c1",
+      "source": ".hexaemeron/reports/footer-proximity-benign-acceptance.json"
+    },
+    {
+      "bytes": 7020,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-benign-acceptance.observation.json",
+      "sha256": "d0cd20be53ea955fe3e5d6ae248156c2b98574c3b20ba729d6f105e66641b936",
+      "source": ".hexaemeron/reports/footer-proximity-benign-acceptance.observation.json"
+    },
+    {
+      "bytes": 351,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-input-preservation.json",
+      "sha256": "48c9bab71a2f9ef9b70775fb6bb4e7b21cff203034eea7804477df90c3176561",
+      "source": ".hexaemeron/reports/footer-proximity-input-preservation.json"
+    },
+    {
+      "bytes": 586,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-input-preservation.observation.json",
+      "sha256": "11286fa765a2d0ebdb7f8e6bc5caeef5e68f1b7d120d2dd0f444dbe980519cef",
+      "source": ".hexaemeron/reports/footer-proximity-input-preservation.observation.json"
+    },
+    {
+      "bytes": 345,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-material-refusals.json",
+      "sha256": "ad655d0b580da2b968113be4476854067de61d3c7e6823c3b54342d5137c5a81",
+      "source": ".hexaemeron/reports/footer-proximity-material-refusals.json"
+    },
+    {
+      "bytes": 7182,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-material-refusals.observation.json",
+      "sha256": "37c77de892e89089a2248851ffa24a2dd9d2525dc7128c98bf695dcbfc8000ba",
+      "source": ".hexaemeron/reports/footer-proximity-material-refusals.observation.json"
+    },
+    {
+      "bytes": 342,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-peak-allocation.json",
+      "sha256": "d1c7507480ef0261d4b3b29ca8657db709b704d6d2bbba56e61f3be46b3d6f1e",
+      "source": ".hexaemeron/reports/footer-proximity-peak-allocation.json"
+    },
+    {
+      "bytes": 618,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-peak-allocation.observation.json",
+      "sha256": "08871ed977c0666cbec34837a9663f3bd4ca8335c962f479d106125d0c2dda73",
+      "source": ".hexaemeron/reports/footer-proximity-peak-allocation.observation.json"
+    },
+    {
+      "bytes": 327,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-scan-time.json",
+      "sha256": "57d39198cabc45e05917a5dd20767530d5ad4d2cdd7d987ecd2983487c247765",
+      "source": ".hexaemeron/reports/footer-proximity-scan-time.json"
+    },
+    {
+      "bytes": 709,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-scan-time.observation.json",
+      "sha256": "efbbe3689bc162b945b0d4aeb03825255d29ee03e4100de2a193f4828b34cdaa",
+      "source": ".hexaemeron/reports/footer-proximity-scan-time.observation.json"
+    },
+    {
+      "bytes": 333,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-token-parity.json",
+      "sha256": "13a6f0e20d22c958b6cac3c3bb5c071c39e724c36338f01b89f2893ae16b726a",
+      "source": ".hexaemeron/reports/footer-proximity-token-parity.json"
+    },
+    {
+      "bytes": 489,
+      "copy": "docs/fiat-checkpoint-marker/reports/footer-proximity-token-parity.observation.json",
+      "sha256": "202c8aeb0baad11a38f1a9e4064e0b5662d1b8f9d154af198f72f1f605edb594",
+      "source": ".hexaemeron/reports/footer-proximity-token-parity.observation.json"
+    },
+    {
+      "bytes": 864,
+      "copy": "docs/fiat-checkpoint-marker/reports/measurement-environment.json",
+      "sha256": "093d0d4217427bbe0965b7d616a7554ac68bdeba63175873393269521fb94961",
+      "source": ".hexaemeron/reports/measurement-environment.json"
+    },
+    {
+      "bytes": 2584,
+      "copy": "docs/fiat-checkpoint-marker/reports/runbook-amendment-1-prose.json",
+      "sha256": "7f8f7a3a7bf93442c7add29f0a4fd2918594294b45afab63e17f52e7e4d60bd6",
+      "source": ".hexaemeron/reports/runbook-amendment-1-prose.json"
+    },
+    {
+      "bytes": 2798,
+      "copy": "docs/fiat-checkpoint-marker/reports/runbook-amendment-2-prose.json",
+      "sha256": "70d92746793f9f91e2c9432a75b28f58bebf0db00421b83c2bc7de96e31a5e36",
+      "source": ".hexaemeron/reports/runbook-amendment-2-prose.json"
+    },
+    {
+      "bytes": 717,
+      "copy": "docs/fiat-checkpoint-marker/reports/runbook-checks-attempt-1.json",
+      "sha256": "7a31c2efd3b80f271d35b90c67ccafcb40f9e12be81bb82f05fa112b8f4ce4cd",
+      "source": ".hexaemeron/reports/runbook-checks-attempt-1.json"
+    },
+    {
+      "bytes": 1500,
+      "copy": "docs/fiat-checkpoint-marker/reports/runbook-checks.json",
+      "sha256": "5bc5f52fadb90271fe535beff889fe645536113b73feb3480d16113edef4c395",
+      "source": ".hexaemeron/reports/runbook-checks.json"
+    },
+    {
+      "bytes": 2746,
+      "copy": "docs/fiat-checkpoint-marker/reports/runbook-prose-gates.json",
+      "sha256": "e09d449f6d9c8a81175bc769c3c4bf724d51f3c3456773d8ca51cd8ff55e4072",
+      "source": ".hexaemeron/reports/runbook-prose-gates.json"
+    },
+    {
+      "bytes": 290,
+      "copy": "docs/fiat-checkpoint-marker/reports/study-capsule-scan.json",
+      "sha256": "2d29227c44f1f8ced9b8df53d7d9f7cf2adc2f9803ec002df415eb6813c562ad",
+      "source": ".hexaemeron/reports/study-capsule-scan.json"
+    },
+    {
+      "bytes": 1887,
+      "copy": "docs/fiat-checkpoint-marker/reports/study-checks.json",
+      "sha256": "8876e6b6750106eca03d06cde4ef3af688dd3afe623455b9234e1e1e9eaf86a1",
+      "source": ".hexaemeron/reports/study-checks.json"
+    },
+    {
+      "bytes": 11873,
+      "copy": "docs/fiat-checkpoint-marker/reports/study-prose-gates.json",
+      "sha256": "3461d64ce5a2cb26c2d8c0471095155e789dfb623351f402e45955bde1acd13b",
+      "source": ".hexaemeron/reports/study-prose-gates.json"
+    },
+    {
+      "bytes": 343,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-benign-acceptance.json",
+      "sha256": "14ab8797cde02db6761fe36b736389cb3ae4b22cdd3a2ca534299d6b9852d3e7",
+      "source": ".hexaemeron/reports/whole-lines-only-benign-acceptance.json"
+    },
+    {
+      "bytes": 493,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-benign-acceptance.observation.json",
+      "sha256": "ef78831aad476e9020ed685d4e4eae5e7e0f1bfec91bb9541d9d6d018d96c15f",
+      "source": ".hexaemeron/reports/whole-lines-only-benign-acceptance.observation.json"
+    },
+    {
+      "bytes": 351,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-input-preservation.json",
+      "sha256": "63371ecc23a2f11f3f709b9eec363d3cc52ea5466d2f351c3f7c7d04fc3f6e81",
+      "source": ".hexaemeron/reports/whole-lines-only-input-preservation.json"
+    },
+    {
+      "bytes": 586,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-input-preservation.observation.json",
+      "sha256": "ff7022ed742fff7f66037f78f8d6ae30dbb77b915c90efc868555e11bc932859",
+      "source": ".hexaemeron/reports/whole-lines-only-input-preservation.observation.json"
+    },
+    {
+      "bytes": 345,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-material-refusals.json",
+      "sha256": "6355ab9b678877f4e10f9cf12777fdf0a10ca08f63283ac426e6b8e3d9cca116",
+      "source": ".hexaemeron/reports/whole-lines-only-material-refusals.json"
+    },
+    {
+      "bytes": 13570,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-material-refusals.observation.json",
+      "sha256": "f17aabfef0b87d2a0f1409b185014179fa0ef17bc9105199f63ea26f1b32bd74",
+      "source": ".hexaemeron/reports/whole-lines-only-material-refusals.observation.json"
+    },
+    {
+      "bytes": 342,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-peak-allocation.json",
+      "sha256": "ccac4dffc7784feb160a7db2a4107fda7c104d549113d4538b212d0f3bd0009a",
+      "source": ".hexaemeron/reports/whole-lines-only-peak-allocation.json"
+    },
+    {
+      "bytes": 618,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-peak-allocation.observation.json",
+      "sha256": "56cdbdd8d319615fa20cca656747a610d02d6742999d8232d18f1dee3b706cd8",
+      "source": ".hexaemeron/reports/whole-lines-only-peak-allocation.observation.json"
+    },
+    {
+      "bytes": 327,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-scan-time.json",
+      "sha256": "9d39cc1ad5492e7289529cc2ae87e2c28ee707d6ae23267f58f835fed0111408",
+      "source": ".hexaemeron/reports/whole-lines-only-scan-time.json"
+    },
+    {
+      "bytes": 707,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-scan-time.observation.json",
+      "sha256": "8e2285538f8022809de70a4891a0034525469b9b9100666693fa1aa0a75b7681",
+      "source": ".hexaemeron/reports/whole-lines-only-scan-time.observation.json"
+    },
+    {
+      "bytes": 333,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-token-parity.json",
+      "sha256": "34356a88b3396875b30a6eb8d9b2de5580718e05bb755324708c92befed39630",
+      "source": ".hexaemeron/reports/whole-lines-only-token-parity.json"
+    },
+    {
+      "bytes": 489,
+      "copy": "docs/fiat-checkpoint-marker/reports/whole-lines-only-token-parity.observation.json",
+      "sha256": "66858c85d4f4ce21e694bfbb352508b5521b9db571e999a2281382979fdb5723",
+      "source": ".hexaemeron/reports/whole-lines-only-token-parity.observation.json"
+    }
+  ],
+  "historical_prefix": {
+    "bytes": 76382,
+    "path": "docs/fiat-checkpoint-archive-study.md",
+    "sha256": "ba3475582a61e1eacb48a22edcc632046e9be894a6a2b4c08395efddcee2e2cc"
+  },
+  "pending_conformance_cells": 8,
+  "public_sources": [
+    {
+      "bytes": 376713,
+      "path": "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.md",
+      "sha256": "bce008b201071b1ded3e656e24c0bfabb67923932a2cb3a994cb260172d6709c"
+    },
+    {
+      "bytes": 378244,
+      "path": "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.synopsis.md",
+      "sha256": "86bab9bce5db6b37a67527336bbfb1f65036a4f3ff504e50914be416be3934b2"
+    }
+  ],
+  "schema": "fiat-1755-preserved-evidence/v1",
+  "selection_cells": 24,
+  "source_commit": "e2307ed5966e18727434b3e49bec89db736f7b17"
+}

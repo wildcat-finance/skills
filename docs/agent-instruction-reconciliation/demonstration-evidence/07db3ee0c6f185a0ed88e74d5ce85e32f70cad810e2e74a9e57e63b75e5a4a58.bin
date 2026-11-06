@@ -1,0 +1,18 @@
+from pathlib import Path
+import contextlib,io,json,sys
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+OUT=ROOT/'.hexaemeron/demo-build'
+row=next(row for row in json.loads((OUT/'cases.json').read_bytes())['cases'] if row['id']=='promise-machine-router-selection-before')
+root=Path(row['root']);digest=row['prepare']['plan_sha256']
+checked=a.apply(root,stage='tmp/stage',plan_sha256=digest,check_only=True)
+(OUT/'law-full-staged-check.json').write_bytes(a.encoded(checked))
+events=io.StringIO()
+with contextlib.redirect_stdout(events):
+ applied=a.apply(root,stage='tmp/stage',plan_sha256=digest)
+(OUT/'law-apply.events.jsonl').write_text(events.getvalue())
+(OUT/'law-apply.json').write_bytes(a.encoded(applied))
+records=a.check_corpus(root)
+(OUT/'law-final-check.json').write_bytes(a.encoded({'records':records}))
+print(json.dumps({'outcome':applied['outcome'],'targets':len(applied['targets']),'journal_sha256':applied['journal_sha256'],'final':records[-1]}))

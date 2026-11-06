@@ -1,0 +1,3188 @@
+{
+  "blobs": {
+    "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09": {
+      "MaximumLoanTerm()": "f040ed98",
+      "addRoleProvider(address,uint32)": "ea5b13bd",
+      "blockFromDeposits(address)": "064ed53b",
+      "blockFromDeposits(address[])": "6d1587a6",
+      "borrower()": "7df1f1b9",
+      "config()": "79502c55",
+      "createRoleProvider(address,uint32,bytes)": "36c89214",
+      "factory()": "c45a0155",
+      "getHookedMarket(address)": "2ccf4667",
+      "getHookedMarkets(address[])": "c888fb15",
+      "getLenderStatus(address)": "22a4a19f",
+      "getParameterConstraints()": "a11ef067",
+      "getPreviousLenderStatus(address)": "b037096d",
+      "getPullProviders()": "8f8ef419",
+      "getPushProviders()": "87927767",
+      "getRoleProvider(address)": "bfd269be",
+      "grantRole(address,uint32)": "6b2b369b",
+      "grantRoles(address[],uint32[])": "9d2a76fe",
+      "isKnownLenderOnMarket(address,address)": "a9ff2dbf",
+      "name()": "06fdde03",
+      "onBorrow(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "b1cfda0d",
+      "onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "9ecc64e6",
+      "onCreateMarket(address,address,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes)": "28fd0307",
+      "onDeposit(address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "5aeb713f",
+      "onExecuteWithdrawal(address,uint128,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "2970403d",
+      "onNukeFromOrbit(address,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "8b3ce9b3",
+      "onQueueWithdrawal(address,uint32,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "3521cccc",
+      "onRepay(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "83d9e1eb",
+      "onSetAnnualInterestAndReserveRatioBips(uint16,uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "cc452642",
+      "onSetMaxTotalSupply(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "849da129",
+      "onSetProtocolFeeBips(uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "03473d8d",
+      "onTransfer(address,address,address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "a018f90e",
+      "removeRoleProvider(address)": "8adfe0f8",
+      "revokeRole(address)": "80e52e3f",
+      "revokeRoles(address[])": "e5ef8405",
+      "setFixedTermEndTime(address,uint32)": "02420e7f",
+      "setMinimumDeposit(address,uint128)": "1c4b3694",
+      "setName(string)": "c47f0027",
+      "temporaryExcessReserveRatio(address)": "feb368e2",
+      "unblockFromDeposits(address)": "aa948689",
+      "version()": "54fd4d50"
+    },
+    "2a3ef331c3d7f62cf8de326eb54d9e654db28363159920e5bcd8f875b8ea6b97": {
+      "storage": [
+        {
+          "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "label": "collateralContractsByMarket",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+        },
+        {
+          "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "label": "_approvedExecutors",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_struct(AddressSet)_storage"
+        },
+        {
+          "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "label": "_approvedExchanges",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_struct(AddressSet)_storage"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_array(t_address)dyn_storage": {
+          "base": "t_address",
+          "encoding": "dynamic_array",
+          "label": "address[]",
+          "numberOfBytes": "32"
+        },
+        "t_array(t_bytes32)dyn_storage": {
+          "base": "t_bytes32",
+          "encoding": "dynamic_array",
+          "label": "bytes32[]",
+          "numberOfBytes": "32"
+        },
+        "t_bytes32": {
+          "encoding": "inplace",
+          "label": "bytes32",
+          "numberOfBytes": "32"
+        },
+        "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => address[])",
+          "numberOfBytes": "32",
+          "value": "t_array(t_address)dyn_storage"
+        },
+        "t_mapping(t_bytes32,t_uint256)": {
+          "encoding": "mapping",
+          "key": "t_bytes32",
+          "label": "mapping(bytes32 => uint256)",
+          "numberOfBytes": "32",
+          "value": "t_uint256"
+        },
+        "t_struct(AddressSet)_storage": {
+          "encoding": "inplace",
+          "label": "struct EnumerableSet.AddressSet",
+          "members": [
+            {
+              "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+              "label": "_inner",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_struct(Set)_storage"
+            }
+          ],
+          "numberOfBytes": "64"
+        },
+        "t_struct(Set)_storage": {
+          "encoding": "inplace",
+          "label": "struct EnumerableSet.Set",
+          "members": [
+            {
+              "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+              "label": "_values",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_array(t_bytes32)dyn_storage"
+            },
+            {
+              "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+              "label": "_positions",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_mapping(t_bytes32,t_uint256)"
+            }
+          ],
+          "numberOfBytes": "64"
+        },
+        "t_uint256": {
+          "encoding": "inplace",
+          "label": "uint256",
+          "numberOfBytes": "32"
+        }
+      }
+    },
+    "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7": {
+      "storage": [
+        {
+          "contract": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+          "label": "_name",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_string_storage"
+        },
+        {
+          "contract": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+          "label": "_symbol",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_string_storage"
+        }
+      ],
+      "types": {
+        "t_string_storage": {
+          "encoding": "bytes",
+          "label": "string",
+          "numberOfBytes": "32"
+        }
+      }
+    },
+    "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360": {
+      "accruedProtocolFees()": "0cd1a5b6",
+      "allowance(address,address)": "dd62ed3e",
+      "annualInterestBips()": "11057cd0",
+      "approve(address,uint256)": "095ea7b3",
+      "archController()": "54635570",
+      "asset()": "38d52e0f",
+      "balanceOf(address)": "70a08231",
+      "borrow(uint256)": "c5ebeaec",
+      "borrowableAssets()": "76636017",
+      "borrower()": "7df1f1b9",
+      "changeSphereXEngine(address)": "4c6c848f",
+      "closeMarket()": "c511ed5e",
+      "collectFees()": "c8796572",
+      "coverageLiquidity()": "739ccdd3",
+      "currentState()": "0c3f6acf",
+      "decimals()": "313ce567",
+      "delinquencyFeeBips()": "4be687c6",
+      "delinquencyGracePeriod()": "514a4cd6",
+      "deposit(uint256)": "b6b55f25",
+      "depositUpTo(uint256)": "b68ce7a2",
+      "executeWithdrawal(address,uint32)": "34bca29c",
+      "executeWithdrawals(address[],uint32[])": "74058859",
+      "factory()": "c45a0155",
+      "feeRecipient()": "46904840",
+      "getAccountWithdrawalStatus(address,uint32)": "02372c4f",
+      "getAvailableWithdrawalAmount(address,uint32)": "088fee5e",
+      "getUnpaidBatchExpiries()": "878eb921",
+      "getWithdrawalBatch(uint32)": "dbcd50b4",
+      "hooks()": "cd7033c4",
+      "isClosed()": "c2b6b58c",
+      "maxTotalSupply()": "2ab4d052",
+      "maximumDeposit()": "54b302c5",
+      "name()": "06fdde03",
+      "nukeFromOrbit(address)": "dcd549d4",
+      "previousState()": "0c1e3fea",
+      "queueFullWithdrawal()": "7243d96c",
+      "queueWithdrawal(uint256)": "6b174f35",
+      "repay(uint256)": "371fd8e6",
+      "repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)": "6731ba6d",
+      "rescueTokens(address)": "00ae3bf8",
+      "reserveRatioBips()": "d98e0fe8",
+      "scaleFactor()": "683dd191",
+      "scaledBalanceOf(address)": "1da24f3e",
+      "scaledTotalSupply()": "b1bf962d",
+      "sentinel()": "f58c251c",
+      "setAnnualInterestAndReserveRatioBips(uint16,uint16)": "e5adc635",
+      "setMaxTotalSupply(uint256)": "3f3e4c11",
+      "setProtocolFeeBips(uint16)": "ae6ea191",
+      "sphereXEngine()": "3c231166",
+      "sphereXOperator()": "e7e5db4f",
+      "symbol()": "95d89b41",
+      "totalAssets()": "01e1d114",
+      "totalDebts()": "14a1c32d",
+      "totalSupply()": "18160ddd",
+      "transfer(address,uint256)": "a9059cbb",
+      "transferFrom(address,address,uint256)": "23b872dd",
+      "updateState()": "1d8557d7",
+      "version()": "54fd4d50",
+      "withdrawableProtocolFees()": "1e3cef53",
+      "withdrawalBatchDuration()": "9e6f9802"
+    },
+    "37121af43d2c350adbde5e08fc39785bdd72ecb49f8e5894dd26a0a0f0a72ab4": {
+      "DOMAIN_SEPARATOR()": "3644e515",
+      "allowance(address,address)": "dd62ed3e",
+      "approve(address,uint256)": "095ea7b3",
+      "asset()": "38d52e0f",
+      "assetsPerShareRay()": "1c856ef6",
+      "balanceOf(address)": "70a08231",
+      "convertToAssets(uint256)": "07a2d13a",
+      "convertToShares(uint256)": "c6e6f592",
+      "decimals()": "313ce567",
+      "deposit(uint256,address)": "6e553f65",
+      "market()": "80f55605",
+      "marketOwner()": "47d90b5c",
+      "maxDeposit(address)": "402d267d",
+      "maxMint(address)": "c63d75b6",
+      "maxRedeem(address)": "d905777e",
+      "maxWithdraw(address)": "ce96cb77",
+      "mint(uint256,address)": "94bf804d",
+      "name()": "06fdde03",
+      "nonces(address)": "7ecebe00",
+      "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)": "d505accf",
+      "previewDeposit(uint256)": "ef8b30f7",
+      "previewMint(uint256)": "b3d7f6b9",
+      "previewRedeem(uint256)": "4cdad506",
+      "previewWithdraw(uint256)": "0a28a477",
+      "redeem(uint256,address,address)": "ba087652",
+      "sanctionsSentinel()": "4272711d",
+      "sharesPerAssetRay()": "80c9697e",
+      "sweep(address,address)": "b8dc491b",
+      "symbol()": "95d89b41",
+      "totalAssets()": "01e1d114",
+      "totalSupply()": "18160ddd",
+      "transfer(address,uint256)": "a9059cbb",
+      "transferFrom(address,address,uint256)": "23b872dd",
+      "withdraw(uint256,address,address)": "b460af94",
+      "wrappedMarket()": "48302ce9"
+    },
+    "38085e1490fe285f77fd927bc8f1be74b136f9ebdedeeb7bb5cac1ccf2f219c7": {
+      "factory()": "c45a0155",
+      "getCollateralContract(address)": "9b182244",
+      "getCollateralContractWithDepositor(address,address)": "4d62f0bb",
+      "getCollateralContractsForMarket(address)": "80b8ad49",
+      "getCollateralContractsForMarket(address,uint256,uint256)": "01b51459",
+      "getCollateralContractsForMarketWithDepositor(address,address)": "563c944a",
+      "getCollateralContractsWithDepositor(address[],address)": "5445a74f"
+    },
+    "3ceb5f7291be607cc178319a28dc6b74820b3f7e4f885e4de1bfc468907ee0eb": {
+      "LIQUIDATION_COOLDOWN()": "a5905b55",
+      "availableCollateral()": "1a63dfe0",
+      "collateralAsset()": "aabaecd6",
+      "deposit(uint256)": "b6b55f25",
+      "factory()": "c45a0155",
+      "fullLiquidationIndex()": "7ed9f4a9",
+      "getDepositor(address)": "6e2baf48",
+      "getMarketDelinquencyStatus()": "f811c6fb",
+      "getReclaimableAmount(address)": "35c21d5d",
+      "liquidateCollateral(address,bytes,uint256,uint256,uint256)": "bee26b36",
+      "market()": "80f55605",
+      "marketBorrower()": "a481cc9a",
+      "maxRepaymentBips()": "037139bc",
+      "name()": "06fdde03",
+      "nextLiquidationTrigger()": "ad7a57c9",
+      "reclaimCollateral()": "f9686e72",
+      "rescueTokens(address)": "00ae3bf8",
+      "sharesOf(address)": "f5eb42dc",
+      "totalShares()": "3a98ef39",
+      "underlyingAsset()": "7158da7c"
+    },
+    "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d": {
+      "addHooksTemplate(address,string,address,address,uint80,uint16)": "3476b76d",
+      "archController()": "54635570",
+      "changeSphereXEngine(address)": "4c6c848f",
+      "computeMarketAddress(bytes32)": "c29a7677",
+      "deployHooksInstance(address,bytes)": "cd01e52a",
+      "deployMarket((address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes,bytes32,address,uint256)": "e7ca86e3",
+      "deployMarketAndHooks(address,bytes,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes,bytes32,address,uint256)": "ad78e45a",
+      "disableHooksTemplate(address)": "9f2f94b3",
+      "getHooksInstancesCountForBorrower(address)": "d14a5402",
+      "getHooksInstancesForBorrower(address)": "62ef8119",
+      "getHooksTemplateDetails(address)": "2812d2de",
+      "getHooksTemplateForInstance(address)": "2b07f280",
+      "getHooksTemplates()": "6e50f960",
+      "getHooksTemplates(uint256,uint256)": "cdbb8374",
+      "getHooksTemplatesCount()": "d9d58025",
+      "getMarketParameters()": "04032dbb",
+      "getMarketsForHooksInstance(address)": "4bd1acf3",
+      "getMarketsForHooksInstance(address,uint256,uint256)": "7a749060",
+      "getMarketsForHooksInstanceCount(address)": "fe604ec7",
+      "getMarketsForHooksTemplate(address)": "1caab59d",
+      "getMarketsForHooksTemplate(address,uint256,uint256)": "eae6ff66",
+      "getMarketsForHooksTemplateCount(address)": "d1a0745c",
+      "isHooksInstance(address)": "d19bd571",
+      "isHooksTemplate(address)": "3fd83e1e",
+      "marketInitCodeHash()": "aeefe08c",
+      "marketInitCodeStorage()": "356dd352",
+      "name()": "06fdde03",
+      "pushProtocolFeeBipsUpdates(address)": "155733ef",
+      "pushProtocolFeeBipsUpdates(address,uint256,uint256)": "33ee81f2",
+      "registerWithArchController()": "41f259b8",
+      "sanctionsSentinel()": "4272711d",
+      "sphereXEngine()": "3c231166",
+      "sphereXOperator()": "e7e5db4f",
+      "updateHooksTemplateFees(address,address,address,uint80,uint16)": "9c5cd31a"
+    },
+    "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d": {
+      "storage": [
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "name",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_string_storage"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "_lenderStatus",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_mapping(t_address,t_struct(LenderStatus)_storage)"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "isKnownLenderOnMarket",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "_pullProviders",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_array(t_userDefinedValueType(RoleProvider))dyn_storage"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "_pushProviders",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_array(t_userDefinedValueType(RoleProvider))dyn_storage"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "_roleProviders",
+          "offset": 0,
+          "slot": "5",
+          "type": "t_mapping(t_address,t_userDefinedValueType(RoleProvider))"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "temporaryExcessReserveRatio",
+          "offset": 0,
+          "slot": "6",
+          "type": "t_mapping(t_address,t_struct(TemporaryReserveRatio)_storage)"
+        },
+        {
+          "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "label": "_hookedMarkets",
+          "offset": 0,
+          "slot": "7",
+          "type": "t_mapping(t_address,t_struct(HookedMarket)_storage)"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_array(t_userDefinedValueType(RoleProvider))dyn_storage": {
+          "base": "t_userDefinedValueType(RoleProvider)",
+          "encoding": "dynamic_array",
+          "label": "RoleProvider[]",
+          "numberOfBytes": "32"
+        },
+        "t_bool": {
+          "encoding": "inplace",
+          "label": "bool",
+          "numberOfBytes": "1"
+        },
+        "t_mapping(t_address,t_bool)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => bool)",
+          "numberOfBytes": "32",
+          "value": "t_bool"
+        },
+        "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => mapping(address => bool))",
+          "numberOfBytes": "32",
+          "value": "t_mapping(t_address,t_bool)"
+        },
+        "t_mapping(t_address,t_struct(HookedMarket)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct HookedMarket)",
+          "numberOfBytes": "32",
+          "value": "t_struct(HookedMarket)_storage"
+        },
+        "t_mapping(t_address,t_struct(LenderStatus)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct LenderStatus)",
+          "numberOfBytes": "32",
+          "value": "t_struct(LenderStatus)_storage"
+        },
+        "t_mapping(t_address,t_struct(TemporaryReserveRatio)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct TemporaryReserveRatio)",
+          "numberOfBytes": "32",
+          "value": "t_struct(TemporaryReserveRatio)_storage"
+        },
+        "t_mapping(t_address,t_userDefinedValueType(RoleProvider))": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => RoleProvider)",
+          "numberOfBytes": "32",
+          "value": "t_userDefinedValueType(RoleProvider)"
+        },
+        "t_string_storage": {
+          "encoding": "bytes",
+          "label": "string",
+          "numberOfBytes": "32"
+        },
+        "t_struct(HookedMarket)_storage": {
+          "encoding": "inplace",
+          "label": "struct HookedMarket",
+          "members": [
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "isHooked",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "transferRequiresAccess",
+              "offset": 1,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "depositRequiresAccess",
+              "offset": 2,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "minimumDeposit",
+              "offset": 3,
+              "slot": "0",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "transfersDisabled",
+              "offset": 19,
+              "slot": "0",
+              "type": "t_bool"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_struct(LenderStatus)_storage": {
+          "encoding": "inplace",
+          "label": "struct LenderStatus",
+          "members": [
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "isBlockedFromDeposits",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "lastProvider",
+              "offset": 1,
+              "slot": "0",
+              "type": "t_address"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "canRefresh",
+              "offset": 21,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "lastApprovalTimestamp",
+              "offset": 22,
+              "slot": "0",
+              "type": "t_uint32"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_struct(TemporaryReserveRatio)_storage": {
+          "encoding": "inplace",
+          "label": "struct TemporaryReserveRatio",
+          "members": [
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "originalAnnualInterestBips",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "originalReserveRatioBips",
+              "offset": 2,
+              "slot": "0",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+              "label": "expiry",
+              "offset": 4,
+              "slot": "0",
+              "type": "t_uint32"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_uint128": {
+          "encoding": "inplace",
+          "label": "uint128",
+          "numberOfBytes": "16"
+        },
+        "t_uint16": {
+          "encoding": "inplace",
+          "label": "uint16",
+          "numberOfBytes": "2"
+        },
+        "t_uint32": {
+          "encoding": "inplace",
+          "label": "uint32",
+          "numberOfBytes": "4"
+        },
+        "t_userDefinedValueType(RoleProvider)": {
+          "encoding": "inplace",
+          "label": "RoleProvider",
+          "numberOfBytes": "32"
+        }
+      }
+    },
+    "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e": {
+      "chainalysisOracle()": "cea57fe8",
+      "getCredential(address)": "ccdad14b",
+      "isPullProvider()": "256909f1",
+      "validateCredential(address,bytes)": "54560cb2"
+    },
+    "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563": {
+      "storage": [],
+      "types": {}
+    },
+    "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13": {
+      "storage": [
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "_hooksTemplates",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_array(t_address)dyn_storage"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "_hooksInstancesByBorrower",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "_marketsByHooksTemplate",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "_marketsByHooksInstance",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "_templateDetails",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_mapping(t_address,t_struct(HooksTemplate)_storage)"
+        },
+        {
+          "contract": "src/HooksFactory.sol:HooksFactory",
+          "label": "getHooksTemplateForInstance",
+          "offset": 0,
+          "slot": "5",
+          "type": "t_mapping(t_address,t_address)"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_array(t_address)dyn_storage": {
+          "base": "t_address",
+          "encoding": "dynamic_array",
+          "label": "address[]",
+          "numberOfBytes": "32"
+        },
+        "t_bool": {
+          "encoding": "inplace",
+          "label": "bool",
+          "numberOfBytes": "1"
+        },
+        "t_mapping(t_address,t_address)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => address)",
+          "numberOfBytes": "32",
+          "value": "t_address"
+        },
+        "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => address[])",
+          "numberOfBytes": "32",
+          "value": "t_array(t_address)dyn_storage"
+        },
+        "t_mapping(t_address,t_struct(HooksTemplate)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct HooksTemplate)",
+          "numberOfBytes": "32",
+          "value": "t_struct(HooksTemplate)_storage"
+        },
+        "t_string_storage": {
+          "encoding": "bytes",
+          "label": "string",
+          "numberOfBytes": "32"
+        },
+        "t_struct(HooksTemplate)_storage": {
+          "encoding": "inplace",
+          "label": "struct HooksTemplate",
+          "members": [
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "originationFeeAsset",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_address"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "originationFeeAmount",
+              "offset": 20,
+              "slot": "0",
+              "type": "t_uint80"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "protocolFeeBips",
+              "offset": 30,
+              "slot": "0",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "exists",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "enabled",
+              "offset": 1,
+              "slot": "1",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "index",
+              "offset": 2,
+              "slot": "1",
+              "type": "t_uint24"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "feeRecipient",
+              "offset": 5,
+              "slot": "1",
+              "type": "t_address"
+            },
+            {
+              "contract": "src/HooksFactory.sol:HooksFactory",
+              "label": "name",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_string_storage"
+            }
+          ],
+          "numberOfBytes": "96"
+        },
+        "t_uint16": {
+          "encoding": "inplace",
+          "label": "uint16",
+          "numberOfBytes": "2"
+        },
+        "t_uint24": {
+          "encoding": "inplace",
+          "label": "uint24",
+          "numberOfBytes": "3"
+        },
+        "t_uint80": {
+          "encoding": "inplace",
+          "label": "uint80",
+          "numberOfBytes": "10"
+        }
+      }
+    },
+    "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1": {
+      "acceptSphereXAdminRole()": "8426b968",
+      "addBlacklist(address)": "9cfe42da",
+      "cancelOwnershipHandover()": "54d1f13d",
+      "changeSphereXEngine(address)": "4c6c848f",
+      "changeSphereXOperator(address)": "4ee8f858",
+      "completeOwnershipHandover(address)": "f04e283e",
+      "getBlacklistedAssets()": "79adfa6c",
+      "getBlacklistedAssets(uint256,uint256)": "8b984bb3",
+      "getBlacklistedAssetsCount()": "b9d5dfe8",
+      "getRegisteredBorrowers()": "b9bccae8",
+      "getRegisteredBorrowers(uint256,uint256)": "be736ff8",
+      "getRegisteredBorrowersCount()": "1ce28ab7",
+      "getRegisteredControllerFactories()": "6e0fb58d",
+      "getRegisteredControllerFactories(uint256,uint256)": "0e572082",
+      "getRegisteredControllerFactoriesCount()": "78e9c224",
+      "getRegisteredControllers()": "db316dbc",
+      "getRegisteredControllers(uint256,uint256)": "a1c4bff8",
+      "getRegisteredControllersCount()": "3d05a1d3",
+      "getRegisteredMarkets()": "46762101",
+      "getRegisteredMarkets(uint256,uint256)": "7ade7f20",
+      "getRegisteredMarketsCount()": "84b870ab",
+      "isBlacklistedAsset(address)": "b0018c60",
+      "isRegisteredBorrower(address)": "0787c1fe",
+      "isRegisteredController(address)": "8cdcb3e6",
+      "isRegisteredControllerFactory(address)": "99882f70",
+      "isRegisteredMarket(address)": "4a58e49e",
+      "owner()": "8da5cb5b",
+      "ownershipHandoverExpiresAt(address)": "fee81cf4",
+      "pendingSphereXAdmin()": "9aa9019e",
+      "registerBorrower(address)": "abad7426",
+      "registerController(address)": "d91ae8c2",
+      "registerControllerFactory(address)": "1b4f512c",
+      "registerMarket(address)": "a79b9ec9",
+      "removeBlacklist(address)": "eb91e651",
+      "removeBorrower(address)": "76c7fc55",
+      "removeController(address)": "f6a74ed7",
+      "removeControllerFactory(address)": "8b13e382",
+      "removeMarket(address)": "db913236",
+      "renounceOwnership()": "715018a6",
+      "requestOwnershipHandover()": "25692962",
+      "sphereXAdmin()": "99e80f3b",
+      "sphereXEngine()": "3c231166",
+      "sphereXOperator()": "e7e5db4f",
+      "transferOwnership(address)": "f2fde38b",
+      "transferSphereXAdminRole(address)": "daba7ef7",
+      "updateSphereXEngineOnRegisteredContracts(address[],address[],address[])": "f631241e"
+    },
+    "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8": {
+      "WildcatSanctionsEscrowInitcodeHash()": "b8b45361",
+      "archController()": "54635570",
+      "chainalysisSanctionsList()": "4973203d",
+      "createEscrow(address,address,address)": "a1054f6b",
+      "getEscrowAddress(address,address,address)": "1cdf58b0",
+      "isFlaggedByChainalysis(address)": "95c09839",
+      "isSanctioned(address,address)": "06e74444",
+      "overrideSanction(address)": "681909a0",
+      "removeSanctionOverride(address)": "490a8653",
+      "sanctionOverrides(address,address)": "380c3431",
+      "tmpEscrowParams()": "b1d62668"
+    },
+    "83bd8215020169334f826f4408250e8eb8d25055d94701ddf21b04b63c43ba0e": {
+      "storage": [
+        {
+          "contract": "src/vault/Wildcat4626WrapperFactory.sol:Wildcat4626WrapperFactory",
+          "label": "wrapperForMarket",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_mapping(t_address,t_address)"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_mapping(t_address,t_address)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => address)",
+          "numberOfBytes": "32",
+          "value": "t_address"
+        }
+      }
+    },
+    "8965b8879ccf81f3243085579cb1ee1bfddc8e2bf8aacb3fc347e09726a583cf": {
+      "approveExchange(address)": "b501edfe",
+      "approveExecutor(address)": "6aedcf28",
+      "archController()": "54635570",
+      "calculateCollateralContractAddress(address,address)": "300c904e",
+      "collateralContractsByMarket(address,uint256)": "e02a922f",
+      "collateralInitCodeHash()": "ef703c96",
+      "collateralInitCodeStorage()": "59d6aba0",
+      "deployCollateralContract(address,address)": "06aeaa86",
+      "getApprovedExchanges()": "8a58ab60",
+      "getApprovedExchanges(uint256,uint256)": "1c6dfe44",
+      "getApprovedExchangesCount()": "88868f4c",
+      "getApprovedExecutors()": "94dcb92e",
+      "getApprovedExecutors(uint256,uint256)": "cdc87530",
+      "getApprovedExecutorsCount()": "23607b90",
+      "getCollateralContractsForMarket(address)": "80b8ad49",
+      "getCollateralContractsForMarket(address,uint256,uint256)": "01b51459",
+      "getCollateralContractsForMarketCount(address)": "cb407cf5",
+      "getCollateralParameters()": "5d861505",
+      "isApprovedExchange(address)": "df0859a3",
+      "isApprovedExecutor(address)": "47cf9655",
+      "name()": "06fdde03",
+      "removeExchange(address)": "8e0be369",
+      "removeExecutor(address)": "24788429"
+    },
+    "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1": {
+      "storage": [
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "name",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_string_storage"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "_lenderStatus",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_mapping(t_address,t_struct(LenderStatus)_storage)"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "isKnownLenderOnMarket",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "_pullProviders",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_array(t_userDefinedValueType(RoleProvider))dyn_storage"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "_pushProviders",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_array(t_userDefinedValueType(RoleProvider))dyn_storage"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "_roleProviders",
+          "offset": 0,
+          "slot": "5",
+          "type": "t_mapping(t_address,t_userDefinedValueType(RoleProvider))"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "temporaryExcessReserveRatio",
+          "offset": 0,
+          "slot": "6",
+          "type": "t_mapping(t_address,t_struct(TemporaryReserveRatio)_storage)"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "_hookedMarkets",
+          "offset": 0,
+          "slot": "7",
+          "type": "t_mapping(t_address,t_struct(HookedMarket)_storage)"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_array(t_userDefinedValueType(RoleProvider))dyn_storage": {
+          "base": "t_userDefinedValueType(RoleProvider)",
+          "encoding": "dynamic_array",
+          "label": "RoleProvider[]",
+          "numberOfBytes": "32"
+        },
+        "t_bool": {
+          "encoding": "inplace",
+          "label": "bool",
+          "numberOfBytes": "1"
+        },
+        "t_mapping(t_address,t_bool)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => bool)",
+          "numberOfBytes": "32",
+          "value": "t_bool"
+        },
+        "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => mapping(address => bool))",
+          "numberOfBytes": "32",
+          "value": "t_mapping(t_address,t_bool)"
+        },
+        "t_mapping(t_address,t_struct(HookedMarket)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct HookedMarket)",
+          "numberOfBytes": "32",
+          "value": "t_struct(HookedMarket)_storage"
+        },
+        "t_mapping(t_address,t_struct(LenderStatus)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct LenderStatus)",
+          "numberOfBytes": "32",
+          "value": "t_struct(LenderStatus)_storage"
+        },
+        "t_mapping(t_address,t_struct(TemporaryReserveRatio)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct TemporaryReserveRatio)",
+          "numberOfBytes": "32",
+          "value": "t_struct(TemporaryReserveRatio)_storage"
+        },
+        "t_mapping(t_address,t_userDefinedValueType(RoleProvider))": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => RoleProvider)",
+          "numberOfBytes": "32",
+          "value": "t_userDefinedValueType(RoleProvider)"
+        },
+        "t_string_storage": {
+          "encoding": "bytes",
+          "label": "string",
+          "numberOfBytes": "32"
+        },
+        "t_struct(HookedMarket)_storage": {
+          "encoding": "inplace",
+          "label": "struct HookedMarket",
+          "members": [
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "isHooked",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "transferRequiresAccess",
+              "offset": 1,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "depositRequiresAccess",
+              "offset": 2,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "withdrawalRequiresAccess",
+              "offset": 3,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "minimumDeposit",
+              "offset": 4,
+              "slot": "0",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "fixedTermEndTime",
+              "offset": 20,
+              "slot": "0",
+              "type": "t_uint32"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "transfersDisabled",
+              "offset": 24,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "allowClosureBeforeTerm",
+              "offset": 25,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "allowTermReduction",
+              "offset": 26,
+              "slot": "0",
+              "type": "t_bool"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_struct(LenderStatus)_storage": {
+          "encoding": "inplace",
+          "label": "struct LenderStatus",
+          "members": [
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "isBlockedFromDeposits",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "lastProvider",
+              "offset": 1,
+              "slot": "0",
+              "type": "t_address"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "canRefresh",
+              "offset": 21,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "lastApprovalTimestamp",
+              "offset": 22,
+              "slot": "0",
+              "type": "t_uint32"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_struct(TemporaryReserveRatio)_storage": {
+          "encoding": "inplace",
+          "label": "struct TemporaryReserveRatio",
+          "members": [
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "originalAnnualInterestBips",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "originalReserveRatioBips",
+              "offset": 2,
+              "slot": "0",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+              "label": "expiry",
+              "offset": 4,
+              "slot": "0",
+              "type": "t_uint32"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_uint128": {
+          "encoding": "inplace",
+          "label": "uint128",
+          "numberOfBytes": "16"
+        },
+        "t_uint16": {
+          "encoding": "inplace",
+          "label": "uint16",
+          "numberOfBytes": "2"
+        },
+        "t_uint32": {
+          "encoding": "inplace",
+          "label": "uint32",
+          "numberOfBytes": "4"
+        },
+        "t_userDefinedValueType(RoleProvider)": {
+          "encoding": "inplace",
+          "label": "RoleProvider",
+          "numberOfBytes": "32"
+        }
+      }
+    },
+    "a0d8183b5deb29f28fcbb50d66a12c0b55fed757d455d49260c73304e123f8e8": {
+      "archController()": "54635570",
+      "createWrapper(address)": "a7c4f0ef",
+      "wrapperForMarket(address)": "3323eacd"
+    },
+    "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9": {
+      "storage": [
+        {
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "totalShares",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint224"
+        },
+        {
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "availableCollateral",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint256"
+        },
+        {
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "nextLiquidationTrigger",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint32"
+        },
+        {
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "fullLiquidationIndex",
+          "offset": 4,
+          "slot": "2",
+          "type": "t_uint32"
+        },
+        {
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "_depositors",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_mapping(t_address,t_struct(Depositor)_storage)"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_mapping(t_address,t_struct(Depositor)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct Depositor)",
+          "numberOfBytes": "32",
+          "value": "t_struct(Depositor)_storage"
+        },
+        "t_struct(Depositor)_storage": {
+          "encoding": "inplace",
+          "label": "struct Depositor",
+          "members": [
+            {
+              "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+              "label": "shares",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint224"
+            },
+            {
+              "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+              "label": "lastFullLiquidationIndex",
+              "offset": 28,
+              "slot": "0",
+              "type": "t_uint32"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_uint224": {
+          "encoding": "inplace",
+          "label": "uint224",
+          "numberOfBytes": "28"
+        },
+        "t_uint256": {
+          "encoding": "inplace",
+          "label": "uint256",
+          "numberOfBytes": "32"
+        },
+        "t_uint32": {
+          "encoding": "inplace",
+          "label": "uint32",
+          "numberOfBytes": "4"
+        }
+      }
+    },
+    "b2d29d20b2e378a0e40d6144b7dd55ecab886c944341254ad3f50b129ef18fad": {
+      "storage": [
+        {
+          "contract": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+          "label": "owner",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_address"
+        },
+        {
+          "contract": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+          "label": "recipient",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_address"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        }
+      }
+    },
+    "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33": {
+      "storage": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "_state",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_struct(MarketState)_storage"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "_accounts",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_mapping(t_address,t_struct(Account)_storage)"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "_withdrawalData",
+          "offset": 0,
+          "slot": "5",
+          "type": "t_struct(WithdrawalData)_storage"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "allowance",
+          "offset": 0,
+          "slot": "9",
+          "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_bool": {
+          "encoding": "inplace",
+          "label": "bool",
+          "numberOfBytes": "1"
+        },
+        "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => mapping(address => uint256))",
+          "numberOfBytes": "32",
+          "value": "t_mapping(t_address,t_uint256)"
+        },
+        "t_mapping(t_address,t_struct(Account)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct Account)",
+          "numberOfBytes": "32",
+          "value": "t_struct(Account)_storage"
+        },
+        "t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => struct AccountWithdrawalStatus)",
+          "numberOfBytes": "32",
+          "value": "t_struct(AccountWithdrawalStatus)_storage"
+        },
+        "t_mapping(t_address,t_uint256)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => uint256)",
+          "numberOfBytes": "32",
+          "value": "t_uint256"
+        },
+        "t_mapping(t_uint256,t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage))": {
+          "encoding": "mapping",
+          "key": "t_uint256",
+          "label": "mapping(uint256 => mapping(address => struct AccountWithdrawalStatus))",
+          "numberOfBytes": "32",
+          "value": "t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage)"
+        },
+        "t_mapping(t_uint256,t_uint32)": {
+          "encoding": "mapping",
+          "key": "t_uint256",
+          "label": "mapping(uint256 => uint32)",
+          "numberOfBytes": "32",
+          "value": "t_uint32"
+        },
+        "t_mapping(t_uint32,t_struct(WithdrawalBatch)_storage)": {
+          "encoding": "mapping",
+          "key": "t_uint32",
+          "label": "mapping(uint32 => struct WithdrawalBatch)",
+          "numberOfBytes": "32",
+          "value": "t_struct(WithdrawalBatch)_storage"
+        },
+        "t_struct(Account)_storage": {
+          "encoding": "inplace",
+          "label": "struct Account",
+          "members": [
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaledBalance",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint104"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_struct(AccountWithdrawalStatus)_storage": {
+          "encoding": "inplace",
+          "label": "struct AccountWithdrawalStatus",
+          "members": [
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaledAmount",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint104"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "normalizedAmountWithdrawn",
+              "offset": 13,
+              "slot": "0",
+              "type": "t_uint128"
+            }
+          ],
+          "numberOfBytes": "32"
+        },
+        "t_struct(FIFOQueue)_storage": {
+          "encoding": "inplace",
+          "label": "struct FIFOQueue",
+          "members": [
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "startIndex",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "nextIndex",
+              "offset": 16,
+              "slot": "0",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "data",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_mapping(t_uint256,t_uint32)"
+            }
+          ],
+          "numberOfBytes": "64"
+        },
+        "t_struct(MarketState)_storage": {
+          "encoding": "inplace",
+          "label": "struct MarketState",
+          "members": [
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "isClosed",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "maxTotalSupply",
+              "offset": 1,
+              "slot": "0",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "accruedProtocolFees",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "normalizedUnclaimedWithdrawals",
+              "offset": 16,
+              "slot": "1",
+              "type": "t_uint128"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaledTotalSupply",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_uint104"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaledPendingWithdrawals",
+              "offset": 13,
+              "slot": "2",
+              "type": "t_uint104"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "pendingWithdrawalExpiry",
+              "offset": 26,
+              "slot": "2",
+              "type": "t_uint32"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "isDelinquent",
+              "offset": 30,
+              "slot": "2",
+              "type": "t_bool"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "timeDelinquent",
+              "offset": 0,
+              "slot": "3",
+              "type": "t_uint32"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "protocolFeeBips",
+              "offset": 4,
+              "slot": "3",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "annualInterestBips",
+              "offset": 6,
+              "slot": "3",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "reserveRatioBips",
+              "offset": 8,
+              "slot": "3",
+              "type": "t_uint16"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaleFactor",
+              "offset": 10,
+              "slot": "3",
+              "type": "t_uint112"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "lastInterestAccruedTimestamp",
+              "offset": 24,
+              "slot": "3",
+              "type": "t_uint32"
+            }
+          ],
+          "numberOfBytes": "128"
+        },
+        "t_struct(WithdrawalBatch)_storage": {
+          "encoding": "inplace",
+          "label": "struct WithdrawalBatch",
+          "members": [
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaledTotalAmount",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_uint104"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "scaledAmountBurned",
+              "offset": 13,
+              "slot": "0",
+              "type": "t_uint104"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "normalizedAmountPaid",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_uint128"
+            }
+          ],
+          "numberOfBytes": "64"
+        },
+        "t_struct(WithdrawalData)_storage": {
+          "encoding": "inplace",
+          "label": "struct WithdrawalData",
+          "members": [
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "unpaidBatches",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_struct(FIFOQueue)_storage"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "batches",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_mapping(t_uint32,t_struct(WithdrawalBatch)_storage)"
+            },
+            {
+              "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+              "label": "accountStatuses",
+              "offset": 0,
+              "slot": "3",
+              "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage))"
+            }
+          ],
+          "numberOfBytes": "128"
+        },
+        "t_uint104": {
+          "encoding": "inplace",
+          "label": "uint104",
+          "numberOfBytes": "13"
+        },
+        "t_uint112": {
+          "encoding": "inplace",
+          "label": "uint112",
+          "numberOfBytes": "14"
+        },
+        "t_uint128": {
+          "encoding": "inplace",
+          "label": "uint128",
+          "numberOfBytes": "16"
+        },
+        "t_uint16": {
+          "encoding": "inplace",
+          "label": "uint16",
+          "numberOfBytes": "2"
+        },
+        "t_uint256": {
+          "encoding": "inplace",
+          "label": "uint256",
+          "numberOfBytes": "32"
+        },
+        "t_uint32": {
+          "encoding": "inplace",
+          "label": "uint32",
+          "numberOfBytes": "4"
+        }
+      }
+    },
+    "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a": {
+      "account()": "5dab2420",
+      "balance()": "b69ef8a8",
+      "borrower()": "7df1f1b9",
+      "canReleaseEscrow()": "a4972b47",
+      "escrowedAsset()": "3d02b19c",
+      "releaseEscrow()": "757a5543",
+      "sentinel()": "f58c251c"
+    },
+    "ce6f386ddec54f2bca69fa5d07168d55a1f6daf92ffb1f7d55520112128eb97c": {
+      "changeOwner(address)": "a6f9dae1",
+      "changeRecipient(address)": "92c2bcb4",
+      "execute(address,bytes)": "1cff79cd",
+      "owner()": "8da5cb5b",
+      "recipient()": "66d003ac",
+      "releaseERC20Fees(address)": "0aaff8f2",
+      "releaseERC20Fees(address,uint256)": "d261300f",
+      "releaseETH()": "6639016b",
+      "releaseETH(uint256)": "f9a075dc"
+    },
+    "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7": {
+      "storage": [
+        {
+          "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "label": "tmpEscrowParams",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_struct(TmpEscrowParams)_storage"
+        },
+        {
+          "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "label": "sanctionOverrides",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
+        }
+      ],
+      "types": {
+        "t_address": {
+          "encoding": "inplace",
+          "label": "address",
+          "numberOfBytes": "20"
+        },
+        "t_bool": {
+          "encoding": "inplace",
+          "label": "bool",
+          "numberOfBytes": "1"
+        },
+        "t_mapping(t_address,t_bool)": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => bool)",
+          "numberOfBytes": "32",
+          "value": "t_bool"
+        },
+        "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+          "encoding": "mapping",
+          "key": "t_address",
+          "label": "mapping(address => mapping(address => bool))",
+          "numberOfBytes": "32",
+          "value": "t_mapping(t_address,t_bool)"
+        },
+        "t_struct(TmpEscrowParams)_storage": {
+          "encoding": "inplace",
+          "label": "struct IWildcatSanctionsSentinel.TmpEscrowParams",
+          "members": [
+            {
+              "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+              "label": "borrower",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_address"
+            },
+            {
+              "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+              "label": "account",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_address"
+            },
+            {
+              "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+              "label": "asset",
+              "offset": 0,
+              "slot": "2",
+              "type": "t_address"
+            }
+          ],
+          "numberOfBytes": "96"
+        }
+      }
+    },
+    "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664": {
+      "archController()": "54635570",
+      "getAllHooksTemplatesForBorrower(address)": "4b5a900d",
+      "getAllMarketsDataForHooksTemplate(address)": "dd92b92b",
+      "getHooksDataForBorrower(address)": "65531438",
+      "getHooksInstancesForBorrower(address)": "62ef8119",
+      "getHooksTemplateForBorrower(address,address)": "9016be4f",
+      "getHooksTemplatesForBorrower(address,address[])": "098aaea8",
+      "getLenderAccountData(address,address)": "87fed6d2",
+      "getLenderAccountData(address,address[])": "ffc7005e",
+      "getLenderAccountsData(address,address[])": "bc6ba6f6",
+      "getMarketData(address)": "a30c302d",
+      "getMarketDataWithLenderStatus(address,address)": "ddee0865",
+      "getMarketsData(address[])": "9f293fb1",
+      "getMarketsDataWithLenderStatus(address,address[])": "e85dfdf0",
+      "getMarketsForHooksTemplateCount(address)": "d1a0745c",
+      "getPaginatedMarketsDataForHooksTemplate(address,uint256,uint256)": "c4482d36",
+      "getTokenInfo(address)": "1f69565f",
+      "getTokensInfo(address[])": "46a0fe47",
+      "getWithdrawalBatchData(address,uint32)": "8febd74f",
+      "getWithdrawalBatchDataWithLenderStatus(address,uint32,address)": "733efd1e",
+      "getWithdrawalBatchDataWithLendersStatus(address,uint32,address[])": "b31d1015",
+      "getWithdrawalBatchesData(address,uint32[])": "274631a3",
+      "getWithdrawalBatchesDataWithLenderStatus(address,uint32[],address)": "0c52af99",
+      "hooksFactory()": "2385571b",
+      "queryLenderAccount((address,address,uint32[]))": "3be9be7a",
+      "queryLenderAccounts((address,address,uint32[])[])": "3d8d2dcd"
+    },
+    "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717": {
+      "storage": [
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_markets",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_struct(AddressSet)_storage"
+        },
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_controllerFactories",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_struct(AddressSet)_storage"
+        },
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_borrowers",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_struct(AddressSet)_storage"
+        },
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_controllers",
+          "offset": 0,
+          "slot": "6",
+          "type": "t_struct(AddressSet)_storage"
+        },
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_assetBlacklist",
+          "offset": 0,
+          "slot": "8",
+          "type": "t_struct(AddressSet)_storage"
+        }
+      ],
+      "types": {
+        "t_array(t_bytes32)dyn_storage": {
+          "base": "t_bytes32",
+          "encoding": "dynamic_array",
+          "label": "bytes32[]",
+          "numberOfBytes": "32"
+        },
+        "t_bytes32": {
+          "encoding": "inplace",
+          "label": "bytes32",
+          "numberOfBytes": "32"
+        },
+        "t_mapping(t_bytes32,t_uint256)": {
+          "encoding": "mapping",
+          "key": "t_bytes32",
+          "label": "mapping(bytes32 => uint256)",
+          "numberOfBytes": "32",
+          "value": "t_uint256"
+        },
+        "t_struct(AddressSet)_storage": {
+          "encoding": "inplace",
+          "label": "struct EnumerableSet.AddressSet",
+          "members": [
+            {
+              "contract": "src/WildcatArchController.sol:WildcatArchController",
+              "label": "_inner",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_struct(Set)_storage"
+            }
+          ],
+          "numberOfBytes": "64"
+        },
+        "t_struct(Set)_storage": {
+          "encoding": "inplace",
+          "label": "struct EnumerableSet.Set",
+          "members": [
+            {
+              "contract": "src/WildcatArchController.sol:WildcatArchController",
+              "label": "_values",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_array(t_bytes32)dyn_storage"
+            },
+            {
+              "contract": "src/WildcatArchController.sol:WildcatArchController",
+              "label": "_indexes",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_mapping(t_bytes32,t_uint256)"
+            }
+          ],
+          "numberOfBytes": "64"
+        },
+        "t_uint256": {
+          "encoding": "inplace",
+          "label": "uint256",
+          "numberOfBytes": "32"
+        }
+      }
+    },
+    "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2": {
+      "addRoleProvider(address,uint32)": "ea5b13bd",
+      "blockFromDeposits(address)": "064ed53b",
+      "blockFromDeposits(address[])": "6d1587a6",
+      "borrower()": "7df1f1b9",
+      "config()": "79502c55",
+      "createRoleProvider(address,uint32,bytes)": "36c89214",
+      "factory()": "c45a0155",
+      "getHookedMarket(address)": "2ccf4667",
+      "getHookedMarkets(address[])": "c888fb15",
+      "getLenderStatus(address)": "22a4a19f",
+      "getParameterConstraints()": "a11ef067",
+      "getPreviousLenderStatus(address)": "b037096d",
+      "getPullProviders()": "8f8ef419",
+      "getPushProviders()": "87927767",
+      "getRoleProvider(address)": "bfd269be",
+      "grantRole(address,uint32)": "6b2b369b",
+      "grantRoles(address[],uint32[])": "9d2a76fe",
+      "isKnownLenderOnMarket(address,address)": "a9ff2dbf",
+      "name()": "06fdde03",
+      "onBorrow(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "b1cfda0d",
+      "onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "9ecc64e6",
+      "onCreateMarket(address,address,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes)": "28fd0307",
+      "onDeposit(address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "5aeb713f",
+      "onExecuteWithdrawal(address,uint128,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "2970403d",
+      "onNukeFromOrbit(address,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "8b3ce9b3",
+      "onQueueWithdrawal(address,uint32,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "3521cccc",
+      "onRepay(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "83d9e1eb",
+      "onSetAnnualInterestAndReserveRatioBips(uint16,uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "cc452642",
+      "onSetMaxTotalSupply(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "849da129",
+      "onSetProtocolFeeBips(uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "03473d8d",
+      "onTransfer(address,address,address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)": "a018f90e",
+      "removeRoleProvider(address)": "8adfe0f8",
+      "revokeRole(address)": "80e52e3f",
+      "revokeRoles(address[])": "e5ef8405",
+      "setMinimumDeposit(address,uint128)": "1c4b3694",
+      "setName(string)": "c47f0027",
+      "temporaryExcessReserveRatio(address)": "feb368e2",
+      "unblockFromDeposits(address)": "aa948689",
+      "version()": "54fd4d50"
+    }
+  },
+  "builds": [
+    {
+      "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_SOLC": "0.8.28"
+      },
+      "id": "col-46db/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.28",
+        "via_ir": false
+      },
+      "tree": "col-46db"
+    },
+    {
+      "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "50000",
+        "FOUNDRY_SOLC": "0.8.28",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "col-46db/solc-0.8.28-cancun-ir-50000",
+      "profile": "solc-0.8.28-cancun-ir-50000",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "solc": "0.8.28",
+        "via_ir": true
+      },
+      "tree": "col-46db"
+    },
+    {
+      "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_SOLC": "0.8.25"
+      },
+      "id": "fee-ac73/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "fee-ac73"
+    },
+    {
+      "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "fee-ac73/solc-0.8.25-cancun-ir-200",
+      "profile": "solc-0.8.25-cancun-ir-200",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "fee-ac73"
+    },
+    {
+      "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_SOLC": "0.8.25"
+      },
+      "id": "rp-5d7f/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "rp-5d7f"
+    },
+    {
+      "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "rp-5d7f/solc-0.8.25-cancun-ir-200",
+      "profile": "solc-0.8.25-cancun-ir-200",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "rp-5d7f"
+    },
+    {
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "environment": {
+        "FOUNDRY_SOLC": "0.8.22"
+      },
+      "id": "v1-488b/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "shanghai",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.22",
+        "via_ir": false
+      },
+      "tree": "v1-488b"
+    },
+    {
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "shanghai",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.22",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v1-488b/solc-0.8.22-shanghai-ir-200",
+      "profile": "solc-0.8.22-shanghai-ir-200",
+      "resolved_config": {
+        "evm_version": "shanghai",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.22",
+        "via_ir": true
+      },
+      "tree": "v1-488b"
+    },
+    {
+      "commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+      "environment": {
+        "FOUNDRY_SOLC": "0.8.22"
+      },
+      "id": "v1-6164/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "shanghai",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.22",
+        "via_ir": false
+      },
+      "tree": "v1-6164"
+    },
+    {
+      "commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "shanghai",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.22",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v1-6164/solc-0.8.22-shanghai-ir-200",
+      "profile": "solc-0.8.22-shanghai-ir-200",
+      "resolved_config": {
+        "evm_version": "shanghai",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.22",
+        "via_ir": true
+      },
+      "tree": "v1-6164"
+    },
+    {
+      "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "environment": {
+        "FOUNDRY_SOLC": "0.8.22"
+      },
+      "id": "v1-da74/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "shanghai",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.22",
+        "via_ir": false
+      },
+      "tree": "v1-da74"
+    },
+    {
+      "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "shanghai",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.22",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v1-da74/solc-0.8.22-shanghai-ir-200",
+      "profile": "solc-0.8.22-shanghai-ir-200",
+      "resolved_config": {
+        "evm_version": "shanghai",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.22",
+        "via_ir": true
+      },
+      "tree": "v1-da74"
+    },
+    {
+      "commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "environment": {},
+      "id": "v2-5838/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "v2-5838"
+    },
+    {
+      "commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "50000",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v2-5838/solc-0.8.25-cancun-ir-50000",
+      "profile": "solc-0.8.25-cancun-ir-50000",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "v2-5838"
+    },
+    {
+      "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "environment": {},
+      "id": "v2-a70f/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "v2-a70f"
+    },
+    {
+      "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "50000",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v2-a70f/solc-0.8.25-cancun-ir-50000",
+      "profile": "solc-0.8.25-cancun-ir-50000",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "v2-a70f"
+    },
+    {
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "environment": {},
+      "id": "v2-c7be/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "v2-c7be"
+    },
+    {
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v2-c7be/solc-0.8.25-cancun-ir-200",
+      "profile": "solc-0.8.25-cancun-ir-200",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "v2-c7be"
+    },
+    {
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "50000",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+      "profile": "solc-0.8.25-cancun-ir-50000",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "v2-c7be"
+    },
+    {
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "false"
+      },
+      "id": "v2-c7be/solc-0.8.25-cancun-legacy-200",
+      "profile": "solc-0.8.25-cancun-legacy-200",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "v2-c7be"
+    },
+    {
+      "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "environment": {},
+      "id": "v2-e1f7/default",
+      "profile": "default",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": false,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "tree": "v2-e1f7"
+    },
+    {
+      "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_OPTIMIZER": "true",
+        "FOUNDRY_OPTIMIZER_RUNS": "200",
+        "FOUNDRY_SOLC": "0.8.25",
+        "FOUNDRY_VIA_IR": "true"
+      },
+      "id": "v2-e1f7/solc-0.8.25-cancun-ir-200",
+      "profile": "solc-0.8.25-cancun-ir-200",
+      "resolved_config": {
+        "evm_version": "cancun",
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "solc": "0.8.25",
+        "via_ir": true
+      },
+      "tree": "v2-e1f7"
+    }
+  ],
+  "canonicaliser": {
+    "function": "canonical_storage_layout",
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "capture": {
+    "config_argv": [
+      "forge",
+      "config",
+      "--json"
+    ],
+    "inspect_argv": [
+      "forge",
+      "inspect",
+      "<identifier>",
+      "<storageLayout|methodIdentifiers>",
+      "--json"
+    ],
+    "isolation": "a disposable checkout of the pinned commit, FOUNDRY_OUT and FOUNDRY_CACHE_PATH outside it per build, every other FOUNDRY_ variable unset, HEAD unchanged and git status (tracked, untracked and ignored) identical before and after",
+    "script": ".hexaemeron/design/capture_profiles_1355.py",
+    "sha256": "fd17ec67b951eb6cbded967ab8d45a82d2c8c12c0930056a565e9368ea1d36c5"
+  },
+  "forge": {
+    "commit": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "version": "1.7.1"
+  },
+  "issue": 1355,
+  "profiles": {
+    "solc-0.8.22-shanghai-ir-200": {
+      "evm_version": "shanghai",
+      "optimizer": true,
+      "optimizer_runs": 200,
+      "solc": "0.8.22",
+      "via_ir": true
+    },
+    "solc-0.8.25-cancun-ir-200": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 200,
+      "solc": "0.8.25",
+      "via_ir": true
+    },
+    "solc-0.8.25-cancun-ir-50000": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 50000,
+      "solc": "0.8.25",
+      "via_ir": true
+    },
+    "solc-0.8.25-cancun-legacy-200": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 200,
+      "solc": "0.8.25",
+      "via_ir": false
+    },
+    "solc-0.8.28-cancun-ir-50000": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 50000,
+      "solc": "0.8.28",
+      "via_ir": true
+    }
+  },
+  "records": [
+    {
+      "default": {
+        "build": "v2-a70f/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "storage_layout_sha256": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13"
+      },
+      "deployed": {
+        "build": "v2-a70f/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "storage_layout_sha256": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13"
+      },
+      "identifier": "src/HooksFactory.sol:HooksFactory",
+      "state": "deployed",
+      "tree": "v2-a70f",
+      "type": "hooks-factory"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "storage_layout_sha256": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "storage_layout_sha256": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13"
+      },
+      "identifier": "src/HooksFactory.sol:HooksFactory",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "hooks-factory"
+    },
+    {
+      "default": {
+        "build": "v2-a70f/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage_layout_sha256": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33"
+      },
+      "deployed": {
+        "build": "v2-a70f/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage_layout_sha256": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33"
+      },
+      "identifier": "src/market/WildcatMarket.sol:WildcatMarket",
+      "state": "deployed",
+      "tree": "v2-a70f",
+      "type": "wildcat-market"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage_layout_sha256": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage_layout_sha256": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33"
+      },
+      "identifier": "src/market/WildcatMarket.sol:WildcatMarket",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "wildcat-market"
+    },
+    {
+      "default": {
+        "build": "v2-a70f/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "storage_layout_sha256": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d"
+      },
+      "deployed": {
+        "build": "v2-a70f/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "storage_layout_sha256": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d"
+      },
+      "identifier": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "state": "deployed",
+      "tree": "v2-a70f",
+      "type": "open-term-hooks"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "storage_layout_sha256": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "storage_layout_sha256": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d"
+      },
+      "identifier": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "open-term-hooks"
+    },
+    {
+      "default": {
+        "build": "v2-a70f/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "deployed": {
+        "build": "v2-a70f/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "state": "deployed",
+      "tree": "v2-a70f",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "default": {
+        "build": "v2-5838/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "deployed": {
+        "build": "v2-5838/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "state": "deployed",
+      "tree": "v2-5838",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage_layout_sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+      },
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "default": {
+        "build": "v2-a70f/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v2-a70f/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/MarketLens.sol:MarketLens",
+      "state": "deployed",
+      "tree": "v2-a70f",
+      "type": "market-lens-core"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/MarketLens.sol:MarketLens",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "market-lens-core"
+    },
+    {
+      "default": {
+        "build": "v2-e1f7/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v2-e1f7/solc-0.8.25-cancun-ir-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/MarketLens.sol:MarketLens",
+      "state": "deployed",
+      "tree": "v2-e1f7",
+      "type": "market-lens-app"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-ir-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/MarketLens.sol:MarketLens",
+      "state": "anchor",
+      "tree": "v2-c7be",
+      "type": "market-lens-app"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "a0d8183b5deb29f28fcbb50d66a12c0b55fed757d455d49260c73304e123f8e8",
+        "storage_layout_sha256": "83bd8215020169334f826f4408250e8eb8d25055d94701ddf21b04b63c43ba0e"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-legacy-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "a0d8183b5deb29f28fcbb50d66a12c0b55fed757d455d49260c73304e123f8e8",
+        "storage_layout_sha256": "83bd8215020169334f826f4408250e8eb8d25055d94701ddf21b04b63c43ba0e"
+      },
+      "identifier": "src/vault/Wildcat4626WrapperFactory.sol:Wildcat4626WrapperFactory",
+      "state": "deployed",
+      "tree": "v2-c7be",
+      "type": "wrapper-factory"
+    },
+    {
+      "default": {
+        "build": "v2-c7be/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "37121af43d2c350adbde5e08fc39785bdd72ecb49f8e5894dd26a0a0f0a72ab4",
+        "storage_layout_sha256": "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7"
+      },
+      "deployed": {
+        "build": "v2-c7be/solc-0.8.25-cancun-legacy-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "37121af43d2c350adbde5e08fc39785bdd72ecb49f8e5894dd26a0a0f0a72ab4",
+        "storage_layout_sha256": "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7"
+      },
+      "identifier": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "state": "deployed",
+      "tree": "v2-c7be",
+      "type": "wrapper"
+    },
+    {
+      "default": {
+        "build": "v2-e1f7/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v2-e1f7/solc-0.8.25-cancun-ir-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "state": "deployed",
+      "tree": "v2-e1f7",
+      "type": "open-access-role-provider"
+    },
+    {
+      "default": {
+        "build": "rp-5d7f/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "rp-5d7f/solc-0.8.25-cancun-ir-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "state": "anchor",
+      "tree": "rp-5d7f",
+      "type": "open-access-role-provider"
+    },
+    {
+      "default": {
+        "build": "v1-da74/default",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "storage_layout_sha256": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717"
+      },
+      "deployed": {
+        "build": "v1-da74/solc-0.8.22-shanghai-ir-200",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "storage_layout_sha256": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717"
+      },
+      "identifier": "src/WildcatArchController.sol:WildcatArchController",
+      "state": "deployed",
+      "tree": "v1-da74",
+      "type": "arch-controller"
+    },
+    {
+      "default": {
+        "build": "v1-488b/default",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "storage_layout_sha256": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717"
+      },
+      "deployed": {
+        "build": "v1-488b/solc-0.8.22-shanghai-ir-200",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "storage_layout_sha256": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717"
+      },
+      "identifier": "src/WildcatArchController.sol:WildcatArchController",
+      "state": "anchor",
+      "tree": "v1-488b",
+      "type": "arch-controller"
+    },
+    {
+      "default": {
+        "build": "v1-6164/default",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage_layout_sha256": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "deployed": {
+        "build": "v1-6164/solc-0.8.22-shanghai-ir-200",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage_layout_sha256": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "identifier": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "state": "deployed",
+      "tree": "v1-6164",
+      "type": "sanctions-sentinel"
+    },
+    {
+      "default": {
+        "build": "v1-488b/default",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage_layout_sha256": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "deployed": {
+        "build": "v1-488b/solc-0.8.22-shanghai-ir-200",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage_layout_sha256": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "identifier": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "state": "anchor",
+      "tree": "v1-488b",
+      "type": "sanctions-sentinel"
+    },
+    {
+      "default": {
+        "build": "v1-6164/default",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v1-6164/solc-0.8.22-shanghai-ir-200",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+      "state": "deployed",
+      "tree": "v1-6164",
+      "type": "sanctions-escrow"
+    },
+    {
+      "default": {
+        "build": "v1-488b/default",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "v1-488b/solc-0.8.22-shanghai-ir-200",
+        "compiled_settings": {
+          "evm_version": "shanghai",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.22",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+      "state": "anchor",
+      "tree": "v1-488b",
+      "type": "sanctions-escrow"
+    },
+    {
+      "default": {
+        "build": "fee-ac73/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "ce6f386ddec54f2bca69fa5d07168d55a1f6daf92ffb1f7d55520112128eb97c",
+        "storage_layout_sha256": "b2d29d20b2e378a0e40d6144b7dd55ecab886c944341254ad3f50b129ef18fad"
+      },
+      "deployed": {
+        "build": "fee-ac73/solc-0.8.25-cancun-ir-200",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 200,
+          "solc": "0.8.25",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "ce6f386ddec54f2bca69fa5d07168d55a1f6daf92ffb1f7d55520112128eb97c",
+        "storage_layout_sha256": "b2d29d20b2e378a0e40d6144b7dd55ecab886c944341254ad3f50b129ef18fad"
+      },
+      "identifier": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+      "state": "deployed",
+      "tree": "fee-ac73",
+      "type": "fee-recipient"
+    },
+    {
+      "default": {
+        "build": "col-46db/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.28",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "8965b8879ccf81f3243085579cb1ee1bfddc8e2bf8aacb3fc347e09726a583cf",
+        "storage_layout_sha256": "2a3ef331c3d7f62cf8de326eb54d9e654db28363159920e5bcd8f875b8ea6b97"
+      },
+      "deployed": {
+        "build": "col-46db/solc-0.8.28-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.28",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "8965b8879ccf81f3243085579cb1ee1bfddc8e2bf8aacb3fc347e09726a583cf",
+        "storage_layout_sha256": "2a3ef331c3d7f62cf8de326eb54d9e654db28363159920e5bcd8f875b8ea6b97"
+      },
+      "identifier": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "state": "deployed",
+      "tree": "col-46db",
+      "type": "collateral-factory"
+    },
+    {
+      "default": {
+        "build": "col-46db/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.28",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "3ceb5f7291be607cc178319a28dc6b74820b3f7e4f885e4de1bfc468907ee0eb",
+        "storage_layout_sha256": "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9"
+      },
+      "deployed": {
+        "build": "col-46db/solc-0.8.28-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.28",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "3ceb5f7291be607cc178319a28dc6b74820b3f7e4f885e4de1bfc468907ee0eb",
+        "storage_layout_sha256": "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9"
+      },
+      "identifier": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "state": "deployed",
+      "tree": "col-46db",
+      "type": "collateral-multi-party"
+    },
+    {
+      "default": {
+        "build": "col-46db/default",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": false,
+          "optimizer_runs": 200,
+          "solc": "0.8.28",
+          "via_ir": false
+        },
+        "method_identifiers_sha256": "38085e1490fe285f77fd927bc8f1be74b136f9ebdedeeb7bb5cac1ccf2f219c7",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "deployed": {
+        "build": "col-46db/solc-0.8.28-cancun-ir-50000",
+        "compiled_settings": {
+          "evm_version": "cancun",
+          "optimizer": true,
+          "optimizer_runs": 50000,
+          "solc": "0.8.28",
+          "via_ir": true
+        },
+        "method_identifiers_sha256": "38085e1490fe285f77fd927bc8f1be74b136f9ebdedeeb7bb5cac1ccf2f219c7",
+        "storage_layout_sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/CollateralLens.sol:CollateralLens",
+      "state": "deployed",
+      "tree": "col-46db",
+      "type": "collateral-lens"
+    }
+  ],
+  "schema": "kickoff-hermes-1355-profile-invariance/v1"
+}

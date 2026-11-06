@@ -60,7 +60,7 @@
           "propertyNames": {"pattern": "^0x[0-9a-f]{40}$"},
           "additionalProperties": {"type": "boolean"}
         },
-        "captures": {"type": "array", "maxItems": 1024, "items": {"$ref": "#/$defs/capture"}}
+        "captures": {"type": "array", "maxItems": 16384, "items": {"$ref": "#/$defs/capture"}}
       }
     },
     "capture": {

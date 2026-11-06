@@ -1,0 +1,9 @@
+{
+  "candidate": "adjacent-burn",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate adjacent-burn --criterion single-claim --report .hexaemeron/design-reports/adjacent-burn-single-claim.json",
+  "criterion": "single-claim",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

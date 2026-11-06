@@ -1,0 +1,228 @@
+{
+  "compiler_list_sha256": "fc198214f0fcb6387cfa445a8f6488eabb8e1246e70d7b97635236226e6f7e13",
+  "compiler_list_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/list.json",
+  "input_sha256": "50182b971f491adf8c7ac0ffaec53b7af2d1647135ed04287f7a14054c1597d0",
+  "records": [
+    {
+      "compiler_sha256": "9778e4a7667d5fd7632caf3ef3791d390a7cc217f94f96e919a31e3be332386a",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.6.11+commit.5ef660b1.js",
+      "observed_version": "0.6.11+commit.5ef660b1.Emscripten.clang",
+      "output_bytes": 20659,
+      "output_file": "compiler-0.6.11.json",
+      "output_sha256": "5da2638d7014247d8cac7300eb366278ca4a0c162b7361e9c743e0ea82d1c3c7",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.6.11+commit.5ef660b1"
+    },
+    {
+      "compiler_sha256": "5eaee3240a06891abf5ac70c75caf9a0c33ebe9a2736abdaa22a337f86c22933",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.10+commit.fc410830.js",
+      "observed_version": "0.8.10+commit.fc410830.Emscripten.clang",
+      "output_bytes": 20559,
+      "output_file": "compiler-0.8.10.json",
+      "output_sha256": "05f388ff8b44275855fbc092052a186ae3ae72388a31129c713e3cd3b9cecd2a",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.10+commit.fc410830"
+    },
+    {
+      "compiler_sha256": "387343bcf8f2b77fe4cdcddcaa84361fabf8e1c3508f874fbbcbb9c313542f56",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.13+commit.abaa5c0e.js",
+      "observed_version": "0.8.13+commit.abaa5c0e.Emscripten.clang",
+      "output_bytes": 21140,
+      "output_file": "compiler-0.8.13.json",
+      "output_sha256": "7a53faff416687f612918a4a16c4a2ccca0325b7a8053e2bdc95ae14365d0e57",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.13+commit.abaa5c0e"
+    },
+    {
+      "compiler_sha256": "71135e459d691767ce3453bab4564ef4a640dd50182da36517cbc1f96c1d4c7c",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.15+commit.e14f2714.js",
+      "observed_version": "0.8.15+commit.e14f2714.Emscripten.clang",
+      "output_bytes": 21140,
+      "output_file": "compiler-0.8.15.json",
+      "output_sha256": "7a53faff416687f612918a4a16c4a2ccca0325b7a8053e2bdc95ae14365d0e57",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.15+commit.e14f2714"
+    },
+    {
+      "compiler_sha256": "617828e63be485c7cc2dbcbdd5a22b582b40fafaa41016ad595637b83c90656c",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.17+commit.8df45f5f.js",
+      "observed_version": "0.8.17+commit.8df45f5f.Emscripten.clang",
+      "output_bytes": 21446,
+      "output_file": "compiler-0.8.17.json",
+      "output_sha256": "c791e5bda291d17f04c2fd3aefcb2c3c18c7e206c70fb7c4ef5924a73b8f5bb3",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    {
+      "compiler_sha256": "d82bdcba2c386d60b33aca148a9cfdf097551f68c5e45d8ec01aebbafacf5075",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.18+commit.87f61d96.js",
+      "observed_version": "0.8.18+commit.87f61d96.Emscripten.clang",
+      "output_bytes": 21446,
+      "output_file": "compiler-0.8.18.json",
+      "output_sha256": "c791e5bda291d17f04c2fd3aefcb2c3c18c7e206c70fb7c4ef5924a73b8f5bb3",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.18+commit.87f61d96"
+    },
+    {
+      "compiler_sha256": "e0b74e0a16e783a35169f74d1a615ecb48d07c30f97346b83cd587949268681e",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.19+commit.7dd6d404.js",
+      "observed_version": "0.8.19+commit.7dd6d404.Emscripten.clang",
+      "output_bytes": 21446,
+      "output_file": "compiler-0.8.19.json",
+      "output_sha256": "c791e5bda291d17f04c2fd3aefcb2c3c18c7e206c70fb7c4ef5924a73b8f5bb3",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.19+commit.7dd6d404"
+    },
+    {
+      "compiler_sha256": "5c509f760dc110a695c8b39bbc21e08c17dee431aa14d606f59e623d7c3cc657",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.20+commit.a1b79de6.js",
+      "observed_version": "0.8.20+commit.a1b79de6.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.20.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.20+commit.a1b79de6"
+    },
+    {
+      "compiler_sha256": "45bea352b41d04039e19439962ddef1d3e10cf2bc9526feba39f2cc79e3c5a17",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.21+commit.d9974bed.js",
+      "observed_version": "0.8.21+commit.d9974bed.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.21.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.21+commit.d9974bed"
+    },
+    {
+      "compiler_sha256": "92d283c545395b91a656fa1ec94d567a464bca55aebcdbb99debf42b43026845",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.22+commit.4fc1097e.js",
+      "observed_version": "0.8.22+commit.4fc1097e.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.22.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.22+commit.4fc1097e"
+    },
+    {
+      "compiler_sha256": "9c681b165c8647867589c0a5ecdc8692637a935928a2b1bbea2ff4a1f4976985",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.23+commit.f704f362.js",
+      "observed_version": "0.8.23+commit.f704f362.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.23.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.23+commit.f704f362"
+    },
+    {
+      "compiler_sha256": "11b054b55273ec55f6ab3f445eb0eb2c83a23fed43d10079d34ac3eabe6ed8b1",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.24+commit.e11b9ed9.js",
+      "observed_version": "0.8.24+commit.e11b9ed9.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.24.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.24+commit.e11b9ed9"
+    },
+    {
+      "compiler_sha256": "f8c9554471ff2db3843167dffb7a503293b5dc728c8305b044ef9fd37d626ca7",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.25+commit.b61c2a91.js",
+      "observed_version": "0.8.25+commit.b61c2a91.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.25.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.25+commit.b61c2a91"
+    },
+    {
+      "compiler_sha256": "db85e5396f523cc1a53c4c4d742e204f6dcba1a05842623d73be946809e11cd6",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.26+commit.8a97fa7a.js",
+      "observed_version": "0.8.26+commit.8a97fa7a.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.26.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.26+commit.8a97fa7a"
+    },
+    {
+      "compiler_sha256": "d91c08277f801321af4e80958015aea18b41c01d2c6a38310a23014485b0e51c",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.27+commit.40a35a09.js",
+      "observed_version": "0.8.27+commit.40a35a09.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.27.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.27+commit.40a35a09"
+    },
+    {
+      "compiler_sha256": "72ef580a6ec5943130028e5294313f24e9435520acc89f8c9dbfd0139d9ae146",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.28+commit.7893614a.js",
+      "observed_version": "0.8.28+commit.7893614a.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.28.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.28+commit.7893614a"
+    },
+    {
+      "compiler_sha256": "81475c98b6d2094a821fd9d7b6278556d8095ccc23e0b8a1029b1c08a89cd4b2",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.30+commit.73712a01.js",
+      "observed_version": "0.8.30+commit.73712a01.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.30.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.30+commit.73712a01"
+    },
+    {
+      "compiler_sha256": "d9216e6d578f67e1afd54ecb931b9db6a053ff2522d2e21eca3b61b337a9199c",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.32+commit.ebbd65e5.js",
+      "observed_version": "0.8.32+commit.ebbd65e5.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.32.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.32+commit.ebbd65e5"
+    },
+    {
+      "compiler_sha256": "c8649f8d57f81b3244c7d2dd662efc0620d1ae296f623b347a2c616a6cfd11d8",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.34+commit.80d5c536.js",
+      "observed_version": "0.8.34+commit.80d5c536.Emscripten.clang",
+      "output_bytes": 21678,
+      "output_file": "compiler-0.8.34.json",
+      "output_sha256": "763a7bd2103507d8700a6cbdd7482ec100825b34637bdb53a0d3a2b531694ccc",
+      "owner_count": 4,
+      "used_events_owners": 4,
+      "version": "0.8.34+commit.80d5c536"
+    },
+    {
+      "compiler_sha256": "663ba99f7c7ee907f0f03227502d48a78256c3c292ace3b79a5d3eb510665306",
+      "compiler_url": "https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/bin/soljson-v0.8.7+commit.e28d00a7.js",
+      "observed_version": "0.8.7+commit.e28d00a7.Emscripten.clang",
+      "output_bytes": 20464,
+      "output_file": "compiler-0.8.7.json",
+      "output_sha256": "3aee6a1facdf4b8b52aa39dce461d7db2dadb4fc32dea7ae90aa0e381495a09e",
+      "owner_count": 4,
+      "used_events_owners": 0,
+      "version": "0.8.7+commit.e28d00a7"
+    }
+  ],
+  "schema": "lemma-public-compiler-fixtures/v1"
+}

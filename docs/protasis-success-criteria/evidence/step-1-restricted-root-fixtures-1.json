@@ -1,0 +1,31 @@
+{
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "-B",
+    "-m",
+    "unittest",
+    "tests.test_fixture_python",
+    "tests.test_adr_assignment_workflow",
+    "tests.test_demonstrations.RunnerReportTests.test_the_public_set_runs_and_is_asserted_against_its_ledgers",
+    "tests.test_joined_front_door.PublicSetAgainstItsCardsTests.test_every_card_binds_a_record_the_public_set_reproduces",
+    "-v"
+  ],
+  "environment": {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/bin:/usr/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONUTF8": "1",
+    "TZ": "UTC"
+  },
+  "exit": 0,
+  "seconds": 50.87027916696388,
+  "log": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-restricted-root-fixtures-1.log",
+  "log_sha256": "5d9d744e07f996051813853c53ca5dfa96f1730c3d016d5c06be68939384d8eb"
+}

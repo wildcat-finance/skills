@@ -1,0 +1,39 @@
+{
+  "schema": "issue1513-fixture-isolation-guard/v1",
+  "test_command": "uv run --no-project --python 3.14.6 python -m unittest tests.test_joined_front_door.FixtureIsolationTests -v",
+  "original_commit": "0d15f21c520ca506fd134a4005696a7411a015c8",
+  "original_function_sha256": "07b6adcc47e8a48aeee9fa18c74eac10471b32cf5b617a1a85b490d12897781d",
+  "fixed_function_sha256": "5a2d2767b4164f2e8f72bca7db65d85cd116e6a2146c9011c6749eb8eb1282e0",
+  "guard_sha256": "57c0971246fc77029180081f498d83ddeaeaacd7713fc8d4d1270916cab2ee72",
+  "original_exit": 1,
+  "fixed_exit": 0,
+  "tests": 1,
+  "failure": "Source ctime changed during fixture creation under the original hard-link implementation.",
+  "coverage": [
+    "source identity after fixture creation",
+    "source bytes after fixture creation",
+    "source identity after fixture mutation",
+    "source bytes after fixture mutation",
+    "source identity after fixture removal",
+    "source bytes after fixture removal"
+  ],
+  "limit": "The guard is deterministic. It does not claim to replay the uninstrumented original full-run scheduling race.",
+  "reports": [
+    {
+      "path": ".hexaemeron/step-1-full-failed/fixture-guard-old.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".hexaemeron/step-1-full-failed/fixture-guard-old.stderr",
+      "sha256": "9abf8bd3302eb41e90e8bc9d8a9218d01ef5391ce583c9ed41a3b1fa672016f1"
+    },
+    {
+      "path": ".hexaemeron/step-1-full-failed/fixture-guard-fixed.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".hexaemeron/step-1-full-failed/fixture-guard-fixed.stderr",
+      "sha256": "821506d744cf3686ef9ed15ffd8a5684343f43fac64f4bc39447f9b606ec79b2"
+    }
+  ]
+}

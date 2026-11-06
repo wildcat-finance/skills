@@ -1,0 +1,8 @@
+test_cli_refuses_absent_surfaces_with_nonempty_expected_ids (test_known_failure_inventory.KnownFailureInventoryTests.test_cli_refuses_absent_surfaces_with_nonempty_expected_ids) ... ok
+test_committed_study_fixture_and_exact_checker_command_have_parity (test_known_failure_inventory.KnownFailureInventoryTests.test_committed_study_fixture_and_exact_checker_command_have_parity) ... ok
+test_exact_report_candidate_and_ordered_trailers_are_receipted (test_fiat_decision_assignments.FiatDecisionAssignmentTests.test_exact_report_candidate_and_ordered_trailers_are_receipted) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.804s
+
+OK

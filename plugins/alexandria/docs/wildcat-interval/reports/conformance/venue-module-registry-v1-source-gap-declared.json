@@ -1,0 +1,9 @@
+{
+  "candidate": "venue-module-registry",
+  "command": "python3 .hexaemeron/design/conformance.py v1-source-gap-declared --candidate venue-module-registry",
+  "criterion": "v1-source-gap-declared",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "issue508-source-inventory/v1",
+  "files": [
+    {
+      "source": ".hexaemeron/study.md",
+      "preserved": "study.source.txt",
+      "sha256": "a0ccd15795c1c3ba9c5e79f76bed08696b7a0ffef44f5777c3692229461cb164"
+    },
+    {
+      "source": ".hexaemeron/runbook.md",
+      "preserved": "runbook.md",
+      "sha256": "79297fd867afa0aa434ee4af1adaf22a9e546c121b8a34f38feab98690a4d886"
+    },
+    {
+      "source": ".hexaemeron/design-evidence.json",
+      "preserved": "design-evidence.json",
+      "sha256": "4a493318b2e68811b9ae9c18b293530b943f31e5795f5319671b23e787d4ce93"
+    },
+    {
+      "source": ".hexaemeron/audit-source-inventory.json",
+      "preserved": "audit-source-inventory.json",
+      "sha256": "0db0092d0822a7d96a68af09f2c17ad42c943243be69c75852277d664df590af"
+    },
+    {
+      "source": ".hexaemeron/design-probe.py",
+      "preserved": "design-probe.py",
+      "sha256": "9bea0649f2df86db66d749e4961bd7ee736c4e65cbb1f795e5b3d44d1f8d41b0"
+    },
+    {
+      "source": ".hexaemeron/host-write-probe.py",
+      "preserved": "host-write-probe.py",
+      "sha256": "acd016afa881bec87709b34c0ea6d1030913c5986ab061b9846e53ad1b653670"
+    },
+    {
+      "source": ".hexaemeron/host-write-probe-result.json",
+      "preserved": "host-write-probe-result.json",
+      "sha256": "ded4cbf5273d99be02b5166974f8dd51d8e76cfdae761bc47f4704d0e2c1cd89"
+    },
+    {
+      "source": ".hexaemeron/host-dispatch-probe.py",
+      "preserved": "host-dispatch-probe.py",
+      "sha256": "fe526de1fff206292da4f9a2f735c67002342a2db039abceea6ed767cbfd554d"
+    },
+    {
+      "source": ".hexaemeron/host-dispatch-probe-result.json",
+      "preserved": "host-dispatch-probe-result.json",
+      "sha256": "3082badfcef12120f9abc0996ecaa2fd976a645748a1ac210ee38373bddfc2cb"
+    },
+    {
+      "source": ".hexaemeron/reports/optional-tool-mediation-primitive-denies-unmediated-writer.json",
+      "preserved": "reports/optional-tool-mediation-primitive-denies-unmediated-writer.json",
+      "sha256": "aa9aa96182828c1ea8fc49ac1fe2b31517a229ecb590a51cc09673fb92ac76c3"
+    },
+    {
+      "source": ".hexaemeron/reports/optional-tool-mediation-successful-forbidden-writes.json",
+      "preserved": "reports/optional-tool-mediation-successful-forbidden-writes.json",
+      "sha256": "a5f28c89c79eb9656deb2ad2661f576f0ad9316139b94ce182b483264b0de84c"
+    },
+    {
+      "source": ".hexaemeron/reports/selection-observations.json",
+      "preserved": "reports/selection-observations.json",
+      "sha256": "543dbf4c895fa4b2e7a5788d9c1d463c41fbe0b9bfe522b2160c3b1b80c234ae"
+    },
+    {
+      "source": ".hexaemeron/reports/whole-worker-sandbox-primitive-denies-unmediated-writer.json",
+      "preserved": "reports/whole-worker-sandbox-primitive-denies-unmediated-writer.json",
+      "sha256": "11ec8686181ce26bf84f1e15f0a34f1c9200b90fca3e4df96aff0a312aba2603"
+    },
+    {
+      "source": ".hexaemeron/reports/whole-worker-sandbox-successful-forbidden-writes.json",
+      "preserved": "reports/whole-worker-sandbox-successful-forbidden-writes.json",
+      "sha256": "cb385fa1b3a8ddcda5f4c42d2378a56293524e5c172fde8d74dbd271a548e109"
+    }
+  ]
+}

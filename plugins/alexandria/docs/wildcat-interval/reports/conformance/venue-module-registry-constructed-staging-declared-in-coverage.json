@@ -1,0 +1,9 @@
+{
+  "candidate": "venue-module-registry",
+  "command": "python3 .hexaemeron/design/conformance.py constructed-staging-declared-in-coverage --candidate venue-module-registry",
+  "criterion": "constructed-staging-declared-in-coverage",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

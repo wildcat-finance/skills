@@ -1,0 +1,9 @@
+{
+  "candidate": "terminal-replay",
+  "command": "python3 selection_probe.py --candidate terminal-replay --criterion legacy-no-backfill --report reports/terminal-replay-legacy-no-backfill.json",
+  "criterion": "legacy-no-backfill",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

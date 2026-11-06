@@ -1,0 +1,122 @@
+{
+  "registry-format-dispatch": {
+    "spec": {
+      "components_added": [],
+      "dispatch": "registry-format",
+      "dispatch_inputs": [
+        "registry.format"
+      ],
+      "edit_sites": [
+        "alexandria_lib/venues/wildcat_v1.py, a new module",
+        "alexandria_lib/venues/wildcat_v2.py, a new module",
+        "alexandria_lib/venues/__init__.py, the wildcat-v1 FORMATS row",
+        "alexandria_lib/venues/__init__.py, the wildcat-v2 FORMATS row",
+        "usdc_interval.py _gaps, the Compound-shaped registry branch"
+      ],
+      "entry_points": [
+        "usdc_interval.py build",
+        "usdc_interval.py check"
+      ],
+      "pin_source": "reviewed-code"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "new-release-components": 0,
+      "scope-decision-invariant": true,
+      "venue-coupled-edit-sites": 5,
+      "venue-pin-in-reviewed-code": true,
+      "venue-registry-agreement-checked": false
+    }
+  },
+  "separate-wildcat-collector": {
+    "spec": {
+      "components_added": [],
+      "dispatch": "plan-venue",
+      "dispatch_inputs": [
+        "plan.venue"
+      ],
+      "edit_sites": [
+        "scripts/wildcat_interval.py, a new collector serving both estates",
+        "tests/test_wildcat_interval.py, a new suite",
+        "examples/wildcat-interval-v0, a new demonstration",
+        "schemas/, a new plan and receipt schema",
+        "tests/test_demonstrations.py, the demonstration registration"
+      ],
+      "entry_points": [
+        "usdc_interval.py build",
+        "usdc_interval.py check",
+        "wildcat_interval.py build",
+        "wildcat_interval.py check"
+      ],
+      "pin_source": "reviewed-code"
+    },
+    "values": {
+      "existing-build-check-path": false,
+      "new-release-components": 0,
+      "scope-decision-invariant": true,
+      "venue-coupled-edit-sites": 5,
+      "venue-pin-in-reviewed-code": true,
+      "venue-registry-agreement-checked": true
+    }
+  },
+  "venue-module-registry": {
+    "spec": {
+      "components_added": [],
+      "dispatch": "plan-venue",
+      "dispatch_inputs": [
+        "plan.venue"
+      ],
+      "edit_sites": [
+        "alexandria_lib/venues/wildcat_v1.py, a new module",
+        "alexandria_lib/venues/wildcat_v2.py, a new module",
+        "alexandria_lib/venues/__init__.py, the wildcat-v1 VENUES row",
+        "alexandria_lib/venues/__init__.py, the wildcat-v2 VENUES row"
+      ],
+      "entry_points": [
+        "usdc_interval.py build",
+        "usdc_interval.py check"
+      ],
+      "pin_source": "reviewed-code"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "new-release-components": 0,
+      "scope-decision-invariant": true,
+      "venue-coupled-edit-sites": 4,
+      "venue-pin-in-reviewed-code": true,
+      "venue-registry-agreement-checked": true
+    }
+  },
+  "venue-parameter-table": {
+    "spec": {
+      "components_added": [
+        "venue-parameters"
+      ],
+      "dispatch": "none",
+      "dispatch_inputs": [
+        "wildcat-v1-parameters.json",
+        "wildcat-v2-parameters.json"
+      ],
+      "edit_sites": [
+        "wildcat-v1-parameters.json, a new operator table",
+        "wildcat-v2-parameters.json, a new operator table",
+        "interval.py, the epoch-derivation branch",
+        "usdc_interval.py _gaps, the Compound-shaped registry branch",
+        "usdc_interval.py, the plan-to-table binding check"
+      ],
+      "entry_points": [
+        "usdc_interval.py build",
+        "usdc_interval.py check"
+      ],
+      "pin_source": "operator-document"
+    },
+    "values": {
+      "existing-build-check-path": true,
+      "new-release-components": 1,
+      "scope-decision-invariant": true,
+      "venue-coupled-edit-sites": 5,
+      "venue-pin-in-reviewed-code": false,
+      "venue-registry-agreement-checked": false
+    }
+  }
+}

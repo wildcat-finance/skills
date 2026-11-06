@@ -1,0 +1,39 @@
+{
+  "archival_source": "step-1-prose-source-README.md.txt preserves the earlier README bytes without treating historical relative links as current navigation.",
+  "diagnostics": {
+    "brevitas_readme": "step-1-brevitas-README-3.log",
+    "imprimatur": "step-1-imprimatur-final-2.json"
+  },
+  "protected_content": "Commands, identifiers, hashes, limits, counts, scope, absence and concurrency qualifications preserved. The decision publication record owns the single status-line repair.",
+  "retained_owner_text": "Brevitas B023 at decision lines 27-29 belongs to the unchanged prepared body; its protected bytes remain fixed.",
+  "schema": "step-1-prose-review/v1",
+  "sequence": [
+    "Sapheneia protected-content shape",
+    "Imprimatur zero defects before Vulgate",
+    "Vulgate review with no further wording changes",
+    "protected content comparison",
+    "final Imprimatur zero defects"
+  ],
+  "subjects": [
+    {
+      "path": "docs/protasis-success-criteria/README.md",
+      "sha256": "54e26ae19446da259564254bf384bd58515968a6cb5c3cd5766e425286ffbe81"
+    },
+    {
+      "path": "docs/protasis-success-criteria/proof.py",
+      "sha256": "4943beadcada2dbc5f6a494ae044af65d91d407c565bb138431cd38353c4073b"
+    },
+    {
+      "path": "tests/test_success_criteria_scaffold.py",
+      "sha256": "a487113e19c5e6367f7e0b5a7d355e01e8c73044da589c57b7fa5d24b2f78541"
+    },
+    {
+      "path": "docs/decisions/drafts/settle-study-criteria-from-recorded-execution.md",
+      "sha256": "a6ec5f13bbdba6e96fea4025b5aa80f707d9285b809ccae12e7420a96b1f9c7b"
+    }
+  ],
+  "supersedes": {
+    "path": "step-1-prose-review.json",
+    "sha256": "21133abaa01c48a2e1531240f08beef2dd232c7e593041681566e7711db26828"
+  }
+}

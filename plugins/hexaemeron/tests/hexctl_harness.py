@@ -157,7 +157,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                 process.wait(timeout=5)
         self.tmp.cleanup()
 
-    def run_ctl(self, *args, expect=0, audit_filter=True):
+    def run_ctl(self, *args, expect=0, audit_filter=True, historical_init=False):
         if (
             args
             and args[0] == "audit-round"
@@ -248,8 +248,31 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
         env["FAKE_GIT_PARENTS"] = json.dumps(pending_parents)
         env["FAKE_GH_PRS"] = json.dumps(pending_prs)
+        command = [sys.executable, HEXCTL, *args]
+        if historical_init or (args[:1] == ("init",) and getattr(self, "_historical_fixture_init", False)):
+            if not args or args[0] != "init":
+                raise AssertionError("historical construction applies only before init")
+            wrapper = """import importlib.util, os, sys
+source = sys.argv[1]
+spec = importlib.util.spec_from_file_location('historical_fixture_controller', source)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+original = module.commit
+def historical_first_commit(base_dir, state, event, data):
+    if event != 'init' or os.path.exists(module.ledger_path(base_dir)):
+        raise AssertionError('historical fixture cannot rewrite an existing run')
+    if data.get('contracts') != state.get('contracts'):
+        raise AssertionError('initial contract declarations disagree')
+    state['contracts'].pop('gate_commands')
+    data['contracts'] = dict(state['contracts'])
+    return original(base_dir, state, event, data)
+module.commit = historical_first_commit
+sys.argv = [source, *sys.argv[2:]]
+module.main()
+"""
+            command = [sys.executable, "-c", wrapper, HEXCTL, *args]
         proc = subprocess.run(
-            [sys.executable, HEXCTL, *args],
+            command,
             cwd=self.target,
             capture_output=True,
             text=True,
@@ -395,6 +418,7 @@ while len(candidate) >= 2 and candidate[0] == "-c":
     candidate = candidate[2:]
 if candidate and candidate[0] in (
     "verify-commit",
+    "cat-file",
     "show",
     "diff",
     "merge-base",
@@ -473,6 +497,19 @@ elif args and args[:2] == ["cat-file", "-s"]:
 elif args and args[:2] == ["cat-file", "blob"]:
     baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
     sys.stdout.buffer.write(baseline)
+elif args and args[:2] == ["cat-file", "commit"]:
+    # The fake verifier below models a valid SSH-signed fixture commit. It
+    # has no OpenPGP user IDs; real GPG readiness is covered by the native
+    # signed specimens in test_fiat_commit_supersession.py.
+    if mode == "missing-commit":
+        raise SystemExit(128)
+    sys.stdout.buffer.write(
+        b"tree " + b"0" * 40 + b"\\n"
+        b"author Fixture <fixture@example.invalid> 1 +0000\\n"
+        b"committer Fixture <fixture@example.invalid> 1 +0000\\n"
+        b"gpgsig -----BEGIN SSH SIGNATURE-----\\n"
+        b" -----END SSH SIGNATURE-----\\n\\nfixture\\n"
+    )
 elif (
     args
     and args[0] == "diff"
@@ -487,7 +524,14 @@ elif (
 elif args and args[0] == "rev-list":
     pair = next(value for value in args if ".." in value)
     base, head = pair.split("..", 1)
-    if mode == "malformed-range":
+    # A range named in FAKE_GIT_REV_LIST (JSON, keyed by the exact
+    # "<base>..<head>" operand) answers with exactly the listed lines; every
+    # other pair keeps the mode-keyed answers below.
+    ranges = json.loads(os.environ.get("FAKE_GIT_REV_LIST", "{{}}"))
+    if pair in ranges:
+        for line in ranges[pair]:
+            print(line)
+    elif mode == "malformed-range":
         print("not-a-sha")
     elif mode == "intermediate":
         print(hashlib.sha1(b"middle").hexdigest())
@@ -522,6 +566,10 @@ elif args and args[0] == "show":
             sys.stdout.write("Laurence Day\\0laurence@wildcat.finance\\n")
         else:
             sys.stdout.write("Shoggoth\\0shoggoth@wildcat.finance\\n")
+    elif mode == "no-trailers":
+        print("subject")
+    elif mode == "coauthor-only":
+        print("subject\\n\\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>")
     elif mode == "missing-trailer":
         print("subject\\n\\nWildcat-Origin: shoggoth")
     elif mode == "duplicate-trailer":
@@ -577,7 +625,42 @@ if mode == "nonzero":
 if mode == "invalid-json":
     print("not json")
     raise SystemExit(0)
+if args[:2] == ["api", "graphql"]:
+    if mode == "graphql-unreachable":
+        sys.stderr.write("graphql is not reachable in this fixture")
+        raise SystemExit(1)
+    if mode == "graphql-not-json":
+        print("this is not json")
+        raise SystemExit(0)
+    edits = json.loads(os.environ.get("FAKE_GH_EDITS", "null"))
+    if edits is None:
+        edits = {"totalCount": 1,
+                 "nodes": [{"editedAt": "2026-09-01T00:00:00Z",
+                            "diff": DEFAULT_ISSUE_BODY}]}
+    print(json.dumps({"data": {"repository": {"issue": {
+        "userContentEdits": edits}}}}))
+    raise SystemExit(0)
 path = args[-1]
+search = re.match(r"search/issues\\?q=(?P<query>[^&]*)", path)
+if search:
+    # The framework-N uniqueness read. Empty by default, so a case that is not
+    # about uniqueness keeps its fixture title without inheriting a collision.
+    holders = json.loads(os.environ.get("FAKE_GH_FRAMEWORK_HOLDERS", "[]"))
+    if mode == "search-incomplete":
+        print(json.dumps({"incomplete_results": True, "items": holders}))
+        raise SystemExit(0)
+    if mode == "search-items-not-array":
+        print(json.dumps({"incomplete_results": False, "items": {}}))
+        raise SystemExit(0)
+    if mode == "search-row-not-object":
+        print(json.dumps({"incomplete_results": False, "items": ["not an object"]}))
+        raise SystemExit(0)
+    if mode == "search-row-untyped":
+        print(json.dumps({"incomplete_results": False,
+                          "items": [{"title": 17, "number": "x"}]}))
+        raise SystemExit(0)
+    print(json.dumps({"incomplete_results": False, "items": holders}))
+    raise SystemExit(0)
 if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
     print(json.dumps({"full_name": repository}))
@@ -602,8 +685,12 @@ if issue:
         labels = DEFAULT_ISSUE_LABELS
     if mode == "issue-body-not-text":
         body = 17
+    stamps = json.loads(os.environ.get("FAKE_GH_ISSUE_STAMPS", "{}"))
+    stamp = stamps.get(url, stamps.get("default", {}))
     print(json.dumps({"number": int(issue.group("number")), "body": body,
-                      "title": title, "labels": labels}))
+                      "title": title, "labels": labels,
+                      "created_at": stamp.get("created_at", "2026-09-01T00:00:00Z"),
+                      "updated_at": stamp.get("updated_at", "2026-09-01T00:00:00Z")}))
     raise SystemExit(0)
 pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
 if pull:
@@ -616,7 +703,7 @@ if pull:
     if mode == "pr-head-mismatch":
         payload["head"]["sha"] = "9" * 40
     if mode == "host-pr-author":
-        payload["user"] = {"login": "app/claude"}
+        payload["user"] = {"login": "claude[bot]"}
     if mode == "publisher-committer":
         payload["user"] = {"login": "laurenceday"}
     if mode == "host-pr-byline":
@@ -692,10 +779,14 @@ elif mode == "attribution-second-coauthor":
         "Co-authored-by: Kethcode <kethcode@example.invalid>\\n"
         "Wildcat-Origin: shoggoth"
     )
+# The same parent table the fake git's `show --format=%P` reads, so a fixture
+# that lands a merge describes it once for both transports.
+fake_parents = json.loads(os.environ.get("FAKE_GIT_PARENTS", "{}"))
 payload = {
     "sha": None if mode == "missing-sha" else sha,
     "author": account,
     "committer": committer_account,
+    "parents": [{"sha": parent} for parent in fake_parents.get(sha, [])],
     "commit": {
         "author": identity,
         "committer": committer_identity,
@@ -746,7 +837,14 @@ print(json.dumps(payload))
             args += ["--task-issue", task_issue]
         if base is not None:
             args += ["--base", base]
-        self.run_ctl(*args)
+        # These shared fixtures describe the pre-gate lifecycle. Real run_ctl
+        # init calls remain strict and are exercised by current gate tests.
+        previous = getattr(self, "_historical_fixture_init", False)
+        self._historical_fixture_init = True
+        try:
+            self.run_ctl(*args)
+        finally:
+            self._historical_fixture_init = previous
         self.write_design_evidence()
 
     def write_design_evidence(self, target=None):

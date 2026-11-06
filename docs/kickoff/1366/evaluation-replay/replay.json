@@ -1,0 +1,159 @@
+{
+  "date": "2026-08-31",
+  "derived_record": {
+    "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+    "sha256": "617496c9a7f2009b741741297d94677b913f4c89c5f19e7480b709ea271c6f16"
+  },
+  "derived_tree_sha256": "1708c15832b214c6eab0f024e16313fb31219ff038788daac40eac9546e7bf28",
+  "domain_evidence": "not-supplied",
+  "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
+  "new_model_observation": false,
+  "new_operation_coverage": false,
+  "only_changed_field": "tree_sha256",
+  "operation": "historical-re-evaluation",
+  "owner": "tests/promise_evaluation_driver.py",
+  "raw_answers": {
+    "path": "docs/promise-machine/obligation-gates/evaluation-answers.json",
+    "sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855"
+  },
+  "source_commit": "dd3b5d107a3514e0f9092c0ec4e735f903eaec00",
+  "source_record": {
+    "path": "docs/kickoff/1366/evaluation-replay/original-evaluation-run.json",
+    "sha256": "ceac49c01ac03d3984ac9c320b25885d17a800309c9544a8afe263a488c59548"
+  },
+  "source_tree_sha256": "86f71e2d11f853b6a712ec7ab077bafb00dd647b33fe95b94c54c0207e5319d7",
+  "unchanged_prompts": [
+    {
+      "id": "hexaemeron-fizz-convert-properties",
+      "prompt": "hexaemeron-fizz-convert-properties.txt",
+      "prompt_sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-fizz-harness-campaign",
+      "prompt": "hexaemeron-fizz-harness-campaign.txt",
+      "prompt_sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-fizz-sync-drift",
+      "prompt": "hexaemeron-fizz-sync-drift.txt",
+      "prompt_sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-solidity-audit-report",
+      "prompt": "hexaemeron-solidity-audit-report.txt",
+      "prompt_sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-x-ray-preaudit",
+      "prompt": "hexaemeron-x-ray-preaudit.txt",
+      "prompt_sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hypomnema-record-placement",
+      "prompt": "hypomnema-record-placement.txt",
+      "prompt_sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "kronos-fiat-dispatch",
+      "prompt": "kronos-fiat-dispatch.txt",
+      "prompt_sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "sapheneia-deactivation",
+      "prompt": "sapheneia-deactivation.txt",
+      "prompt_sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "sapheneia-durable-record-shape",
+      "prompt": "sapheneia-durable-record-shape.txt",
+      "prompt_sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "sapheneia-session-shape",
+      "prompt": "sapheneia-session-shape.txt",
+      "prompt_sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "vulgate-register-rewrite",
+      "prompt": "vulgate-register-rewrite.txt",
+      "prompt_sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    }
+  ]
+}

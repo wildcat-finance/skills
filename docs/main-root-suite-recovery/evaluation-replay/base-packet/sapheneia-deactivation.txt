@@ -1,0 +1,36 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is sapheneia-deactivation. Its source path is plugins/sapheneia/skills/sapheneia/SKILL.md.
+The exact declaration is:
+
+### sapheneia-deactivation
+
+- Promise: Sapheneia stops only after an explicit recognised deactivation from the user and one confirmation that default response shape has resumed.
+- Evidence: The recorded user instruction matching a named stop phrase and the agent's confirmation.
+- Evidence classes: recorded, checked
+- Boundary: A topic change, terse reply, delay or context compaction is not deactivation and supplies no evidence about diagnosis, mood or intent.
+- Authorises: Returning subsequent interaction to the default response style while leaving other active skill contracts unchanged.
+- Consequence: 0
+- Refuses: Silent deactivation, inference from user behaviour or removal of another skill's required substance or format.
+- Recovery: Keep Sapheneia active until the user gives an explicit stop instruction, then confirm the state change once.
+- Exceptions: none
+
+The evaluation request is:
+
+Decide whether Sapheneia may deactivate under its canonical stop contract.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A delay, terse message or stop instruction is used to infer diagnosis, mood or intent.
+E02. The user gives an explicit recognised stop instruction and the agent confirms that default response shape has resumed.
+E03. Keep Sapheneia active until the current user gives an explicit stop instruction, then confirm the change once.
+E04. A topic change or terse reply is treated as deactivation without an explicit stop instruction.
+E05. The stop phrase belongs to another user or an earlier session.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

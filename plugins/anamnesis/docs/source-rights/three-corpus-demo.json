@@ -1,0 +1,130 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "python3",
+        "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+        "demo",
+        "--specimen",
+        "plugins/anamnesis/specimens/pilot"
+      ],
+      "counts": {
+        "engagements": 3,
+        "findings": 41,
+        "occurrences": 41,
+        "relations": 142,
+        "remediations": 19,
+        "rounds": 31,
+        "rounds_with_no_findings": 12,
+        "submissions": 41,
+        "verifications": 31
+      },
+      "exit": 0,
+      "negative": [
+        {
+          "exit": 1,
+          "expected_refusal": "A109",
+          "mutation": "rights-digest",
+          "stderr": "refused [A109] manifest release id is 4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f, but its components and sources produce 13dcf1affed5dc45aaeeee7984e6f73c8048ccce6ced34a4a2a23672bccc307a\n",
+          "stdout": ""
+        },
+        {
+          "exit": 1,
+          "expected_refusal": "A012",
+          "mutation": "legacy-row",
+          "stderr": "refused [A012] release manifest sources entry is missing basis\n",
+          "stdout": ""
+        }
+      ],
+      "release_id": "4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f",
+      "specimen": "pilot",
+      "stderr": "",
+      "stdout": "1. two fresh builds agree on 4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f across 7 components\n2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\n3. Elenchus analogues for severity high: 2; verdict None\n4. Synkrisis cohort cohort:4fb98a0684cd4704: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\n5. baseline, not a threshold: 0.02s wall clock, peak resident 30916608 bytes. No budget is declared for either, so neither gates.\n"
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+        "demo",
+        "--specimen",
+        "plugins/anamnesis/specimens/estate"
+      ],
+      "counts": {
+        "engagements": 2,
+        "findings": 17,
+        "occurrences": 17,
+        "relations": 34,
+        "remediations": 0,
+        "rounds": 4,
+        "rounds_with_no_findings": 0,
+        "submissions": 17,
+        "verifications": 4
+      },
+      "exit": 0,
+      "negative": [
+        {
+          "exit": 1,
+          "expected_refusal": "A109",
+          "mutation": "rights-digest",
+          "stderr": "refused [A109] manifest release id is b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2, but its components and sources produce b0a60726f082acea594ea9d492b9f46410a813c8b11cf18766872025313bf011\n",
+          "stdout": ""
+        },
+        {
+          "exit": 1,
+          "expected_refusal": "A012",
+          "mutation": "legacy-row",
+          "stderr": "refused [A012] release manifest sources entry is missing basis\n",
+          "stdout": ""
+        }
+      ],
+      "release_id": "b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2",
+      "specimen": "estate",
+      "stderr": "",
+      "stdout": "1. two fresh builds agree on b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2 across 7 components\n2. the committed release verifies: 17 finding(s), 4 round(s), 0 with no findings\n3. Elenchus analogues for severity high: 4; verdict None\n4. Synkrisis cohort cohort:b321c3541cc665b9: 17 included against 17 findings; 0 exclusion(s), 59 unknown(s)\n5. baseline, not a threshold: 0.01s wall clock, peak resident 30113792 bytes. No budget is declared for either, so neither gates.\n"
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+        "demo",
+        "--specimen",
+        "plugins/anamnesis/specimens/synopsis"
+      ],
+      "counts": {
+        "engagements": 3,
+        "findings": 41,
+        "occurrences": 41,
+        "relations": 142,
+        "remediations": 19,
+        "rounds": 31,
+        "rounds_with_no_findings": 12,
+        "submissions": 41,
+        "verifications": 31
+      },
+      "exit": 0,
+      "negative": [
+        {
+          "exit": 1,
+          "expected_refusal": "A109",
+          "mutation": "rights-digest",
+          "stderr": "refused [A109] manifest release id is 8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d, but its components and sources produce 8cb36cc348afc037a7a7322b50a179e8900160b9fb0214d7ec353796522db117\n",
+          "stdout": ""
+        },
+        {
+          "exit": 1,
+          "expected_refusal": "A012",
+          "mutation": "legacy-row",
+          "stderr": "refused [A012] release manifest sources entry is missing basis\n",
+          "stdout": ""
+        }
+      ],
+      "release_id": "8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d",
+      "specimen": "synopsis",
+      "stderr": "",
+      "stdout": "1. two fresh builds agree on 8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d across 7 components\n2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\n3. Elenchus analogues for severity high: 2; verdict None\n4. Synkrisis cohort cohort:8e827216e88a2735: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\n5. baseline, not a threshold: 0.02s wall clock, peak resident 31014912 bytes. No budget is declared for either, so neither gates.\n"
+    }
+  ],
+  "program": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+  "program_sha256": "793e7eb69704d35727eedb3a0a658234b0b060523eefb9538f23bb7837505e9f",
+  "schema": "anamnesis-source-rights-demo/v1"
+}

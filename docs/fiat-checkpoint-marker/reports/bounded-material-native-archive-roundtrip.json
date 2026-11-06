@@ -1,0 +1,1 @@
+{"candidate": "bounded-material", "command": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate bounded-material --criterion native-archive-roundtrip --report .hexaemeron/reports/bounded-material-native-archive-roundtrip.json", "criterion": "native-archive-roundtrip", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

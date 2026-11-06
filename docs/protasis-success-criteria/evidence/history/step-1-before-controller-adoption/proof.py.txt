@@ -1,0 +1,303 @@
+#!/usr/bin/env python3
+"""Check the published design home and replay its bounded selection specimens."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path, PurePosixPath
+import re
+import stat
+import subprocess
+import sys
+import tempfile
+
+
+PACKAGE = "docs/protasis-success-criteria"
+SELF = PACKAGE + "/proof.py"
+CANDIDATES = ("controller-capture", "producer-report", "terminal-replay")
+SELECTED = "controller-capture"
+FUTURE = {
+    "declaration-contract": 2,
+    "execution-custody": 3,
+    "terminal-compatibility": 4,
+    "joined-demonstration": 5,
+}
+CRITERIA = ("design-home", *FUTURE)
+SLUG = "settle-study-criteria-from-recorded-execution"
+SELECTOR = "adr/" + SLUG
+DRAFT = "docs/decisions/drafts/" + SLUG + ".md"
+DECISION_SHA256 = "a6ec5f13bbdba6e96fea4025b5aa80f707d9285b809ccae12e7420a96b1f9c7b"
+FROZEN = {
+    "study.md": "3b15af2f2137075ee5c265cff385f25f966d2f47e77f06d3104ce00a494b7be4",
+    "runbook.md": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+    "design-evidence.json": "89938e2d649d73c98298ea70823282ed83d397b2e21c9b79cdd01e35184944f7",
+    "selection_probe.py": "3f4b3c3de29084aa0accb047919cbfc7f7c4cb12c2d7118d3490cb48dac2bc8b",
+    "evidence/opening-study.md": "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92",
+}
+DESIGN_CHECKER = "plugins/hexaemeron/skills/protasis/scripts/design_evidence.py"
+BRIDGE_CHECKER = "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
+MAX_INPUT_BYTES = 1024 * 1024
+MAX_TOTAL_BYTES = 8 * 1024 * 1024
+DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+
+
+class Refusal(Exception):
+    """Carry a bounded reason without copying input or exception text."""
+
+
+def digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def encoded(value):
+    return (json.dumps(value, sort_keys=True, indent=2) + "\n").encode("utf-8")
+
+
+def relative_parts(value):
+    if not isinstance(value, str) or len(value.encode("utf-8")) > 512:
+        raise Refusal("unsafe-path")
+    parts = PurePosixPath(value).parts
+    if (not parts or value.startswith("/") or PurePosixPath(value).as_posix() != value
+            or any(part in (".", "..") for part in parts)
+            or re.fullmatch(r"[A-Za-z0-9_./-]+", value) is None):
+        raise Refusal("unsafe-path")
+    return parts
+
+
+def open_directory(root, parts, *, create=False):
+    descriptor = os.open(root, DIRECTORY_FLAGS)
+    try:
+        for part in parts:
+            if create:
+                try:
+                    os.mkdir(part, 0o755, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+            following = os.open(part, DIRECTORY_FLAGS, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = following
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def read_file(root, relative):
+    parts = relative_parts(relative)
+    directory = open_directory(root, parts[:-1])
+    try:
+        descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                             dir_fd=directory)
+        with os.fdopen(descriptor, "rb") as stream:
+            before = os.fstat(stream.fileno())
+            if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_INPUT_BYTES:
+                raise Refusal("input-not-bounded-regular-file")
+            data = stream.read(MAX_INPUT_BYTES + 1)
+            after = os.fstat(stream.fileno())
+            named = os.stat(parts[-1], dir_fd=directory, follow_symlinks=False)
+            identity = lambda item: (item.st_dev, item.st_ino, item.st_size,
+                                     item.st_mtime_ns, item.st_ctime_ns)
+            if (len(data) > MAX_INPUT_BYTES or identity(before) != identity(after)
+                    or identity(after) != identity(named)):
+                raise Refusal("input-changed-during-read")
+            return data
+    finally:
+        os.close(directory)
+
+
+class Inputs:
+    def __init__(self, root):
+        self.root = root
+        self.bytes = {}
+
+    def read(self, path, expected=None):
+        data = read_file(self.root, path)
+        if expected is not None and digest(data) != expected:
+            raise Refusal("source-digest-mismatch")
+        if path in self.bytes and self.bytes[path] != data:
+            raise Refusal("source-changed")
+        self.bytes[path] = data
+        if sum(map(len, self.bytes.values())) > MAX_TOTAL_BYTES:
+            raise Refusal("source-inventory-too-large")
+        return data
+
+    def recheck(self):
+        for path, data in self.bytes.items():
+            if read_file(self.root, path) != data:
+                raise Refusal("source-changed")
+
+    def inventory(self):
+        return [{"path": path, "sha256": digest(data), "bytes": len(data)}
+                for path, data in sorted(self.bytes.items())]
+
+
+def load_module(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def check_design_home(root):
+    """Return executed checks and their inputs; raise Refusal for an unmet join."""
+    inputs = Inputs(root)
+    inputs.read(SELF)
+    python_version = inputs.read(".python-version").decode("ascii").strip()
+    if python_version != ".".join(map(str, sys.version_info[:3])):
+        raise Refusal("interpreter-version-mismatch")
+    frozen = {name: inputs.read(PACKAGE + "/" + name, expected)
+              for name, expected in FROZEN.items()}
+    if not frozen["study.md"].startswith(frozen["evidence/opening-study.md"]):
+        raise Refusal("opening-study-prefix-mismatch")
+    inputs.read(DESIGN_CHECKER)
+    inputs.read(BRIDGE_CHECKER)
+    design = load_module(root / DESIGN_CHECKER, "criteria_design_checker")
+    bridge = load_module(root / BRIDGE_CHECKER, "criteria_bridge_checker")
+    findings = bridge.check_design_bridge(PACKAGE + "/study.md",
+                                         PACKAGE + "/design-evidence.json", root)
+    if findings:
+        raise Refusal("design-home-join-refused:" + findings[0].code)
+    home, home_path, error = bridge._read_stable_adr(root, SELECTOR)
+    if home is None:
+        raise Refusal("design-home-unavailable")
+    relative = home_path.as_posix()
+    home = inputs.read(relative)
+    if relative == DRAFT:
+        normalised = home
+    elif re.fullmatch(r"docs/decisions/ADR-[0-9]{3}-" + SLUG + r"\.md", relative):
+        normalised = re.sub(rb"\A# ADR-[0-9]{3}: ", b"# Decision: ", home, count=1)
+    else:
+        raise Refusal("design-home-outside-canonical-location")
+    if digest(normalised) != DECISION_SHA256:
+        raise Refusal("decision-content-drift")
+    findings, record, consumed = design.evaluate(root / PACKAGE / "design-evidence.json",
+                                                "design-lock")
+    if findings:
+        raise Refusal("selection-check-refused:" + findings[0].code)
+    if record["selection"]["candidate"] != SELECTED:
+        raise Refusal("selection-changed")
+    selection_ids = {item["id"] for item in record["criteria"] if item["stage"] == "selection"}
+    selection = [item for item in consumed if item["criterion"] in selection_ids]
+    if len(selection) != 18:
+        raise Refusal("selection-coverage-mismatch")
+    reports = {}
+    for row in selection:
+        data = inputs.read(PACKAGE + "/" + row["path"], row["sha256"])
+        reports[(row["candidate"], row["criterion"])] = json.loads(data)
+    observations = []
+    with tempfile.TemporaryDirectory(prefix="criteria-selection-") as scratch:
+        directory = Path(scratch).resolve()
+        probe_path = directory / "selection_probe.py"
+        with probe_path.open("xb") as stream:
+            stream.write(frozen["selection_probe.py"])
+        (directory / "probe-tmp").mkdir()
+        probe = load_module(probe_path, "criteria_selection_specimens")
+        for candidate in CANDIDATES:
+            actual = probe.specimens(candidate)
+            if set(actual) != selection_ids:
+                raise Refusal("selection-replay-coverage-mismatch")
+            for criterion, (value, unit) in sorted(actual.items()):
+                report = reports[(candidate, criterion)]
+                if (type(value) is not type(report["value"]) or value != report["value"]
+                        or unit != report["unit"]):
+                    raise Refusal("selection-replay-mismatch")
+                observations.append({"candidate": candidate, "criterion": criterion,
+                                     "value": value, "unit": unit})
+    inputs.recheck()
+    return inputs, {
+        "schema": "success-criteria-scaffold-evidence/v1",
+        "scope": "Design-home join and policy specimens; future controller conformance remains unavailable.",
+        "interpreter": {"path": sys.executable, "version": python_version},
+        "sources": inputs.inventory(),
+        "checks": [
+            {"name": "hypomnema-design-bridge", "record": relative, "findings": []},
+            {"name": "protasis-design-selection", "selected": SELECTED, "consumed": selection},
+            {"name": "policy-specimen-replay", "observations": observations},
+        ],
+    }
+
+
+def output_paths(report):
+    parts = relative_parts(report)
+    if (len(parts) != 3 or parts[:2] != (".hexaemeron", "reports")
+            or re.fullmatch(r"[a-z0-9][a-z0-9-]{0,95}\.json", parts[-1]) is None):
+        raise Refusal("report-outside-fixed-directory")
+    return parts[-1], parts[-1][:-5] + ".evidence.json"
+
+
+def require_absent(directory, names):
+    for name in names:
+        try:
+            os.stat(name, dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError:
+            continue
+        raise Refusal("report-already-exists")
+
+
+def write_exclusive(directory, name, data):
+    descriptor = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                         0o644, dir_fd=directory)
+    with os.fdopen(descriptor, "wb") as stream:
+        stream.write(data)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.fsync(directory)
+
+
+def run(root, candidate, criterion, report_path):
+    """Write a fresh design report and companion evidence after the checks pass."""
+    if criterion in FUTURE:
+        raise Refusal("operation-not-implemented:" + criterion + ":step-" + str(FUTURE[criterion]))
+    if criterion != "design-home":
+        raise Refusal("unknown-operation")
+    if candidate != SELECTED:
+        raise Refusal("candidate-not-selected")
+    names = output_paths(report_path)
+    directory = open_directory(root, (".hexaemeron", "reports"), create=True)
+    try:
+        require_absent(directory, names)
+        inputs, evidence = check_design_home(root)
+        command = ("python3 " + SELF + " --candidate " + candidate
+                   + " --criterion " + criterion + " --report " + report_path)
+        report = {"schema": "protasis-design-report/v1", "candidate": candidate,
+                  "criterion": criterion, "value": True, "unit": "boolean",
+                  "command": command, "exit": 0}
+        report_bytes = encoded(report)
+        evidence["report"] = {"path": report_path, "sha256": digest(report_bytes)}
+        inputs.recheck()
+        require_absent(directory, names)
+        write_exclusive(directory, names[1], encoded(evidence))
+        inputs.recheck()
+        write_exclusive(directory, names[0], report_bytes)
+        return report
+    finally:
+        os.close(directory)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", choices=CANDIDATES, required=True)
+    parser.add_argument("--criterion", choices=CRITERIA, required=True)
+    parser.add_argument("--report", required=True)
+    args = parser.parse_args(argv)
+    root = Path(__file__).absolute().parents[2]
+    try:
+        report = run(root, args.candidate, args.criterion, args.report)
+    except Refusal as error:
+        reason = str(error)
+    except (OSError, ValueError, KeyError, AssertionError, RuntimeError, subprocess.SubprocessError):
+        reason = "input-or-execution-unavailable"
+    else:
+        print(json.dumps(report, sort_keys=True))
+        return 0
+    print(json.dumps({"event": "success-criteria-proof-refused", "candidate": args.candidate,
+                      "criterion": args.criterion, "reason": reason}, sort_keys=True))
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

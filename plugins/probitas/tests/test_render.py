@@ -1,6 +1,7 @@
 """The dossier: section order, determinism, and nothing invented on the way."""
 
 import copy
+import json
 import os
 import re
 import unittest
@@ -447,6 +448,51 @@ class TestLoad(unittest.TestCase):
                 json.dump(payload, handle)
             with self.assertRaises(render.RenderError):
                 render.load(path)
+
+
+class TestProvenanceThatCannotBePlaced(unittest.TestCase):
+    """Construction refuses these; an evidence file edited afterwards did not."""
+
+    def assert_refused(self, payload, named):
+        attempts = (
+            ("load", lambda: render.load_bytes(json.dumps(payload).encode(), "edited.json")),
+            ("render", lambda: render.render(payload)),
+        )
+        for label, attempt in attempts:
+            with self.subTest(path=label):
+                with self.assertRaises(render.RenderError) as caught:
+                    attempt()
+                self.assertIn(named, str(caught.exception))
+
+    def test_a_tier_outside_the_three_is_named(self):
+        payload = evidence()
+        for item in payload["subject"]["addresses"] + payload["records"]:
+            item["provenance"] = "protocol-observed"
+        self.assert_refused(payload, "tier 'protocol-observed'")
+
+    def test_a_record_against_no_subject_address_is_named(self):
+        payload = evidence()
+        payload["records"][0]["address"] = INFERRED
+        self.assert_refused(payload, f"cites '{INFERRED}', which is not a subject")
+
+    def test_a_record_whose_tier_differs_from_its_address_is_named(self):
+        for tier in ("inferred", "linked"):
+            payload = evidence()
+            payload["records"][0]["provenance"] = tier
+            with self.subTest(tier=tier):
+                self.assert_refused(payload, f"tier '{tier}', but its address")
+
+    def test_an_address_given_two_tiers_is_refused(self):
+        payload = evidence()
+        payload["subject"]["addresses"].append(
+            {"address": DECLARED, "provenance": "inferred"}
+        )
+        self.assert_refused(payload, "both declared and inferred")
+
+    def test_a_record_that_is_not_an_object_is_refused(self):
+        payload = evidence()
+        payload["records"][0] = "not a record"
+        self.assert_refused(payload, "record 0 is not an object")
 
 
 class TestFormatting(unittest.TestCase):

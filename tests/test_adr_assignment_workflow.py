@@ -9,9 +9,12 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
+
+from tests.fixture_python import pinned_python_path
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -162,7 +165,7 @@ class AssignmentRepository:
     def plan(self, slug: str, *, base: str | None = None) -> dict[str, object]:
         report = Path(f".hexaemeron/{slug}.json")
         result = run(
-            "python3",
+            sys.executable,
             str(ALLOCATOR),
             "plan",
             "--repo",
@@ -205,7 +208,7 @@ class AssignmentRepository:
         body = message or "\n".join(["Assign decision record", "", *trailers])
         git(self.source, "checkout", "--quiet", "--detach", self.products[slug])
         applied = run(
-            "python3",
+            sys.executable,
             str(ALLOCATOR),
             "apply",
             "--repo",
@@ -249,7 +252,7 @@ class AssignmentRepository:
 
     def replay(self, slug: str, *, allocator: Path = ALLOCATOR):
         return run(
-            "python3",
+            sys.executable,
             str(allocator),
             "replay",
             "--repo",
@@ -297,7 +300,7 @@ def evaluate_workflow(
         if mutated == block:
             raise AssertionError("mutation fixture changed nothing")
         block = mutated
-    with scratch_directory(prefix="adr-assignment-run-") as directory:
+    with pinned_python_path(), scratch_directory(prefix="adr-assignment-run-") as directory:
         temporary = Path(directory)
         output = temporary / "output"
         summary = temporary / "summary"

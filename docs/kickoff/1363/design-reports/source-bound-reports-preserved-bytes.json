@@ -1,0 +1,9 @@
+{
+  "candidate": "source-bound-reports",
+  "command": "python3 .hexaemeron/design-selection/probe.py --candidate source-bound-reports --criterion preserved-bytes --report .hexaemeron/design-reports/source-bound-reports-preserved-bytes.json",
+  "criterion": "preserved-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 43414
+}

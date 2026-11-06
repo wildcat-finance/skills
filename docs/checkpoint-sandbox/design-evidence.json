@@ -1,0 +1,275 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "bubblewrap-netns",
+      "summary": "Use the packaged Bubblewrap network and PID namespaces, preserving /dev, without a syscall filter."
+    },
+    {
+      "id": "bubblewrap-seccomp",
+      "summary": "Keep the macOS backend and add packaged Bubblewrap with the measured native x86-64 syscall filter, PID cleanup and explicit /dev bind."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "network-four-operations",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "launch-wall-ms",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "policy-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "native-verifier-agreement",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "bounded-cleanup",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "product-linux",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:2"
+    },
+    {
+      "id": "hostile-evidence",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:2"
+    },
+    {
+      "id": "hosted-linux",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "hosted-macos",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "network-four-operations",
+      "state": "fail",
+      "report": {
+        "path": "reports/selection/bubblewrap-netns-network-four-operations.json",
+        "sha256": "b0ea29d8e2015a1760c886ff881b9836755dea44eb104573935ef09a2bd072f6"
+      }
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "launch-wall-ms",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-netns-launch-wall-ms.json",
+        "sha256": "0fdd3dcabe98450c8948ee7e652caf322f462c1fa344fa7423b9b45e168c7d23"
+      }
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "policy-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-netns-policy-bytes.json",
+        "sha256": "c8905108ebcb5b5f6495bbff2e6158941f75a2df6683914e0c14c4e2282ac4d0"
+      }
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "native-verifier-agreement",
+      "state": "fail",
+      "report": {
+        "path": "reports/selection/bubblewrap-netns-native-verifier-agreement.json",
+        "sha256": "79febfd0c45ea2ee247606a893c2b9f25ef18e6d7e727fd3dfe4a474f635c1de"
+      }
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "bounded-cleanup",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-netns-bounded-cleanup.json",
+        "sha256": "d21cfbdc2dd67d7b967b4680b8a3803551dfad2d055986a4100002afa41ae028"
+      }
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "product-linux",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-netns --criterion product-linux --report .hexaemeron/reports/conformance/bubblewrap-netns-product-linux.json",
+      "report": "reports/conformance/bubblewrap-netns-product-linux.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "hostile-evidence",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-netns --criterion hostile-evidence --report .hexaemeron/reports/conformance/bubblewrap-netns-hostile-evidence.json",
+      "report": "reports/conformance/bubblewrap-netns-hostile-evidence.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "hosted-linux",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-netns --criterion hosted-linux --evidence .hexaemeron/sources/ci/ubuntu-24.04 --report .hexaemeron/reports/conformance/bubblewrap-netns-hosted-linux.json",
+      "report": "reports/conformance/bubblewrap-netns-hosted-linux.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "bubblewrap-netns",
+      "criterion": "hosted-macos",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-netns --criterion hosted-macos --evidence .hexaemeron/sources/ci/macos-15 --report .hexaemeron/reports/conformance/bubblewrap-netns-hosted-macos.json",
+      "report": "reports/conformance/bubblewrap-netns-hosted-macos.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "network-four-operations",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-seccomp-network-four-operations.json",
+        "sha256": "ac2e0bfb84bdfcecb449de102e034bfbfde33e4763a42fec68480707b5112aa5"
+      }
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "launch-wall-ms",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-seccomp-launch-wall-ms.json",
+        "sha256": "b1c60e88c4191926d8c4d335193e1ee3bfd8264737425a072eac53845ba49092"
+      }
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "policy-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-seccomp-policy-bytes.json",
+        "sha256": "42b0d3c39c3551536f5a3c01db991a7492d6072e1b05f79d8a8b9a6d3c8d90a5"
+      }
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "native-verifier-agreement",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-seccomp-native-verifier-agreement.json",
+        "sha256": "0f83c5373dc6a688337bb2b9931d0c4343b06760bcffb35903dda56154507faf"
+      }
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "bounded-cleanup",
+      "state": "pass",
+      "report": {
+        "path": "reports/selection/bubblewrap-seccomp-bounded-cleanup.json",
+        "sha256": "38d91e682fbb26f9f2983befe0897d1500bb79a2ddcb434ea4f606cfe000fab5"
+      }
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "product-linux",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-seccomp --criterion product-linux --report .hexaemeron/reports/conformance/bubblewrap-seccomp-product-linux.json",
+      "report": "reports/conformance/bubblewrap-seccomp-product-linux.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "hostile-evidence",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-seccomp --criterion hostile-evidence --report .hexaemeron/reports/conformance/bubblewrap-seccomp-hostile-evidence.json",
+      "report": "reports/conformance/bubblewrap-seccomp-hostile-evidence.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "hosted-linux",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-seccomp --criterion hosted-linux --evidence .hexaemeron/sources/ci/ubuntu-24.04 --report .hexaemeron/reports/conformance/bubblewrap-seccomp-hosted-linux.json",
+      "report": "reports/conformance/bubblewrap-seccomp-hosted-linux.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "bubblewrap-seccomp",
+      "criterion": "hosted-macos",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py --candidate bubblewrap-seccomp --criterion hosted-macos --evidence .hexaemeron/sources/ci/macos-15 --report .hexaemeron/reports/conformance/bubblewrap-seccomp-hosted-macos.json",
+      "report": "reports/conformance/bubblewrap-seccomp-hosted-macos.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "bubblewrap-seccomp",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

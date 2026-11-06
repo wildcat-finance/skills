@@ -1,0 +1,9 @@
+{
+  "candidate": "abi-named-amounts",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate abi-named-amounts --criterion changed-event-fails-closed --report .hexaemeron/design/reports/abi-named-amounts-changed-event-fails-closed.json",
+  "criterion": "changed-event-fails-closed",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

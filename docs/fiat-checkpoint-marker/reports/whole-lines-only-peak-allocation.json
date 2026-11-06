@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "whole-lines-only",
+  "criterion": "peak-allocation",
+  "value": 159103,
+  "unit": "bytes",
+  "command": "python3 .hexaemeron/measure_design.py --candidate whole-lines-only --criterion peak-allocation --report .hexaemeron/reports/whole-lines-only-peak-allocation.json",
+  "exit": 0
+}

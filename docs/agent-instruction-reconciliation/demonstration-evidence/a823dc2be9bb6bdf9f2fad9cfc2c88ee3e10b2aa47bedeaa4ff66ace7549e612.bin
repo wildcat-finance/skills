@@ -1,0 +1,31 @@
+from pathlib import Path
+import contextlib,io,json,sys,unittest
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT));sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+from tests.test_agent_instruction_reconciliation import ReconciliationTests as Fixture
+from tests.emit_run_observation_report import result_payload
+mode=sys.argv[1]
+OUT=ROOT/'.hexaemeron/demo-build'/('counterfactual-'+mode)
+OUT.mkdir()
+class Guard(Fixture):
+ def expected_selection(self,fixture_id):
+  source,_,_=self.edit(fixture_id)
+  if mode=='legacy':
+   try:
+    repair=a.prover.LiveReconciliation(self.root,checker=a.codec)
+    observed={'outcome':'ready','affected_fixtures':[repair.fixture['id']]}
+   except a.prover.ProverError as exc:
+    observed={'outcome':'refused','reason':str(exc)}
+  else:
+   observed=a.prepare(self.root,baseline=self.commit,source=source,stage='tmp/guard')
+  self.assertEqual(observed['outcome'],'ready',observed)
+  self.assertEqual(observed['affected_fixtures'],[fixture_id])
+ def test_law_edit_selects_law(self):self.expected_selection('promise-machine-router-selection')
+ def test_horos_edit_selects_horos(self):self.expected_selection('horos-boundary-check')
+stdout=io.StringIO();stderr=io.StringIO()
+with contextlib.redirect_stdout(stdout),contextlib.redirect_stderr(stderr):
+ result=unittest.TextTestRunner(stream=stderr,verbosity=2).run(unittest.TestSuite([Guard('test_law_edit_selects_law'),Guard('test_horos_edit_selects_horos')]))
+(OUT/'stdout').write_text(stdout.getvalue());(OUT/'stderr').write_text(stderr.getvalue());(OUT/'report.json').write_bytes(a.encoded(result_payload(result)))
+print(json.dumps(result_payload(result)))
+raise SystemExit(0 if result.wasSuccessful() else 1)

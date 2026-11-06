@@ -1,0 +1,9 @@
+{
+  "candidate": "envelope-batch-field",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate envelope-batch-field --criterion pair-comparisons --report .hexaemeron/design-reports/envelope-batch-field-pair-comparisons.json",
+  "criterion": "pair-comparisons",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 8
+}

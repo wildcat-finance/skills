@@ -1,10 +1,12 @@
 """Secrets in a build command, and paths that leave the project."""
 
+import itertools
 import json
 import os
 import shutil
 import tempfile
 import unittest
+import urllib.parse
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -98,6 +100,43 @@ class ScrubTests(unittest.TestCase):
         )
         self.assertEqual(scrub.credentials("git@github.com:w/x.git"), "git@github.com:w/x.git")
 
+    def test_a_second_at_sign_in_the_authority_takes_the_credential_with_it(self):
+        """Splitting at the first `@` recorded `https://user:<key>@github.com/w/x`."""
+        self.assertEqual(
+            scrub.credentials("https://a@user:" + KEY + "@github.com/w/x"),
+            "https://github.com/w/x",
+        )
+
+    def test_an_at_sign_past_the_host_stays_in_the_path(self):
+        for url in (
+            "https://user:" + KEY + "@github.com/w/x.git@v1",
+            "https://a@user:" + KEY + "@github.com/w/x.git@v1",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(scrub.credentials(url), "https://github.com/w/x.git@v1")
+
+    def test_a_slash_inside_the_userinfo_does_not_leave_the_credential_behind(self):
+        """A split bounded by the authority alone would stop at this slash."""
+        for url in (
+            "https://user:pa/ss@github.com/w/x",
+            "https://pa/ss@user:" + KEY + "@github.com/w/x",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(scrub.credentials(url), "https://github.com/w/x")
+
+    def test_no_short_url_comes_back_carrying_userinfo(self):
+        """Every `https://` URL whose remainder is six or fewer of `a:@/?#`.
+
+        `urlsplit` ends the authority where RFC 3986 does and reads everything
+        before its last `@` as userinfo, so a username it finds is one this
+        function left behind.
+        """
+        for length in range(7):
+            for letters in itertools.product("a:@/?#", repeat=length):
+                url = "https://" + "".join(letters)
+                found = urllib.parse.urlsplit(scrub.credentials(url)).username
+                self.assertIsNone(found, url)
+
     def test_an_ordinary_build_command_is_untouched(self):
         command = ["forge", "build", "--sizes"]
         self.assertEqual(scrub.argv(command), command)
@@ -128,6 +167,18 @@ class CaptureScrubbingTests(unittest.TestCase):
         statement = foundry.capture(
             V2,
             repository="https://user:" + KEY + "@github.com/wildcat-finance/example",
+            commit="9f2c1a4d6b8e0f2a4c6e8a0c2e4a6c8e0a2c4e6a",
+        )
+        self.assertEqual(
+            statement["predicate"]["source"]["repository"],
+            "https://github.com/wildcat-finance/example",
+        )
+        self.assertNotIn(KEY, json.dumps(statement))
+
+    def test_a_repository_url_with_a_second_at_sign_is_recorded_without_the_token(self):
+        statement = foundry.capture(
+            V2,
+            repository="https://a@user:" + KEY + "@github.com/wildcat-finance/example",
             commit="9f2c1a4d6b8e0f2a4c6e8a0c2e4a6c8e0a2c4e6a",
         )
         self.assertEqual(

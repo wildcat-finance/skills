@@ -98,6 +98,7 @@ NUMBER_RE = re.compile(
     r"(?<![A-Za-z0-9_-])(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
     r"(?:%|[xX])?(?![A-Za-z0-9_-])"
 )
+FIAT_AUDIT_RECORD_MODE = "fiat-audit-record"
 
 
 @dataclass(frozen=True, order=True)
@@ -375,7 +376,9 @@ def _structural_move_issues(lines: Sequence[str], code_lines: set[int]) -> list[
 def _direct_answer_issues(
     lines: Sequence[str], code_lines: set[int], mode: str, findings: Sequence[Finding], sections: Sequence[int]
 ) -> list[Issue]:
-    is_report = mode == "report" or (mode == "auto" and (findings or len(sections) >= 3))
+    is_report = mode in ("report", FIAT_AUDIT_RECORD_MODE) or (
+        mode == "auto" and (findings or len(sections) >= 3)
+    )
     if is_report:
         return []
     prose_lines: list[int] = []
@@ -426,9 +429,11 @@ def lint_text(
     fences, code_lines, issues = _code_fences(lines)
     findings = _find_findings(lines, code_lines)
     section_issues, sections = _section_issues(lines, code_lines)
-    issues.extend(section_issues)
+    if mode != FIAT_AUDIT_RECORD_MODE:
+        issues.extend(section_issues)
     issues.extend(_finding_issues(lines, findings, code_lines))
-    issues.extend(_table_issues(lines, code_lines))
+    if mode != FIAT_AUDIT_RECORD_MODE:
+        issues.extend(_table_issues(lines, code_lines))
     issues.extend(_structural_move_issues(lines, code_lines))
     issues.extend(_direct_answer_issues(lines, code_lines, mode, findings, sections))
     if source_text is not None:
@@ -447,7 +452,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("draft", nargs="?", default="-", help="draft file or - for stdin")
     parser.add_argument("--source", help="uncompressed source whose evidence must survive")
-    parser.add_argument("--mode", choices=("auto", "answer", "report"), default="auto")
+    parser.add_argument(
+        "--mode",
+        choices=("auto", "answer", "report", FIAT_AUDIT_RECORD_MODE),
+        default="auto",
+    )
     return parser
 
 

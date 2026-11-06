@@ -1,0 +1,9 @@
+{
+  "candidate": "single-interval-venue",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "largest-release-within-ceiling",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 62394008738
+}

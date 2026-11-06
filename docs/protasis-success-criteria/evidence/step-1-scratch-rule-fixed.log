@@ -1,0 +1,10 @@
+test_detector_accepts_the_helper_and_system_temp (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_detector_accepts_the_helper_and_system_temp) ... ok
+test_detector_is_red_on_the_recorded_defect_forms (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_detector_is_red_on_the_recorded_defect_forms)
+Hostile specimens: the exact anchored forms S3-R1-01 and ff92fdd removed. ... ok
+test_no_test_module_anchors_scratch_outside_the_helper (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_no_test_module_anchors_scratch_outside_the_helper) ... ok
+test_the_helper_anchor_stays_gitignored (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_the_helper_anchor_stays_gitignored) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.366s
+
+OK

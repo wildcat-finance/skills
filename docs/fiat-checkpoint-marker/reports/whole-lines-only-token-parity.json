@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "whole-lines-only",
+  "criterion": "token-parity",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/measure_design.py --candidate whole-lines-only --criterion token-parity --report .hexaemeron/reports/whole-lines-only-token-parity.json",
+  "exit": 0
+}

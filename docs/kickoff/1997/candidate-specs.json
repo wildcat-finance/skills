@@ -1,0 +1,23 @@
+{
+  "existing-only": {
+    "future": false,
+    "bounded": true,
+    "compatible": true,
+    "recovery": true,
+    "interfaces": 0
+  },
+  "collector-journal": {
+    "future": true,
+    "bounded": true,
+    "compatible": true,
+    "recovery": true,
+    "interfaces": 0
+  },
+  "external-sidecar": {
+    "future": true,
+    "bounded": true,
+    "compatible": true,
+    "recovery": true,
+    "interfaces": 1
+  }
+}

@@ -44,13 +44,13 @@ PROVENANCE_CASES = (
     ROOT / "tests" / "fixtures" / "promise-machine" / "upstream-provenance" / "cases.json"
 )
 DEMONSTRATION = (
-    ROOT / "docs" / "promise-machine" / "obligation-gates" / "demonstration-run.json"
+    ROOT / "docs" / "promise-machine" / "obligation-gates" / "integration-projection.json"
 )
 EVALUATION_RUN = (
     ROOT / "docs" / "promise-machine" / "obligation-gates" / "evaluation-run.json"
 )
 EVIDENCE_REPORT = (
-    ROOT / "docs" / "promise-machine" / "obligation-gates" / "demonstration-evidence.md"
+    ROOT / "docs" / "promise-machine" / "obligation-gates" / "integration-projection.md"
 )
 
 MARKER = re.compile(r"^<!-- promise-machine-obligation: id=([a-z0-9-]+) -->$", re.MULTILINE)
@@ -166,7 +166,7 @@ PROSE_RECORD_LISTS = ("unknowns", "non_goals")
 # Lists of objects, each with its own identity rule already asserted.
 OBJECT_RECORD_LISTS = ("inputs", "commands", "gate_classes")
 
-REPORT_COUNT_ROW = re.compile(r"^\| ([^|]+?) \| (\d+) \|$", re.MULTILINE)
+REPORT_COUNT_ROW = re.compile(r"^\| ([^|]+?) \| (\d+) \| `([^`]+)` \|$", re.MULTILINE)
 REPORT_INPUT_ROW = re.compile(
     r"^- `([^`]+)`, SHA-256 `([0-9a-f]{64})`, (\d+) bytes$", re.MULTILINE
 )
@@ -455,6 +455,16 @@ class DemonstrationRecordTests(unittest.TestCase):
 
     def setUp(self) -> None:
         typed(self.record, RECORD_SHAPE, "record")
+
+    def test_projection_preserves_the_original_record_and_observations(self) -> None:
+        original = ROOT / "docs/promise-machine/obligation-gates/demonstration-run.json"
+        self.assertEqual(hashlib.sha256(original.read_bytes()).hexdigest(),
+                         "45209fc3e8aac42c7803c5d75e4af80b5ded6518f36c1e60a1ad53e1c8a2e652")
+        historical = load_json(original)
+        for key in ("commands", "date", "host", "issue", "step"):
+            with self.subTest(field=key):
+                self.assertEqual(self.record[key], historical[key])
+        self.assertIn("not a new execution", self.record["unknowns"][0])
 
     def test_every_record_field_carries_its_declared_type(self) -> None:
         """The declared shape is bound to the closed key sets it types.
@@ -862,16 +872,16 @@ class RecordedObservationTests(unittest.TestCase):
         # second row for the same subject overwrite the first, so a wrong row
         # placed above the right one disappeared and a reader quoting the
         # report got a number the record contradicts.
-        subjects = [subject for subject, _ in rows]
+        subjects = [subject for subject, _, _ in rows]
         self.assertEqual(
             sorted(subjects), sorted(set(subjects)), "a count subject has two rows"
         )
-        observed = {subject: int(n) for subject, n in rows}
+        observed = {subject: (int(n), key) for subject, n, key in rows}
         self.assertEqual(set(observed), set(REPORT_COUNT_SUBJECTS))
         self.assertEqual(set(REPORT_COUNT_SUBJECTS.values()), set(self.record["counts"]))
         for subject, key in REPORT_COUNT_SUBJECTS.items():
             with self.subTest(subject=subject):
-                self.assertEqual(observed[subject], self.record["counts"][key])
+                self.assertEqual(observed[subject], (self.record["counts"][key], key))
 
     def test_the_report_gate_table_repeats_every_recorded_gate_class(self) -> None:
         """Every cell of the report's gate table is joined to the record.

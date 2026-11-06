@@ -44,7 +44,7 @@
             "evidence-references": [
               {
                 "path": "plugins/lemma/tests/test_markdown.py",
-                "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b"
+                "sha256": "32d5211519c62d21f2581d6c6034635a1cb09719d28f925b9283a3fe09666cca"
               },
               {
                 "path": "plugins/berean/tests/test_corpus.py",
@@ -81,7 +81,7 @@
             "evidence-references": [
               {
                 "path": "plugins/lemma/tests/test_markdown.py",
-                "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b"
+                "sha256": "32d5211519c62d21f2581d6c6034635a1cb09719d28f925b9283a3fe09666cca"
               }
             ],
             "recovery": [
@@ -506,7 +506,7 @@
               },
               {
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
               }
             ],
             "predicate-type": "https://wildcat.finance/predicate/example/v1",
@@ -612,7 +612,7 @@
             "evidence-references": [
               {
                 "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
-                "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
+                "sha256": "94140cc15cc16b4f2e47c32a0f5d4ad9973e5933cf94cd46f960a4c216393387"
               },
               {
                 "path": "plugins/synkrisis/tests/test_cohort.py",
@@ -652,7 +652,7 @@
             "evidence-references": [
               {
                 "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
-                "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
+                "sha256": "94140cc15cc16b4f2e47c32a0f5d4ad9973e5933cf94cd46f960a4c216393387"
               }
             ],
             "observation-validator": "promise-machine-run-observation-v1",
@@ -751,7 +751,7 @@
               },
               {
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
               }
             ],
             "findings-digest": "sha256:synkrisis-findings",

@@ -1,0 +1,29 @@
+{
+  "frozen_sources": "Accepted study, runbook, design, decision and selection probe/reports are owner-fixed and copied unchanged.",
+  "protected_content": "Commands, paths, schemas, limits, candidate and criterion identities, reported counts, absence and concurrency limitations retained. Source-code prose is unchanged.",
+  "schema": "step-1-prose-review/v1",
+  "sequence": [
+    "Sapheneia protected-content shape",
+    "Imprimatur zero defects before Vulgate",
+    "Vulgate plain-register review",
+    "Brevitas list shape without changed facts",
+    "final Imprimatur zero defects"
+  ],
+  "subjects": [
+    {
+      "candidate_sha256": "8d264d65c61f0b4ab49942a4faf867cfad18c8c7c00ca3b9b30e46c22b9d4b5c",
+      "name": "README.md",
+      "source_sha256": "d9303e603fd34875acf66dc217e75a07587b062bd9e4cc8ce8ac7de0e3365081"
+    },
+    {
+      "candidate_sha256": "15fab7857bd36149687616f904ed69125e2811f15f74f519cdedef034c93e047",
+      "name": "proof.py",
+      "source_sha256": "ddfff89e6ec5b6e301d35fa5707d878b57414e6aa3067cc07ea84f2c6355c85d"
+    },
+    {
+      "candidate_sha256": "7fffd792a8c833c5288f8456f8af7e6b1748387f09112d117f3da6cdc95655d8",
+      "name": "tests.py",
+      "source_sha256": "7fffd792a8c833c5288f8456f8af7e6b1748387f09112d117f3da6cdc95655d8"
+    }
+  ]
+}

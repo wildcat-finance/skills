@@ -1,0 +1,33 @@
+src/WildcatSanctionsSentinel.sol:96:  function overrideSanction(address account) public override {
+src/WildcatSanctionsSentinel.sol:104:  function removeSanctionOverride(address account) public override {
+src/WildcatMarketController.sol:761:  function resetReserveRatio(address market) external virtual override sphereXGuardExternal {
+src/WildcatMarketControllerFactory.sol:309:  function deployController() external override sphereXGuardExternal returns (address) {
+src/WildcatArchController.sol:157:  function registerBorrower(address borrower) external onlyOwner {
+src/WildcatArchController.sol:164:  function removeBorrower(address borrower) external onlyOwner {
+src/WildcatArchController.sol:200:  function addBlacklist(address asset) external onlyOwner {
+src/WildcatArchController.sol:207:  function removeBlacklist(address asset) external onlyOwner {
+src/WildcatArchController.sol:245:  function registerControllerFactory(address factory) external onlyOwner {
+src/WildcatArchController.sol:253:  function removeControllerFactory(address factory) external onlyOwner {
+src/WildcatArchController.sol:296:  function registerController(address controller) external onlyControllerFactory {
+src/WildcatArchController.sol:304:  function removeController(address controller) external onlyOwner {
+src/WildcatArchController.sol:347:  function registerMarket(address market) external onlyController {
+src/WildcatArchController.sol:355:  function removeMarket(address market) external onlyOwner {
+src/spherex/SphereXProtectedRegisteredBase.sol:113:  function changeSphereXEngine(address newSphereXEngine) external spherexOnlyOperator {
+src/spherex/SphereXConfig.sol:114:  function transferSphereXAdminRole(address newAdmin) public virtual onlySphereXAdmin {
+src/spherex/SphereXConfig.sol:120:  function acceptSphereXAdminRole() public virtual {
+src/spherex/SphereXConfig.sol:131:  function changeSphereXOperator(address newSphereXOperator) external onlySphereXAdmin {
+src/spherex/SphereXConfig.sol:143:  function changeSphereXEngine(address newSphereXEngine) external spherexOnlyOperator {
+src/spherex/ISphereXEngine.sol:31:  function sphereXValidateInternalPre(int256 num) external returns (bytes32[] memory);
+src/spherex/ISphereXEngine.sol:40:  function addAllowedSenderOnChain(address sender) external;
+src/WildcatSanctionsEscrow.sol:34:  function releaseEscrow() public override {
+src/market/WildcatMarket.sol:26:  function updateState() external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:111:  function deposit(uint256 amount) external virtual sphereXGuardExternal {
+src/market/WildcatMarket.sol:121:  function collectFees() external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:144:  function borrow(uint256 amount) external onlyBorrower nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:173:  function repayOutstandingDebt() external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:180:  function repayDelinquentDebt() external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:196:  function repay(uint256 amount) external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:217:  function closeMarket() external onlyController nonReentrant sphereXGuardExternal {
+src/market/WildcatMarketWithdrawals.sol:82:  function queueWithdrawal(uint256 amount) external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarketConfig.sol:81:  function nukeFromOrbit(address accountAddress) external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarketConfig.sol:95:  function stunningReversal(address accountAddress) external nonReentrant sphereXGuardExternal {

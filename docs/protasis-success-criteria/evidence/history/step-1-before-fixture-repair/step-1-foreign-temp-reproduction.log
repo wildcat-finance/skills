@@ -1,0 +1,7 @@
+test_inspect_writes_nothing_outside_scratch (test_hexctl_checkpoint_archive.CheckpointArchiveInspectTests.test_inspect_writes_nothing_outside_scratch) ... skipped 'gpg is unavailable, so no fixture key can be generated'
+
+----------------------------------------------------------------------
+Ran 1 test in 9.494s
+
+OK (skipped=1)
+{"controlled_foreign_directories": [], "errors": 0, "failures": 0, "testsRun": 1}

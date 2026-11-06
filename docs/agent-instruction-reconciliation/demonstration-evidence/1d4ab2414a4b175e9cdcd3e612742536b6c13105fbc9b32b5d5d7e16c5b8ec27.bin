@@ -1,0 +1,30 @@
+from pathlib import Path
+from datetime import datetime,timezone
+import json,os,signal,subprocess,sys,time
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+OUT=ROOT/'.hexaemeron/demo-build'
+case=OUT/'promise-machine-router-selection-before'
+work=case/'tmp/stage/work'
+attempt=int(sys.argv[1]);prefix=OUT/f'acquisition-attempt-{attempt}'
+if prefix.exists():raise SystemExit('exclusive attempt exists')
+prefix.mkdir()
+now=lambda:datetime.now(timezone.utc).isoformat()
+for verb,filename in [('measure','measurement'),('parity','parity')]:
+ target=work/'acquisitions'/f'{filename}.json'
+ if target.exists():raise SystemExit('preserve previous output before retry')
+ command=[sys.executable,str(ROOT/a.CHECKER),verb,'--root',str(work),'--manifest',a.MANIFEST,'--output',f'acquisitions/{filename}.json']
+ start=now();tick=time.monotonic();timed_out=False
+ (prefix/f'{verb}.started.json').write_bytes(a.encoded({'argv':command,'started_at':start,'deadline_seconds':600}))
+ process=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
+ try:
+  stdout,stderr=process.communicate(timeout=600)
+ except subprocess.TimeoutExpired:
+  timed_out=True;os.killpg(process.pid,signal.SIGKILL);stdout,stderr=process.communicate()
+ (prefix/f'{verb}.stdout').write_bytes(stdout);(prefix/f'{verb}.stderr').write_bytes(stderr)
+ result={'argv':command,'started_at':start,'finished_at':now(),'elapsed_seconds':round(time.monotonic()-tick,3),'exit':process.returncode,'timed_out':timed_out,'stdout_sha256':a.sha(stdout),'stderr_sha256':a.sha(stderr),'output_sha256':a.sha(target.read_bytes()) if target.exists() else None,'profile_observed_on':'2026-09-12','observation':'timestamps record these calls; the owner report retains the frozen profile observation date'}
+ (prefix/f'{verb}.result.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+ if target.exists():(prefix/f'{filename}.json').write_bytes(target.read_bytes())
+ print(json.dumps(result),flush=True)
+ if process.returncode or timed_out:raise SystemExit(1)

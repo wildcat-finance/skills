@@ -1,0 +1,33 @@
+{
+ "schema": "wildcat.kickoff-scope-ruling.v1",
+ "evidence_class": "attested",
+ "decision_maker": {
+  "name": "Dr Laurence E. Day",
+  "role": "Wildcat Labs maintainer (laurenceday)",
+  "date": "2026-09-23",
+  "reference": "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047"
+ },
+ "recorded_by": "laurenceday",
+ "recorded_at": "2026-09-23T08:02:02Z",
+ "reference": "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047",
+ "ruling_quote": "we're explicitly narrowing to just mainnet for the foreseeable future across all venues",
+ "comment_body": "Scope ruling, 23 September 2026, from Dr Laurence E. Day (laurenceday), Wildcat Labs:\n\n> we're explicitly narrowing to just mainnet for the foreseeable future across all venues\n\nFor this issue, the `aave-v3` row in `docs/kickoff/1359/targets.json` covers the main Aave V3 Ethereum market only: Pool `0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2`, AddressesProvider `0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e`, from the evidenced market launch through block `26022093`.\n\nNamed exclusions: every chain other than Ethereum mainnet, the Horizon, Lido and EtherFi Ethereum markets, and Aave V4. The \"roughly 35 deployments\" in #1395 are no longer in this issue's scope.\n\nThe registry cites this comment as the reference for that decision.\n",
+ "comment_body_sha256": "413f8a0f88a2d55a52ec29f8a861423ab3a4d913d6d9bd17419e041ad5511b37",
+ "applies_to": [
+  "aave-v3"
+ ],
+ "row_scope": {
+  "chain_id": 1,
+  "market": "Aave V3 Ethereum main (Core) market",
+  "pool": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+  "addresses_provider": "0x2f39d218133afab8f2b819b1066c7e434ad94e9e",
+  "through_block": 26022093,
+  "through_block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9"
+ },
+ "excluded": [
+  "every chain other than Ethereum mainnet",
+  "the Horizon, Lido and EtherFi Ethereum markets",
+  "Aave V4"
+ ],
+ "boundary": "Narrows the aave-v3 row to one chain and one market. It does not change the approved venue order, the scope-approval evidence or any other row, and it does not approve capture spending."
+}

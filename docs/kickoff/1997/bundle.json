@@ -1,0 +1,130 @@
+{
+  "schema": "fiat-1997-public-specification/v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1680,
+      "sha256": "f84899464ad2b20a588172f7e8634b545ee615f5351817cc33734cb58a7da4eb"
+    },
+    {
+      "path": "candidate-specs.json",
+      "bytes": 410,
+      "sha256": "64d4cc0211718e75e5c1fe378f0fabea0149f75ef6c272efb39e9e46ca8fa4cf"
+    },
+    {
+      "path": "design-evidence.json",
+      "bytes": 8977,
+      "sha256": "fad03e94e38ba874d9ad8a47e815433d232ba550f2772a1052fd50f96281c4e3"
+    },
+    {
+      "path": "design_probe.py",
+      "bytes": 2163,
+      "sha256": "7bc71c99276e3be4233988d4c77bc905bce616c600f4232b02005145016d2358"
+    },
+    {
+      "path": "reports/collector-journal-bounded-header-memory.json",
+      "bytes": 361,
+      "sha256": "04f1c1e5ec44a20a19896c026f9a282504d38095bb4cf67ef6a7dde03bf598e3"
+    },
+    {
+      "path": "reports/collector-journal-bounded-requests.json",
+      "bytes": 346,
+      "sha256": "128e224ae23a7f7cfd95518da8dfe08963bd4e9b4cb41bbf8f6b8f1f3a19bcb0"
+    },
+    {
+      "path": "reports/collector-journal-extra-supply-boundaries.json",
+      "bytes": 362,
+      "sha256": "14f7794813c7a0e6a3f5bcbbb87ec1451b5ca24ea1fe54eac55894f0b2228506"
+    },
+    {
+      "path": "reports/collector-journal-future-header-coverage.json",
+      "bytes": 364,
+      "sha256": "8e2ee365a45364893bfd97e85266d4b46c37e3c06799e21f955fdfc1b0855b47"
+    },
+    {
+      "path": "reports/collector-journal-immutable-recovery.json",
+      "bytes": 352,
+      "sha256": "613d3939c92b6c2eaf11f90671449221c631cad47597b539e83801fc0540d4c4"
+    },
+    {
+      "path": "reports/collector-journal-legacy-readable.json",
+      "bytes": 343,
+      "sha256": "6b1a6422f58621bc76d3b846909255e9725587b6358100ff52f5a6aaad1692fe"
+    },
+    {
+      "path": "reports/existing-only-bounded-header-memory.json",
+      "bytes": 349,
+      "sha256": "497c8deab25277ca82b9d75fe4700c303c9d50bf4b6b1c281f9d2d17cddd6bb7"
+    },
+    {
+      "path": "reports/existing-only-bounded-requests.json",
+      "bytes": 334,
+      "sha256": "bedaef0fc3c91e6f6f7d968b2ec7e2f70d1c76e2997e2cf656155a96e9565cbd"
+    },
+    {
+      "path": "reports/existing-only-extra-supply-boundaries.json",
+      "bytes": 350,
+      "sha256": "551daef95dac2e035eaa17317661babc8bb7cfb6e89ec59404862fdf7829a958"
+    },
+    {
+      "path": "reports/existing-only-future-header-coverage.json",
+      "bytes": 353,
+      "sha256": "11b4755e7fd176013f2ebcd5e778f15b0b00a1f1a5337e3742bad011fd065722"
+    },
+    {
+      "path": "reports/existing-only-immutable-recovery.json",
+      "bytes": 340,
+      "sha256": "e5b33852cf3784d07759ae7c55b48159608c5dd85234f5f4f175054678f10e15"
+    },
+    {
+      "path": "reports/existing-only-legacy-readable.json",
+      "bytes": 331,
+      "sha256": "a1e68e4e3ee251860e42f5a2da2452ad04dc89d678e56c6cbec1e576b9b56ad3"
+    },
+    {
+      "path": "reports/external-sidecar-bounded-header-memory.json",
+      "bytes": 358,
+      "sha256": "9fa078c860a535ef60f59e933b2280d38d289d7f02b4f5cb0f2c1243beb2d7a6"
+    },
+    {
+      "path": "reports/external-sidecar-bounded-requests.json",
+      "bytes": 343,
+      "sha256": "c6e1cdef3c2d10730f2937e02e9d2ca41b6c5415fb3221482416a35cfc354a37"
+    },
+    {
+      "path": "reports/external-sidecar-extra-supply-boundaries.json",
+      "bytes": 359,
+      "sha256": "0df6aa252606e62e02a549afb6e44029cad6581cab762c248cc2238d1332a1de"
+    },
+    {
+      "path": "reports/external-sidecar-future-header-coverage.json",
+      "bytes": 361,
+      "sha256": "2057ae658b63c8e5912c63749eb886b0da719958994ff12a5d20bf613f499503"
+    },
+    {
+      "path": "reports/external-sidecar-immutable-recovery.json",
+      "bytes": 349,
+      "sha256": "2ce02f4e8b680613af7f38189411ee973ad7e19a7d0a4148f429cfa978aa9eaf"
+    },
+    {
+      "path": "reports/external-sidecar-legacy-readable.json",
+      "bytes": 340,
+      "sha256": "ddeae6f1060dded59e3d6272998daf359d57fa57e4e9e83a67327964a0f380b6"
+    },
+    {
+      "path": "runbook.md",
+      "bytes": 9575,
+      "sha256": "fa333058f76f483f64467ab469ba36695da2643054714c6d7cd2dea7459de976"
+    },
+    {
+      "path": "source-pins.json",
+      "bytes": 1671,
+      "sha256": "5a65b30ad918cd34439d12e80bdd96443727ec93ad090826ca72712b7f04b119"
+    },
+    {
+      "path": "study.md",
+      "bytes": 19088,
+      "sha256": "f160abf6c70c138370a45ccb47d2026fd61f9fdc74b6deaf7755995f8b1ed3e2"
+    }
+  ]
+}

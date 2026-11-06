@@ -1,0 +1,9 @@
+{
+  "candidate": "example-payload-class",
+  "command": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate example-payload-class --criterion installed-gates-pass",
+  "criterion": "installed-gates-pass",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

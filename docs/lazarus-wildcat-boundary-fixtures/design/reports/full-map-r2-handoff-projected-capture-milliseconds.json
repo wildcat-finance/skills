@@ -1,0 +1,9 @@
+{
+ "candidate": "full-map-r2-handoff",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate full-map-r2-handoff --criterion projected-capture-milliseconds --report .hexaemeron/design/reports/full-map-r2-handoff-projected-capture-milliseconds.json",
+ "criterion": "projected-capture-milliseconds",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "milliseconds",
+ "value": 620524
+}

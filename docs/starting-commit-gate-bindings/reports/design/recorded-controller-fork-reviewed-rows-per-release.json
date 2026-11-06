@@ -1,0 +1,9 @@
+{
+  "candidate": "recorded-controller-fork",
+  "command": "python3 .hexaemeron/design/resolve.py --candidate recorded-controller-fork --criterion reviewed-rows-per-release --report .hexaemeron/reports/design/recorded-controller-fork-reviewed-rows-per-release.json",
+  "criterion": "reviewed-rows-per-release",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

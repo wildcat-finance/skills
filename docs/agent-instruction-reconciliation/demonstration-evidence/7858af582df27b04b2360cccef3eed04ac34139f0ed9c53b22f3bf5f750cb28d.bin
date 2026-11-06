@@ -1,0 +1,6 @@
+test_final_publication_syscall_preserves_concurrent_version (tests.test_agent_instruction_reconciliation.ReconciliationTests.test_final_publication_syscall_preserves_concurrent_version) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.493s
+
+OK

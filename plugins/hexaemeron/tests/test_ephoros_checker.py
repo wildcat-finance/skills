@@ -62,7 +62,7 @@ class LogMessages(unittest.TestCase):
 
 
 class MetricLabels(unittest.TestCase):
-    def test_it_flags_an_address_label_as_e005_since_the_subset_moved(self):
+    def test_it_flags_address_label_as_e005_since_subset_moved(self):
         self.assertEqual(["E005"], codes(
             "h = Histogram('d', labels={'address': a, 'venue': v})\n"))
 
@@ -131,6 +131,31 @@ class TelemetryKeys(unittest.TestCase):
 
     def test_an_address_key_on_an_unnamed_store_does_not_fire(self):
         self.assertEqual([], codes("cache[wallet_address] = market\n"))
+
+    def test_a_read_of_a_decoded_on_chain_log_does_not_fire(self):
+        # skills#1943: `log` also names one decoded on-chain log record.
+        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "decoded-log-read.py"))
+
+    def test_a_read_through_a_log_named_store_does_not_fire(self):
+        self.assertEqual([], codes(
+            'lowered = log["address"].lower()\n'
+            'seen.add(log["address"])\n'
+            "events = event_log[wallet_address]\n"
+            'cache[log["address"]] = market\n'))
+
+    def test_every_write_through_a_log_named_store_still_fires(self):
+        for source in (
+                "event_log[wallet_address] += event\n",
+                "del event_log[wallet_address]\n",
+                "event_log[wallet_address].append(event)\n",
+                "event_log[wallet_address][0] = event\n",
+                "event_log[wallet_address].last = event\n",
+                "self.log[wallet_address] = event\n"):
+            with self.subTest(source=source):
+                self.assertEqual(["E005"], codes(source))
+
+    def test_a_dashboard_key_still_fires_when_only_read(self):
+        self.assertEqual(["E005"], codes("panel = dashboard[wallet_address]\n"))
 
     def test_a_wallet_address_label_yields_e005_and_not_e002(self):
         self.assertEqual(["E005"], codes(
@@ -207,6 +232,36 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_flags_a_log_store_partitioned_by_address(self):
         self.assertEqual(["E005"], ts_codes("eventLog[walletAddress] = event\n"))
 
+    def test_a_read_of_a_decoded_on_chain_log_does_not_fire(self):
+        # skills#1943: `log` also names one decoded on-chain log record.
+        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "decoded-log-read.ts"))
+
+    def test_a_read_through_a_log_named_store_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            'const lowered = log["address"].toLowerCase()\n'
+            'seen.add(log["address"])\n'
+            "const events = eventLog[walletAddress]\n"
+            "if (eventLog[walletAddress] === event) {}\n"
+            "const same = (x) => eventLog[walletAddress] == x\n"
+            'cache[log["address"]] = market\n'))
+
+    def test_every_write_through_a_log_named_store_still_fires(self):
+        for source in (
+                "eventLog[walletAddress] += event\n",
+                "eventLog[walletAddress] ??= []\n",
+                "delete eventLog[walletAddress]\n",
+                "eventLog[walletAddress]++\n",
+                "++eventLog[walletAddress]\n",
+                "eventLog[walletAddress][0] = event\n",
+                "eventLog[walletAddress].last = event\n",
+                "eventLog[walletAddress]?.push(event)\n"):
+            with self.subTest(source=source):
+                self.assertEqual(["E005"], ts_codes(source))
+
+    def test_a_dashboard_key_still_fires_when_only_read(self):
+        self.assertEqual(["E005"], ts_codes(
+            "const panel = marketDashboard[walletAddress]\n"))
+
     def test_it_flags_a_string_literal_wallet_index(self):
         self.assertEqual(["E005"], ts_codes(
             "auditLog.write(event, { index: 'wallet_address' })\n"))
@@ -245,10 +300,10 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
         self.assertEqual(["E005"], ts_codes(
             "auditLog?.['walletAddress'].push(e)\n"))
 
-    def test_an_optional_chain_bracket_on_an_unnamed_store_does_not_fire(self):
+    def test_optional_chain_bracket_on_unnamed_store_no_fire(self):
         self.assertEqual([], ts_codes("cache?.[walletAddress]\n"))
 
-    def test_an_optional_chain_bracket_after_a_subscript_does_not_fire(self):
+    def test_optional_chain_bracket_after_subscript_no_fire(self):
         self.assertEqual([], ts_codes(
             "ADS_REGISTRY[chainId]?.[marketAddress.toLowerCase()]\n"))
 
@@ -266,7 +321,7 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_allows_a_storage_key_built_from_an_address(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "storage-key.ts"))
 
-    def test_a_message_interpolating_an_address_is_e001_and_not_an_e005_key(self):
+    def test_message_interpolating_address_is_e001_not_e005_key(self):
         # The address rides in the message rather than in a key, so E005 still
         # stays quiet; E001 claims the message itself.
         findings = ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts")
@@ -278,7 +333,7 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_an_address_key_on_an_unnamed_store_does_not_fire(self):
         self.assertEqual([], ts_codes("cache[walletAddress] = market\n"))
 
-    def test_a_label_shaped_object_outside_a_telemetry_sink_does_not_fire(self):
+    def test_label_shaped_object_outside_telemetry_sink_no_fire(self):
         self.assertEqual([], ts_codes(
             "chip.render({ tags: { walletAddress: lender } })\n"))
 
@@ -287,7 +342,7 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
             "eventLog[walletAddress] = event"
             "  // ephoros: allow one aggregate treasury row\n"))
 
-    def test_a_reasoned_slash_pragma_on_the_line_above_suppresses_e005(self):
+    def test_reasoned_slash_pragma_line_above_suppresses_e005(self):
         self.assertEqual([], ts_codes(
             "// ephoros: allow one aggregate treasury row\n"
             "eventLog[walletAddress] = event\n"))
@@ -315,7 +370,7 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
             "/* // ephoros: allow smuggled reason */ "
             "eventLog[walletAddress] = event\n"))
 
-    def test_a_block_comment_pragma_on_the_line_above_does_not_suppress(self):
+    def test_block_comment_pragma_line_above_does_not_suppress(self):
         self.assertEqual(["E005"], ts_codes(
             "/* // ephoros: allow smuggled reason */\n"
             "eventLog[walletAddress] = event\n"))
@@ -337,13 +392,13 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
         self.assertEqual(
             [], ephoros.check(TELEMETRY_FIXTURES / "constant-message.ts"))
 
-    def test_an_interpolated_message_in_a_comment_or_a_string_does_not_fire(self):
+    def test_interpolated_message_in_comment_or_string_no_fire(self):
         self.assertEqual([], ts_codes(
             "/* logger.debug(`Got lenders ${lenders}`) */\n"))
         self.assertEqual([], ts_codes(
             'const note = "logger.debug(`Got lenders ${lenders}`)"\n'))
 
-    def test_console_output_with_an_interpolated_message_does_not_fire(self):
+    def test_console_output_with_interpolated_message_no_fire(self):
         self.assertEqual([], ts_codes(
             "console.log(`Got lenders ${lenders}`)\n"))
 
@@ -352,7 +407,7 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
             "logger.debug(`Got lenders ${lenders}`)"
             "  // ephoros: allow one operator-only trace line\n"))
 
-    def test_a_reasoned_slash_pragma_on_the_line_above_suppresses_e001(self):
+    def test_reasoned_slash_pragma_line_above_suppresses_e001(self):
         self.assertEqual([], ts_codes(
             "// ephoros: allow one operator-only trace line\n"
             "logger.debug(`Got lenders ${lenders}`)\n"))
@@ -361,14 +416,14 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
         self.assertEqual(["E001"], ts_codes(
             "logger.debug(`Got lenders ${lenders}`)  // ephoros: allow\n"))
 
-    def test_a_concatenation_with_a_string_literal_is_a_formatted_message(self):
+    def test_concat_with_string_literal_is_formatted_message(self):
         self.assertEqual(["E001"], ts_codes(
             'logger.info("got lender " + lender)\n'))
 
     def test_an_addition_with_no_string_literal_stays_clean(self):
         self.assertEqual([], ts_codes("logger.info(a + b)\n"))
 
-    def test_a_single_quoted_literal_concatenation_is_a_formatted_message(self):
+    def test_single_quoted_literal_concat_is_formatted_message(self):
         self.assertEqual(["E001"], ts_codes(
             "logger.info('got lender ' + lender)\n"))
 
@@ -391,7 +446,7 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
     def test_a_string_literal_on_the_right_is_a_formatted_message(self):
         self.assertEqual(["E001"], ts_codes('logger.info(lender + " got")\n'))
 
-    def test_a_constant_template_plus_a_variable_is_a_formatted_message(self):
+    def test_const_template_plus_variable_is_formatted_message(self):
         self.assertEqual(["E001"], ts_codes("logger.info(`got ` + lender)\n"))
 
     def test_a_concatenation_after_the_call_does_not_reach_it(self):
@@ -459,7 +514,7 @@ class TypeScriptUnboundedLabelTests(unittest.TestCase):
             'metrics.increment("m", { labels: { requestId: rid } })\n'
             + "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES))
 
-    def test_the_labels_call_form_is_found_as_well_as_the_property_form(self):
+    def test_labels_call_form_is_found_as_well_as_property_form(self):
         self.assertEqual(["E002"], ts_codes(
             "deposits.labels({ requestId: rid }).inc()\n"))
         self.assertEqual(["E002"], ts_codes(
@@ -468,7 +523,7 @@ class TypeScriptUnboundedLabelTests(unittest.TestCase):
         self.assertEqual(["E002"], ts_codes(
             'analytics.track("deposit", { attributes: { "run_id": runId } })\n'))
 
-    def test_a_reasoned_slash_pragma_on_the_line_or_above_suppresses_e002(self):
+    def test_reasoned_slash_pragma_on_or_above_suppresses_e002(self):
         self.assertEqual([], ts_codes(
             'metrics.increment("m", { labels: { requestId: rid } })'
             "  // ephoros: allow one operator-only counter\n"))
@@ -494,7 +549,7 @@ class TypeScriptUnboundedLabelTests(unittest.TestCase):
         self.assertEqual(["E005", "E005"], ts_codes(
             'metrics.increment("m", { tags: ["wallet_id", "address_hash"] })\n'))
 
-    def test_a_key_on_its_own_line_reports_that_line_and_takes_its_pragma(self):
+    def test_key_on_own_line_reports_that_line_takes_its_pragma(self):
         # A key in a multi-line container is reported where it is written,
         # not at the comma or brace before it, so the documented pragma
         # placement beside the key holds; E005 shares the path and moves too.
@@ -528,7 +583,7 @@ class TypeScriptMeanDurationTests(unittest.TestCase):
     or the expression. The mean of anything else is arithmetic and passes.
     """
 
-    def test_it_flags_a_named_mean_and_the_reduce_idiom_over_a_duration(self):
+    def test_it_flags_named_mean_and_reduce_idiom_over_duration(self):
         findings = ephoros.check(TELEMETRY_FIXTURES / "mean-duration.ts")
         self.assertEqual(["E003", "E003"], [f.code for f in findings])
         self.assertEqual([2, 3], [f.line for f in findings])
@@ -577,7 +632,7 @@ class TypeScriptMeanDurationTests(unittest.TestCase):
             "const meanLatencyMs = mean(latenciesMs)\n"
             + "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES))
 
-    def test_a_reasoned_slash_pragma_on_the_line_or_above_suppresses_e003(self):
+    def test_reasoned_slash_pragma_on_or_above_suppresses_e003(self):
         self.assertEqual([], ts_codes(
             "const meanLatencyMs = mean(latenciesMs)"
             "  // ephoros: allow one offline report, histogram beside it\n"))
@@ -610,7 +665,7 @@ class TypeScriptMeanDurationBoundaries(unittest.TestCase):
         self.assertEqual([], ts_codes(
             "const x = xs.reduce((a, b) => a + b, 0) / latencies.length + 1\n"))
 
-    def test_a_comparison_or_compound_assignment_is_not_an_assignment(self):
+    def test_comparison_or_compound_assignment_not_assignment(self):
         self.assertEqual([], ts_codes("if (x == mean(latencies)) {}\n"))
         self.assertEqual([], ts_codes("if (x >= mean(latencies)) {}\n"))
         self.assertEqual([], ts_codes("total += mean(latencies)\n"))
@@ -627,7 +682,7 @@ class TypeScriptMeanDurationBoundaries(unittest.TestCase):
         self.assertEqual([], ts_codes(
             "const avgLatency = sum(latencies) / latencies.length\n"))
 
-    def test_a_word_in_a_comment_carries_nothing_where_a_literal_does(self):
+    def test_word_in_comment_carries_nothing_where_literal_does(self):
         self.assertEqual([], ts_codes("const x = mean(xs /* latency */)\n"))
         self.assertEqual(["E003"], ts_codes('const x = mean(xs, "latency")\n'))
         self.assertEqual(["E003"], ts_codes("const x = mean(xs, `ms`)\n"))
@@ -687,7 +742,7 @@ class TypeScriptBoundaries(unittest.TestCase):
             self.assertIn("recursion", by_file["nested.ts"].message)
             self.assertEqual("E005", by_file["sibling.ts"].code)
 
-    def test_an_adversarial_dotted_chain_completes_with_zero_findings(self):
+    def test_adversarial_dotted_chain_completes_zero_findings(self):
         # A whitespace-separated dotted chain that never reaches a bracket
         # once cost quadratic rescans (about a minute at this size); the
         # bracket-anchored scan reads it once and finds nothing.
@@ -696,7 +751,7 @@ class TypeScriptBoundaries(unittest.TestCase):
             specimen.write_text("a . " * 25_000, encoding="utf-8")
             self.assertEqual([], ephoros.check(specimen))
 
-    def test_a_deeply_nested_bracket_chain_completes_with_zero_findings(self):
+    def test_nested_bracket_chain_completes_zero_findings(self):
         # Every bracket in a[a[a[...]]] carries a chain, and the old
         # per-bracket forward scan to its closer re-read the fully
         # overlapping nested spans quadratically: 28s at N=16000, hours at
@@ -727,7 +782,7 @@ class TypeScriptBoundaries(unittest.TestCase):
         self.assertEqual([2], [finding.line for finding in findings])
         self.assertIn("metric label `walletAddress`", findings[0].message)
 
-    def test_a_sink_named_logger_nest_repeats_the_index_finding_per_span(self):
+    def test_sink_named_logger_nest_repeats_index_per_span(self):
         # Each of the nested `logger.info` spans contains the one `index:`
         # property, so each span reports it, exactly as the old per-span
         # scans did -- the findings repeat while the work does not (the
@@ -746,7 +801,7 @@ class TypeScriptBoundaries(unittest.TestCase):
         self.assertEqual({2}, {finding.line for finding in findings})
         self.assertIn("log index `walletAddress`", findings[0].message)
 
-    def test_a_sink_named_counter_nest_repeats_the_label_finding_per_span(self):
+    def test_sink_named_counter_nest_repeats_label_per_span(self):
         # The metric-sink reading of the same overlap: every nested
         # `counter` span contains the one `labels:` container, so every
         # span repeats its finding from the container analysed once.
@@ -768,9 +823,11 @@ class TypeScriptBoundaries(unittest.TestCase):
         # its full width for a key expression (12.2 seconds at the 1 MiB
         # cap); the bounded forward parse stops at the first character
         # outside the chain grammar, and only the innermost span holds one.
+        # That span is written through `.push`, since a read is no log index.
         depth = 150_000
         source = ("// nested log store specimen\n"
-                  + "log[" * depth + "walletAddress" + "]" * depth)
+                  + "log[" * depth + "walletAddress].push(e)"
+                  + "]" * (depth - 1))
         with tempfile.TemporaryDirectory() as base:
             specimen = Path(base) / "logstore.ts"
             specimen.write_text(source, encoding="utf-8")
@@ -801,11 +858,12 @@ class TypeScriptBoundaries(unittest.TestCase):
         # quadratic time on findings-saturated files (10s at this size); a
         # bisected newline table built once per file keeps it linear. The
         # first, middle, and last findings pin the exact line numbers the
-        # counting implementation reported.
+        # counting implementation reported. Each line writes its log index,
+        # with a key short enough to keep the file under the 1 MiB cap.
         lines = 50_000
         with tempfile.TemporaryDirectory() as base:
             specimen = Path(base) / "saturated.ts"
-            specimen.write_text("log[walletAddress]\n" * lines,
+            specimen.write_text("log[address] = e\n" * lines,
                                 encoding="utf-8")
             findings = ephoros.check(specimen)
         self.assertEqual(["E005"] * lines,
@@ -928,12 +986,12 @@ class AlertRules(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertEqual(["E004"], [f.code for f in yaml_findings(source)])
 
-    def test_an_unseparated_plain_scalar_hash_is_not_a_suppression_comment(self):
+    def test_unseparated_plain_scalar_hash_is_not_suppression(self):
         source = ("- note: literal# ephoros: allow not a comment\n"
                   "- alert: StillMissing\n")
         self.assertEqual(["E004"], [finding.code for finding in yaml_findings(source)])
 
-    def test_a_dedented_comment_after_a_block_scalar_can_suppress_e004(self):
+    def test_dedented_pragma_after_block_scalar_suppresses_e004(self):
         source = ("note: |\n"
                   "  scalar body\n"
                   "# ephoros: allow generated annotation arrives downstream\n"
@@ -976,7 +1034,7 @@ class AlertRules(unittest.TestCase):
                   "    Runbook: runbooks/wrong-case.md\n")
         self.assertEqual(["E004"], [finding.code for finding in yaml_findings(source)])
 
-    def test_an_unseparated_hash_in_a_runbook_path_satisfies_presence(self):
+    def test_unseparated_hash_runbook_path_satisfies_presence(self):
         source = ("- alert: HashInPlainScalar\n"
                   "  annotations:\n"
                   "    runbook: runbooks/missing#book.md\n")
@@ -1037,7 +1095,7 @@ class AlertRules(unittest.TestCase):
                   "      extra\n")
         self.assertEqual(["E004"], [finding.code for finding in yaml_findings(source)])
 
-    def test_single_line_and_valid_folded_plain_runbooks_satisfy_e004(self):
+    def test_single_line_and_valid_folded_runbooks_satisfy_e004(self):
         single = ("- alert: SingleLine\n"
                   "  annotations:\n"
                   "    runbook: runbooks/present.md\n")

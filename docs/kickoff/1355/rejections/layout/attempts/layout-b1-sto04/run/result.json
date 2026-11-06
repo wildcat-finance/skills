@@ -1,0 +1,9 @@
+{
+  "exit_code": 50,
+  "failed_gate": 5,
+  "finished_at": "2026-09-23T06:46:01+00:00",
+  "reason": "protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+  "schema": "hermes/v1",
+  "skill": "hermes",
+  "status": "rejected"
+}

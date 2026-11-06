@@ -49,7 +49,9 @@ REPORTS = RECORD_HOME / "reports"
 CONFORMANCE = "second-corpus-rebuilds-deterministically"
 SELECTED = "registry-and-synopsis-mapper"
 REPORT_NAME = f"{SELECTED}-{CONFORMANCE}.json"
-RUN_REPORT = WORKTREE / ".hexaemeron/reports" / REPORT_NAME
+# The owning run is archived. Its report is pinned by digest rather than
+# compared with whatever controller state this worktree happens to hold.
+REPORT_SHA256 = "5034de4ecb14f716e704811a5f9e384b711e540837541bb4fd46cfe77a92c433"
 RESOLVER = (
     "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py "
     "verify-rebuild --specimen plugins/anamnesis/specimens/synopsis"
@@ -61,9 +63,9 @@ RULE = "A079"
 
 # The three shipped release ids. The synopsis corpus is a third identity: it
 # holds the pilot's findings, and it is not the pilot's release.
-SYNOPSIS_RELEASE = "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39"
-PILOT_RELEASE = "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf"
-ESTATE_RELEASE = "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3"
+SYNOPSIS_RELEASE = "8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d"
+PILOT_RELEASE = "4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f"
+ESTATE_RELEASE = "b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2"
 
 # Each synopsis header names the audit record it was rendered from, by digest.
 # These are the digests the pilot's admission policy already records for the
@@ -372,7 +374,7 @@ class TheThirdCorpusDeclaresWhatItHolds(Fixture):
 class TheConformanceReportIsCommitted(unittest.TestCase):
     """The `step:3` cell the controller checks at this step's push."""
 
-    def test_the_report_is_one_closed_object_standing_in_both_homes(self) -> None:
+    def test_the_report_is_one_closed_object_at_its_pinned_digest(self) -> None:
         body = (REPORTS / REPORT_NAME).read_bytes()
         report = json.loads(body.decode("utf-8"))
         self.assertEqual(set(report), {
@@ -391,8 +393,7 @@ class TheConformanceReportIsCommitted(unittest.TestCase):
             if entry["candidate"] == SELECTED and entry["criterion"] == CONFORMANCE
         )
         self.assertEqual(cell["resolver"], RESOLVER)
-        if RUN_REPORT.exists():
-            self.assertEqual(RUN_REPORT.read_bytes(), body)
+        self.assertEqual(hashlib.sha256(body).hexdigest(), REPORT_SHA256)
 
         # And the reason `resolve.py` was not re-run: the record binds the 32
         # reports step 1 receipted by digest, and a rerun would rewrite them.

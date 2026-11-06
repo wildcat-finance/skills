@@ -78,7 +78,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("[wildcat-marketplace.md](references/wildcat-marketplace.md)", self.fiat)
         self.assertTrue(MARKETPLACE.is_file())
 
-    def test_xray_reuse_reference_is_bound_to_audit_and_warden_instructions(self):
+    def test_xray_reuse_bound_to_audit_and_warden_instructions(self):
         audit = " ".join(self.audit_loop.split())
         warden = " ".join(AGENTS["warden"].split())
         self.assertTrue(XRAY_REUSE.is_file())
@@ -187,18 +187,21 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertRegex(self.marketplace, r"say nothing about the\s+check")
         self.assertIn("do not ask a follow-up question", self.marketplace)
 
-    def test_supported_contributor_signals_and_acknowledgement_are_explicit(self):
+    def test_contributor_signals_acknowledgement_are_explicit(self):
         self.assertIn("`@wildcat.finance`", self.marketplace)
         self.assertIn("active membership in the `wildcat-finance`", self.marketplace)
         self.assertIn("exact normalised display name or login", self.marketplace)
         self.assertIn("Acknowledge that this is a Wildcat Labs run", self.marketplace)
         self.assertIn("List every other available plugin separately", self.marketplace)
 
-    def test_authenticated_github_does_not_require_a_connector(self):
-        self.assertIn("Do not require a connector", self.marketplace)
-        self.assertIn("already-authenticated local GitHub account", self.marketplace)
-        self.assertIn("under-permissioned\nconnector is not itself a failed check", self.marketplace)
-        self.assertIn("a GitHub connector is optional", self.fiat)
+    def test_authenticated_github_transports_have_equal_standing(self):
+        self.assertIn("authenticated local GitHub", self.marketplace)
+        self.assertIn("authenticated connector have equal standing", self.marketplace)
+        self.assertIn("other authenticated transport", self.marketplace)
+        self.assertIn(
+            "Local GitHub and connector authentication have equal standing",
+            self.fiat,
+        )
         self.assertTrue(CONTRIBUTOR_CHECK.is_file())
 
     def test_private_discovery_does_not_fetch_or_disclose_references(self):
@@ -223,38 +226,23 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Never record the account email, name, login, or matching evidence", self.marketplace)
         self.assertIn("hexctl record labs_marketplace", self.marketplace)
 
-    def test_ai_origin_markers_are_required_for_delivery_artifacts(self):
+    def test_ai_origin_markers_are_not_commit_admission_requirements(self):
         self.assertIn("`origin:ai`", self.push_discipline)
         self.assertIn("<!-- wildcat-origin: shoggoth -->", self.push_discipline)
-        self.assertIn(
-            "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>",
-            self.push_discipline,
-        )
-        self.assertIn("Wildcat-Origin: shoggoth", self.push_discipline)
+        self.assertIn("Neither provenance trailer is mandatory", self.push_discipline)
 
-    def test_runtime_hosts_are_not_governed_authors(self):
+    def test_valid_signatures_admit_all_attribution_shapes(self):
         flat = " ".join(self.push_discipline.split())
-        self.assertIn("Authorship follows the contributing actor", flat)
-        self.assertIn("Attribute Shoggoth's own agent-produced run work to `Shoggoth", flat)
-        self.assertIn("Preserve a human contributor as Git author and signer", flat)
-        self.assertIn("publish through their own GitHub account", flat)
-        self.assertIn("Never ask for, copy, upload, configure or use the Shoggoth private signing key", flat)
-        self.assertIn("Publication is a separate role", flat)
-        self.assertIn("explicitly authorises a human publisher", flat)
-        self.assertIn("Record both roles", flat)
-        self.assertIn("is neither author, committer nor co-author", flat)
-        self.assertIn("Without explicit authority", flat)
-        self.assertIn("known host account as pull-request author", flat)
+        self.assertIn("repository-valid signing identity", flat)
+        self.assertIn("recorded attribution, not admission classes", flat)
+        self.assertIn("Neither provenance trailer is mandatory", flat)
+        self.assertIn("publication authority separate", flat)
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
             "surveyor": (
                 "`topic`, `target_dir`, `base_ref`, `output_path`, "
                 "`design_output_path`, and `plugin_root`"
-            ),
-            "mason": (
-                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
-                "and `plugin_root`"
             ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
@@ -268,6 +256,176 @@ class FiatSkillContractTests(unittest.TestCase):
             with self.subTest(role=role):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
+
+        mason = " ".join(AGENTS["mason"].split())
+        implementation = (
+            "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+            "and `plugin_root`"
+        )
+        self.assertIn(
+            f"An `implement` directive gives you one `brief` object with "
+            f"{implementation}",
+            mason,
+        )
+        self.assertIn(
+            "A capture-aware implementation brief also carries `step_parent`. "
+            "An assigned-finding receipt adds the immutable `guard_commit`; "
+            "a zero-assigned receipt omits it",
+            mason,
+        )
+        self.assertIn(
+            "Never recreate either branch or resolve `branch_from` again",
+            mason,
+        )
+        for field in (
+            "study_sha256",
+            "runbook_sha256",
+            "inventory_sha256",
+            "known_failure_inventory",
+            "consuming_step",
+            "assigned_findings",
+            "allowed_guard_paths",
+            "reporter_contracts",
+            "branch",
+            "branch_from",
+            "step_parent",
+            "evidence_directory",
+            "plugin_root",
+        ):
+            self.assertIn(f"`{field}`", mason)
+
+    def test_inoculation_contract_is_one_source_bound_loop_directive(self):
+        loop = self.fiat.split("## The loop", 1)[1].split("## ", 1)[0]
+        inoculation = self.fiat.split("**Inoculation.**", 1)[1].split(
+            "**Implementation.**", 1
+        )[0]
+        fiat = " ".join(self.fiat.split())
+        mason = " ".join(AGENTS["mason"].split())
+
+        self.assertIn("| `inoculate` |", loop)
+        self.assertIn(
+            "That loader/capture rule and the loop's existing Step action are one\n"
+            "`inoculate-phase` directive, not two independent instructions.",
+            self.fiat,
+        )
+        self.assertIn("`load_checked_inventory` operation is the sole ingestion path", self.fiat)
+        self.assertIn("`done inoculate` takes no phase-specific options", inoculation)
+        self.assertIn("fiat-known-failure-inoculation/v1", inoculation)
+        self.assertIn("fiat-no-known-findings/v1", inoculation)
+        self.assertIn("no-known-findings-for-step", inoculation)
+        self.assertIn("opens `implement` on that same branch", inoculation)
+        self.assertIn("also carries the full `step_parent`", fiat)
+        self.assertIn(
+            "assigned-finding receipt adds its exact guard commit", fiat
+        )
+        self.assertIn("`step_parent` for a zero-assigned Step", fiat)
+        self.assertIn(
+            "Do not recreate it from the parent or resolve a symbolic ref again",
+            fiat,
+        )
+        self.assertIn("the orchestrator calls `hexctl retain-guard`", mason)
+        self.assertIn("`completed_ids`, `remaining_ids`", mason)
+        self.assertIn("When `guard_commit` is present", mason)
+        self.assertIn(
+            "atomic create-only creation of the exact `branch` from `step_parent`",
+            mason,
+        )
+        self.assertIn("If that branch already exists at any tip", mason)
+        self.assertIn(
+            "make no edit, reset, repoint or checkout and request a fresh `next` packet",
+            mason,
+        )
+        self.assertIn(
+            "A packet without `guard_commit` authorises only atomic create-only creation",
+            fiat,
+        )
+        self.assertIn(
+            "current immutable context before loading or calling the runner",
+            fiat,
+        )
+        self.assertIn("it never samples a second execution", fiat)
+        self.assertIn("current live Step 3 is explicitly pre-contract", mason)
+        self.assertIn("No product path may ride along", mason)
+
+    def test_task_identity_check_always_precedes_continuation(self):
+        # Issue 363: an orchestrator continued a Mason under a handle left from
+        # another issue. `next --task-handle` refuses only a handle it is shown,
+        # so this section is what makes showing it unconditional, and neither a
+        # refused handle nor a brief an earlier call left behind reaches a
+        # delegate. The paragraph is pinned sentence for sentence and must be the
+        # section's only paragraph naming a handle, so a dropped sentence, such
+        # as the visible-name requirement, or an exception written beside the
+        # unconditional one fails here (issue 363 S3-R1-01).
+        section = self.fiat.split("\n## Delegation and context\n", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        paragraphs = [" ".join(block.split()) for block in section.split("\n\n")]
+        handle_paragraphs = [text for text in paragraphs if "handle" in text]
+        self.assertEqual(1, len(handle_paragraphs))
+        sentences = re.split(r"(?<=\.) (?=[A-Z])", handle_paragraphs[0])
+        self.assertEqual(
+            [
+                "A delegated envelope also carries `task_identity`, whose `handle` "
+                "is `fiat-<task>-<phase>-<role>`: the run's task, `study` or "
+                "`step-<n>`, and the delegate's role.",
+                "The round is not in the handle, so a Warden keeps one handle across "
+                "a step's rounds.",
+                "Give each spawned delegate that handle as its visible name.",
+                "The handle check is unconditional.",
+                "Before continuing any existing agent handle, for any directive, "
+                "round or reason, run `hexctl next --task-handle <observed>` with "
+                "that handle.",
+                "Exit 0 prints the same directive.",
+                "Exit 2 prints no directive and writes no state, ledger entry or brief.",
+                "Never continue a refused handle: spawn a fresh delegate under the "
+                "`task_identity.handle` that `next` prints without `--task-handle`.",
+                "A `delegate` refusal means the directive has no delegate and runs "
+                "in this session.",
+                "A brief file left at a `--brief-out` path by an earlier call is not "
+                "the current directive's, so pass `--brief-out` and `--task-handle` in "
+                "one call and hand a delegate only a brief path named by a `next` call "
+                "that exited 0.",
+            ],
+            sentences,
+        )
+
+    def test_task_identity_each_agent_names_its_spawn_handle(self):
+        # Each file names the handle the controller derives for its role, so the
+        # prose cannot keep a grammar `task_identity` has stopped emitting.
+        spawned = {
+            "surveyor": ("study", "`fiat-<task>-study-surveyor`", None),
+            "mason": ("implement", "`fiat-<task>-step-<n>-mason`", 3),
+            "warden": ("audit-round", "`fiat-<task>-step-<n>-warden`", 3),
+            "scribe": ("prose", "`fiat-<task>-step-<n>-scribe`", 3),
+        }
+        controller = hexctl_module()
+        state = {
+            "topic": "bind delegated task identity to step and role",
+            "receipts": {
+                controller.RUN_ANCHOR_RECEIPT: {
+                    "task": {"kind": "github-issue", "number": 363}
+                }
+            },
+        }
+        for role, (directive, handle, step) in spawned.items():
+            with self.subTest(role=role):
+                contract = " ".join(AGENTS[role].split())
+                self.assertIn(
+                    f"Fiat spawns you under the handle {handle}, the "
+                    f"`task_identity.handle` of the `{directive}` directive",
+                    contract,
+                )
+                self.assertIn("where `<task>` names the run's task issue or topic.", contract)
+                concrete = handle.strip("`").replace("<task>", "363").replace("<n>", "3")
+                derived = controller.task_identity(
+                    state, role, step=step, round=2 if role == "warden" else None
+                )
+                self.assertEqual(concrete, derived["handle"])
+        self.assertIn(
+            "The round is not in the handle, so a later round of one step may "
+            "continue the same Warden, and a round of another step never does.",
+            " ".join(AGENTS["warden"].split()),
+        )
 
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())
@@ -300,7 +458,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("entry SHA-256", audit)
         self.assertIn("packet's risk register", warden)
 
-    def test_warden_uses_the_source_bound_step_and_returns_the_exact_verdict(self):
+    def test_warden_uses_source_bound_step_gives_exact_verdict(self):
         contract = " ".join(AGENTS["warden"].split())
         self.assertIn("exact source-bound `runbook_step`", contract)
         self.assertIn("test command, report format, and report file", contract)
@@ -352,6 +510,10 @@ class FiatSkillContractTests(unittest.TestCase):
             "absolute archive path",
             "outer SHA-256",
             "controller-manifest SHA-256",
+            "checkpoint archive",
+            "checkpoint inspect",
+            "checkpoint restore --archive",
+            "`snapshot_id`",
         )
         missing = [item for item in required if item not in flat]
         self.assertEqual([], missing)
@@ -399,7 +561,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("fiat/<issue>-", push)
         self.assertNotIn("record its URL after init", flat)
 
-    def test_steps_stack_and_only_the_run_branch_merges_into_the_base(self):
+    def test_steps_stack_and_only_run_branch_merges_into_base(self):
         flat = " ".join(self.push_discipline.split())
         fiat = " ".join(self.fiat.split())
         # A step's pull request targets the step below it, never the base.
@@ -418,13 +580,13 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Never merge into the base more than once in a run", self.fiat)
         self.assertIn("nothing merges while the steps run", fiat.lower())
 
-    def test_receipted_study_amendment_command_and_phase_boundary_are_explicit(self):
+    def test_study_amendment_command_phase_boundary_explicit(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("hexctl amend study --artifact <candidate>", self.fiat)
         self.assertIn("only while build steps are active", flat)
         self.assertIn("currently receipted study bytes as its exact prefix", flat)
 
-    def test_amendment_receipt_names_digests_verdicts_and_evidence_boundary(self):
+    def test_amendment_receipt_names_digests_verdicts_boundary(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("prior, new, and amendment digests", flat)
         self.assertIn("bounded step verdicts in state and the ledger", flat)
@@ -436,7 +598,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("step receipts refuse to advance", flat)
         self.assertIn("separately specified runbook-repair transition", flat)
 
-    def test_blocked_is_a_terminal_loop_outcome_with_no_implied_receipt(self):
+    def test_blocked_terminal_loop_outcome_no_implied_receipt(self):
         loop = self.fiat.split("## The loop", 1)[1].split("## Phase notes", 1)[0]
         self.assertIn("`blocked`", loop)
         self.assertRegex(loop, r"\| `blocked` \|.*\| -- \|")
@@ -449,7 +611,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("re-pinning", promise)
         self.assertIn("durable blocked directive", promise)
 
-    def test_receipted_runbook_amendment_and_effective_source_are_explicit(self):
+    def test_runbook_amendment_and_effective_source_explicit(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("hexctl amend runbook --artifact <candidate>", self.fiat)
         self.assertIn("Complete replacement Exit: <full value>", self.fiat)
@@ -467,14 +629,14 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("does not establish that the free-form replacement", promise)
         self.assertIn("pending-subject collision", promise)
 
-    def test_protasis_owns_the_complete_replacement_syntax_and_p005_boundary(self):
+    def test_protasis_owns_replacement_syntax_and_p005_boundary(self):
         flat = " ".join(self.protasis.split())
         self.assertIn("Complete replacement Exit:", self.protasis)
         self.assertIn("P005", self.protasis)
         self.assertIn("ends the last baseline step before a real amendment heading", flat)
         self.assertIn("not that the new criterion is correct", flat)
 
-    def test_protasis_verified_audit_read_view_preserves_source_evidence(self):
+    def test_protasis_verified_audit_read_view_keeps_evidence(self):
         passages = {
             "study item 2": self.protasis.split("2. **Prior art.**", 1)[1].split(
                 "3. **Constraints and non-goals.**", 1
@@ -519,7 +681,7 @@ class FiatSkillContractTests(unittest.TestCase):
                 with self.subTest(passage=passage_name, rule=rule):
                     self.assertIn(clause, flat)
 
-    def test_protasis_owns_the_closed_version_relation_and_p006_boundary(self):
+    def test_protasis_owns_version_relation_and_p006_boundary(self):
         flat = " ".join(self.protasis.split())
         self.assertIn("```version-relations", self.protasis)
         self.assertIn("next-generation-after-integration-base", self.protasis)
@@ -528,7 +690,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("It does not open the ledger", flat)
         self.assertIn("allocate a version", flat)
 
-    def test_fiat_owns_the_exact_anchor_without_calling_it_a_reservation(self):
+    def test_fiat_owns_exact_anchor_never_calls_it_reservation(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("`fiat-version-relations/v1` anchor", flat)
         self.assertIn("bounded regular Git blob", flat)
@@ -561,7 +723,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
 
-    def test_decision_assignment_contract_is_read_only_and_source_bound(self):
+    def test_decision_assignment_is_read_only_and_source_bound(self):
         fiat = " ".join(self.fiat.split())
         push = " ".join(self.push_discipline.split())
         for text in (fiat, push):
@@ -588,7 +750,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("mutate a draft", promise)
         self.assertIn("superseded assignment retained in active ancestry", promise)
 
-    def test_issue_556_generation_records_retain_the_declared_relation(self):
+    def test_issue_556_generations_retain_declared_relation(self):
         ledgers = {
             "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
             "protasis-v4.9.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
@@ -723,7 +885,7 @@ class BodyReadBackTests(unittest.TestCase):
         self.assertIn("gh api repos/<owner>/<repo>/pulls/<n> --jq .body", self.flat)
         self.assertIn("rather than `gh pr view --json body`", self.flat)
 
-    def test_the_section_sits_between_the_label_read_back_and_the_url_check(self):
+    def test_section_sits_between_label_read_back_and_url_check(self):
         self.assertLess(
             self.flat.index("A failed query is not an answer"),
             self.flat.index("## Read the body back"),
@@ -736,67 +898,30 @@ class BodyReadBackTests(unittest.TestCase):
     def test_a_failed_read_is_not_a_clean_body(self):
         self.assertIn("A failed read is not a clean body", self.flat)
 
-    def test_the_recovery_edits_the_stashed_body_and_reads_it_again(self):
+    def test_the_body_and_topology_are_read_at_later_receipts(self):
         self.assertIn("gh pr edit <url> --body-file .hexaemeron/steps/<n>/pr.md", self.flat)
         self.assertIn("read it back again", self.flat)
-        self.assertIn("`done push`, `done merge-step` and `done integrate`", self.flat)
+        self.assertIn("same exact body and topology at later receipts", self.flat)
 
-    def test_the_repository_rule_wins_over_the_host_trailer_instruction(self):
-        self.assertIn("cannot both be satisfied, and the repository rule wins", self.flat)
+    def test_attribution_footers_are_permitted(self):
+        self.assertIn("Attribution footers are permitted", self.flat)
 
-    def test_the_settings_file_is_named_and_is_not_evidence(self):
-        self.assertIn("`.claude/settings.json`", self.flat)
-        self.assertIn("a setting is not evidence", self.flat)
+    def test_the_settings_file_has_no_admission_role(self):
+        self.assertNotIn("HOST_BYLINE_RE", self.flat)
 
-    def test_the_listed_footer_is_named_by_where_it_was_seen(self):
-        # The study records the #615 footer as having the documented session
-        # link's shape and declines to claim it is that link (skills#617 audit
-        # S2-R1-02); the list says the same rather than more.
-        self.assertIn("the footer that reached pull request #615", self.flat)
-        self.assertIn("it has the shape of the session link", self.flat)
+    def test_readback_compares_exact_prepared_bytes(self):
+        self.assertIn("differs from the exact prepared bytes", self.flat)
 
-    def test_the_skill_push_note_points_at_the_section(self):
-        self.assertIn(
-            "`Read the body back` section of [push-discipline.md](references/push-discipline.md)",
-            self.fiat,
-        )
+    def test_the_skill_requires_exact_body_and_topology_readback(self):
+        self.assertIn("exact pull-request body and topology", self.fiat)
 
 
 class HostGuidanceTests(unittest.TestCase):
-    """The contributor guide promises no refusal the byline expression does not make.
-
-    The guide's attribution paragraph once said a `Generated with` or
-    `Generated by` line "naming Claude Code, Codex or another host" is refused,
-    in the paragraph that sends Cursor, Windsurf and GitHub Copilot contributors
-    to remove such lines by hand; `HOST_BYLINE_RE` names six hosts and passes a
-    line naming any other (skills#617 audit S2-R1-01). The guard reads the hosts
-    the sentence names and drives each through the expression the controller
-    applies, so the list can widen only together with the expression.
-    """
-
-    HOST_LIST_RE = re.compile(r"line naming (.+?), refused as a runtime-host byline")
-
-    @classmethod
-    def setUpClass(cls):
-        cls.flat = " ".join(GUIDE.read_text(encoding="utf-8").split())
-        cls.byline = hexctl_module().HOST_BYLINE_RE
-
-    def test_every_host_the_guide_names_is_one_the_expression_reads(self):
-        match = self.HOST_LIST_RE.search(self.flat)
-        self.assertIsNotNone(match, "the guide no longer lists the hosts the byline gate reads")
-        hosts = re.split(r", | or ", match.group(1))
-        self.assertGreaterEqual(len(hosts), 2)
-        for host in hosts:
-            for verb in ("Generated with", "Generated by"):
-                with self.subTest(host=host, verb=verb):
-                    self.assertIsNotNone(self.byline.search(f"{verb} {host}"))
-
-    def test_the_guide_promises_no_refusal_for_an_unnamed_host(self):
-        self.assertNotIn("or another host, refused", self.flat)
-        self.assertIn(
-            "a line naming any other host passes the gate and still has to go",
-            self.flat,
-        )
+    def test_guide_says_signature_only_transport_neutral_policy(self):
+        flat = " ".join(GUIDE.read_text(encoding="utf-8").split())
+        self.assertIn("Fiat admits a commit by its valid signature", flat)
+        self.assertIn("authenticated connector have equal standing", flat)
+        self.assertIn("Publication authority stays separate", flat)
 
 
 class BaseSyncTests(unittest.TestCase):
@@ -883,7 +1008,7 @@ class PluginCurrencyTests(unittest.TestCase):
     def test_a_run_cannot_enforce_what_it_just_shipped(self):
         self.assertIn("cannot take effect for the very run that made it", self.flat)
 
-    def test_kronos_distinguishes_every_currency_exit_before_reranking(self):
+    def test_kronos_separates_currency_exits_before_reranking(self):
         """A source-controller refusal is not a clean fleet report."""
         for surface in (self.flat, self.kronos):
             with self.subTest(surface=surface[:40]):
@@ -966,7 +1091,7 @@ class ContributorCheckTests(unittest.TestCase):
         with mock.patch.object(self.module, "_gh", side_effect=responses):
             self.assertTrue(self.module.authenticated_github_user_is_contributor())
 
-    def test_verified_wildcat_email_passes_when_membership_is_unavailable(self):
+    def test_verified_email_passes_when_membership_unavailable(self):
         responses = [
             self.completed(),
             self.completed(payload={"login": "member", "email": None}),
@@ -1094,7 +1219,7 @@ class RunWorktreeContractTests(unittest.TestCase):
 
 
 class TestRunbookAmendments(HexctlCase):
-    def test_complete_replacement_exit_reaches_mason_and_warden_exactly(self):
+    def test_full_replacement_exit_reaches_mason_warden_exactly(self):
         _, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment()
         candidate = self.write("candidate.md", original + suffix)
@@ -1129,7 +1254,7 @@ class TestRunbookAmendments(HexctlCase):
             warden["brief"]["runbook_step"], mason["brief"]["runbook_step"]
         )
 
-    def test_exact_unicode_and_whitespace_bytes_are_not_normalised_in_packets(self):
+    def test_unicode_whitespace_bytes_not_normalised_in_packets(self):
         _, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment(
             what=(
@@ -1143,7 +1268,7 @@ class TestRunbookAmendments(HexctlCase):
         self.assertEqual(carried["markdown"].encode("utf-8"), suffix.encode("utf-8"))
         self.assertEqual(carried["sha256"], hashlib.sha256(suffix.encode()).hexdigest())
 
-    def test_current_study_bound_complete_replacement_repairs_broken_study(self):
+    def test_study_bound_full_replacement_repairs_broken_study(self):
         study_text, runbook_text = self.to_runbook_amendable_steps()
         broken_study = self.write(
             "broken-study.md",
@@ -1198,7 +1323,7 @@ class TestRunbookAmendments(HexctlCase):
         )
         self.assertIn("runbook amendment blocks step 1", proc.stderr)
 
-    def test_prefix_forgery_and_appended_step_topology_refuse_without_mutation(self):
+    def test_prefix_forgery_appended_step_refuse_no_mutation(self):
         for label, candidate_text, message in (
             (
                 "prefix",
@@ -1229,7 +1354,7 @@ class TestRunbookAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_fenced_decoy_is_ignored_and_two_real_final_blocks_refuse(self):
+    def test_fenced_decoy_ignored_two_real_final_blocks_refuse(self):
         self.init()
         with open(COMPLETE_STUDY, encoding="utf-8") as handle:
             study = self.write("study.md", handle.read())
@@ -1265,7 +1390,7 @@ class TestRunbookAmendments(HexctlCase):
         finally:
             other.tearDown()
 
-    def test_replacement_clause_unknown_duplicate_partial_and_field_shape_refuse(self):
+    def test_replacement_unknown_duplicate_partial_field_refuse(self):
         cases = {
             "unknown": (
                 self.runbook_amendment(what="Complete replacement Unknown: no."),
@@ -1314,7 +1439,7 @@ class TestRunbookAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_replacement_exit_without_command_refuses_without_mutation_or_carriage(self):
+    def test_exit_without_command_refuses_no_mutation_carriage(self):
         _, original = self.to_runbook_amendable_steps()
         before = self.state()["receipts"]["runbook"]["sha256"]
         suffix = self.runbook_amendment(
@@ -1327,7 +1452,7 @@ class TestRunbookAmendments(HexctlCase):
         packet = self.next_json()["brief"]["runbook_step"]
         self.assertNotIn("Reviewed and working.", packet["markdown"])
 
-    def test_indented_code_line_cannot_hide_a_step_heading_from_topology(self):
+    def test_indented_code_hides_no_step_heading_from_topology(self):
         _, original = self.to_runbook_amendable_steps()
         before = self.state()["receipts"]["runbook"]["sha256"]
         suffix = self.runbook_amendment().replace(
@@ -1345,7 +1470,7 @@ class TestRunbookAmendments(HexctlCase):
         packet = self.next_json()["brief"]["runbook_step"]
         self.assertNotIn("Smuggled visible heading", packet["markdown"])
 
-    def test_verdict_coverage_unknown_touch_and_completed_touch_refuse(self):
+    def test_verdict_coverage_unknown_completed_touch_refuse(self):
         cases = (
             (
                 "missing verdict",
@@ -1401,7 +1526,7 @@ class TestRunbookAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_wrong_phase_unbound_receipt_checker_path_and_size_refuse(self):
+    def test_bad_phase_unbound_receipt_checker_path_size_refuse(self):
         self.init()
         candidate = self.write("candidate.md", self.runbook_amendment())
         proc = self.run_ctl("amend", "runbook", "--artifact", candidate, expect=2)
@@ -1490,7 +1615,7 @@ class TestRunbookAmendments(HexctlCase):
             events = [json.loads(line)["event"] for line in handle if line.strip()]
         self.assertEqual(events.count("amend:runbook"), 1)
 
-    def test_written_runbook_ledger_event_recovers_without_duplication(self):
+    def test_written_ledger_event_recovers_without_duplication(self):
         _, original = self.to_runbook_amendable_steps()
         candidate_text = original + self.runbook_amendment()
         candidate = self.write("candidate.md", candidate_text)
@@ -1517,7 +1642,7 @@ class TestRunbookAmendments(HexctlCase):
             events = [json.loads(line)["event"] for line in handle if line.strip()]
         self.assertEqual(events.count("amend:runbook"), 1)
 
-    def test_runbook_pending_marker_rolls_back_when_canonical_bytes_are_prior(self):
+    def test_pending_marker_rolls_back_if_canonical_bytes_prior(self):
         _, original = self.to_runbook_amendable_steps()
         module = hexctl_module()
         state = self.state()
@@ -1541,7 +1666,7 @@ class TestRunbookAmendments(HexctlCase):
         self.assertIn("rolled back", recovered.stdout)
         self.assertNotIn("amendments", self.state()["receipts"]["runbook"])
 
-    def test_committed_runbook_receipt_clears_a_marker_left_before_cleanup(self):
+    def test_committed_receipt_clears_marker_left_pre_cleanup(self):
         _, original = self.to_runbook_amendable_steps()
         candidate = self.write(
             "candidate.md", original + self.runbook_amendment()
@@ -1620,7 +1745,7 @@ class TestRunbookAmendments(HexctlCase):
         for subject in ("study", "runbook"):
             self.assertTrue(os.path.isfile(module.amendment_pending_path(self.target, subject)))
 
-    def test_unrelated_and_stale_amendments_are_not_selected_for_a_packet(self):
+    def test_unrelated_stale_amendments_not_selected_for_packet(self):
         study_text, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment(touched="Step 2.")
         candidate = self.write("candidate.md", original + suffix)
@@ -1641,7 +1766,7 @@ class TestRunbookAmendments(HexctlCase):
         stale = self.next_json()["brief"]["runbook_step"]
         self.assertEqual(stale["amendments"], [])
 
-    def test_multiple_current_amendments_are_carried_in_receipt_order(self):
+    def test_multiple_current_amendments_carry_in_receipt_order(self):
         _, original = self.to_runbook_amendable_steps()
         first_suffix = self.runbook_amendment(
             what="Complete replacement Exit: Run `fiat-v2.0.0`."
@@ -1688,7 +1813,7 @@ class TestRunbookAmendments(HexctlCase):
         self.assertEqual(len(argv), 2)
         self.assertIn("Protasis rejected", refusal)
 
-    def test_post_amendment_drift_and_receipt_history_mismatch_refuse(self):
+    def test_post_amendment_drift_and_history_mismatch_refuse(self):
         _, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment()
         candidate = self.write("candidate.md", original + suffix)
@@ -1744,7 +1869,7 @@ class RunWorktreeDemoTests(unittest.TestCase):
         return subprocess.run([sys.executable, str(HEXCTL), *args],
                               capture_output=True, text=True)
 
-    def test_the_demo_path_leaves_a_dirty_checkout_exactly_as_it_found_it(self):
+    def test_demo_path_leaves_dirty_checkout_exactly_as_found(self):
         import os
         with open(os.path.join(self.repo, "dirty-file.txt"), "w", encoding="utf-8") as fh:
             fh.write("the operator's uncommitted work\n")
@@ -1769,7 +1894,7 @@ class RunWorktreeDemoTests(unittest.TestCase):
         self.assertEqual(status.returncode, 0, status.stderr)
         self.assertEqual(json.loads(status.stdout)["topic"], "worktree demo")
 
-    def test_a_directory_that_is_not_a_repository_refuses_and_creates_no_state(self):
+    def test_non_repository_dir_refuses_and_creates_no_state(self):
         import os
         plain = os.path.join(self.tmp, "not-a-repo")
         os.makedirs(plain)

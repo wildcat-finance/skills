@@ -1,0 +1,1037 @@
+{
+  "accepted": [
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            }
+          ],
+          "remaining_ids": [
+            "kf-453-07"
+          ],
+          "suites": []
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "implement",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "id": "implement-resume",
+      "why": "one final-green id is still outstanding while implement runs"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "id": "audit-ready",
+      "why": "every guard, final-green and suite binding is complete"
+    },
+    {
+      "document": {
+        "assigned_ids": [],
+        "completed_ids": [],
+        "final_green": {
+          "completed_ids": [],
+          "manifests": [],
+          "remaining_ids": [],
+          "suites": []
+        },
+        "guard_manifests": [],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": {
+          "assertion": "no-known-findings-for-step",
+          "consuming_step": 4,
+          "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "schema": "fiat-no-known-findings/v1",
+          "source_views": [
+            {
+              "id": "issue-369-consumer",
+              "source_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+              "view_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+            }
+          ],
+          "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "phase": "implement",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "id": "no-known-findings",
+      "why": "an empty assignment set carries its bound claim"
+    }
+  ],
+  "capture": {
+    "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "final_green_fields": [
+    "completed_ids",
+    "manifests",
+    "remaining_ids",
+    "suites"
+  ],
+  "manifest_reference_fields": [
+    "finding_id",
+    "path",
+    "sha256"
+  ],
+  "no_known_findings_fields": [
+    "assertion",
+    "consuming_step",
+    "inventory_sha256",
+    "schema",
+    "source_views",
+    "study_sha256"
+  ],
+  "projection_fields": [
+    "assigned_ids",
+    "completed_ids",
+    "final_green",
+    "guard_manifests",
+    "inventory_sha256",
+    "no_known_findings",
+    "phase",
+    "remaining_ids",
+    "runbook_sha256",
+    "schema",
+    "step",
+    "step_parent",
+    "study_sha256"
+  ],
+  "projection_schema": "fiat-known-failure-recovery/v1",
+  "rejected": [
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [
+          "kf-453-07"
+        ],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "guard evidence",
+      "id": "missing-guard-manifest",
+      "why": "an audited step keeps a guard manifest for every assigned id"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "uniquely sorted",
+      "id": "reordered-guard-manifests",
+      "why": "manifest references are uniquely sorted by finding id"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "uniquely sorted",
+      "id": "duplicated-guard-manifest",
+      "why": "one assigned id cannot be counted twice"
+    },
+    {
+      "capture": {
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "9999999999999999999999999999999999999999999999999999999999999999",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "inventory",
+      "id": "stale-final-green-digest",
+      "why": "a manifest path bound to another inventory is stale"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/3/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "controller-derived path",
+      "id": "foreign-step-manifest-path",
+      "why": "evidence from another step is foreign to this one"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            }
+          ],
+          "remaining_ids": [
+            "kf-453-07"
+          ],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "final-green evidence",
+      "id": "red-guard-reaches-audit",
+      "why": "audit cannot open while a final-green id is outstanding"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "suite evidence",
+      "id": "incomplete-suite-evidence",
+      "why": "both declared suites are bound before audit"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 1
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "suite evidence",
+      "id": "failing-suite-evidence",
+      "why": "a non-zero suite exit is not successful suite evidence"
+    },
+    {
+      "document": {
+        "assigned_ids": [],
+        "completed_ids": [],
+        "final_green": {
+          "completed_ids": [],
+          "manifests": [],
+          "remaining_ids": [],
+          "suites": []
+        },
+        "guard_manifests": [],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "implement",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "no-known-findings",
+      "id": "empty-inventory-without-a-claim",
+      "why": "an empty assignment set still owes a bound claim"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": {
+          "assertion": "no-known-findings-for-step",
+          "consuming_step": 4,
+          "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "schema": "fiat-no-known-findings/v1",
+          "source_views": [
+            {
+              "id": "issue-369-consumer",
+              "source_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+              "view_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
+            }
+          ],
+          "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "no-known-findings",
+      "id": "assigned-step-with-a-no-findings-claim",
+      "why": "an assigned step cannot also claim it has no findings"
+    },
+    {
+      "document": {
+        "assigned_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "completed_ids": [
+          "kf-453-06",
+          "kf-453-07"
+        ],
+        "final_green": {
+          "completed_ids": [
+            "kf-453-06",
+            "kf-453-07"
+          ],
+          "manifests": [
+            {
+              "finding_id": "kf-453-06",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-06.json",
+              "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "finding_id": "kf-453-07",
+              "path": ".hexaemeron/steps/4/final-green/manifests/kf-453-07.json",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "remaining_ids": [],
+          "suites": [
+            {
+              "argv": [
+                "python3",
+                "plugins/hexaemeron/tests/run_tests.py"
+              ],
+              "check": "hexaemeron-suite",
+              "cwd": ".",
+              "exit": 0
+            },
+            {
+              "argv": [
+                "python3",
+                "-m",
+                "unittest",
+                "discover",
+                "-s",
+                "tests"
+              ],
+              "check": "root-suite",
+              "cwd": ".",
+              "exit": 0
+            }
+          ]
+        },
+        "guard_commit": "5555555555555555555555555555555555555555",
+        "guard_manifests": [
+          {
+            "finding_id": "kf-453-06",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-06.json",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "finding_id": "kf-453-07",
+            "path": ".hexaemeron/steps/4/inoculation/manifests/kf-453-07.json",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "no_known_findings": null,
+        "phase": "audit",
+        "remaining_ids": [],
+        "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "schema": "fiat-known-failure-recovery/v1",
+        "step": 4,
+        "step_parent": "4444444444444444444444444444444444444444",
+        "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "error": "field set",
+      "id": "unknown-projection-field",
+      "why": "the projection is closed"
+    }
+  ],
+  "schema": "issue-453-recovery-fixture/v1",
+  "step_parent": "4444444444444444444444444444444444444444",
+  "suite_checks": [
+    "root-suite",
+    "hexaemeron-suite"
+  ],
+  "suite_fields": [
+    "argv",
+    "check",
+    "cwd",
+    "exit"
+  ]
+}

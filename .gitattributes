@@ -1,1 +1,3 @@
 .agents/skills/promise-machine/runtime/** linguist-generated -whitespace
+.horos/census.json -merge
+.horos/boundary.json -merge

@@ -5,7 +5,7 @@
 # Hexaemeron runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
+> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** every delegated next envelope carries a deterministic fiat-task-identity/v1 handle naming the run's task, phase and role, and next --task-handle refuses a stale, malformed or delegate-less handle before any packet is emitted; closed audit history still ships in the tree as frozen prose, and an audit round has no field for its evidence, which lands in Leads not pursued.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -129,10 +129,12 @@ the runtime or repository requires. Preserve every fail-closed check in the
 canonical skill. If a command, audit role, lint, test, issue write, or push did
 not happen, state that plainly and do not create its receipt.
 Fiat directives carry source-bound delegation packets. Its commit-bearing
-receipts require locally verified signatures and exact provenance trailers;
-pushed ranges and GitHub merge SHAs also require GitHub `verified: true` with
-`reason: valid`. Never copy raw signature material into state, ledgers, or
-reports.
+receipts require locally verified signatures; pushed ranges and GitHub merge
+SHAs also require GitHub `verified: true` with `reason: valid`. Attribution and
+provenance trailers are recorded but do not decide admission. Authenticated
+local GitHub access and an authenticated connector have equal standing for the
+same exact checked fields. Never copy raw signature material into state,
+ledgers, or reports.
 Every Fiat audit round declares `--audit-filter sapheneia:sapheneia`; this is a
 checked operator declaration, not proof of the semantic pass. A bound task
 issue's closing comment follows the repository's Sapheneia, Imprimatur,

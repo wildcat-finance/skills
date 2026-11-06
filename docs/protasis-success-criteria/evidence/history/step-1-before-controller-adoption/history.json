@@ -1,0 +1,114 @@
+{
+  "candidate": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+  "files": [
+    {
+      "bytes": 50583,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/study.md.txt",
+      "sha256": "3b15af2f2137075ee5c265cff385f25f966d2f47e77f06d3104ce00a494b7be4",
+      "source": "docs/protasis-success-criteria/study.md"
+    },
+    {
+      "bytes": 41070,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/runbook.md.txt",
+      "sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+      "source": "docs/protasis-success-criteria/runbook.md"
+    },
+    {
+      "bytes": 12573,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/proof.py.txt",
+      "sha256": "0272737d0cd224589f0ce5646518340295944274da6ee9c01587afbf7809bc24",
+      "source": "docs/protasis-success-criteria/proof.py"
+    },
+    {
+      "bytes": 6460,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/README.md.txt",
+      "sha256": "07fb198fdc28d5554b92749015adb45466b962a75fe99bc3850bee3c077d2ab6",
+      "source": "docs/protasis-success-criteria/README.md"
+    },
+    {
+      "bytes": 59367,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/provenance.json",
+      "sha256": "229113e1cf1cb9c86d3f4a265856c53e1ed7d2d396726a56f0c0cb3fad29999e",
+      "source": "docs/protasis-success-criteria/evidence/provenance.json"
+    },
+    {
+      "bytes": 346,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/reports/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 14458,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/controller-capture-design-home.evidence.json",
+      "sha256": "49e8a96c247663cd7714081e7c821dea4f77b47ce3f0fba3e5629807040dff21",
+      "source": ".hexaemeron/reports/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 3231,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/evaluation-run.json",
+      "sha256": "416ca056a957560995752979eaa56a2f0b1bfe4e8faca060ef6e3e39c338ed94",
+      "source": "docs/promise-machine/obligation-gates/evaluation-run.json"
+    },
+    {
+      "bytes": 29070,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/integration-projection.json",
+      "sha256": "bf9083171009f2a5ae51c23c55cf5361ba5d941823f82cb9574e51278f60fd49",
+      "source": "docs/promise-machine/obligation-gates/integration-projection.json"
+    },
+    {
+      "bytes": 14254,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/integration-projection.md.txt",
+      "sha256": "e9f307662a65e55446b0560a0f6324ae2fbe5dd91b3e779f7f5f4a4e2c25c23b",
+      "source": "docs/promise-machine/obligation-gates/integration-projection.md"
+    },
+    {
+      "bytes": 162,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-exit.json",
+      "sha256": "25baaa000f5e984e94bc7e13cacbb14a2e948a90368d3c330dbb7a41635caa91",
+      "source": ".hexaemeron/reports/step-1-exit.json"
+    },
+    {
+      "bytes": 247161,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-checked.json",
+      "sha256": "43ae501536572255f39d9fd30f34b24a4e3b9c7f93825965d9576cde8ee52ce9",
+      "source": ".hexaemeron/reports/step-1-checked.json"
+    },
+    {
+      "bytes": 1280,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-done-implement-2-result.json",
+      "sha256": "69d9d9960522e54cb2ce4c26d304da24f537cfe1ec6a4eab1d7dffc22c7a232f",
+      "source": ".hexaemeron/evidence/step-1-done-implement-2-result.json"
+    },
+    {
+      "bytes": 48,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-done-implement-2.log",
+      "sha256": "407bcac8d3105d2d31e5425402265bdc8f609f5977668ef492006697594d3746",
+      "source": ".hexaemeron/evidence/step-1-done-implement-2.log"
+    },
+    {
+      "bytes": 241,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-greenlight-4-result.json",
+      "sha256": "a9f484fbd2b00f90915d9929f48933b10d80b5ff437e86f0cef408b6c6b890f8",
+      "source": ".hexaemeron/evidence/step-1-greenlight-4-result.json"
+    },
+    {
+      "bytes": 6784,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-greenlight-4.log",
+      "sha256": "12864398b678e75ef846531593900210473ba2bc686d3791e62c1d8aeb2b12a8",
+      "source": ".hexaemeron/evidence/step-1-greenlight-4.log"
+    },
+    {
+      "bytes": 402,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4-result.json",
+      "sha256": "b5c2d7babd4631f507c467f435467dce63145a6d2ec80723eb96f9911aa17eee",
+      "source": ".hexaemeron/evidence/step-1-hex-exit-4-result.json"
+    },
+    {
+      "bytes": 379816,
+      "path": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4.log",
+      "sha256": "e605d1153c5fe1d390f0e5be3a0beaf8a16c0ff0a0911083ed294a5a520685b3",
+      "source": ".hexaemeron/evidence/step-1-hex-exit-4.log"
+    }
+  ],
+  "schema": "success-criteria-evidence-history/v1"
+}

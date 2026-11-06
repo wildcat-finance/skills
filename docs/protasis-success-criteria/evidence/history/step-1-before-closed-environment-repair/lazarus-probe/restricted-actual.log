@@ -1,0 +1,7 @@
+{"claim_ids":["lazarus-goldfinch-replay"],"correlation_id":"4daced7ecb0c1b89","count":1,"event":"demonstration.selected","mode":"record"}
+{"claim_id":"lazarus-goldfinch-replay","command":"run","correlation_id":"4daced7ecb0c1b89","event":"demonstration.started","repetition":1,"skill":"lazarus","timeout_ms":600000}
+{"claim_id":"lazarus-goldfinch-replay","code":"D075","correlation_id":"4daced7ecb0c1b89","event":"demonstration.refused","message":"plugins/lazarus/skills/lazarus/DEMONSTRATION.md commands[run] exited 1, expected 0","skill":"lazarus"}
+{"correlation_id":"4daced7ecb0c1b89","event":"demonstration.report","path":"/private/tmp/issue-1273-lazarus-environment-probe/restricted-actual.json","sha256":"2afa350d47d0159f4688f5c3fedc94a0e61de122a41e2498ac8f2b14c94350b9","status":"refused"}
+demonstrations refused: 1 record(s), 1525 ms aggregate over 1 repetition(s)
+  lazarus-goldfinch-replay             refused   slowest 1525 ms  D075 plugins/lazarus/skills/lazarus/DEMONSTRATION.md commands[run] exited 1, expected 0
+report    /private/tmp/issue-1273-lazarus-environment-probe/restricted-actual.json

@@ -161,12 +161,13 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         original_bounded_git = module.bounded_git
         moved = False
 
-        def move_base_before_add(base_dir, argv, refusal=None):
+        def move_base_before_add(base_dir, argv, refusal=None, **kwargs):
             nonlocal moved
             if argv[:2] == ["worktree", "add"] and not moved:
+                self.assertEqual(kwargs.get("timeout"), module.GIT_MATERIALIZE_TIMEOUT)
                 moved = True
                 git(self.repo, "commit", "-q", "--allow-empty", "-m", "move main")
-            return original_bounded_git(base_dir, argv, refusal)
+            return original_bounded_git(base_dir, argv, refusal, **kwargs)
 
         args = argparse.Namespace(
             dir=str(self.repo),
@@ -326,18 +327,40 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         self.assertIn("commit object", result.stderr)
         self.assert_no_partial_run()
 
-    def test_task_repository_substitution_refuses_before_recording(self):
+    def test_cross_repo_keeps_delivery_origin_and_exact_tracker(self):
         self.add_origin("wildcat-finance/skills")
-        result = self.run_ctl(
-            "init",
-            "--topic",
-            "immutable anchor",
+        issue = "https://github.com/elsewhere/skills/issues/560"
+        worktree = self.init(
             "--task-issue",
-            "https://github.com/elsewhere/skills/issues/560",
-            expected=2,
+            issue,
         )
-        self.assertIn("task issue repository", result.stderr)
-        self.assert_no_partial_run()
+        state = self.state(worktree)
+        anchor = state["receipts"]["run_anchor"]
+        self.assertEqual(anchor["repository"], "wildcat-finance/skills")
+        self.assertEqual(state["receipts"]["task_issue"], issue)
+        self.assertEqual(anchor["task"], {
+            "kind": "external", "sha256": hashlib.sha256(issue.encode()).hexdigest(),
+        })
+        self.assertEqual(git(worktree, "remote", "get-url", "origin"),
+                         "https://github.com/wildcat-finance/skills.git")
+
+    def test_cross_repository_anchor_distinguishes_same_issue_number(self):
+        module = load_hexctl()
+        first = "https://github.com/one/tracker/issues/560"
+        second = "https://github.com/two/tracker/issues/560"
+        try:
+            left = module.run_anchor_task(first, "owner/product")
+            right = module.run_anchor_task(second, "owner/product")
+        except SystemExit as error:
+            self.fail(f"a separately tracked GitHub task was refused: {error}")
+        self.assertNotEqual(left, right)
+        self.assertEqual(module.run_anchor_task(
+            "https://github.com/owner/product/issues/560", "owner/product"),
+            {"kind": "github-issue", "number": 560})
+        body = "Closes one/tracker#560"
+        self.assertIsNotNone(module.pull_request_closing_reference(body, first, "owner/product"))
+        self.assertIsNone(module.pull_request_closing_reference(body, second, "owner/product"))
+        self.assertIsNone(module.pull_request_closing_reference("Closes #560.", first, "owner/product"))
 
     def test_ambiguous_origin_refuses_before_recording(self):
         self.add_origin()
@@ -357,7 +380,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         self.assertIn("one repository", result.stderr)
         self.assert_no_partial_run()
 
-    def test_origin_substitution_and_anchor_mismatch_refuse_verification(self):
+    def test_origin_swap_anchor_mismatch_refuse_verification(self):
         self.add_origin()
         worktree = self.init(
             "--task-issue", "https://github.com/wildcat-finance/skills/issues/560"
@@ -386,7 +409,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         self.assertEqual(anchor_changed.returncode, 1)
         self.assertIn("run anchor", anchor_changed.stderr)
 
-    def test_malformed_pull_request_head_refuses_after_integration_branch_split(self):
+    def test_malformed_pr_head_refuses_after_integration_split(self):
         module = load_hexctl()
         url = "https://github.com/wildcat-finance/skills/pull/1"
         # Topology is read before the head SHA, so an absent head is named as a
@@ -428,7 +451,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
                 self.assertEqual(raised.exception.code, 2)
                 self.assertIn(expected, error.getvalue())
 
-    def test_legacy_anchor_absence_is_accepted_but_new_anchor_cannot_be_rebound(self):
+    def test_legacy_anchor_absence_ok_new_anchor_cannot_rebind(self):
         worktree = self.init()
         module = load_hexctl()
         state_path = worktree / ".hexaemeron" / "state.json"
@@ -633,7 +656,7 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         second = json.loads(self.identity().stdout)
         self.assertEqual(first, second)
 
-    def test_active_audit_verdict_and_unavailable_binding_are_explicit(self):
+    def test_active_audit_verdict_unavailable_binding_explicit(self):
         self.git(
             "remote",
             "add",
@@ -1218,7 +1241,7 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("immutable full-SHA run base", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
-    def test_identity_refuses_unreceipted_and_non_descendant_working_commits(self):
+    def test_identity_refuses_unreceipted_non_descendant_commit(self):
         self.to_post_push()
         before = self.state_ledger_bytes()
         environment = self.direct_environment()
@@ -1240,6 +1263,17 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("post-push receipt is incomplete", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
+    def test_this_controller_can_restore_the_capsules_it_writes(self):
+        """A ledger bump that forgets the compatibility set is a dead capsule."""
+        controller = load_hexctl()
+        current = controller.ledger_version(
+            HEXCTL.parent.parent / "EVOLUTION.md"
+        )
+        self.assertRegex(current, r"^fiat-v[0-9]+\.[0-9]+\.[0-9]+$")
+        self.assertIn(
+            current, controller.CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        )
+
     def test_identity_refuses_a_non_checkpoint_phase_without_writes(self):
         self.git(
             "remote",
@@ -1254,7 +1288,7 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("allowed only", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
-    def test_identity_refuses_a_non_exhausted_audit_round_without_writes(self):
+    def test_identity_refuses_unexhausted_audit_round_no_writes(self):
         self.git(
             "remote",
             "add",

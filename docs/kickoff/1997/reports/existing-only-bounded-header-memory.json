@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "existing-only",
+  "criterion": "bounded-header-memory",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate existing-only --criterion bounded-header-memory --report .hexaemeron/reports/existing-only-bounded-header-memory.json",
+  "exit": 0
+}

@@ -1,0 +1,20 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "EventProbe.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity >=0.6.11 <0.9.0;\npragma experimental ABIEncoderV2;\ninterface IBase { event Ping(address indexed actor); }\nabstract contract Base is IBase { event Seen(uint n) anonymous; }\nlibrary Lib { event FromLibrary(address indexed sender); function f() internal { emit FromLibrary(msg.sender); } }\ncontract Derived is Base {\n enum Status { One, Two }\n struct Nested { address actor; uint256[2] fixedValues; }\n struct Item { Nested inner; Status status; address payable destination; }\n event Ping(uint indexed n); event Changed(uint first, address indexed second);\n event Complex(Item item, Item[] items, bytes32 indexed key);\n event Opaque(function(uint256) external returns (uint256) callback);\n function f() public { emit Ping(msg.sender); Lib.f(); }\n}\n"
+    }
+  },
+  "settings": {
+    "outputSelection": {
+      "*": {
+        "": [
+          "ast"
+        ],
+        "*": [
+          "abi"
+        ]
+      }
+    }
+  }
+}

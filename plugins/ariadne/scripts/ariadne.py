@@ -145,7 +145,15 @@ def cmd_verify(args):
 
 
 def parse_pairs(value, allowed, what):
-    """`a=1,b=2` into a dict, refusing a key the caller did not define."""
+    """`a=1,b=2` into a dict, refusing a key the caller did not define.
+
+    A key given twice is refused too. Keeping the last value let
+    `report=a.pdf,revision=...,scope=...,report=b.pdf` digest `b.pdf` and say
+    nothing, and a comma inside a value can arrive here as such a second key.
+    One flag describes one record, so a second record repeats the flag. The
+    grammar has no escape: a comma followed by a key not yet given still reads
+    as that key.
+    """
     found = {}
     for part in value.split(","):
         key, separator, entry = part.partition("=")
@@ -154,6 +162,10 @@ def parse_pairs(value, allowed, what):
             raise argparse.ArgumentTypeError(
                 "%s takes %s as key=value pairs, got %r"
                 % (what, ", ".join(sorted(allowed)), part)
+            )
+        if key in found:
+            raise argparse.ArgumentTypeError(
+                "%s repeats %s; each key takes one value" % (what, key)
             )
         found[key] = entry.strip()
     return found

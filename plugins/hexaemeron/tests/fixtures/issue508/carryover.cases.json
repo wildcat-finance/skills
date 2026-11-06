@@ -1,0 +1,146 @@
+[
+  {
+    "id": "valid-shape",
+    "valid": true,
+    "value": {
+      "schema": "issue508-carryover-fixture/v1",
+      "source_run": "fixture-run",
+      "sequence": 1,
+      "attachment_url": "https://example.invalid/508-CARRYOVER.md",
+      "packet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "archive_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "signed_fixed_ref": "refs/heads/fixture-fixed",
+      "original_tree": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixed_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "files": [
+        {
+          "path": "src/example.py",
+          "mode": "100644",
+          "payload_base64": "cGFzcwo="
+        },
+        {
+          "path": "old.py",
+          "mode": "delete",
+          "payload_base64": ""
+        }
+      ],
+      "findings": [
+        "fixture-run/1/1/F01"
+      ],
+      "guards": [
+        "test_fixture.test_guard"
+      ],
+      "families": [
+        "path-escape"
+      ]
+    }
+  },
+  {
+    "id": "missing-schema",
+    "valid": false,
+    "value": {
+      "source_run": "fixture-run",
+      "sequence": 1,
+      "attachment_url": "https://example.invalid/508-CARRYOVER.md",
+      "packet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "archive_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "signed_fixed_ref": "refs/heads/fixture-fixed",
+      "original_tree": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixed_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "files": [
+        {
+          "path": "src/example.py",
+          "mode": "100644",
+          "payload_base64": "cGFzcwo="
+        },
+        {
+          "path": "old.py",
+          "mode": "delete",
+          "payload_base64": ""
+        }
+      ],
+      "findings": [
+        "fixture-run/1/1/F01"
+      ],
+      "guards": [
+        "test_fixture.test_guard"
+      ],
+      "families": [
+        "path-escape"
+      ]
+    }
+  },
+  {
+    "id": "unknown-field",
+    "valid": false,
+    "value": {
+      "schema": "issue508-carryover-fixture/v1",
+      "source_run": "fixture-run",
+      "sequence": 1,
+      "attachment_url": "https://example.invalid/508-CARRYOVER.md",
+      "packet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "archive_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "signed_fixed_ref": "refs/heads/fixture-fixed",
+      "original_tree": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixed_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "files": [
+        {
+          "path": "src/example.py",
+          "mode": "100644",
+          "payload_base64": "cGFzcwo="
+        },
+        {
+          "path": "old.py",
+          "mode": "delete",
+          "payload_base64": ""
+        }
+      ],
+      "findings": [
+        "fixture-run/1/1/F01"
+      ],
+      "guards": [
+        "test_fixture.test_guard"
+      ],
+      "families": [
+        "path-escape"
+      ],
+      "unregistered": true
+    }
+  },
+  {
+    "id": "wrong-schema-type",
+    "valid": false,
+    "value": {
+      "schema": 3,
+      "source_run": "fixture-run",
+      "sequence": 1,
+      "attachment_url": "https://example.invalid/508-CARRYOVER.md",
+      "packet_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "archive_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "signed_fixed_ref": "refs/heads/fixture-fixed",
+      "original_tree": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fixed_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "files": [
+        {
+          "path": "src/example.py",
+          "mode": "100644",
+          "payload_base64": "cGFzcwo="
+        },
+        {
+          "path": "old.py",
+          "mode": "delete",
+          "payload_base64": ""
+        }
+      ],
+      "findings": [
+        "fixture-run/1/1/F01"
+      ],
+      "guards": [
+        "test_fixture.test_guard"
+      ],
+      "families": [
+        "path-escape"
+      ]
+    }
+  }
+]

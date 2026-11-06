@@ -1,0 +1,377 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "whole-worker-sandbox",
+      "summary": "Launch the declared worker and all local tool executors beneath one OS policy; keep controller authority outside."
+    },
+    {
+      "id": "optional-tool-mediation",
+      "summary": "Sandbox only voluntarily routed tool invocations while another writer remains exposed. This bypassable design is the rejected alternative."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "primitive-denies-unmediated-writer",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "successful-forbidden-writes",
+      "concern": "correctness",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "whole-launch-dispatch",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "worker-deadline",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "metron",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "worker-output-cap",
+      "concern": "space",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "origin-drift-recovery",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "single-cumulative-reconstruction",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:6"
+    },
+    {
+      "id": "executed-inoculation-guards",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:6"
+    },
+    {
+      "id": "carryover-lineage-recovery",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:6"
+    },
+    {
+      "id": "source-owned-report-compatibility",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:7"
+    },
+    {
+      "id": "gate-parser-no-execution",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:7"
+    },
+    {
+      "id": "gate-receipt-replay",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:7"
+    },
+    {
+      "id": "whole-path-demonstration",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "primitive-denies-unmediated-writer",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-worker-sandbox-primitive-denies-unmediated-writer.json",
+        "sha256": "11ec8686181ce26bf84f1e15f0a34f1c9200b90fca3e4df96aff0a312aba2603"
+      }
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "successful-forbidden-writes",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-worker-sandbox-successful-forbidden-writes.json",
+        "sha256": "cb385fa1b3a8ddcda5f4c42d2378a56293524e5c172fde8d74dbd271a548e109"
+      }
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "whole-launch-dispatch",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion whole-launch-dispatch --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-whole-launch-dispatch.json",
+      "report": "reports/whole-worker-sandbox-whole-launch-dispatch.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "worker-deadline",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion worker-deadline --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-worker-deadline.json",
+      "report": "reports/whole-worker-sandbox-worker-deadline.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "worker-output-cap",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion worker-output-cap --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-worker-output-cap.json",
+      "report": "reports/whole-worker-sandbox-worker-output-cap.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "origin-drift-recovery",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion origin-drift-recovery --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-origin-drift-recovery.json",
+      "report": "reports/whole-worker-sandbox-origin-drift-recovery.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "single-cumulative-reconstruction",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion single-cumulative-reconstruction --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-single-cumulative-reconstruction.json",
+      "report": "reports/whole-worker-sandbox-single-cumulative-reconstruction.json",
+      "blocks": "step:6"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "executed-inoculation-guards",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion executed-inoculation-guards --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-executed-inoculation-guards.json",
+      "report": "reports/whole-worker-sandbox-executed-inoculation-guards.json",
+      "blocks": "step:6"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "carryover-lineage-recovery",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion carryover-lineage-recovery --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-carryover-lineage-recovery.json",
+      "report": "reports/whole-worker-sandbox-carryover-lineage-recovery.json",
+      "blocks": "step:6"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "source-owned-report-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion source-owned-report-compatibility --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-source-owned-report-compatibility.json",
+      "report": "reports/whole-worker-sandbox-source-owned-report-compatibility.json",
+      "blocks": "step:7"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "gate-parser-no-execution",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion gate-parser-no-execution --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-gate-parser-no-execution.json",
+      "report": "reports/whole-worker-sandbox-gate-parser-no-execution.json",
+      "blocks": "step:7"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "gate-receipt-replay",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion gate-receipt-replay --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-gate-receipt-replay.json",
+      "report": "reports/whole-worker-sandbox-gate-receipt-replay.json",
+      "blocks": "step:7"
+    },
+    {
+      "candidate": "whole-worker-sandbox",
+      "criterion": "whole-path-demonstration",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate whole-worker-sandbox --criterion whole-path-demonstration --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/whole-worker-sandbox-whole-path-demonstration.json",
+      "report": "reports/whole-worker-sandbox-whole-path-demonstration.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "primitive-denies-unmediated-writer",
+      "state": "fail",
+      "report": {
+        "path": "reports/optional-tool-mediation-primitive-denies-unmediated-writer.json",
+        "sha256": "aa9aa96182828c1ea8fc49ac1fe2b31517a229ecb590a51cc09673fb92ac76c3"
+      }
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "successful-forbidden-writes",
+      "state": "pass",
+      "report": {
+        "path": "reports/optional-tool-mediation-successful-forbidden-writes.json",
+        "sha256": "a5f28c89c79eb9656deb2ad2661f576f0ad9316139b94ce182b483264b0de84c"
+      }
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "whole-launch-dispatch",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion whole-launch-dispatch --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-whole-launch-dispatch.json",
+      "report": "reports/optional-tool-mediation-whole-launch-dispatch.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "worker-deadline",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion worker-deadline --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-worker-deadline.json",
+      "report": "reports/optional-tool-mediation-worker-deadline.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "worker-output-cap",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion worker-output-cap --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-worker-output-cap.json",
+      "report": "reports/optional-tool-mediation-worker-output-cap.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "origin-drift-recovery",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion origin-drift-recovery --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-origin-drift-recovery.json",
+      "report": "reports/optional-tool-mediation-origin-drift-recovery.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "single-cumulative-reconstruction",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion single-cumulative-reconstruction --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-single-cumulative-reconstruction.json",
+      "report": "reports/optional-tool-mediation-single-cumulative-reconstruction.json",
+      "blocks": "step:6"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "executed-inoculation-guards",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion executed-inoculation-guards --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-executed-inoculation-guards.json",
+      "report": "reports/optional-tool-mediation-executed-inoculation-guards.json",
+      "blocks": "step:6"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "carryover-lineage-recovery",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion carryover-lineage-recovery --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-carryover-lineage-recovery.json",
+      "report": "reports/optional-tool-mediation-carryover-lineage-recovery.json",
+      "blocks": "step:6"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "source-owned-report-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion source-owned-report-compatibility --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-source-owned-report-compatibility.json",
+      "report": "reports/optional-tool-mediation-source-owned-report-compatibility.json",
+      "blocks": "step:7"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "gate-parser-no-execution",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion gate-parser-no-execution --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-gate-parser-no-execution.json",
+      "report": "reports/optional-tool-mediation-gate-parser-no-execution.json",
+      "blocks": "step:7"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "gate-receipt-replay",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion gate-receipt-replay --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-gate-receipt-replay.json",
+      "report": "reports/optional-tool-mediation-gate-receipt-replay.json",
+      "blocks": "step:7"
+    },
+    {
+      "candidate": "optional-tool-mediation",
+      "criterion": "whole-path-demonstration",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_issue_508.py --candidate optional-tool-mediation --criterion whole-path-demonstration --report /Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g/.hexaemeron/reports/optional-tool-mediation-whole-path-demonstration.json",
+      "report": "reports/optional-tool-mediation-whole-path-demonstration.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "whole-worker-sandbox",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

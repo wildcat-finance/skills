@@ -11,11 +11,30 @@ MAX_CONTROL_BYTES = 8 * 1024 * 1024
 MAX_INTEGER_DIGITS = 78
 MAX_NESTING = 64
 MAX_NODES = 200_000
+# For a component already known to hold large real data, not fresh
+# untrusted input: one JSON tree, read or written whole, that can
+# legitimately need more than MAX_NODES -- an interval release's
+# epoch-table log_attributions table is one entry per preserved log, and a
+# real, full-interval capture can preserve tens of thousands (74,088 for
+# the V2 interval, 2026-09-21). Shared here, not left for each caller to
+# invent its own larger number, so every "this one is real and large, not
+# a DoS" judgment stays at one value.
+MAX_LARGE_NODES = 2_000_000
 
 
-def canonical_bytes(value) -> bytes:
-    """Encode the owned JSON subset as UTF-8 with one trailing newline."""
-    _check_tree(value)
+def canonical_bytes(value, *, max_nodes=MAX_NODES) -> bytes:
+    """Encode the owned JSON subset as UTF-8 with one trailing newline.
+
+    `max_nodes` defaults to the same `MAX_NODES` every existing caller
+    already relies on; a caller that already knows its value is large
+    real data, not untrusted input -- see `Builder.build`, which writes an
+    interval's whole `log_attributions` table only after every log it
+    covers has already passed the tighter node limit `load_raw_json`
+    applies to raw provider responses at collect time -- may pass a
+    larger one explicitly rather than this function silently accepting
+    every caller's data at whatever size it happens to be.
+    """
+    _check_tree(value, max_nodes=max_nodes)
     try:
         text = json.dumps(
             value,
@@ -29,8 +48,14 @@ def canonical_bytes(value) -> bytes:
         raise AlexandriaError("value is outside Alexandria's JSON subset") from exc
 
 
-def load_bytes(data: bytes, label: str = "JSON document", *, max_bytes=MAX_CONTROL_BYTES):
-    """Parse JSON while rejecting ambiguous or resource-heavy control input."""
+def load_bytes(data: bytes, label: str = "JSON document", *, max_bytes=MAX_CONTROL_BYTES, max_nodes=MAX_NODES):
+    """Parse JSON while rejecting ambiguous or resource-heavy control input.
+
+    `max_nodes` defaults to `MAX_NODES`, same as every existing caller
+    already relied on; see `canonical_bytes` for why a caller reading back
+    its own already-validated, already-built large real data -- not fresh
+    untrusted input -- may raise it explicitly instead.
+    """
     if max_bytes is not None and len(data) > max_bytes:
         raise AlexandriaError(f"{label} exceeds the {max_bytes}-byte limit")
     try:
@@ -74,7 +99,7 @@ def load_bytes(data: bytes, label: str = "JSON document", *, max_bytes=MAX_CONTR
         raise
     except (json.JSONDecodeError, RecursionError) as exc:
         raise AlexandriaError(f"{label} is not valid JSON") from exc
-    _check_tree(value, label)
+    _check_tree(value, label, max_nodes=max_nodes)
     return value
 
 

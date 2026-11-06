@@ -1,0 +1,54 @@
+{
+  "candidate": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+  "files": [
+    {
+      "bytes": 80190,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/provenance.json",
+      "sha256": "0edd9b99e8fe7292a365d924c5bb718b8570b6d7995f30aad0c325f08586ecc2",
+      "source": "docs/protasis-success-criteria/evidence/provenance.json"
+    },
+    {
+      "bytes": 3231,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/evaluation-run.json",
+      "sha256": "416ca056a957560995752979eaa56a2f0b1bfe4e8faca060ef6e3e39c338ed94",
+      "source": "docs/promise-machine/obligation-gates/evaluation-run.json"
+    },
+    {
+      "bytes": 29070,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/integration-projection.json",
+      "sha256": "bf9083171009f2a5ae51c23c55cf5361ba5d941823f82cb9574e51278f60fd49",
+      "source": "docs/promise-machine/obligation-gates/integration-projection.json"
+    },
+    {
+      "bytes": 14254,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/integration-projection.md.txt",
+      "sha256": "e9f307662a65e55446b0560a0f6324ae2fbe5dd91b3e779f7f5f4a4e2c25c23b",
+      "source": "docs/promise-machine/obligation-gates/integration-projection.md"
+    },
+    {
+      "bytes": 346,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/reports/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 14458,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/controller-capture-design-home.evidence.json",
+      "sha256": "c61156687a6bbab38b5d6910a9c3ade2a83608e825f4d249a2b1cbb04c48aa7d",
+      "source": ".hexaemeron/reports/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 162,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/step-1-exit.json",
+      "sha256": "25baaa000f5e984e94bc7e13cacbb14a2e948a90368d3c330dbb7a41635caa91",
+      "source": ".hexaemeron/reports/step-1-exit.json"
+    },
+    {
+      "bytes": 247162,
+      "path": ".hexaemeron/evidence/history/step-1-before-audit-package-increment/step-1-checked.json",
+      "sha256": "a1f6fdade2c2ad50cd33cc02adb9dd8c63036447105768940194ed88d611e520",
+      "source": ".hexaemeron/reports/step-1-checked.json"
+    }
+  ],
+  "schema": "success-criteria-evidence-history/v1"
+}

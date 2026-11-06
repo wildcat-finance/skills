@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "complete-decoder",
+  "criterion": "token-parity",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/measure_design.py --candidate complete-decoder --criterion token-parity --report .hexaemeron/reports/complete-decoder-token-parity.json",
+  "exit": 0
+}

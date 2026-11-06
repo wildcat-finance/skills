@@ -449,7 +449,7 @@ class V2OutsideSurfaceTests(unittest.TestCase):
             for number in range(OUTSIDE_FILE_COUNT)
         )
 
-    def test_a_v2_artifact_with_more_than_500_outside_paths_is_accepted(self):
+    def test_v2_artifact_with_over_500_outside_paths_accepted(self):
         outside = self.outside_paths()
         self.assertGreater(len(outside), self.module.GIT_PATHS_MAX)
 

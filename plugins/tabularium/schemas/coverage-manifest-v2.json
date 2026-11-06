@@ -2,6 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wildcat.finance/schemas/tabularium/coverage-manifest-v2.json",
   "title": "Tabularium coverage manifest v2",
+  "description": "Superseded by coverage-manifest-v3.json on 2026-09-17. Kept to read schema_version 2 releases; the enums were corrected on that date to the adapter tuple table the v2 Python validator admitted.",
+  "deprecated": true,
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -35,7 +37,7 @@
         "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "bytes": {"type": "integer", "minimum": 0},
         "evidence_class": {"type": "string", "minLength": 1},
-        "protocol_generation": {"enum": ["euler-v1", "euler-v2"]},
+        "protocol_generation": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
         "source_api": {"enum": ["ethereum-json-rpc", "euler-v3"]},
         "chain": {"const": "ethereum-mainnet"},
         "scope": {"type": "object"}
@@ -79,8 +81,8 @@
           "additionalProperties": false,
           "required": ["name", "version"],
           "properties": {
-            "name": {"enum": ["euler-v1", "euler-v2"]},
-            "version": {"const": "1.0.0"}
+            "name": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+            "version": {"enum": ["1.0.0", "2.0.0"]}
           }
         },
         "mapping_rules": {

@@ -1,0 +1,9 @@
+{
+  "candidate": "segmented-proxy-set-venue",
+  "command": "python3 .hexaemeron/design/conformance.py registry-reproduces-recorded-subject-set --candidate segmented-proxy-set-venue",
+  "criterion": "registry-reproduces-recorded-subject-set",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

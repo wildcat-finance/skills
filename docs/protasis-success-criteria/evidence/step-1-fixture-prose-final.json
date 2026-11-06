@@ -1,0 +1,46 @@
+{
+  "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-readme-fixture-candidate.txt": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 569,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 41,
+      "mean_sentence_length": 13.9,
+      "length_variance": 54.2,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 7,
+      "max_allowed_run": 4,
+      "repeated_openers": {
+        "- implementation": 3
+      }
+    }
+  },
+  "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/step-1-commit-message-2.txt": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 59,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 4,
+      "mean_sentence_length": 14.8,
+      "length_variance": 31.2,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 1,
+      "max_allowed_run": 4,
+      "repeated_openers": {}
+    }
+  }
+}

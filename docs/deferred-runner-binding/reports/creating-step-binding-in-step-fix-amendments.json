@@ -1,0 +1,9 @@
+{
+  "candidate": "creating-step-binding",
+  "command": "python3 .hexaemeron/design/probe.py --candidate creating-step-binding --criterion in-step-fix-amendments --report .hexaemeron/reports/creating-step-binding-in-step-fix-amendments.json",
+  "criterion": "in-step-fix-amendments",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

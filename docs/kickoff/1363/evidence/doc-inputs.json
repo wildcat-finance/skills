@@ -1,0 +1,1981 @@
+{
+  "schema": "xray-documentation-inputs/v1",
+  "created_at_utc": "2026-09-26T07:51:24.145481+00:00",
+  "operation": "X-ray Step 1 Path B documentation extraction only",
+  "evidence_class": "recorded specification quotations; not code-verified",
+  "model_execution": {
+    "requested_model_family": "sonnet",
+    "actual_execution": "inherited configured model",
+    "actual_model_id": "not exposed to this worker",
+    "limitation": "Requested Sonnet family is unavailable in this runtime."
+  },
+  "quote_transformations": [
+    "Selected source line spans joined with one space.",
+    "Blank lines and Markdown code-fence delimiters omitted.",
+    "Discontinuous spans kept as separate quotations and citations.",
+    "No source claims reconciled with code or with the other snapshot."
+  ],
+  "scope_exclusions": [
+    "User tutorials and external product documentation.",
+    "Tooling and deployment checklists or ceremony records.",
+    "Changelogs and release notes.",
+    "Test files and external PDFs.",
+    "External review reports and private-reporting instructions."
+  ],
+  "snapshots": [
+    {
+      "name": "deployed",
+      "source_root": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+      "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+      "inputs": [
+        {
+          "path": "README.md",
+          "sha256": "82d2d005385d94d5ebeda06274950874935cf5f025e9a389aeee2e025bbc9f0e",
+          "git_blob_oid": "04a7fac5877e093e5e883cc115835badbb7a31b3",
+          "bytes": 788,
+          "lines": 23,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "ab0bba825ceffb6ea4028cb7f7bc8c8efcca37feb5a942418056d413c97db0bd",
+          "git_blob_oid": "0b5439653da8e798e3cd196980a3a93e576f6029",
+          "bytes": 732,
+          "lines": 12,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/Scale Factor.md",
+          "sha256": "81ed271c894313d818657e8772f67ff1484e5631bfc4e24e8b611a432a5f9397",
+          "git_blob_oid": "8000490679a7e15360894150d23221ef6cc0b186",
+          "bytes": 8456,
+          "lines": 130,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/Core Behavior.md",
+          "sha256": "0f8534b934d52b05878747dd9834aaed0b81850b95a7b71ce4dffa772a68db12",
+          "git_blob_oid": "6946e4e8b925cffea4432bcbe206f9070c0254f2",
+          "bytes": 11002,
+          "lines": 138,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/Terminology.md",
+          "sha256": "6437294a967aa17a11458338694047e0c21cb8ff2eff5d66995c4d1d41c1d612",
+          "git_blob_oid": "cdaf604ed74fa3c92ed508ac754659b296ba0a40",
+          "bytes": 19508,
+          "lines": 225,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/Known Issues.md",
+          "sha256": "5f8da558577691b4780590b1aeaad3e72b759894133722c43d565bce11b707c1",
+          "git_blob_oid": "c7d4c377304c573820b18d2b24d358e163a56b66",
+          "bytes": 3799,
+          "lines": 31,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/EIP-4626.md",
+          "sha256": "aa1ff1115487fca5a2799488e73ea1887acb63542c4569a2339ff604daaafe04",
+          "git_blob_oid": "34ab33546e6ddb533194a687266c60c873e47f71",
+          "bytes": 10090,
+          "lines": 200,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/hooks/Hooks.md",
+          "sha256": "d19367f26f707b0c1a0d1861adc025cb58d5d2b0d7ef4ba518ac9af60c5257c4",
+          "git_blob_oid": "a84aefff94d742145b6dfbbec7821a2c2457c6ab",
+          "bytes": 2911,
+          "lines": 35,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/hooks/How Hooks Work.md",
+          "sha256": "db00b3855701f5ae5efe5160dc4839664ba84c0ee72b9dcaef9cd902b61a7544",
+          "git_blob_oid": "159d42585d8059a4eec9095fbcaf9d9b00fda844",
+          "bytes": 3121,
+          "lines": 36,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/hooks/templates/Access Control Hooks.md",
+          "sha256": "be06bd2709d3cd75ffd3b8a9963a7992c42848dee10c1b5c7adce5c42fe7455b",
+          "git_blob_oid": "31de53424e85e85777a95e7a62af422410618db0",
+          "bytes": 6636,
+          "lines": 120,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "AGENTS.md",
+          "sha256": "c515b94aa001c993430aee27edae7f9e6b301fe7e84b70fed64334de3afb7594",
+          "git_blob_oid": "4a40f189f1d5b6b9258e7da7ca9a355569ad0664",
+          "bytes": 452,
+          "lines": 10,
+          "worktree_equals_pinned_blob": true,
+          "role": "inspected-excluded"
+        }
+      ],
+      "extraction": {
+        "path": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-preparation/deployed-doc-extraction.md",
+        "sha256": "59a10517823103e7940a364388e25282a3d6b8f5274162a03c7e986b55ac170b",
+        "lines": 91,
+        "claim_bullets": 62,
+        "source_spans": [
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Scale Factor.md",
+            "start_line": 7,
+            "end_line": 11,
+            "quote_sha256": "0f25fe793c800cc1e1311990d8f6070e7d08cffb12c8ca0ef48b86fc8a56cc64"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 16,
+            "end_line": 16,
+            "quote_sha256": "b90d0b7bc40d5d59f4854dd5a0011b3fe42778561ebc57b9571a864205051829"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Terminology.md",
+            "start_line": 27,
+            "end_line": 30,
+            "quote_sha256": "f6182a53f0373f06eaa041b53a6ae72859b28670a1c5969c011e8c12f532f0c5"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Terminology.md",
+            "start_line": 183,
+            "end_line": 183,
+            "quote_sha256": "c5ee559e255028c376f07bd3437e5879a6307daea724ab6a45726ea697dd951e"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 33,
+            "end_line": 35,
+            "quote_sha256": "dce482c614c4549cfc00859b648dd66c95b1cc453e4f9dab70afd434ff1c6654"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 37,
+            "end_line": 49,
+            "quote_sha256": "a9242d08fd0de1818a2bf104ec367bc33e4eaee27f3a811af509d210a187eedf"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 90,
+            "end_line": 92,
+            "quote_sha256": "412f13d411e41372110e108b813c9c6a0c043d61f52549d001a16afad6efcae9"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 95,
+            "end_line": 99,
+            "quote_sha256": "98cae23f1a59dccaef6d681d0a3be209522798e40ba2ce44dfb0014d413b3929"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 103,
+            "end_line": 112,
+            "quote_sha256": "7c4585f2693176d2524cfd5ed65db68fddc8feacad1aed2487e6dc17f0b2c5c8"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 116,
+            "end_line": 116,
+            "quote_sha256": "18655b0f052d0c05c6c803ee77cbffb037443a09919f7bb3f43aec6780b6a095"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Core Behavior.md",
+            "start_line": 123,
+            "end_line": 123,
+            "quote_sha256": "a17b43da548dc5c34000aae27d340b34da7657d51f2b2864c4c8c66ab1a64ec5"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Terminology.md",
+            "start_line": 129,
+            "end_line": 130,
+            "quote_sha256": "caf5c219d8ba3f6a2c15ab1b9f7eb578fe132beb229e5ba73c5d4fcc8c765624"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Terminology.md",
+            "start_line": 179,
+            "end_line": 182,
+            "quote_sha256": "99fba7a74e60eaa788cd3eeb43bf60c10bde9f72f698d7d000c28ff1063cfe11"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Terminology.md",
+            "start_line": 190,
+            "end_line": 191,
+            "quote_sha256": "8e927a74c8112ff44bb44aec812d37312f5700bd08b91c0cc5a79b271c15fd67"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/Terminology.md",
+            "start_line": 207,
+            "end_line": 211,
+            "quote_sha256": "296c59da77ede7c2c589ac05f18dbd21da13c9ec8a17cabb4d69aff7a83f3a66"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/hooks/Hooks.md",
+            "start_line": 27,
+            "end_line": 29,
+            "quote_sha256": "6586e6e1d8e210f2783ab794ca77466579884af2368f627d0556944b7d733ee2"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/hooks/How Hooks Work.md",
+            "start_line": 20,
+            "end_line": 28,
+            "quote_sha256": "c134803b29a4d768cf6dbdf3267cf24b3e859d5c622ae9e2c9d5795b66639cc9"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 64,
+            "end_line": 69,
+            "quote_sha256": "2941a36ee12363069c20d8cdb7bbc73a6c3e03dd889d08a93e563454c486afa6"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 94,
+            "end_line": 101,
+            "quote_sha256": "7286d036378af867c028b3c4eecbe58976d215c53641b1d1f05105df0bf94459"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 62,
+            "end_line": 73,
+            "quote_sha256": "c25a7ef5b12bad0330c19866cba1af3647962e6aff2d6f9fd35396b85537d407"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 77,
+            "end_line": 91,
+            "quote_sha256": "9b92c0debbb303ca89a3a1e195026fd4b245eda510edc09346dd5652813b8559"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 95,
+            "end_line": 103,
+            "quote_sha256": "04612f3b7ccff81c733f2a4ceecbf47f24ef4a32ad6f8acdd8c0ade13d020fd4"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 107,
+            "end_line": 116,
+            "quote_sha256": "e502bdbe41e5e454f1f3dc2e5b451565877fad20f5eaceafe1d014705d98ece0"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 122,
+            "end_line": 128,
+            "quote_sha256": "7f1c6499e0abff09e3725a7601eadc1f73b8e3b9f4e59b10ee4796bde89433e0"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 150,
+            "end_line": 150,
+            "quote_sha256": "49743c91f4a92211f85d8a014d1bcc6244b889d7a10264db69c00bc3f88d5da1"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 159,
+            "end_line": 163,
+            "quote_sha256": "570f79ace7133127313073f5058c9a8510bdee5ad169b96ba856e3ae9fdc3f6e"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/EIP-4626.md",
+            "start_line": 186,
+            "end_line": 188,
+            "quote_sha256": "a79141f5186144a08792c5bdb740c7c2934ee52f8ef646bae897e5dda0b83a5b"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Core Behavior.md",
+            "start_line": 13,
+            "end_line": 15,
+            "quote_sha256": "f751d34ad869e5f3ddb0d3de37b5242571d96c5986647e70f45bc1cc3621b9af"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Core Behavior.md",
+            "start_line": 23,
+            "end_line": 25,
+            "quote_sha256": "4ae70243c4b1aac0c2a0227e26bf9ba067f180aab358f4ed4e9d62f97f47a06b"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Terminology.md",
+            "start_line": 9,
+            "end_line": 9,
+            "quote_sha256": "889406f989ad5891d44eac42d742308e2e98a43145b87ac2b235ec5fd25f6852"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Terminology.md",
+            "start_line": 21,
+            "end_line": 23,
+            "quote_sha256": "e74d6c842f6498c36c4c24091756b9d2fe8dfd9abaab14515a897a92e2748f41"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Terminology.md",
+            "start_line": 49,
+            "end_line": 52,
+            "quote_sha256": "930da7b2322a3f1c3185de9b1ed5eba48e33559281870e3aa5e42bc84aac23ca"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Terminology.md",
+            "start_line": 99,
+            "end_line": 105,
+            "quote_sha256": "efd15e36d4ab23491f969d22e5d66b08df250c0e446ba6cdaa886341a7ef9452"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Terminology.md",
+            "start_line": 109,
+            "end_line": 111,
+            "quote_sha256": "c2e49d7c08c04f5339d1a3e99c399ad71b8ead81ccc38250e2615bd7acb21686"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/Terminology.md",
+            "start_line": 174,
+            "end_line": 175,
+            "quote_sha256": "da5a5e469319ef1c80bb6e75668d054227497cbab0c464c532c77848ff0481d7"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 3,
+            "end_line": 7,
+            "quote_sha256": "8402f4633e750c1434ebe42e9a95a5bb4ad73ce735b2ac3b021f608ed7f33e9c"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 11,
+            "end_line": 20,
+            "quote_sha256": "9919aa55eb766ebe4134144aaa762a85c63166473994e0fc90c49b1a435335b9"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/EIP-4626.md",
+            "start_line": 120,
+            "end_line": 122,
+            "quote_sha256": "a5d259e3206da830a617731a46089f4f38cd09cbf98840810a90a74488dde968"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Known Issues.md",
+            "start_line": 7,
+            "end_line": 9,
+            "quote_sha256": "eb27c05e75c3ffc3533964d26ab5e4d8286e20a320781a94d1a9a11dacd4b97d"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Known Issues.md",
+            "start_line": 19,
+            "end_line": 19,
+            "quote_sha256": "76a6d95ed087ad9efe34738c6541cc4bf0700e68b64fcdf856ba82a17d988fad"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Known Issues.md",
+            "start_line": 23,
+            "end_line": 23,
+            "quote_sha256": "2046e2b12e94350fdd28f136197edd40be4d22633d4fbd278e4f22816d1998da"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Known Issues.md",
+            "start_line": 27,
+            "end_line": 27,
+            "quote_sha256": "15bb4feffc1fa67eb0b6f519142e32242e9805e5dbbdea620ef27b4749dd4637"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Terminology.md",
+            "start_line": 71,
+            "end_line": 74,
+            "quote_sha256": "7bbaf927a8f659ebe8f044522512a1dadfc6fe20aee0662042d0c7e0eb36776b"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Terminology.md",
+            "start_line": 197,
+            "end_line": 197,
+            "quote_sha256": "bebd97ab4b7a5307e1328b26a2bbca40ffccabde30151a9075e4f6387fa4c699"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 22,
+            "end_line": 22,
+            "quote_sha256": "72f42d2de98d9c256d630c19f9e2caf409b230e14679c8715f12b2374411923e"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/Scale Factor.md",
+            "start_line": 76,
+            "end_line": 76,
+            "quote_sha256": "3bf621b95b8d6e8b8e09fd9fb68712520194af9b82b96e43a67f582c8de572b5"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "README.md",
+            "start_line": 21,
+            "end_line": 23,
+            "quote_sha256": "318100b726914377b317da2c829cc2c81a6565a5f8172d1912d23c263f7ff159"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/Core Behavior.md",
+            "start_line": 72,
+            "end_line": 82,
+            "quote_sha256": "8cf07353fcb8022033f31dfdbacff367dd182ea499e8076d594d35451894ef71"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/Core Behavior.md",
+            "start_line": 86,
+            "end_line": 88,
+            "quote_sha256": "23c6a8d4291f8695080be744f329d52519c8599872c017df4eafd148daf46ef3"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/Core Behavior.md",
+            "start_line": 118,
+            "end_line": 121,
+            "quote_sha256": "c35f55bc4b8ed6fabc20c707beed990f0781e65df3d596e856f3c9072b80d489"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/Scale Factor.md",
+            "start_line": 72,
+            "end_line": 74,
+            "quote_sha256": "fa08de8dd1bb239002ea2a7817b5d5d06edeff9655e924b86deda29b0b18f69c"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/Terminology.md",
+            "start_line": 34,
+            "end_line": 36,
+            "quote_sha256": "5d37ed0ff392fb62ef93c1405065acb25b693cebf285f7964193168ed8b0ff48"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/Terminology.md",
+            "start_line": 216,
+            "end_line": 218,
+            "quote_sha256": "62f9976045b413dbf3e161d30b98b1015993ca5e1da2e960e9e4a45ac681b2c0"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/hooks/Hooks.md",
+            "start_line": 21,
+            "end_line": 25,
+            "quote_sha256": "2a747f7c309067023d8110a0fd0f3aeb26e87c45aa011bccafc513316145ea54"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/hooks/How Hooks Work.md",
+            "start_line": 5,
+            "end_line": 18,
+            "quote_sha256": "8e61b6893e67d0378ef8544096ba1416b9cd706ba627e3b237f0cdc37fa2b8cd"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/hooks/How Hooks Work.md",
+            "start_line": 32,
+            "end_line": 36,
+            "quote_sha256": "324b13931a32e0b2a4983d6a9bf73e35abcc800ba4db426cbe331dbd68c9a88e"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 28,
+            "end_line": 37,
+            "quote_sha256": "5e6f32a136bc59407547e7b5b4fa0640c72cc877b7b9ce2af374a3fae2a34a9b"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/hooks/templates/Access Control Hooks.md",
+            "start_line": 88,
+            "end_line": 101,
+            "quote_sha256": "a2f9d6bae7a8cee77aaef69129e79dfcd35d023d9873da481984304019233779"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/EIP-4626.md",
+            "start_line": 7,
+            "end_line": 12,
+            "quote_sha256": "f69b8ff1a6d348568a3e6672d95ebbfe21a24c5b5b006b9d5812bce8f4e159fc"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/EIP-4626.md",
+            "start_line": 182,
+            "end_line": 182,
+            "quote_sha256": "fc87c80e46d99585e27b28aa42d43a2843c2d32e59ea4c6c5457f0dabd47f879"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Scale Factor.md",
+            "start_line": 15,
+            "end_line": 15,
+            "quote_sha256": "99773e79a94768eb3494eb27edb314c9e00cec02f9bb4c2f75637e2ca98345e5"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Scale Factor.md",
+            "start_line": 67,
+            "end_line": 70,
+            "quote_sha256": "38af773bd85b01e96e765d13a57c08a289baedf806a4e1f3afce1701093a97e2"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Scale Factor.md",
+            "start_line": 80,
+            "end_line": 84,
+            "quote_sha256": "329704fc6bc45fa98542305e5d7d57cc7b061232e601ee16b36c28e58c310b40"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Core Behavior.md",
+            "start_line": 55,
+            "end_line": 59,
+            "quote_sha256": "2a9b2e7c3d71e9293c14b6805966dd014825bac77370f3832dc9142122b53c02"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Core Behavior.md",
+            "start_line": 63,
+            "end_line": 68,
+            "quote_sha256": "bc9232def28aad44cfc50110bad59cd356da969e4dab1db2907851dc643174d9"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Terminology.md",
+            "start_line": 141,
+            "end_line": 143,
+            "quote_sha256": "fc26f626085daa4620eea2ec30c36c5f9656a80be6e8c35b5d06409d922be053"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Terminology.md",
+            "start_line": 151,
+            "end_line": 155,
+            "quote_sha256": "2ba7649e89a4e97b2efda00dba6f7fba2a9c84a8308e066a9569fcc192cb152d"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Terminology.md",
+            "start_line": 165,
+            "end_line": 169,
+            "quote_sha256": "6813563d3e208c915375a7f6acf458887981510be5eaa99eaed0c1b7df1d361c"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/Known Issues.md",
+            "start_line": 3,
+            "end_line": 3,
+            "quote_sha256": "5005421dcf9c05c3fa7916111ed0e9e2b0bb879e4edbe861e9601662dc8c0c74"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/EIP-4626.md",
+            "start_line": 28,
+            "end_line": 32,
+            "quote_sha256": "f8db8e944c975efb56016cc490fad600b376da1f5637d2f8309c31dc494818e1"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/EIP-4626.md",
+            "start_line": 56,
+            "end_line": 58,
+            "quote_sha256": "333fd37b8827f88e12ae4e024ccd66451c83104ab67d75eb5db123d19a8cf125"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/Core Behavior.md",
+            "start_line": 86,
+            "end_line": 86,
+            "quote_sha256": "e42784c1030cb6855484ea9e1b6f7d38bd51a8cab23b3e82527a186ca6a2eb5b"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/Core Behavior.md",
+            "start_line": 112,
+            "end_line": 112,
+            "quote_sha256": "2141cc1d81349faa0b0a82ac9f7591db7bf977d3e3b3de037af89c57886d7930"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/Known Issues.md",
+            "start_line": 13,
+            "end_line": 13,
+            "quote_sha256": "96576b5d323b3d929b94b610a5dfa394118eba164f45ba5a7940462e4ef44430"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/Known Issues.md",
+            "start_line": 29,
+            "end_line": 29,
+            "quote_sha256": "d9d24b9c0ed35bfdd236a77b74cc40aacb69d7d375bce0400e6feeb0b77c2588"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/hooks/Hooks.md",
+            "start_line": 5,
+            "end_line": 15,
+            "quote_sha256": "dec58a53e33b02dbdb9575d69217c290acd2c7d9d3d2bf7353c4a28bf024a08b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "candidate",
+      "source_root": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+      "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+      "inputs": [
+        {
+          "path": "README.md",
+          "sha256": "eb0cee62cf48b59952c630910c2b5a089cdfbab88ebb9fe1cb0f1d002fee81d5",
+          "git_blob_oid": "0359b454042ff149ab0b26c24c509be0a81e64b1",
+          "bytes": 1014,
+          "lines": 33,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "b4b2ffe355b8e5021c682313e726aa5e89fed0146e24e35b5749fcb4cef20e06",
+          "git_blob_oid": "3dbbd732aea603b23330235049f5e58f34ee74ef",
+          "bytes": 3110,
+          "lines": 69,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/protocol/markets.md",
+          "sha256": "c92b0bd57a7b515708971b5ae72b2f2a96b841aaf0b2b907feee65d4aeb90c4b",
+          "git_blob_oid": "02bb42955e88b28538b2c8d4068de315bcd4e412",
+          "bytes": 5108,
+          "lines": 122,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/protocol/accounting.md",
+          "sha256": "c1bc65872873c0386c44c9abe2c6cec75a5506b58d8ca7d26937c4a9d61a3795",
+          "git_blob_oid": "10204eaa053e5a953c84a271c0af599339439971",
+          "bytes": 4670,
+          "lines": 114,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/protocol/scaling-and-rounding.md",
+          "sha256": "9e94ba2be161ce593df9e171ff9e1a18f3bdaba1854d4b00a2384cf1baedb3b0",
+          "git_blob_oid": "d6353f91ad527b8f146c3946e4c4f69130313600",
+          "bytes": 6917,
+          "lines": 200,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/protocol/withdrawals.md",
+          "sha256": "123a90ac06a2cb8433225bc3dff500ad93abfb93e768a2c8e0e6abda40812a70",
+          "git_blob_oid": "4a388590f9bd663c06a0cb2cbe24094e0aaebd59",
+          "bytes": 5739,
+          "lines": 131,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/protocol/borrower-identity.md",
+          "sha256": "1c9b545034ab82510c58ca8e3c7c9937e3c3b85babe6f7c063f7204a72b94ac1",
+          "git_blob_oid": "dcc90fee2d25068412155dced877fc04bafefc41",
+          "bytes": 11601,
+          "lines": 303,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/protocol/glossary.md",
+          "sha256": "0c4317555410ce0dfb3a4fedb1d17e73df60b9c60f333f9c494b453b2ca55777",
+          "git_blob_oid": "7a856a93af14b371aae6fa42f8371c4a9bb9317f",
+          "bytes": 7284,
+          "lines": 215,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/hooks.md",
+          "sha256": "1962397770c5491c1882f4f0ee087ea142c0affc03281d21c6b12667d44a112d",
+          "git_blob_oid": "50da7d896e67d2264d7e20d1a22f8abb82aac51d",
+          "bytes": 9147,
+          "lines": 215,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/access-control.md",
+          "sha256": "73ce99dda73d27cb5be8a68da06451ae77fc5843290e69d75c2d4a7e482beb23",
+          "git_blob_oid": "0716fa86f720c94e7d2d215af9f73d9ae4fd309a",
+          "bytes": 10354,
+          "lines": 264,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/fixed-term-hooks.md",
+          "sha256": "94c317d590e06ac63bf79017b293d669aa3e65c6039088c47d3668cc1f6de30d",
+          "git_blob_oid": "f0f31e0fe711aa54a9d4369b56b82c4bb4bda75b",
+          "bytes": 2829,
+          "lines": 66,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/periodic-term-hooks.md",
+          "sha256": "185f4130238fa62870b4d36a6310cccc1f298d22963d7f79f7cd9869a7497757",
+          "git_blob_oid": "19c2f3a0821e4bb9fc075e3af890c0e2aa44e0b7",
+          "bytes": 5582,
+          "lines": 146,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/role-providers.md",
+          "sha256": "e312d5351d4a9755c510d21e0558529ee43518ff44c8fb09aff4be8ec2afce0f",
+          "git_blob_oid": "9c60ac8e907fdfdb53637b4475623815f2bd80d2",
+          "bytes": 10746,
+          "lines": 266,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/erc-4626-wrapper.md",
+          "sha256": "f88c893c98b3d5db45dcda870e2d3389628da1de734b8c34b7be196bc90bcaa2",
+          "git_blob_oid": "2e9653e74276262ee8630c2cf9e946cfaaed5e1c",
+          "bytes": 17113,
+          "lines": 402,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/integrations/events.md",
+          "sha256": "1d58e76d7e9dc4fdbb71e6b92ce7f365b876a557efe0a5ef5407d71a0de5ad0b",
+          "git_blob_oid": "f89c6a1db98f159adb17b7f5b69ee79523047498",
+          "bytes": 11775,
+          "lines": 353,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/security/assumptions.md",
+          "sha256": "6dc489cba92f3963447ff9b6f9633fc355d4a679c87fa1947ddd64740202fcce",
+          "git_blob_oid": "22f0ee0541085a063e7c0eae22902d69ba9f1bbd",
+          "bytes": 2873,
+          "lines": 91,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/security/known-issues.md",
+          "sha256": "7417e42ce6d02045361bba03fc6359769757d3954e0813e6011376e750785162",
+          "git_blob_oid": "5c36378b7808183ecc5ecb41d65dd1f2c998f814",
+          "bytes": 11845,
+          "lines": 224,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "docs/releases/v2.5-audit-scope.md",
+          "sha256": "06426d399702a24e42cb3dd5a4ef41043c3e274668712483d5e56948d488c8ba",
+          "git_blob_oid": "9c2ee0193b347d5355122029470ac1b79ca1eab8",
+          "bytes": 16473,
+          "lines": 264,
+          "worktree_equals_pinned_blob": true,
+          "role": "extraction-source"
+        },
+        {
+          "path": "SECURITY.md",
+          "sha256": "9cebf4cd79a84a29ecca47f9695abf494e347d9b0604f43e94aac60017a7c7ba",
+          "git_blob_oid": "608bf7025a4ba2b9283f5087c3ad6d0865591b83",
+          "bytes": 920,
+          "lines": 24,
+          "worktree_equals_pinned_blob": true,
+          "role": "inspected-excluded"
+        },
+        {
+          "path": "audits/README.md",
+          "sha256": "05216ed31e98a28d0debff29ca693e9bc86bb8295e2af957bce4d71dd1550d76",
+          "git_blob_oid": "6dc773d735e267edf3322126db854632f947d657",
+          "bytes": 1411,
+          "lines": 31,
+          "worktree_equals_pinned_blob": true,
+          "role": "inspected-excluded"
+        }
+      ],
+      "extraction": {
+        "path": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-preparation/candidate-doc-extraction.md",
+        "sha256": "0641a5f615effcca87ad4d64d2a7037096d440c2c4dbb7f33a63d1b2f10e6912",
+        "lines": 171,
+        "claim_bullets": 134,
+        "source_spans": [
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 9,
+            "end_line": 20,
+            "quote_sha256": "6d168f863dd27f1d4ebd66a1365e42ff443767c82957dd9d8cbc7b749766520b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 5,
+            "end_line": 15,
+            "quote_sha256": "ccca7bdd7ed4e6b30b9fb73aa5ae1eecc23a36609f6dd4d79ae0a32da21c6f34"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 19,
+            "end_line": 35,
+            "quote_sha256": "0d044c5f1e3f34f6401f9ba146ed2a42057a35780a21184b7a3a37e933c4385b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 39,
+            "end_line": 44,
+            "quote_sha256": "6b7561d43caeb5e786b81a710016f6d1dbcd3a4d6305900da2bbbcc0fd67cdbe"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/accounting.md",
+            "start_line": 9,
+            "end_line": 18,
+            "quote_sha256": "a28d63dbc1b3e34382b98e56b67a20f3d146b1e0abd170b1138c7b1f49c891b4"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/accounting.md",
+            "start_line": 20,
+            "end_line": 39,
+            "quote_sha256": "60fbed3f98bcddd6998ae5b4e3d1b7278fc294d830bb563bb16fd7b964fc9cfb"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/accounting.md",
+            "start_line": 53,
+            "end_line": 57,
+            "quote_sha256": "0df200a69adf36149937994bf4bee4856d5d2da44df0864adb9a2f1c9fcb9928"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/markets.md",
+            "start_line": 22,
+            "end_line": 28,
+            "quote_sha256": "060082eb3a646c3337f65e696d3385e1e6ce650b6528c68d3c1adb2edb614f39"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/markets.md",
+            "start_line": 61,
+            "end_line": 69,
+            "quote_sha256": "eb6bd4747289f2974a6dd6004df9f66bf855159b08d1545187c3298f49e17956"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/markets.md",
+            "start_line": 78,
+            "end_line": 84,
+            "quote_sha256": "158d9c687815f1c4943c2cf339afff6e16ad63c44ee0ca57c1400dbe58a3a99f"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/glossary.md",
+            "start_line": 138,
+            "end_line": 151,
+            "quote_sha256": "069da4a6d39274cb26292209cc29889f32e1da8d32a401cfc6152d6cb3f6c0f6"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 18,
+            "end_line": 30,
+            "quote_sha256": "43b479b517053c383254fc43c067818e8082850b01ed1cec1e677fc47452130d"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 34,
+            "end_line": 38,
+            "quote_sha256": "35fb9b85271484a1311af7a805091c509d3d9b8b5de848b1d83f922caa124c61"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 42,
+            "end_line": 57,
+            "quote_sha256": "0b32606d8338e90af0250591a30d52a9e54a77beb25f79f418aa5dd65783b2d4"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 64,
+            "end_line": 74,
+            "quote_sha256": "812f20633b87726b62e208aa8feee43023842b36781b1d55889e6edfe7ba9b3e"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 106,
+            "end_line": 117,
+            "quote_sha256": "32ae4d7a2b5104704094a78e56065b1bc730be24e4b714d95a9830d058bd2f7d"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 38,
+            "end_line": 45,
+            "quote_sha256": "08b71d93bac4e9d7e4fd3b9fad6d38d44a45580399924403159f2f99de2f526b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 54,
+            "end_line": 74,
+            "quote_sha256": "c615605a5c1608d89303ba270c68d92938c667a4191b3423282cbdc6b173fe18"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 101,
+            "end_line": 115,
+            "quote_sha256": "e24bdbed0fb2ef6889ace3cd56d9a1950f24275f8eb5c89fc7bf0785e9b7a0c3"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 156,
+            "end_line": 169,
+            "quote_sha256": "abed998b178a0cc3fb77ac55621c3f62097f62ad62711c6c3fd26ef440f9d5c2"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 173,
+            "end_line": 184,
+            "quote_sha256": "54e3805651853a8d63a4c2d6a58757c68675f16e306cad7585842871030297cb"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 205,
+            "end_line": 225,
+            "quote_sha256": "3653d26e31462f182941221581b5db00f180910f748f363bee3d52c47fab7d2b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 229,
+            "end_line": 237,
+            "quote_sha256": "4f4fecf5aa714fbd20f36705e471a7beab4d373067d91893790ac6a6d8dd1f76"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 241,
+            "end_line": 255,
+            "quote_sha256": "945ee6c5c12ac5069efe5550533388dab044ed2fc52940ac1c9922ea9c94788c"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 259,
+            "end_line": 266,
+            "quote_sha256": "ad7426d095e992d40973382f91f2dd852e3c57e2e58c4ae49a865db21d183ef7"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 7,
+            "end_line": 9,
+            "quote_sha256": "499267c29e7841272e4b1ff68d165e1f6adcfcee3bf4d0c8a0aa3ac79b399aaf"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 42,
+            "end_line": 48,
+            "quote_sha256": "779d029a24c67e0c3c31fabcb11d3a22b00ea789580b372af943b178617d4677"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 52,
+            "end_line": 62,
+            "quote_sha256": "d61107fa0b5f6383c8ae023ddcca720790607ff2676398d5a790e3bc99d8f30d"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 152,
+            "end_line": 166,
+            "quote_sha256": "4e5f6f7c1f8e8df3137b2bbb88fdb6c8a459b86165bcd41c76a2c6237856650a"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 37,
+            "end_line": 51,
+            "quote_sha256": "5bc88856611adbc21f07d1dbdec72787d1aa49e6693d9ed9ab4d1991f90705b1"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 64,
+            "end_line": 78,
+            "quote_sha256": "49a051f88ff1839d60b71a18bfad1686842a1ea4a6e369ba4ec9a8d4f6cf2338"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 93,
+            "end_line": 113,
+            "quote_sha256": "74753c4efc38c54ffc18d2bee700d6aee75a6b60b90514dbc2076d88eee5b56d"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 117,
+            "end_line": 131,
+            "quote_sha256": "3fb306feaf7ebc466582e5b5d43505401e5e44dc1078171c159c16bd5657d3f4"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 165,
+            "end_line": 177,
+            "quote_sha256": "f316a6e2200d097eca30d4bb0372262f665ffb2c76edcde0f85ff79a62ea488a"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 196,
+            "end_line": 213,
+            "quote_sha256": "574a9502df05302053ebf0b3457f6e879bf03fc560240f5c2317e641ee859aa2"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 217,
+            "end_line": 229,
+            "quote_sha256": "ef197e591b8bc23d800f6d34f0f740ea1d42cb7be84356674181c9f990be8d00"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 233,
+            "end_line": 240,
+            "quote_sha256": "0f63a8dd31fd1c29040d4bbd6b6cfa07b4f71dc47c43d16553fbbdddd5f5d80b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/fixed-term-hooks.md",
+            "start_line": 19,
+            "end_line": 30,
+            "quote_sha256": "e33185f7989ef06d2bd2058c29ef131c529f6f1ba94fd836c7c3dc001d9a8c6c"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/fixed-term-hooks.md",
+            "start_line": 34,
+            "end_line": 40,
+            "quote_sha256": "e61e28c88ca57242a3c1c5779c61239963d91c528b87427aef59f48df4be2423"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/fixed-term-hooks.md",
+            "start_line": 44,
+            "end_line": 59,
+            "quote_sha256": "363842a168250d718d242ffecd5e855fb9945b8f5fcfe692ca25f1c20c0fb1b5"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/periodic-term-hooks.md",
+            "start_line": 21,
+            "end_line": 36,
+            "quote_sha256": "d111a4ea9f667792e62fb551c926e5e67867844d3a9fb9e9c10404ec4cb96440"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/periodic-term-hooks.md",
+            "start_line": 40,
+            "end_line": 64,
+            "quote_sha256": "18c8b371a0b884aa1aaa523ededfb48b113fbece14fd9d03b105073112f593bd"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/periodic-term-hooks.md",
+            "start_line": 68,
+            "end_line": 86,
+            "quote_sha256": "19b7702bba668ac6073d814718142c887e2d7ccf28aa73e41c32d6979507a7a3"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/periodic-term-hooks.md",
+            "start_line": 88,
+            "end_line": 103,
+            "quote_sha256": "12904652fe35947dc60c794b223c8e20d155935591f85b0bb42336af1d5a73b4"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/periodic-term-hooks.md",
+            "start_line": 107,
+            "end_line": 119,
+            "quote_sha256": "484485e894fdfd25cb6f38cf46b61967fbfaef700f288d76911c8a47348cd3e2"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/periodic-term-hooks.md",
+            "start_line": 128,
+            "end_line": 139,
+            "quote_sha256": "dc10f82ed69ca11e703543bd53d6a3f326d898fde416cec6a3c671b0d857f1cf"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 64,
+            "end_line": 85,
+            "quote_sha256": "4e5642c4bfd80316b33de1c51f576554dd1ec58266dce822b5baa861756bec76"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 89,
+            "end_line": 98,
+            "quote_sha256": "ce11993495b3c0f9f38dbadf05c1e2d3697d2f7b68f03c4250604b7ecc804240"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 64,
+            "end_line": 72,
+            "quote_sha256": "0ff248c74f98122bfcec7cffd7d4bd89b7ad5224fe6e659f1c479aeb9cf90c2d"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 93,
+            "end_line": 125,
+            "quote_sha256": "ce36366ce1e56fbba61d0103cad12c38d15daf6b767511546b541ae411ba5f14"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 127,
+            "end_line": 132,
+            "quote_sha256": "d135d9aa9fd10b0178f03a2a31f89c5036a3b4330a7dd3a49e67b5489e5c4afa"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 136,
+            "end_line": 159,
+            "quote_sha256": "470befcb0aa3fc54c3af86d7e2212accf102ddb904c142fa4012a7b8b2e36d3b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 163,
+            "end_line": 185,
+            "quote_sha256": "44e7efb7633ea0e7ab29746aae6853073e557cfd8a5d56ad6e08a1055063d8b7"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 189,
+            "end_line": 205,
+            "quote_sha256": "3df1f707c84e5bcdae1b0ee75e38d104500e36d57482fc414b4c9134c0773c02"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 209,
+            "end_line": 229,
+            "quote_sha256": "73e55b3cb5d4e627904fe9da1241fec870b8a68c451c24acbc3c58f8e34ac1cc"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 233,
+            "end_line": 246,
+            "quote_sha256": "f25dfee30cefe61099ade91cefae595f94d9f552aaed4c860a1289a0b3b3e065"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 250,
+            "end_line": 265,
+            "quote_sha256": "ad0cffd383bb05e1cba02a5a06d4f8837bfbb8d5dfe155aa5b7bf2e3e202c339"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 302,
+            "end_line": 327,
+            "quote_sha256": "592f5cce04f26c9c6de92c51187040f0e2f439ba0f03cbf51760b21ce34cb5f2"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 331,
+            "end_line": 337,
+            "quote_sha256": "5310125b9465bbab77ea59fdc330c0b6280507b60134c48d22a26e3998045c14"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/security/known-issues.md",
+            "start_line": 19,
+            "end_line": 24,
+            "quote_sha256": "bd02999177be4837e35444bf3ca7965c2a1ae8a2844b25aac6f76286e281c3f5"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/security/known-issues.md",
+            "start_line": 54,
+            "end_line": 75,
+            "quote_sha256": "46b3d2b56a79a14cb26eae9bc0fa85260011773f4ca24d550f604e6291bdb555"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/security/known-issues.md",
+            "start_line": 93,
+            "end_line": 98,
+            "quote_sha256": "3d8f077dc8cf961d016f5723a1d8dcd79bb4e3af9b169b1baf2ea4a8b6ac0de7"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/security/known-issues.md",
+            "start_line": 106,
+            "end_line": 123,
+            "quote_sha256": "6974e93439163abd7e31b2b305a879ab25ecb9fbdffe6238351d5b9405308183"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/security/known-issues.md",
+            "start_line": 144,
+            "end_line": 147,
+            "quote_sha256": "7dd7270aa47f11c6cbbf6d838f48b72411ea9a2e1552c484cc2aa40a0edf4dcc"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/security/known-issues.md",
+            "start_line": 192,
+            "end_line": 203,
+            "quote_sha256": "9322a6f3ec4db49ef3a0fe2f77b00546a6810fdbb0df9cc2c9903727e28c5941"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/events.md",
+            "start_line": 69,
+            "end_line": 78,
+            "quote_sha256": "6df07960d6726297a71a4675116f091ca5b82e7164b3ea94499eaa2156784b3d"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/integrations/events.md",
+            "start_line": 170,
+            "end_line": 181,
+            "quote_sha256": "f99ec000a1c5405917678e5f4104157279274d05dca1002eff4fdb2b904594b2"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 9,
+            "end_line": 14,
+            "quote_sha256": "dd2e0f5f51c61d8e6ddb79cae17e1b6c8222b3907e1deca1dfb49b03314efcf8"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 174,
+            "end_line": 179,
+            "quote_sha256": "81ba5eb04145946addc8ab21f7903db46e59a8ff850f093d7004cf53399b2315"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 174,
+            "end_line": 178,
+            "quote_sha256": "a4e0f04d77c84c1e6bb10b46c32c92d4ba17d2ba0e74174928a9c319e4f8d837"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 180,
+            "end_line": 180,
+            "quote_sha256": "78937d93cc5d6354bcc4e2663cedd545cc5eef450e1703e30839d0ad6d8e77f0"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 174,
+            "end_line": 178,
+            "quote_sha256": "a4e0f04d77c84c1e6bb10b46c32c92d4ba17d2ba0e74174928a9c319e4f8d837"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 181,
+            "end_line": 181,
+            "quote_sha256": "39c3ded781b8dca7f1540ed76d463081ef1b6f9b407c4034024a09a61f97301b"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 174,
+            "end_line": 178,
+            "quote_sha256": "a4e0f04d77c84c1e6bb10b46c32c92d4ba17d2ba0e74174928a9c319e4f8d837"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 182,
+            "end_line": 182,
+            "quote_sha256": "a5c9824a3b03944a84de39afe2741d8ceabea02d233976175ddac317a30e4cb3"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 174,
+            "end_line": 178,
+            "quote_sha256": "a4e0f04d77c84c1e6bb10b46c32c92d4ba17d2ba0e74174928a9c319e4f8d837"
+          },
+          {
+            "section": "Doc-Stated Global Invariants",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 183,
+            "end_line": 183,
+            "quote_sha256": "1a8fe7a68dfde5eddd9ab7d0786ab20fe6ac65cdaca7a6bc1d20cc5457c2867b"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/protocol/glossary.md",
+            "start_line": 15,
+            "end_line": 20,
+            "quote_sha256": "c0e920636f6dde957078f3c08b386534a5b5c291f788aa40108d85f68bcf809d"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/protocol/glossary.md",
+            "start_line": 24,
+            "end_line": 48,
+            "quote_sha256": "57f477a45c5237a35b669b3aa161a938504aed3a9106873d8ccbe795b8defc0d"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/protocol/glossary.md",
+            "start_line": 95,
+            "end_line": 108,
+            "quote_sha256": "0df5d44b4eff5076e94f537617f958bb4c8e8341a322f9d89aaf71e92f3660de"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/protocol/glossary.md",
+            "start_line": 157,
+            "end_line": 162,
+            "quote_sha256": "e478d3665161243db89e04a5177b92cf0301b7693d6025e5dca724594ad2d878"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 76,
+            "end_line": 79,
+            "quote_sha256": "e3884eb6b82075fa2ed72d20306c0af856436051c1fd87ce78ee99f09c661245"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 100,
+            "end_line": 104,
+            "quote_sha256": "f3a7a276fd01f1a5531a3d8b5d50afb531082e4a6dc0349a86c8ebad777c1f24"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 17,
+            "end_line": 27,
+            "quote_sha256": "c9bccd582036e368a7b71f8b12dbd276e99d40b530caca779d0e03edeff8fd77"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 31,
+            "end_line": 35,
+            "quote_sha256": "b65191a8c148e28dafb2fab4c40884d9338ad384aa836105c5c850734faf4770"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 43,
+            "end_line": 60,
+            "quote_sha256": "e868af52f7b6bf5956f7ac9fe2aff5e69fb2d795e8a88ad4f5587f833fb2675d"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 104,
+            "end_line": 112,
+            "quote_sha256": "c4fdcde19b1a87865704110981df57947f6226b107fdca1311ad4dbc54abb0c1"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 119,
+            "end_line": 129,
+            "quote_sha256": "cc574b8bfb0dbf3b6d3e2e8daf02dbcedccbe507e4f9a62d61448bd112ce2353"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 136,
+            "end_line": 144,
+            "quote_sha256": "3fa345c9ca7fdca34198cb51d146055420eb3dbee1ef2eaccc10cecbd34eb5b2"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 151,
+            "end_line": 162,
+            "quote_sha256": "7a9cec3df434b6fb8fbd66b86aa4a95f4cd461444c4db98c462dd94178aa1dc0"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 169,
+            "end_line": 177,
+            "quote_sha256": "101f8b2c0322755605936c504dccd18d5e832f64c928dedfecb8aac8b02bf4bd"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 184,
+            "end_line": 192,
+            "quote_sha256": "5b8b8dbdff29cb08fcf92c721f6cf9c265e77289c1a7fdf642e91083da84af2d"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 199,
+            "end_line": 207,
+            "quote_sha256": "0321dc4f30dbd95bc0e8843d3befad6efbeb94765b06110adc05bed4509a840c"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 211,
+            "end_line": 220,
+            "quote_sha256": "c314e11e83cf222d914fad43a40a165cbdec37808a913d111d3c7939c9dab72c"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 145,
+            "end_line": 156,
+            "quote_sha256": "2907db73a97b49c5dcf3f2dcfd27d96ca9a0eaaa69d08ffb90369f2a967e176c"
+          },
+          {
+            "section": "Actor Definitions",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 163,
+            "end_line": 165,
+            "quote_sha256": "5dbe2d73d925671aed6a49d88a73d201b0fcd3fa407811b73094d9adf980cc7b"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/README.md",
+            "start_line": 3,
+            "end_line": 7,
+            "quote_sha256": "42767b8001504711ed81f1e329c6e609a11a34c11b253864193bc40e0a84303d"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/README.md",
+            "start_line": 11,
+            "end_line": 17,
+            "quote_sha256": "3dd3883e55042df0937cf719f47b0279ea45adb2eb0babd13a1b73297bca847e"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/security/assumptions.md",
+            "start_line": 9,
+            "end_line": 22,
+            "quote_sha256": "930369d2c7fca7a5fe02566dd829fdf97bbdbe584805956dcecea7af9f2e2120"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/security/assumptions.md",
+            "start_line": 26,
+            "end_line": 44,
+            "quote_sha256": "86b852d0569c1bf42d1e1fb20144c8317569aaaec17fc7da429144401e934c20"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/security/assumptions.md",
+            "start_line": 48,
+            "end_line": 57,
+            "quote_sha256": "79b07eb5a5136b074cb86fdec515b7007f0817c210cefba943e6a6250a3a7716"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/security/assumptions.md",
+            "start_line": 61,
+            "end_line": 75,
+            "quote_sha256": "25867b236055e53fb797014440907dd3f334c11813067452be886b30b7bfac6b"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/security/assumptions.md",
+            "start_line": 79,
+            "end_line": 91,
+            "quote_sha256": "31089136956d682a17a6af9638ad1ef993ac37e668310b1f91d644ea61629a15"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 114,
+            "end_line": 122,
+            "quote_sha256": "bc1d7abdc32ac75f58928a42fe59aaa4e1f475bcb8b9991c53ba556faeaeda5f"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 132,
+            "end_line": 135,
+            "quote_sha256": "58b4119e0f0959aa9f2ede11ade59ac9d21c74f648a41af5ba3cc4392954ebfb"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 117,
+            "end_line": 121,
+            "quote_sha256": "073abce71942328eae765809c96ce953472cbc8f3d8673e750035cb07d1f3773"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 199,
+            "end_line": 201,
+            "quote_sha256": "f9b6ad3c9cad09c61998c934492723ec7139f3d5067e53b17621fd1168c9bdc6"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/security/known-issues.md",
+            "start_line": 207,
+            "end_line": 224,
+            "quote_sha256": "4372d3ce5f917964af96fb1b700effba152cdbfb7b249d8676bc490939b9004b"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 13,
+            "end_line": 29,
+            "quote_sha256": "5f606455ef6608d0beb1a0df583611ddc4e79ebf0903aa5d143b62520e91ac98"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 38,
+            "end_line": 39,
+            "quote_sha256": "5371be8051134dc5122758d8161c9dcb1c92dec3a19bb041a805e5a27a230ead"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 224,
+            "end_line": 235,
+            "quote_sha256": "f132e3f272b6cd545afacbc4b75949c201aadcfe46d08293940e8e97c6eb18c0"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/role-providers.md",
+            "start_line": 239,
+            "end_line": 250,
+            "quote_sha256": "90b3c9a95abd386e1b654554b83490161aff60adb7b2982c32c1147bf9d9dad2"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 383,
+            "end_line": 391,
+            "quote_sha256": "628313f18b6f5acf12dc458da7b5985504ccbef81f43527d856268d0482d3f55"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/events.md",
+            "start_line": 3,
+            "end_line": 12,
+            "quote_sha256": "fa4540465ab63374279f406a40d64235ab12dea08e0dddbdbb94e446dbd0469c"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/events.md",
+            "start_line": 22,
+            "end_line": 23,
+            "quote_sha256": "ff0a32526e8aa7878c4a9ca6218c474f52cdc6704f930bcadab57e51d688303e"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/integrations/events.md",
+            "start_line": 269,
+            "end_line": 275,
+            "quote_sha256": "2ddf9b73d63d0358f1379a3e1804d05af9681b656a8d32ac37b0d52bf8deb7e7"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 3,
+            "end_line": 5,
+            "quote_sha256": "73be0b5e8820effc1b1be853622efdb606d3dec222774efe9477f27d177d119f"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 118,
+            "end_line": 139,
+            "quote_sha256": "0517f7bc824e5dc2deeeb434bcb4b47a06761a45a17d499949e123eb94d3b996"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 158,
+            "end_line": 161,
+            "quote_sha256": "1e61802db9bfc8a78ca4bc51bdc40eac83d7d2a1530c1c37d3a757a03a9c1679"
+          },
+          {
+            "section": "Trust Assumptions",
+            "path": "docs/releases/v2.5-audit-scope.md",
+            "start_line": 167,
+            "end_line": 170,
+            "quote_sha256": "f56eed0a910939b7a71bfc3366cae2ef2fcb1a5800d9e44468d71f533d6078d0"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/accounting.md",
+            "start_line": 87,
+            "end_line": 114,
+            "quote_sha256": "410c031b1518d40d378a2fb91f07547bff8254e8bf691e25a6c96ae2b375040e"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 9,
+            "end_line": 16,
+            "quote_sha256": "531b1547593ba329fcd7498bdaa4e2584588d840e6ad6709eb5218f524355b8a"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 76,
+            "end_line": 80,
+            "quote_sha256": "224ad91470c15c3ec453d13af843ba8ab38a1240ea3ed44105e6edeaa6d60299"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 59,
+            "end_line": 62,
+            "quote_sha256": "537f56156a3065740fbc849a6335abe09fddec7ab2166f85773ab0242ca7c7f1"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 87,
+            "end_line": 98,
+            "quote_sha256": "e93460db22791f6215f1c4aed2a9573e5f4435537e0fb768a350cf6d3bd705c6"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 121,
+            "end_line": 131,
+            "quote_sha256": "f6d68e4274eb0dd0488de6248fe5d988ab2bceff97f07ac01699af0fcd63b948"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 287,
+            "end_line": 303,
+            "quote_sha256": "06c350224365c95665a4f7fcbbcaccff81d6f2fcb2677fb7ebf872a614223e64"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 21,
+            "end_line": 40,
+            "quote_sha256": "be1fa3a7af945d01aad9d70d7a3b9fbadfe60cb68898c7df50fed752ecd812ac"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 68,
+            "end_line": 103,
+            "quote_sha256": "2aa872d474c957b1e67ab0f49db4eed791cf65d0806be1c0acf360e2005ebece"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 146,
+            "end_line": 148,
+            "quote_sha256": "9530f48dc916617ec1d6338b932ab02277f61c8703c0fd41c1ff61000399d279"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 170,
+            "end_line": 187,
+            "quote_sha256": "0ce0f86c13cb5ddf83737c05dcd0fd9f6d9c9fc25489efc47c51c893c7424373"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 135,
+            "end_line": 144,
+            "quote_sha256": "7e20132763434252a4985f334a8966886bd1aca74d6d0d50c2469ae53e7fdb00"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/access-control.md",
+            "start_line": 187,
+            "end_line": 192,
+            "quote_sha256": "c86b7c062cc46170a5aa98e49589f8db9cb93e63f70fd5920cf66c12579cd9f6"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 10,
+            "end_line": 18,
+            "quote_sha256": "915a6c5161c40dd40de11d2052a8ba848dbc54cf3d7b0cba44b6ccf1b3189fd7"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 356,
+            "end_line": 372,
+            "quote_sha256": "c5564585ac0e18ecac20b15b3bf48c9d0904bdcdfc9fcc3a1b8677c6e3d93b0b"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 392,
+            "end_line": 394,
+            "quote_sha256": "3b36ff0b7320b10eec1c4c04d35dbe868f98a265fef26532239fda1bc5c46129"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 16,
+            "end_line": 20,
+            "quote_sha256": "6febdd26771295b9a172756b405bd80ccc9777caff55aeb10d04738da5e9eb9e"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 25,
+            "end_line": 36,
+            "quote_sha256": "9e8f8ae0530d2f27b92fc361fff827e831bb333badc037585ca4f356f4353d21"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 61,
+            "end_line": 70,
+            "quote_sha256": "eb7ff559b31fa63555ac2046c8da97ed48a5629a60068ec832c6bac35445b5a8"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 123,
+            "end_line": 132,
+            "quote_sha256": "ea764f96a24ea17864333a6735f94e9079553a92572f00b1be31ec4326dff27c"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 228,
+            "end_line": 250,
+            "quote_sha256": "036afc70fb93c1a648d57e28b2a9e598be5c752ff6c11295edd35653181a3f5a"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 266,
+            "end_line": 267,
+            "quote_sha256": "8f7308562ab026ff768d72d8b4ec0c67df1d9fff3c58ce1f29f8014240429d18"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 314,
+            "end_line": 340,
+            "quote_sha256": "4c1489203e832feacafd91b7f6953abb5ef876e83b3875f3c1c9969c82cc1a8b"
+          },
+          {
+            "section": "Cross-System Flows",
+            "path": "docs/integrations/events.md",
+            "start_line": 344,
+            "end_line": 353,
+            "quote_sha256": "0b044dc42c224b6b8b24efaa8dbd6618aa623660c659264b38d809e4eed1cc08"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/protocol/markets.md",
+            "start_line": 47,
+            "end_line": 59,
+            "quote_sha256": "5b8ae695fbb7a07c7e1a9d725521387ad833d1c2c8d4f171eb0cea071a8d1cf9"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/protocol/accounting.md",
+            "start_line": 43,
+            "end_line": 51,
+            "quote_sha256": "efd86983ecbb12e77ff05cbc0bdf4fd3e2e9da7d75dd4056e92f6c0ac5d70d8b"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/protocol/accounting.md",
+            "start_line": 61,
+            "end_line": 83,
+            "quote_sha256": "0955a538652dbee9180c0de5e5ba4d942958170245e45a0b36df6d12a34cdbfa"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 48,
+            "end_line": 49,
+            "quote_sha256": "2d3f9aafcc90c3684ba17e287b33a371c1dfae4aa67f9e8c7659dd96c9965818"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/protocol/scaling-and-rounding.md",
+            "start_line": 124,
+            "end_line": 130,
+            "quote_sha256": "12978767626fb68dcb931094e4cc81e0fee1593a1b26a2c0d4243f86e5c5988f"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/protocol/withdrawals.md",
+            "start_line": 82,
+            "end_line": 85,
+            "quote_sha256": "268f82f2d00ceb6fd3b00610058437d25cf778c2ef08b371a90207f0110934c9"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/integrations/hooks.md",
+            "start_line": 107,
+            "end_line": 142,
+            "quote_sha256": "321eb812aa79055375b4696fb186a480085fd3bb5fd55f4c621a730bc950e91a"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/security/known-issues.md",
+            "start_line": 79,
+            "end_line": 89,
+            "quote_sha256": "01294e0c2102e8b88c3b7ca28d987150650b25b0f051b09c00ffb3ee82906aff"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/security/known-issues.md",
+            "start_line": 131,
+            "end_line": 142,
+            "quote_sha256": "a3d9125042cbdf66b82f24d486ac90e3e6d776a436cfffec2f5416026f9b2956"
+          },
+          {
+            "section": "Economic Properties",
+            "path": "docs/integrations/events.md",
+            "start_line": 290,
+            "end_line": 307,
+            "quote_sha256": "2fc7a6aec7d71c2701fea76468b80ee0abb282f308e5fb7fb9d3204a991c595c"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/protocol/borrower-identity.md",
+            "start_line": 241,
+            "end_line": 255,
+            "quote_sha256": "945ee6c5c12ac5069efe5550533388dab044ed2fc52940ac1c9922ea9c94788c"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/security/known-issues.md",
+            "start_line": 106,
+            "end_line": 119,
+            "quote_sha256": "d039035ed25edc556f66b58d1a7e0526f920c9e000539899bc9c61deb17c405e"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 292,
+            "end_line": 298,
+            "quote_sha256": "70cc22972168685426739deb3e33d445f350d8d7e1a76fdd523c1b0464d0e96d"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 318,
+            "end_line": 320,
+            "quote_sha256": "f6399870d563b353afb112cfadae7a2a1b2cd5a4a6facd90f835c363f900db96"
+          },
+          {
+            "section": "Key Design Decisions",
+            "path": "docs/integrations/erc-4626-wrapper.md",
+            "start_line": 331,
+            "end_line": 337,
+            "quote_sha256": "5310125b9465bbab77ea59fdc330c0b6280507b60134c48d22a26e3998045c14"
+          }
+        ]
+      }
+    }
+  ]
+}

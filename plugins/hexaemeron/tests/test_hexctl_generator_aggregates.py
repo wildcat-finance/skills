@@ -282,7 +282,7 @@ class IncidentAggregateTests(unittest.TestCase):
         self.assertEqual(stopped.exception.code, 2)
         return error.getvalue()
 
-    def test_fixture_recomputes_every_incident_count_and_inventory_digest(self):
+    def test_fixture_recomputes_every_incident_count_and_digest(self):
         inventories = {
             "product_paths": self.product_paths,
             "upstream_paths": self.upstream_paths,
@@ -303,7 +303,7 @@ class IncidentAggregateTests(unittest.TestCase):
         for key, value in self.computed_aggregate.items():
             self.assertEqual(self.fixture["aggregate"][key], value)
 
-    def test_acceptance_1_v1_no_longer_refuses_the_incident_on_its_count(self):
+    def test_acceptance_1_v1_stops_refusing_incident_on_count(self):
         """Issue 774 moved this. The fixture keeps what the entry controller did.
 
         Under `fiat-v5.30.1` the 1,095-path incident stopped at the shared
@@ -337,7 +337,7 @@ class IncidentAggregateTests(unittest.TestCase):
         self.assertNotIn("exceeds 500 paths", error)
         self.assertIn("checks must be a non-empty array", error)
 
-    def test_acceptance_2_v2_receipts_887_owned_and_208_outside_paths(self):
+    def test_acceptance_2_v2_887_owned_and_208_outside_paths(self):
         record = self.call(self.v2_artifact())
         self.assertEqual(record["schema"], "fiat-integration-revalidation/v2")
         self.assertEqual(record["required_path_count"], 1095)
@@ -539,7 +539,7 @@ class IncidentAggregateTests(unittest.TestCase):
         artifact["checks"][1]["paths"] = list(artifact["affected_paths"])
         self.assertIn("exact outside integration surface", self.refusal(artifact))
 
-    def test_every_v2_refusal_leaves_controller_state_and_ledger_bytes_unchanged(self):
+    def test_every_v2_refusal_leaves_state_and_ledger_unchanged(self):
         watched = [
             ROOT / ".hexaemeron/state.json",
             ROOT / ".hexaemeron/ledger.jsonl",
@@ -555,7 +555,7 @@ class IncidentAggregateTests(unittest.TestCase):
         }
         self.assertEqual(after, before)
 
-    def test_acceptance_5_small_v1_normalized_receipt_is_byte_compatible(self):
+    def test_acceptance_5_small_v1_normalized_byte_compatible(self):
         artifact = {
             "schema": "fiat-integration-revalidation/v1",
             "affected_paths": ["shared.json", "upstream.py"],
@@ -754,7 +754,7 @@ class AggregateObjectBoundaryTests(unittest.TestCase):
         ).hexdigest()
         return rebound, rebound_blobs
 
-    def test_schema_types_refuse_unhashable_ids_and_non_integer_manifest_counts(self):
+    def test_schema_refuses_unhashable_ids_non_integer_counts(self):
         declaration = {
             "id": self.aggregate_id,
             "prefix": self.registry["prefix"],
@@ -836,7 +836,7 @@ class AggregateObjectBoundaryTests(unittest.TestCase):
                     )
                 self.assertIn(expected, error)
 
-    def test_manifest_membership_blob_digest_mode_and_contract_are_bound(self):
+    def test_membership_blob_digest_mode_and_contract_are_bound(self):
         registry, declaration, rows, blobs = self.small_aggregate()
         with (
             mock.patch.object(
@@ -977,7 +977,7 @@ else:
             limit,
         )
 
-    def test_resource_boundary_accepts_32_mib_and_refuses_one_byte_over(self):
+    def test_boundary_accepts_32_mib_and_refuses_one_byte_over(self):
         limit = 32 * 1024 * 1024
         temporary, environment = self.fake_batch("valid", limit)
         with temporary, mock.patch.dict(os.environ, environment, clear=False):
@@ -989,7 +989,7 @@ else:
             error = self.stop(lambda: self.batch_call(limit))
         self.assertIn(f"{limit}-byte ceiling", error)
 
-    def test_timeout_oversized_metadata_partial_and_wrong_type_refuse(self):
+    def test_timeout_oversized_metadata_partial_bad_type_refuse(self):
         cases = (
             ("metadata", "metadata"),
             ("partial", "partial"),

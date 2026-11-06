@@ -1,0 +1,9 @@
+{
+  "candidate": "segmented-proxy-set-venue",
+  "command": "python3 .hexaemeron/design/conformance.py segment-plans-tile-the-interval --candidate segmented-proxy-set-venue",
+  "criterion": "segment-plans-tile-the-interval",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

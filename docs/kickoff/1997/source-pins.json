@@ -1,0 +1,41 @@
+{
+  "schema": "fiat-1997-source-pins/v1",
+  "starting_commit": "21c151b7fe0cb80589c2ba8713678dfaee52354d",
+  "specification": {
+    "study.md": {
+      "source_sha256": "2d5ebcf5641d473ad62c5b1d9e0df27e3e8f3356d96273bc0295dc8a1ccd36a2",
+      "source_bytes": 18948,
+      "public_sha256": "f160abf6c70c138370a45ccb47d2026fd61f9fdc74b6deaf7755995f8b1ed3e2",
+      "public_bytes": 19088,
+      "source_prefix_preserved": true
+    },
+    "runbook.md": {
+      "source_sha256": "fa333058f76f483f64467ab469ba36695da2643054714c6d7cd2dea7459de976",
+      "source_bytes": 9575,
+      "public_sha256": "fa333058f76f483f64467ab469ba36695da2643054714c6d7cd2dea7459de976",
+      "public_bytes": 9575,
+      "source_prefix_preserved": true
+    },
+    "design-evidence.json": {
+      "source_sha256": "fad03e94e38ba874d9ad8a47e815433d232ba550f2772a1052fd50f96281c4e3",
+      "source_bytes": 8977,
+      "public_sha256": "fad03e94e38ba874d9ad8a47e815433d232ba550f2772a1052fd50f96281c4e3",
+      "public_bytes": 8977,
+      "source_prefix_preserved": true
+    },
+    "design_probe.py": {
+      "source_sha256": "7bc71c99276e3be4233988d4c77bc905bce616c600f4232b02005145016d2358",
+      "source_bytes": 2163,
+      "public_sha256": "7bc71c99276e3be4233988d4c77bc905bce616c600f4232b02005145016d2358",
+      "public_bytes": 2163,
+      "source_prefix_preserved": true
+    },
+    "candidate-specs.json": {
+      "source_sha256": "64d4cc0211718e75e5c1fe378f0fabea0149f75ef6c272efb39e9e46ca8fa4cf",
+      "source_bytes": 410,
+      "public_sha256": "64d4cc0211718e75e5c1fe378f0fabea0149f75ef6c272efb39e9e46ca8fa4cf",
+      "public_bytes": 410,
+      "source_prefix_preserved": true
+    }
+  }
+}

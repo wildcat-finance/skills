@@ -1,0 +1,167 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "full-release",
+      "summary": "Bind every file of each sealed release through existing Ariadne capture."
+    },
+    {
+      "id": "manifest-only",
+      "summary": "Bind only each manifest; leave component bytes transitively referenced."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "all-files",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "capture-time",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "listing-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "existing-interface",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "bad-count-refused",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "full-release",
+      "criterion": "all-files",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/full-release-all-files.json",
+        "sha256": "0e3c13c1199e9c3b214b63cfde8e420b4a930983c94af0d32ce384088df7a990"
+      }
+    },
+    {
+      "candidate": "full-release",
+      "criterion": "capture-time",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/full-release-capture-time.json",
+        "sha256": "eb5af86869da9c0aa9ba4648e9ffb97e77cc4a241e595fb542bb060cfcd9398f"
+      }
+    },
+    {
+      "candidate": "full-release",
+      "criterion": "listing-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/full-release-listing-bytes.json",
+        "sha256": "6de4a40c6c4faf4888f7724d8b49410ddd9f49a82cff0061a09e93da4e84a8d7"
+      }
+    },
+    {
+      "candidate": "full-release",
+      "criterion": "existing-interface",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/full-release-existing-interface.json",
+        "sha256": "173ddba28f59fa215a9f3d486eea23aeaee67de37e2ac595567170f5139a8c56"
+      }
+    },
+    {
+      "candidate": "full-release",
+      "criterion": "bad-count-refused",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/full-release-bad-count-refused.json",
+        "sha256": "424e6f8a5652ae336ae2a11a4ef72a5dde78c1ad8801f075da841a4b69cc77cd"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "all-files",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/manifest-only-all-files.json",
+        "sha256": "b2afcf04ec12a0cb0c39972253148ec73a4d75a3659825d52ec7bb34f523d0f7"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "capture-time",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/manifest-only-capture-time.json",
+        "sha256": "a30ed729d84e5dbf130e557111410c3b4f92d2ec3b00e29d4da554ea15d7a457"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "listing-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/manifest-only-listing-bytes.json",
+        "sha256": "883f84a16e971d6448ffa74b662fad4037e9e896868517d7140683fefca729c6"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "existing-interface",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/manifest-only-existing-interface.json",
+        "sha256": "95d093d16e27c9b42fa4edc4f250e62af87c9f0703c154d8bceabf041fd398ea"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "bad-count-refused",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/manifest-only-bad-count-refused.json",
+        "sha256": "3bcc382cfa1f76f589ec7fea99ccbd9db69cb117c5b68fd58e9b8dc328ebb20f"
+      }
+    }
+  ],
+  "selection": {
+    "candidate": "full-release",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

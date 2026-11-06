@@ -1,0 +1,9 @@
+{
+  "candidate": "creating-step-binding",
+  "command": "python3 .hexaemeron/design/probe.py --candidate creating-step-binding --criterion replay-milliseconds --report .hexaemeron/reports/creating-step-binding-replay-milliseconds.json",
+  "criterion": "replay-milliseconds",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 4
+}

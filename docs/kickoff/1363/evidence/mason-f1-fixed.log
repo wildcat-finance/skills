@@ -1,0 +1,6 @@
+test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.018s
+
+OK

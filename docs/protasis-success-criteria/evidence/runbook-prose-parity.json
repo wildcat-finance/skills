@@ -1,0 +1,13 @@
+{
+  "final_sha256": "84d62b59909d057231d824450c3ff3a8a2bec62316ace77d39eb54bb7313cf9c",
+  "passes": [
+    "Sapheneia complete-record shape",
+    "Imprimatur zero defects",
+    "Vulgate surface review retained exact text",
+    "protected-content comparison",
+    "final Imprimatur"
+  ],
+  "protected_content_equal": true,
+  "scope": "Complete runbook and operating-boundaries amendment; specification completeness is preserved.",
+  "source_sha256": "84d62b59909d057231d824450c3ff3a8a2bec62316ace77d39eb54bb7313cf9c"
+}

@@ -1,0 +1,25 @@
+{
+  "storage": [
+    {
+      "contract": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+      "label": "owner",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_address"
+    },
+    {
+      "contract": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+      "label": "recipient",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_address"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "candidate": "lower-reserve",
+  "command": "python3 .hexaemeron/design/resolve.py selection --root . --reports .hexaemeron/reports",
+  "criterion": "measure-wall-time",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 13
+}

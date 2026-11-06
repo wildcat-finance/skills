@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "input",
+    "compiler",
+    "target",
+    "transforms",
+    "selection"
+  ],
+  "properties": {
+    "schema": {
+      "const": "lemma-preparation-request/v1"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "compiler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime",
+        "driver",
+        "artifact",
+        "version"
+      ],
+      "properties": {
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "driver": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "artifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^0\\.[0-9]+\\.[0-9]+\\+commit\\.[0-9a-f]{8}(\\.Emscripten\\.clang)?$"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "contract"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "contract": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    },
+    "transforms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata_target",
+        "target_closure",
+        "source_map",
+        "remappings"
+      ],
+      "properties": {
+        "metadata_target": {
+          "type": "boolean"
+        },
+        "target_closure": {
+          "type": "boolean"
+        },
+        "source_map": {
+          "type": "object",
+          "maxProperties": 10000,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "remappings": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "original",
+              "prepared"
+            ],
+            "properties": {
+              "original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "prepared": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            }
+          }
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "include",
+        "exclude"
+      ],
+      "properties": {
+        "include": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "exclude": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

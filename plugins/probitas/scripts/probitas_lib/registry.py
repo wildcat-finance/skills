@@ -41,7 +41,7 @@ VENUES = (
         "ethereum",
         True,
         "none",
-        "Public Goldsky subgraph, no key. "
+        "Verified V1/V2 archive releases via --wildcat-release, or the public Goldsky subgraph, no key. "
         "Undercollateralised, and the only venue that records a borrower "
         "setting their own terms and then keeping them or not.",
     ),

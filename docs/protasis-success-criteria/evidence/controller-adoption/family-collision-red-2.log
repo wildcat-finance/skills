@@ -1,0 +1,19 @@
+test_refuses_path_outside_the_fixture (test_imprimatur_family_evidence.FamilyEvidenceCheckerTest.test_refuses_path_outside_the_fixture) ... ERROR
+
+======================================================================
+ERROR: test_refuses_path_outside_the_fixture (test_imprimatur_family_evidence.FamilyEvidenceCheckerTest.test_refuses_path_outside_the_fixture)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_imprimatur_family_evidence.py", line 239, in test_refuses_path_outside_the_fixture
+    (root / "schemas").rename(root.parent / "escaped-schemas")
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py", line 1076, in rename
+    os.rename(self, target)
+    ~~~~~~~~~^^^^^^^^^^^^^^
+OSError: [Errno 66] Directory not empty: '/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/warden-1273-family-collision-cdrgsqbs/fixture/schemas' -> '/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/warden-1273-family-collision-cdrgsqbs/escaped-schemas'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (errors=1)
+{"tests": 1, "failures": 0, "errors": 1, "occupied_sibling_unchanged": true}

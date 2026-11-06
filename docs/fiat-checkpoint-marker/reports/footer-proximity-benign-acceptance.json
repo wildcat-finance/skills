@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "footer-proximity",
+  "criterion": "benign-acceptance",
+  "value": 114,
+  "unit": "count",
+  "command": "python3 .hexaemeron/measure_design.py --candidate footer-proximity --criterion benign-acceptance --report .hexaemeron/reports/footer-proximity-benign-acceptance.json",
+  "exit": 0
+}

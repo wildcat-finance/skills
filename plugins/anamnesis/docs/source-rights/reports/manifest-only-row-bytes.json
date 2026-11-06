@@ -1,0 +1,9 @@
+{
+  "candidate": "manifest-only",
+  "command": "python3 .hexaemeron/reports/resolve.py manifest-only row-bytes --out .hexaemeron/reports/manifest-only-row-bytes.json",
+  "criterion": "row-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 2332
+}

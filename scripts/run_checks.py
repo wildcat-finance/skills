@@ -35,6 +35,11 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
+if __package__:
+    from .commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
+else:
+    from commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
+
 MAP_SCHEMA = "wildcat.check-map.v1"
 PLAN_SCHEMA = "wildcat.check-plan.v1"
 RUN_SCHEMA = "wildcat.check-run.v1"
@@ -2210,7 +2215,7 @@ def run_check(
         try:
             proc = subprocess.Popen(
                 launcher,
-                env=_child_env(marker),
+                env=_child_env(marker, snapshot),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=False,
@@ -2328,10 +2333,11 @@ def run_check(
         scheduler.release(granted)
 
 
-def _child_env(marker: str) -> dict[str, str]:
+def _child_env(marker: str, snapshot: Path) -> dict[str, str]:
     env = _git_env()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env[CONTAINMENT_ENV] = marker
+    env[SNAPSHOT_ENV] = str(snapshot.resolve())
     return env
 
 
@@ -2808,6 +2814,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="run_checks.py",
         description="Select and run the repository checks that the changed scope owns.",
+        epilog=(
+            "Exit codes: 0 green (or a valid --plan), 1 failed checks, "
+            "2 refused, 3 unstable source, 4 nothing-selected. "
+            "A clean committed tree needs --base REF, --scope ID or --full "
+            "to select checks; --plan only inspects the selection."
+        ),
     )
     parser.add_argument("--scope", action="append", default=[], help="a declared scope id; repeatable")
     parser.add_argument("--base", default=None, help="compare committed history against this ref")
@@ -2885,6 +2897,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     attempts: list[dict[str, Any]] = []
     try:
+        if nobody_commits_here(root, os.environ) is None:
+            configured = git(root, "config", "--get", "core.hooksPath", check=False)
+            complaint = activation_complaint(root, configured)
+            if complaint is not None:
+                raise PlanError("commit-gate-not-activated", complaint)
         return _run_attempts(args, root, check_map, selection, checks, capacity, plan, attempts)
     except PlanError as exc:
         # Every refusal leaves by the declared route.  Git capture around the
@@ -2988,7 +3005,7 @@ def _run_attempts(
                     checks=[],
                     attempts=attempts,
                 )
-                exit_code = 0
+                exit_code = 4
             if args.report:
                 try:
                     persist_run_report(root, args.report, run)

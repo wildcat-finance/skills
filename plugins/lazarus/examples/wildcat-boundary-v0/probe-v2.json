@@ -1,0 +1,2739 @@
+{
+ "agreement": {
+  "accounts": 2312,
+  "accounts_mismatch": [],
+  "batches": 1549,
+  "batches_mismatch": [],
+  "fifo_markets": 80,
+  "fifo_mismatch": [],
+  "state_fields": 1120,
+  "state_markets": 80,
+  "state_mismatch": [],
+  "statuses": 3175,
+  "statuses_mismatch": []
+ },
+ "assets_per_market": {
+  "0x02e0415e828a5f97309f93f001885b5db8a87d71": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x0886dc1d5db7288e2818a80c308de8eb2f13790c": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x0b6c6d557109f9e793297d54ee3fbde2e315b070": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x12d64e3143fa6b8a7949982d8f80b658b1535651": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+  "0x14da929b9d44b74ce5937fb2527ba6abe5872b89": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x18b3794b9f0ffd999442815e537fe603b67fa029": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+  "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x255bb30ed2e861baf508c10fc3c682e9577a0c87": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+  "0x262dd546703760adda0c06279508e04bd1f60dee": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x2d958e4b289b188a110367208689bb6b560586a3": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x33ac9b224c8a189d2332aecf021897f1535373ab": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+  "0x3747a7d6c887348fe249fdff29145b25cf0311f9": "0x9d39a5de30e57443bff2a8307a4256c8797a3497",
+  "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a": "0xf9d82660828d8f5d121b14a9dc9c677d91f60065",
+  "0x44239265e4c63573070048fecd83a6b1e324412c": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x50d7b234fded5535948b492d0510eae3cfa9738b": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x55a365f3997b2f015001c53cf6a73335e593ad8a": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x593d3320fa2cb278fa24281611a58ba8db74a9ce": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "0x5a516928be2005e9852e342f71bfcc52ca5bdace": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x5e342c3d8248937512f7cb8637bc18333b02fe18": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x603b29847659618813f039c73379746585b78875": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x6053e88b1ac0dce4ccac47122cbecd6598365c70": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x6231a192089fb636e704d2c7807d7a79c2457b07": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x69e56f526637b430561e8293f3307765a046d750": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "0x6af9c583016600dd8b509e919494b27c729c5dbd": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x70ee31f6057034cfc89533aa1d44315fbf0828d1": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x7244b84918dbfb50e62320fc0e6031a449deea28": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x7e496c5678b1722289d9c4a13c9aa53631ca7607": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x8c06d86596d671798a67e80dc44a281c8d822fd3": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x8ec22d26562e72f442f32881a48c59c16d652fa0": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+  "0x90772c109adc8d216967a2782eae8271b4e46c1e": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x923237220cc79c6301c59851af3574d0a487c966": "0xd31a59c85ae9d8edefec411d448f90841571b89c",
+  "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x95ac07b3683727d916168cb6af516bd7446b19ad": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0x9aa7f58561812f01f1221e9718011aca78c28c17": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x9e047d2e8970300f0461314e1b72abf7ef7792e9": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x9e597911a484713f12f6efc29c49bebc64fa2144": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+  "0xa8139699360b255c5c02d0616e75f20b92adf1c3": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xaa4677627d05775dafc410d7e3aff5702aae27f8": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0xb3b823ec39f3edeb4354f76997031b3826b615c2": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xb3beb373d241378f5f1fd68ed865349257602476": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0xbad1b632e90ce02af868f07c572adb067eb98353": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+  "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+  "0xc9499006a149c553d18171747ed19aa7c6dd19e2": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xd18313c334bfbd366bc06991fc1e265bc7f388aa": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+  "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xdba32266e0c9315119c6f02808db8e0570d8ab83": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xe79ca848ae0182fce1db61a968b89627c9a0c948": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+  "0xe922db9bf086f1bff409bdd4d44facee371cc6e9": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+  "0xeafa12cc0905baabed8618584f0796f5d19da3c4": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+  "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0xf76a7887521a91b47c62060ba57549dec1dc88c7": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0xfe7cf5680d2e59500f3938c2539fda4754876f94": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+ },
+ "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+ "block_number": 26022093,
+ "estimated_fixture_bytes": 55389430,
+ "fifo": {
+  "0x02e0415e828a5f97309f93f001885b5db8a87d71": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x0886dc1d5db7288e2818a80c308de8eb2f13790c": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x0b6c6d557109f9e793297d54ee3fbde2e315b070": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x12d64e3143fa6b8a7949982d8f80b658b1535651": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x14da929b9d44b74ce5937fb2527ba6abe5872b89": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x18b3794b9f0ffd999442815e537fe603b67fa029": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25": {
+   "entries": 0,
+   "next_index": 3,
+   "start_index": 3
+  },
+  "0x255bb30ed2e861baf508c10fc3c682e9577a0c87": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x262dd546703760adda0c06279508e04bd1f60dee": {
+   "entries": 5,
+   "next_index": 5,
+   "start_index": 0
+  },
+  "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x2d958e4b289b188a110367208689bb6b560586a3": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724": {
+   "entries": 0,
+   "next_index": 6,
+   "start_index": 6
+  },
+  "0x33ac9b224c8a189d2332aecf021897f1535373ab": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x3747a7d6c887348fe249fdff29145b25cf0311f9": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x44239265e4c63573070048fecd83a6b1e324412c": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc": {
+   "entries": 0,
+   "next_index": 3,
+   "start_index": 3
+  },
+  "0x50d7b234fded5535948b492d0510eae3cfa9738b": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x55a365f3997b2f015001c53cf6a73335e593ad8a": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0x593d3320fa2cb278fa24281611a58ba8db74a9ce": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x5a516928be2005e9852e342f71bfcc52ca5bdace": {
+   "entries": 0,
+   "next_index": 2,
+   "start_index": 2
+  },
+  "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b": {
+   "entries": 0,
+   "next_index": 28,
+   "start_index": 28
+  },
+  "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0x5e342c3d8248937512f7cb8637bc18333b02fe18": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0x603b29847659618813f039c73379746585b78875": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x6053e88b1ac0dce4ccac47122cbecd6598365c70": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0x6231a192089fb636e704d2c7807d7a79c2457b07": {
+   "entries": 0,
+   "next_index": 3,
+   "start_index": 3
+  },
+  "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x69e56f526637b430561e8293f3307765a046d750": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x6af9c583016600dd8b509e919494b27c729c5dbd": {
+   "entries": 0,
+   "next_index": 13,
+   "start_index": 13
+  },
+  "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x70ee31f6057034cfc89533aa1d44315fbf0828d1": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x7244b84918dbfb50e62320fc0e6031a449deea28": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x7e496c5678b1722289d9c4a13c9aa53631ca7607": {
+   "entries": 3,
+   "next_index": 3,
+   "start_index": 0
+  },
+  "0x8c06d86596d671798a67e80dc44a281c8d822fd3": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x8ec22d26562e72f442f32881a48c59c16d652fa0": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x90772c109adc8d216967a2782eae8271b4e46c1e": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x923237220cc79c6301c59851af3574d0a487c966": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x95ac07b3683727d916168cb6af516bd7446b19ad": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x9aa7f58561812f01f1221e9718011aca78c28c17": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x9e047d2e8970300f0461314e1b72abf7ef7792e9": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0x9e597911a484713f12f6efc29c49bebc64fa2144": {
+   "entries": 0,
+   "next_index": 11,
+   "start_index": 11
+  },
+  "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0xa8139699360b255c5c02d0616e75f20b92adf1c3": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xaa4677627d05775dafc410d7e3aff5702aae27f8": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xb3b823ec39f3edeb4354f76997031b3826b615c2": {
+   "entries": 1,
+   "next_index": 4,
+   "start_index": 3
+  },
+  "0xb3beb373d241378f5f1fd68ed865349257602476": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xbad1b632e90ce02af868f07c572adb067eb98353": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3": {
+   "entries": 1,
+   "next_index": 1,
+   "start_index": 0
+  },
+  "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90": {
+   "entries": 0,
+   "next_index": 3,
+   "start_index": 3
+  },
+  "0xc9499006a149c553d18171747ed19aa7c6dd19e2": {
+   "entries": 0,
+   "next_index": 62,
+   "start_index": 62
+  },
+  "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xd18313c334bfbd366bc06991fc1e265bc7f388aa": {
+   "entries": 0,
+   "next_index": 2,
+   "start_index": 2
+  },
+  "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xdba32266e0c9315119c6f02808db8e0570d8ab83": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be": {
+   "entries": 0,
+   "next_index": 3,
+   "start_index": 3
+  },
+  "0xe79ca848ae0182fce1db61a968b89627c9a0c948": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0xe922db9bf086f1bff409bdd4d44facee371cc6e9": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xeafa12cc0905baabed8618584f0796f5d19da3c4": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97": {
+   "entries": 0,
+   "next_index": 1,
+   "start_index": 1
+  },
+  "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xf76a7887521a91b47c62060ba57549dec1dc88c7": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0xfe7cf5680d2e59500f3938c2539fda4754876f94": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  }
+ },
+ "generation": "v2",
+ "header": {
+  "json_bytes": 19034,
+  "receipts_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1",
+  "state_root": "0xbad68837d5e230b2301cacc598a139a89c57b936757bcf0f7ca6b57417343c8c",
+  "timestamp": 1789947863,
+  "transactions": 216
+ },
+ "inventory": {
+  "estimated_rpc_record_bytes_without_recorded_proofs": 14224572,
+  "eth_call": 14283,
+  "eth_call_reverted_at_boundary": 4,
+  "eth_getCode": 137,
+  "eth_getProof_recorded": 137,
+  "rows": 14558
+ },
+ "layout": {
+  "account_scaled_offset": 0,
+  "accounts": 4,
+  "batches": 7,
+  "fifo_data": 6,
+  "fifo_head": 5,
+  "state": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "state_words": 14,
+  "statuses": 8
+ },
+ "local_archive": {
+  "requests": 24847,
+  "seconds": 28.57
+ },
+ "market_slots": {
+  "0x02e0415e828a5f97309f93f001885b5db8a87d71": {
+   "accounts": 5,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce": {
+   "accounts": 2,
+   "batches": 2,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0x0886dc1d5db7288e2818a80c308de8eb2f13790c": {
+   "accounts": 5,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x0b6c6d557109f9e793297d54ee3fbde2e315b070": {
+   "accounts": 58,
+   "batches": 78,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 47
+  },
+  "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x12d64e3143fa6b8a7949982d8f80b658b1535651": {
+   "accounts": 27,
+   "batches": 20,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 14
+  },
+  "0x14da929b9d44b74ce5937fb2527ba6abe5872b89": {
+   "accounts": 33,
+   "batches": 66,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 44
+  },
+  "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3": {
+   "accounts": 4,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0x18b3794b9f0ffd999442815e537fe603b67fa029": {
+   "accounts": 57,
+   "batches": 116,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 84
+  },
+  "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef": {
+   "accounts": 16,
+   "batches": 30,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 16
+  },
+  "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c": {
+   "balances": 2,
+   "implementation_pointer": 1
+  },
+  "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a": {
+   "accounts": 4,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": {
+   "balances": 3
+  },
+  "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25": {
+   "accounts": 3,
+   "batches": 52,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 26
+  },
+  "0x255bb30ed2e861baf508c10fc3c682e9577a0c87": {
+   "accounts": 3,
+   "batches": 4,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 2
+  },
+  "0x262dd546703760adda0c06279508e04bd1f60dee": {
+   "accounts": 14,
+   "batches": 10,
+   "fifo_data": 5,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 9
+  },
+  "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb": {
+   "accounts": 2,
+   "batches": 2,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x2d958e4b289b188a110367208689bb6b560586a3": {
+   "accounts": 2,
+   "batches": 2,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724": {
+   "accounts": 80,
+   "batches": 68,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 82
+  },
+  "0x33ac9b224c8a189d2332aecf021897f1535373ab": {
+   "accounts": 30,
+   "batches": 14,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 8
+  },
+  "0x3747a7d6c887348fe249fdff29145b25cf0311f9": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a": {
+   "accounts": 2,
+   "batches": 2,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0x44239265e4c63573070048fecd83a6b1e324412c": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43": {
+   "accounts": 12,
+   "batches": 18,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 15
+  },
+  "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc": {
+   "accounts": 113,
+   "batches": 144,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 148
+  },
+  "0x4c9edd5852cd905f086c759e8383e09bff1e68b3": {
+   "balances": 3
+  },
+  "0x50d7b234fded5535948b492d0510eae3cfa9738b": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed": {
+   "accounts": 6,
+   "batches": 4,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 2
+  },
+  "0x55a365f3997b2f015001c53cf6a73335e593ad8a": {
+   "accounts": 7,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 6
+  },
+  "0x593d3320fa2cb278fa24281611a58ba8db74a9ce": {
+   "accounts": 9,
+   "batches": 8,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 10
+  },
+  "0x5a516928be2005e9852e342f71bfcc52ca5bdace": {
+   "accounts": 9,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 6
+  },
+  "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b": {
+   "accounts": 333,
+   "batches": 472,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 481
+  },
+  "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513": {
+   "accounts": 8,
+   "batches": 16,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 8
+  },
+  "0x5e342c3d8248937512f7cb8637bc18333b02fe18": {
+   "accounts": 4,
+   "batches": 4,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 2
+  },
+  "0x603b29847659618813f039c73379746585b78875": {
+   "accounts": 18,
+   "batches": 30,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 20
+  },
+  "0x6053e88b1ac0dce4ccac47122cbecd6598365c70": {
+   "accounts": 26,
+   "batches": 46,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 38
+  },
+  "0x6231a192089fb636e704d2c7807d7a79c2457b07": {
+   "accounts": 98,
+   "batches": 76,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 103
+  },
+  "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x69e56f526637b430561e8293f3307765a046d750": {
+   "accounts": 8,
+   "batches": 8,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 7
+  },
+  "0x6af9c583016600dd8b509e919494b27c729c5dbd": {
+   "accounts": 152,
+   "batches": 96,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 163
+  },
+  "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4": {
+   "accounts": 4,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7": {
+   "accounts": 5,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 4
+  },
+  "0x70ee31f6057034cfc89533aa1d44315fbf0828d1": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x7244b84918dbfb50e62320fc0e6031a449deea28": {
+   "accounts": 2,
+   "batches": 2,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x7e496c5678b1722289d9c4a13c9aa53631ca7607": {
+   "accounts": 8,
+   "batches": 6,
+   "fifo_data": 3,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0x8c06d86596d671798a67e80dc44a281c8d822fd3": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x8ec22d26562e72f442f32881a48c59c16d652fa0": {
+   "accounts": 8,
+   "batches": 20,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 12
+  },
+  "0x90772c109adc8d216967a2782eae8271b4e46c1e": {
+   "accounts": 4,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0x923237220cc79c6301c59851af3574d0a487c966": {
+   "accounts": 8,
+   "batches": 4,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 2
+  },
+  "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x95ac07b3683727d916168cb6af516bd7446b19ad": {
+   "accounts": 42,
+   "batches": 80,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 50
+  },
+  "0x9aa7f58561812f01f1221e9718011aca78c28c17": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x9d39a5de30e57443bff2a8307a4256c8797a3497": {
+   "balances": 1
+  },
+  "0x9e047d2e8970300f0461314e1b72abf7ef7792e9": {
+   "accounts": 8,
+   "batches": 48,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 24
+  },
+  "0x9e597911a484713f12f6efc29c49bebc64fa2144": {
+   "accounts": 81,
+   "batches": 148,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 109
+  },
+  "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd": {
+   "accounts": 23,
+   "batches": 26,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 15
+  },
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+   "balances": 42,
+   "implementation_pointer": 1
+  },
+  "0xa8139699360b255c5c02d0616e75f20b92adf1c3": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0xaa4677627d05775dafc410d7e3aff5702aae27f8": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0xb3b823ec39f3edeb4354f76997031b3826b615c2": {
+   "accounts": 20,
+   "batches": 50,
+   "fifo_data": 1,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 34
+  },
+  "0xb3beb373d241378f5f1fd68ed865349257602476": {
+   "accounts": 6,
+   "batches": 12,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 6
+  },
+  "0xbad1b632e90ce02af868f07c572adb067eb98353": {
+   "accounts": 41,
+   "batches": 92,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 55
+  },
+  "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3": {
+   "accounts": 3,
+   "batches": 2,
+   "fifo_data": 1,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+   "balances": 4
+  },
+  "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df": {
+   "accounts": 4,
+   "batches": 4,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 2
+  },
+  "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90": {
+   "accounts": 14,
+   "batches": 34,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 18
+  },
+  "0xc9499006a149c553d18171747ed19aa7c6dd19e2": {
+   "accounts": 612,
+   "batches": 698,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1181
+  },
+  "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a": {
+   "accounts": 12,
+   "batches": 14,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 9
+  },
+  "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf": {
+   "balances": 4,
+   "implementation_pointer": 1
+  },
+  "0xd18313c334bfbd366bc06991fc1e265bc7f388aa": {
+   "accounts": 56,
+   "batches": 96,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 55
+  },
+  "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d": {
+   "accounts": 15,
+   "batches": 26,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 13
+  },
+  "0xd31a59c85ae9d8edefec411d448f90841571b89c": {
+   "balances": 1,
+   "implementation_pointer": 1
+  },
+  "0xdac17f958d2ee523a2206206994597c13d831ec7": {
+   "balances": 19
+  },
+  "0xdba32266e0c9315119c6f02808db8e0570d8ab83": {
+   "accounts": 7,
+   "batches": 8,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 6
+  },
+  "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be": {
+   "accounts": 23,
+   "batches": 32,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 27
+  },
+  "0xe79ca848ae0182fce1db61a968b89627c9a0c948": {
+   "accounts": 15,
+   "batches": 24,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 20
+  },
+  "0xe922db9bf086f1bff409bdd4d44facee371cc6e9": {
+   "accounts": 15,
+   "batches": 26,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 13
+  },
+  "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf": {
+   "accounts": 10,
+   "batches": 10,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 6
+  },
+  "0xeafa12cc0905baabed8618584f0796f5d19da3c4": {
+   "accounts": 44,
+   "batches": 90,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 78
+  },
+  "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b": {
+   "accounts": 2,
+   "batches": 4,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 2
+  },
+  "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc": {
+   "accounts": 2,
+   "batches": 2,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 1
+  },
+  "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97": {
+   "accounts": 34,
+   "batches": 44,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 37
+  },
+  "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0xf76a7887521a91b47c62060ba57549dec1dc88c7": {
+   "accounts": 34,
+   "batches": 66,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 34
+  },
+  "0xf9d82660828d8f5d121b14a9dc9c677d91f60065": {
+   "balances": 1,
+   "implementation_pointer": 1
+  },
+  "0xfe7cf5680d2e59500f3938c2539fda4754876f94": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  }
+ },
+ "markets": 80,
+ "proof_set": {
+  "code_bytes_raw": 5615420,
+  "estimated_proofs_jsonl_bytes": 33065608,
+  "max_slots_per_target": 2496,
+  "proof_calls": 152,
+  "proof_response_bytes": 21773968,
+  "proof_route_seconds": 69.63,
+  "slots": 9080,
+  "targets": 152,
+  "targets_over_1024_slots": 2,
+  "targets_over_2048_slots_single_call": 1
+ },
+ "receipt_witness": {
+  "market_filter_addresses": 80,
+  "projected_market_logs": 0,
+  "selection_rule": "no market log in the block; lowest-index receipt with a generation underlying-asset log",
+  "target_log_count": 7,
+  "target_transaction_hash": "0x426ffe56369a9569f5e08d4a0d5d0b90afaed5971fa76fadc18b3d24333bb5be",
+  "target_transaction_index": 0
+ },
+ "receipts": {
+  "consensus_json_bytes": 346969,
+  "count": 216,
+  "logs": 483,
+  "rpc_json_bytes": 568032
+ },
+ "routes": {
+  "drpc": {
+   "eth_getBlockReceipts": {
+    "bytes": 568032,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "bytes": 44036,
+    "outcome": "served"
+   },
+   "eth_getProof": {
+    "bytes": 8710,
+    "outcome": "served"
+   }
+  },
+  "gateway": {
+   "eth_getBlockReceipts": {
+    "bytes": 568032,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "bytes": 44036,
+    "outcome": "served"
+   },
+   "eth_getProof": {
+    "bytes": 8710,
+    "outcome": "served"
+   }
+  },
+  "local-archive": {
+   "eth_getBlockReceipts": {
+    "bytes": 568032,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "bytes": 44036,
+    "outcome": "served"
+   },
+   "eth_getProof": {
+    "code": -32602,
+    "message": "distance to target block exceeds maximum proof window",
+    "outcome": "refused"
+   }
+  },
+  "publicnode": {
+   "eth_getBlockReceipts": {
+    "bytes": 568033,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "code": -32602,
+    "message": "archive read refused with a token demand; the raw provider message is withheld from this committed copy",
+    "outcome": "refused"
+   },
+   "eth_getProof": {
+    "code": -32602,
+    "message": "archive read refused with a token demand; the raw provider message is withheld from this committed copy",
+    "outcome": "refused"
+   }
+  }
+ },
+ "schema": "fiat-1384-probe/v1",
+ "state_decoded": {
+  "0x02e0415e828a5f97309f93f001885b5db8a87d71": {
+   "accruedProtocolFees": 28076569,
+   "annualInterestBips": 1850,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1780600091,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1054717138606044340677925062,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 98288467641,
+   "timeDelinquent": 0
+  },
+  "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 600,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1765478339,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1037398278085746972013812230,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x0886dc1d5db7288e2818a80c308de8eb2f13790c": {
+   "accruedProtocolFees": 36500901,
+   "annualInterestBips": 1850,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1782857951,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1068691099110770787498827677,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 98234202682,
+   "timeDelinquent": 0
+  },
+  "0x0b6c6d557109f9e793297d54ee3fbde2e315b070": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1786489199,
+   "maxTotalSupply": 500000000000,
+   "normalizedUnclaimedWithdrawals": 17723825359,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1040077777610272774176153725,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 12667714521,
+   "timeDelinquent": 0
+  },
+  "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1780922411,
+   "maxTotalSupply": 2000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1000000711567732115677321156,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x12d64e3143fa6b8a7949982d8f80b658b1535651": {
+   "accruedProtocolFees": 31046537,
+   "annualInterestBips": 950,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789933571,
+   "maxTotalSupply": 2000000000000,
+   "normalizedUnclaimedWithdrawals": 9453319277,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1105676339191806485332530318,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 1388058565449,
+   "timeDelinquent": 0
+  },
+  "0x14da929b9d44b74ce5937fb2527ba6abe5872b89": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 7,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1246452811367761496918295041,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 4448981027308,
+   "timeDelinquent": 0
+  },
+  "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1753890695,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 10113043062,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1018735093211402071091562761,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x18b3794b9f0ffd999442815e537fe603b67fa029": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1779973163,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 22,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1060929759267605051329364552,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 1357560239776696242,
+   "timeDelinquent": 0
+  },
+  "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1784357003,
+   "maxTotalSupply": 500000000000,
+   "normalizedUnclaimedWithdrawals": 1,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1076560046377201526596502838,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1774366511,
+   "maxTotalSupply": 30000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1079755040708540938534756848,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 100000,
+   "timeDelinquent": 0
+  },
+  "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 800,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1788421631,
+   "maxTotalSupply": 1000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1054294860509914218501702509,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 214513257234,
+   "timeDelinquent": 71088
+  },
+  "0x255bb30ed2e861baf508c10fc3c682e9577a0c87": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1753890827,
+   "maxTotalSupply": 5000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1005565425607258254162115920,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x262dd546703760adda0c06279508e04bd1f60dee": {
+   "accruedProtocolFees": 21576027864,
+   "annualInterestBips": 5000,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1788394139,
+   "maxTotalSupply": 750000000000,
+   "normalizedUnclaimedWithdrawals": 118581786,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1793358739009494235407963815,
+   "scaledPendingWithdrawals": 735770008727,
+   "scaledTotalSupply": 749759154608,
+   "timeDelinquent": 29176860
+  },
+  "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1768391891,
+   "maxTotalSupply": 50000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1029894830094745547215735325,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1760520059,
+   "maxTotalSupply": 50000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x2d958e4b289b188a110367208689bb6b560586a3": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 2400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1775596247,
+   "maxTotalSupply": 100000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1080162507947316525898419938,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 950,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 15000000000000,
+   "normalizedUnclaimedWithdrawals": 818144116,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1192131337698803251852473214,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 6353358566889,
+   "timeDelinquent": 0
+  },
+  "0x33ac9b224c8a189d2332aecf021897f1535373ab": {
+   "accruedProtocolFees": 20066,
+   "annualInterestBips": 400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789897211,
+   "maxTotalSupply": 20000000000,
+   "normalizedUnclaimedWithdrawals": 992269,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1022304826534051854610725082,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 3071691249,
+   "timeDelinquent": 0
+  },
+  "0x3747a7d6c887348fe249fdff29145b25cf0311f9": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1850,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1772696183,
+   "maxTotalSupply": 10000000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 900,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 1000000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1068380896704107470916072434,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 959717880016494803476301,
+   "timeDelinquent": 0
+  },
+  "0x44239265e4c63573070048fecd83a6b1e324412c": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1780041827,
+   "maxTotalSupply": 1000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1009061700913242009132420091,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 500,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 1000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 1063262572015373138,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1061756161826797584580582375,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 4347829076946936,
+   "timeDelinquent": 0
+  },
+  "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 950,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 12000000000000,
+   "normalizedUnclaimedWithdrawals": 5092949633,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1152404063271609795271705838,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 5567053719780,
+   "timeDelinquent": 0
+  },
+  "0x50d7b234fded5535948b492d0510eae3cfa9738b": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1775258219,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1077281689497716894977168949,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1000,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 15000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1026007488150981860191100670,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 54426738965,
+   "timeDelinquent": 0
+  },
+  "0x55a365f3997b2f015001c53cf6a73335e593ad8a": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1759829279,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 10576073784,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1057714225514420728216812797,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x593d3320fa2cb278fa24281611a58ba8db74a9ce": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 450,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1773927875,
+   "maxTotalSupply": 2000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 5,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1036561723686735395616121204,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x5a516928be2005e9852e342f71bfcc52ca5bdace": {
+   "accruedProtocolFees": 11535273,
+   "annualInterestBips": 1200,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1776985367,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 17213873414,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1104206969800081250089078897,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 180204769685,
+   "timeDelinquent": 1550880
+  },
+  "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b": {
+   "accruedProtocolFees": 94688767,
+   "annualInterestBips": 875,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789809707,
+   "maxTotalSupply": 80000000000000,
+   "normalizedUnclaimedWithdrawals": 41240263973,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1172129255901505847230087956,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 43147420661437,
+   "timeDelinquent": 0
+  },
+  "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1780712303,
+   "maxTotalSupply": 20000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1109801417362245090286273328,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x5e342c3d8248937512f7cb8637bc18333b02fe18": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1314,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1169418949507623086138949907,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 12344172509,
+   "timeDelinquent": 0
+  },
+  "0x603b29847659618813f039c73379746585b78875": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1768391795,
+   "maxTotalSupply": 1500000000000,
+   "normalizedUnclaimedWithdrawals": 5,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1067290736044838782247441198,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x6053e88b1ac0dce4ccac47122cbecd6598365c70": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1000,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 3000000000000,
+   "normalizedUnclaimedWithdrawals": 22875514,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1046777521046844122699220386,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 2372311478983,
+   "timeDelinquent": 0
+  },
+  "0x6231a192089fb636e704d2c7807d7a79c2457b07": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1100,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 25362227009,
+   "pendingWithdrawalExpiry": 1790331971,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1193173505457402055971217364,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 455764183261,
+   "timeDelinquent": 0
+  },
+  "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1761186395,
+   "maxTotalSupply": 50000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x69e56f526637b430561e8293f3307765a046d750": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1760100683,
+   "maxTotalSupply": 5000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 1000001398409331,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1010792142732157627215517494,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 109984639445212,
+   "timeDelinquent": 0
+  },
+  "0x6af9c583016600dd8b509e919494b27c729c5dbd": {
+   "accruedProtocolFees": 45083171,
+   "annualInterestBips": 950,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789828703,
+   "maxTotalSupply": 15000000000000,
+   "normalizedUnclaimedWithdrawals": 68826923771,
+   "pendingWithdrawalExpiry": 1790145119,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1193103343196723589777438948,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 7763126977281,
+   "timeDelinquent": 0
+  },
+  "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1759138055,
+   "maxTotalSupply": 1500000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1026185147507386466555241217,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1763111471,
+   "maxTotalSupply": 300000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x70ee31f6057034cfc89533aa1d44315fbf0828d1": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1760520251,
+   "maxTotalSupply": 50000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x7244b84918dbfb50e62320fc0e6031a449deea28": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1780688999,
+   "maxTotalSupply": 2000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1029083310645489738190057199,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1761186059,
+   "maxTotalSupply": 50000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x7e496c5678b1722289d9c4a13c9aa53631ca7607": {
+   "accruedProtocolFees": 4364537,
+   "annualInterestBips": 1850,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1779223139,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1145158909212062734365357349,
+   "scaledPendingWithdrawals": 37378626972,
+   "scaledTotalSupply": 37401963589,
+   "timeDelinquent": 4317816
+  },
+  "0x8c06d86596d671798a67e80dc44a281c8d822fd3": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1769039879,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1045698386605783866057838660,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x8ec22d26562e72f442f32881a48c59c16d652fa0": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1775903363,
+   "maxTotalSupply": 10000000000,
+   "normalizedUnclaimedWithdrawals": 2,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1033429085069193576875634287,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 725,
+   "timeDelinquent": 0
+  },
+  "0x90772c109adc8d216967a2782eae8271b4e46c1e": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1750066583,
+   "maxTotalSupply": 1000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1016181604808460681075806710,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x923237220cc79c6301c59851af3574d0a487c966": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 30000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1197414818444871986974758385,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 8843545558925,
+   "timeDelinquent": 0
+  },
+  "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1800,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1769415383,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x95ac07b3683727d916168cb6af516bd7446b19ad": {
+   "accruedProtocolFees": 12640704,
+   "annualInterestBips": 950,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1789942391,
+   "maxTotalSupply": 12000000000000,
+   "normalizedUnclaimedWithdrawals": 2454305351,
+   "pendingWithdrawalExpiry": 1790115191,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1148561274820222115910296683,
+   "scaledPendingWithdrawals": 70272002379,
+   "scaledTotalSupply": 497922406862,
+   "timeDelinquent": 0
+  },
+  "0x9aa7f58561812f01f1221e9718011aca78c28c17": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1450,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1750764443,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 500,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x9e047d2e8970300f0461314e1b72abf7ef7792e9": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1700,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 54208685,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 1000,
+   "scaleFactor": 1175716858371178255282788671,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 30681910540,
+   "timeDelinquent": 0
+  },
+  "0x9e597911a484713f12f6efc29c49bebc64fa2144": {
+   "accruedProtocolFees": 1910973,
+   "annualInterestBips": 1000,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789804031,
+   "maxTotalSupply": 15000000000000,
+   "normalizedUnclaimedWithdrawals": 156094046438,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1140176576804598572621951688,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 1351141649096,
+   "timeDelinquent": 0
+  },
+  "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1000,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 123000161472602739727,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1122032757430315922407074035,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 874022103809278002804228,
+   "timeDelinquent": 0
+  },
+  "0xa8139699360b255c5c02d0616e75f20b92adf1c3": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1100,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1783748267,
+   "maxTotalSupply": 2000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1008933972797667708601201439,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xaa4677627d05775dafc410d7e3aff5702aae27f8": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 900,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1769698835,
+   "maxTotalSupply": 1000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xb3b823ec39f3edeb4354f76997031b3826b615c2": {
+   "accruedProtocolFees": 1145061,
+   "annualInterestBips": 725,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1789828127,
+   "maxTotalSupply": 1500000000000,
+   "normalizedUnclaimedWithdrawals": 8826032580,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1193007036525333220464947171,
+   "scaledPendingWithdrawals": 45216269537,
+   "scaledTotalSupply": 45218398676,
+   "timeDelinquent": 184716
+  },
+  "0xb3beb373d241378f5f1fd68ed865349257602476": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1768391339,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1076347862790353441918660070,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xbad1b632e90ce02af868f07c572adb067eb98353": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 375,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 514110072149576244,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1060706809444633449782522223,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 1806725733823917626970,
+   "timeDelinquent": 0
+  },
+  "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3": {
+   "accruedProtocolFees": 766054863,
+   "annualInterestBips": 1850,
+   "isClosed": 0,
+   "isDelinquent": 1,
+   "lastInterestAccruedTimestamp": 1789793459,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1246770394856901252646606451,
+   "scaledPendingWithdrawals": 185231149343,
+   "scaledTotalSupply": 185280976645,
+   "timeDelinquent": 12445104
+  },
+  "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1755090755,
+   "maxTotalSupply": 5000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1010378441590076279624832717,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 99703,
+   "timeDelinquent": 0
+  },
+  "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 450,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000,
+   "normalizedUnclaimedWithdrawals": 4603451,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1062533265176442853288621895,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 67608068,
+   "timeDelinquent": 0
+  },
+  "0xc9499006a149c553d18171747ed19aa7c6dd19e2": {
+   "accruedProtocolFees": 1083473261,
+   "annualInterestBips": 850,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789902995,
+   "maxTotalSupply": 130000000000000,
+   "normalizedUnclaimedWithdrawals": 510552510680,
+   "pendingWithdrawalExpiry": 1789989395,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1170537345928958250775292579,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 62821695813046,
+   "timeDelinquent": 68700
+  },
+  "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1314,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 2,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1169383014361689906743123015,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 60353022645,
+   "timeDelinquent": 0
+  },
+  "0xd18313c334bfbd366bc06991fc1e265bc7f388aa": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 20000000000,
+   "normalizedUnclaimedWithdrawals": 2133875,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1059910018361175399146613794,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 11508323233,
+   "timeDelinquent": 0
+  },
+  "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1786100279,
+   "maxTotalSupply": 3000000000000,
+   "normalizedUnclaimedWithdrawals": 2928530373,
+   "pendingWithdrawalExpiry": 1786100279,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1039807725370358128244191350,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 2233,
+   "timeDelinquent": 0
+  },
+  "0xdba32266e0c9315119c6f02808db8e0570d8ab83": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1768391543,
+   "maxTotalSupply": 7500000000000,
+   "normalizedUnclaimedWithdrawals": 2,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1047540565086472691259591569,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1782359879,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 2243708181,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1080867827191834498479176300,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 958835128,
+   "timeDelinquent": 0
+  },
+  "0xe79ca848ae0182fce1db61a968b89627c9a0c948": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1200,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 1000000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 7680472983883099208317,
+   "pendingWithdrawalExpiry": 1789934651,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1071084117413359096151529785,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 870679706629356913385416,
+   "timeDelinquent": 0
+  },
+  "0xe922db9bf086f1bff409bdd4d44facee371cc6e9": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1763415323,
+   "maxTotalSupply": 1000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1020560798561523149316168385,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 2281,
+   "timeDelinquent": 0
+  },
+  "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 400,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 5000000000,
+   "normalizedUnclaimedWithdrawals": 1,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1055526551860147063860903577,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 159860150,
+   "timeDelinquent": 0
+  },
+  "0xeafa12cc0905baabed8618584f0796f5d19da3c4": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1780160063,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 21372803858,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1109847261489114373399247443,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 9918708,
+   "timeDelinquent": 0
+  },
+  "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1000,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1786304855,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 500,
+   "scaleFactor": 1018034578957098443433018134,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1768391327,
+   "maxTotalSupply": 5000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1063337215030993886503303378,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 1100,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1789796207,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 2774624304,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1194365721003901285863170053,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 261675245493,
+   "timeDelinquent": 0
+  },
+  "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1757511623,
+   "maxTotalSupply": 0,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1000029604424134250282057875,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1752007643,
+   "maxTotalSupply": 10000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1000007950000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0xf76a7887521a91b47c62060ba57549dec1dc88c7": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1787001623,
+   "maxTotalSupply": 20000000000000,
+   "normalizedUnclaimedWithdrawals": 1511468115,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 500,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1111369098331780776873792167,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 174295643956,
+   "timeDelinquent": 0
+  },
+  "0xfe7cf5680d2e59500f3938c2539fda4754876f94": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 500,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1739800787,
+   "maxTotalSupply": 1000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "protocolFeeBips": 1000,
+   "reserveRatioBips": 0,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  }
+ },
+ "subjects": 137,
+ "throughput": {
+  "batch_size": 3,
+  "milliseconds_per_request": 35.29,
+  "projected_capture_seconds": 585.1,
+  "sample_requests": 30
+ },
+ "tokens": {
+  "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c": {
+   "balance_slot": {
+    "base": 9,
+    "order": "solidity"
+   },
+   "code_bytes": 1852,
+   "holders_with_zero_balance": 1,
+   "markets": 2,
+   "pointers": {
+    "zeppelinos-implementation": {
+     "address": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+     "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+    }
+   },
+   "probe_holder": "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+   "probe_holder_source": "market"
+  },
+  "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": {
+   "balance_slot": {
+    "base": 0,
+    "order": "solidity"
+   },
+   "code_bytes": 4582,
+   "holders_with_zero_balance": 0,
+   "markets": 3,
+   "pointers": {},
+   "probe_holder": "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+   "probe_holder_source": "market"
+  },
+  "0x4c9edd5852cd905f086c759e8383e09bff1e68b3": {
+   "balance_slot": {
+    "base": 2,
+    "order": "solidity"
+   },
+   "code_bytes": 7567,
+   "holders_with_zero_balance": 0,
+   "markets": 3,
+   "pointers": {},
+   "probe_holder": "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+   "probe_holder_source": "market"
+  },
+  "0x9d39a5de30e57443bff2a8307a4256c8797a3497": {
+   "balance_slot": {
+    "base": 4,
+    "order": "solidity"
+   },
+   "code_bytes": 17299,
+   "holders_with_zero_balance": 1,
+   "markets": 1,
+   "pointers": {},
+   "probe_holder": "0x5c2ab69eb2bf12a2f4572d178687bd4660512972",
+   "probe_holder_source": "recent-transfer-recipient"
+  },
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+   "balance_slot": {
+    "base": 9,
+    "order": "solidity"
+   },
+   "code_bytes": 2186,
+   "holders_with_zero_balance": 12,
+   "markets": 42,
+   "pointers": {
+    "zeppelinos-implementation": {
+     "address": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+     "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+    }
+   },
+   "probe_holder": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+   "probe_holder_source": "market"
+  },
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+   "balance_slot": {
+    "base": 3,
+    "order": "solidity"
+   },
+   "code_bytes": 3124,
+   "holders_with_zero_balance": 0,
+   "markets": 4,
+   "pointers": {},
+   "probe_holder": "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+   "probe_holder_source": "market"
+  },
+  "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf": {
+   "balance_slot": {
+    "base": 9,
+    "order": "solidity"
+   },
+   "code_bytes": 1550,
+   "holders_with_zero_balance": 1,
+   "markets": 4,
+   "pointers": {
+    "zeppelinos-implementation": {
+     "address": "0x7458bfdc30034eb860b265e6068121d18fa5aa72",
+     "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+    }
+   },
+   "probe_holder": "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+   "probe_holder_source": "market"
+  },
+  "0xd31a59c85ae9d8edefec411d448f90841571b89c": {
+   "balance_slot": {
+    "base": 5,
+    "order": "solidity"
+   },
+   "code_bytes": 831,
+   "holders_with_zero_balance": 0,
+   "markets": 1,
+   "pointers": {
+    "eip1967-beacon": {
+     "address": "0x3ee18b2214aff97000d974cf647e7c347e8fa585",
+     "slot": "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50"
+    }
+   },
+   "probe_holder": "0x923237220cc79c6301c59851af3574d0a487c966",
+   "probe_holder_source": "market"
+  },
+  "0xdac17f958d2ee523a2206206994597c13d831ec7": {
+   "balance_slot": {
+    "base": 2,
+    "order": "solidity"
+   },
+   "code_bytes": 11075,
+   "holders_with_zero_balance": 9,
+   "markets": 19,
+   "pointers": {},
+   "probe_holder": "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+   "probe_holder_source": "market"
+  },
+  "0xf9d82660828d8f5d121b14a9dc9c677d91f60065": {
+   "balance_slot": {
+    "base": 0,
+    "order": "erc7201:openzeppelin.storage.ERC20"
+   },
+   "code_bytes": 170,
+   "holders_with_zero_balance": 0,
+   "markets": 1,
+   "pointers": {
+    "eip1967-implementation": {
+     "address": "0x1497a376d4c0d9bea9682070b131e921d3e5375d",
+     "slot": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+    }
+   },
+   "probe_holder": "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+   "probe_holder_source": "market"
+  }
+ }
+}

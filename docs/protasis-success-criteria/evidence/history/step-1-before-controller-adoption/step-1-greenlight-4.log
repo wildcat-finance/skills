@@ -1,0 +1,55 @@
+.................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................../opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 403: 'rate limit exceeded'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+./opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 429: 'too many requests'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+../opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 404: 'Not Found'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................probe_harnesses: IsADirectoryError writing the output
+probe_harnesses: destination directory /private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/tmpkp9np8c6/absent does not exist
+.................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 2046 tests in 259.935s
+
+OK
+baseline written for 30b0935bfbe1c3a75e0ef780f3f892de876e023c: 0 candidate(s), report-only
+dead-code 1 baseline check  schema dead-code-baseline/v1
+source    30b0935bfbe1c3a75e0ef780f3f892de876e023c
+published 27ef87fc9a0fd666686a33f9254d85e2012b6def
+tree      cebb35353106a28cf635e3bdb2b292a8f4d3ee52
+universe  sha256:263cdc54ab797c59b65ae2bc489539d82623cf1c9284a004970d74468a95408f
+analysers python=ran@1, repository=ran@repository-graph/2
+findings  0 candidate(s), 0 active, 0 suppressed; report-only
+changes   added=0 resolved=0 stale_suppressions=0
+currency  current; no tracked path changed after publication
+status    matched; candidate count did not gate this command
+baseline written for a8c353112192b144f6f22c0fd930453ce5a37b0f: 0 candidate(s), report-only
+dead-code 1 baseline check  schema dead-code-baseline/v1
+source    a8c353112192b144f6f22c0fd930453ce5a37b0f
+published 2c7f5e0069b9edaccb06f6d0cbe571365faedf0b
+tree      cebb35353106a28cf635e3bdb2b292a8f4d3ee52
+universe  sha256:263cdc54ab797c59b65ae2bc489539d82623cf1c9284a004970d74468a95408f
+analysers python=ran@1, repository=ran@repository-graph/2
+findings  0 candidate(s), 0 active, 0 suppressed; report-only
+changes   added=0 resolved=0 stale_suppressions=0
+currency  current; no tracked path changed after publication
+status    matched; candidate count did not gate this command
+baseline written for 5833b984ddf7deb54ad702d514cab6f734379afb: 0 candidate(s), report-only
+baseline written for 5833b984ddf7deb54ad702d514cab6f734379afb: 0 candidate(s), report-only
+baseline written for 2268d4a7a93a8d6dd70e1605ca13a7fef3067795: 0 candidate(s), report-only
+baseline written for 2268d4a7a93a8d6dd70e1605ca13a7fef3067795: 0 candidate(s), report-only
+baseline written for 1b16441366b361b48eac99e36689f9947d35e103: 0 candidate(s), report-only
+baseline written for 1b16441366b361b48eac99e36689f9947d35e103: 0 candidate(s), report-only
+baseline written for dfab1ee74d3d194444ff53de88bd9f784f082843: 0 candidate(s), report-only
+baseline written for dfab1ee74d3d194444ff53de88bd9f784f082843: 0 candidate(s), report-only
+dead-code 1 baseline check  schema dead-code-baseline/v1
+source    dfab1ee74d3d194444ff53de88bd9f784f082843
+published bf32e9f42ab451ff4b4b726e78aae23b249e0a3a
+tree      cebb35353106a28cf635e3bdb2b292a8f4d3ee52
+universe  sha256:263cdc54ab797c59b65ae2bc489539d82623cf1c9284a004970d74468a95408f
+analysers python=ran@1, repository=ran@repository-graph/2
+findings  0 candidate(s), 0 active, 0 suppressed; report-only
+changes   added=0 resolved=0 stale_suppressions=0
+currency  current; no tracked path changed after publication
+status    matched; candidate count did not gate this command
+INOCULATION {"cases": {"aggregate-manifest": 61, "audit-round-1-map": 3, "audit-round-2-map": 4, "audit-round-3-map": 2, "audit-round-4-map": 3, "audit-round-5-map": 4, "audit-round-6-map": 2, "audit-round-7-map": 1, "audit-round-8-map": 1, "carryover-map": 36, "current-repair-map": 3, "file-replacement": 8, "fixed-round-1-map": 4, "lifecycle-reference": 9, "normalized-field-name": 384, "path-representation": 33, "recursive-wrong-kind": 365, "report-parity-no-echo": 8, "reporter-lead-map": 1, "schema-runtime": 309, "work-repository-context": 17}, "crashes": 0, "families": ["file-replacement", "lifecycle-reference", "normalized-field-name", "path-representation", "recursive-wrong-kind", "report-parity-no-echo", "schema-runtime", "work-repository-context"], "schema": "run-observation-inoculation-summary/v1", "total_cases": 1258, "unexpected_clean": 0}
+greenlight: recorded tree 798741ae1a2d1c3d6c79651c40073ce8ed02166c in /Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills/.git/worktrees/fiat-1273-settle-declared-study-criteria-with-recorde/LAST_GREEN

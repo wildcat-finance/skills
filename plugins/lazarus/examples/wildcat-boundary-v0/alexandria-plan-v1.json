@@ -1,0 +1,126 @@
+{
+ "captures": [
+  {
+   "chain": "eip155:1",
+   "component": "fixture-manifest",
+   "coverage": {
+    "collections": [
+     {
+      "name": "fixture-components",
+      "record_count": 6,
+      "selector": "/components"
+     }
+    ],
+    "gaps": [],
+    "record_count": 6,
+    "status": "complete",
+    "unsupported_collections": []
+   },
+   "evidence_class": "proof-backed-state",
+   "id": "wildcat-boundary-v1-state-proof",
+   "scope": {
+    "deployment": "wildcat-v1-ethereum-mainnet",
+    "finality": "unknown",
+    "interval": {
+     "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+     "block_number": "22074622",
+     "kind": "snapshot",
+     "observed_at": "2025-03-18T15:21:11Z"
+    },
+    "kind": "subject-scoped",
+    "subjects": [
+     "eip155:1:0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+     "eip155:1:0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+     "eip155:1:0x34e7aa31d0151b60490619a8f560ce5ee8196cc6",
+     "eip155:1:0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+     "eip155:1:0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+     "eip155:1:0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+     "eip155:1:0x5850afc80561932b0abb63dd13cdc129395323a3",
+     "eip155:1:0x605309f21c1864bb0522781a2f97b91fe3a48601",
+     "eip155:1:0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+     "eip155:1:0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+     "eip155:1:0x93caaddc316f699f9249e93a689566cefc446c3c",
+     "eip155:1:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+     "eip155:1:0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+     "eip155:1:0xc2321ed31a274595e087b5010d200b748eb600e4",
+     "eip155:1:0xd0c690707b5642475f68a0487cea08e30a5719bd",
+     "eip155:1:0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+     "eip155:1:0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a",
+     "eip155:1:0xdac17f958d2ee523a2206206994597c13d831ec7",
+     "eip155:1:0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+     "eip155:1:0xfd31007613c9f671df6a8d4234901324986bfd13",
+     "eip155:1:0xfeb516d9d946dd487a9346f6fee11f40c6945ee4"
+    ]
+   },
+   "source": {
+    "kind": "lazarus-fixture",
+    "locator_class": "local-fixture",
+    "reference": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d"
+   },
+   "venue": "wildcat-v1"
+  }
+ ],
+ "components": [
+  {
+   "access": "restricted",
+   "media_type": "application/json",
+   "name": "fixture-manifest",
+   "path": "fixture/manifest.json",
+   "redistribution": "restricted",
+   "role": "lazarus-manifest"
+  },
+  {
+   "access": "restricted",
+   "media_type": "application/jsonl",
+   "name": "fixture-anchors-jsonl",
+   "path": "fixture/anchors.jsonl",
+   "redistribution": "restricted",
+   "role": "lazarus-fixture-file"
+  },
+  {
+   "access": "restricted",
+   "media_type": "application/json",
+   "name": "fixture-header-json",
+   "path": "fixture/header.json",
+   "redistribution": "restricted",
+   "role": "lazarus-fixture-file"
+  },
+  {
+   "access": "restricted",
+   "media_type": "application/json",
+   "name": "fixture-plan-json",
+   "path": "fixture/plan.json",
+   "redistribution": "restricted",
+   "role": "lazarus-fixture-file"
+  },
+  {
+   "access": "restricted",
+   "media_type": "application/jsonl",
+   "name": "fixture-proofs-jsonl",
+   "path": "fixture/proofs.jsonl",
+   "redistribution": "restricted",
+   "role": "lazarus-fixture-file"
+  },
+  {
+   "access": "restricted",
+   "media_type": "application/json",
+   "name": "fixture-receipt-witness-json",
+   "path": "fixture/receipt-witness.json",
+   "redistribution": "restricted",
+   "role": "lazarus-fixture-file"
+  },
+  {
+   "access": "restricted",
+   "media_type": "application/jsonl",
+   "name": "fixture-rpc-jsonl",
+   "path": "fixture/rpc.jsonl",
+   "redistribution": "restricted",
+   "role": "lazarus-fixture-file"
+  }
+ ],
+ "format": "alexandria-capture-plan/v1",
+ "release": {
+  "created_at": "2026-09-28T00:00:00Z",
+  "name": "wildcat-boundary-v1-proof-backed-state-v0"
+ }
+}

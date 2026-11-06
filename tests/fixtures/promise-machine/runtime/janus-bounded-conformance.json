@@ -8,7 +8,7 @@
             "id": "promise-owner:janus-bounded-conformance",
             "reference": {
               "path": "plugins/janus/skills/janus/EVOLUTION.md",
-              "sha256": "0d39362cc96552d65efac56294b043bec6bbc99eb8aeb8fb535602bc46a430eb"
+              "sha256": "390687e8317f5ffceb678b9d7bdaf5401787dd3b1f90ee7f75e6ccfce88b6a5b"
             }
           },
           "binding": {
@@ -53,7 +53,7 @@
           "id": "promise-owner:janus-bounded-conformance",
           "reference": {
             "path": "plugins/janus/skills/janus/EVOLUTION.md",
-            "sha256": "0d39362cc96552d65efac56294b043bec6bbc99eb8aeb8fb535602bc46a430eb"
+            "sha256": "390687e8317f5ffceb678b9d7bdaf5401787dd3b1f90ee7f75e6ccfce88b6a5b"
           }
         },
         "evidence_classes": [
@@ -99,7 +99,7 @@
             "id": "promise-owner:janus-bounded-conformance",
             "reference": {
               "path": "plugins/janus/skills/janus/EVOLUTION.md",
-              "sha256": "0d39362cc96552d65efac56294b043bec6bbc99eb8aeb8fb535602bc46a430eb"
+              "sha256": "390687e8317f5ffceb678b9d7bdaf5401787dd3b1f90ee7f75e6ccfce88b6a5b"
             }
           },
           "binding": {
@@ -144,7 +144,7 @@
           "id": "promise-owner:janus-bounded-conformance",
           "reference": {
             "path": "plugins/janus/skills/janus/EVOLUTION.md",
-            "sha256": "0d39362cc96552d65efac56294b043bec6bbc99eb8aeb8fb535602bc46a430eb"
+            "sha256": "390687e8317f5ffceb678b9d7bdaf5401787dd3b1f90ee7f75e6ccfce88b6a5b"
           }
         },
         "evidence_classes": [

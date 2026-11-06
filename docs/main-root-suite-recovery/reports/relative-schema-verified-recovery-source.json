@@ -1,0 +1,9 @@
+{
+  "candidate": "relative-schema",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate relative-schema --criterion verified-recovery-source",
+  "criterion": "verified-recovery-source",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

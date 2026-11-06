@@ -1,0 +1,36 @@
+{
+  "score": 100.0,
+  "defects": 0,
+  "weighted": 0,
+  "per_1000_words": 0.0,
+  "word_count": 1779,
+  "by_pass": {},
+  "by_family": {},
+  "hits": [],
+  "signals": [
+    {
+      "pass": "structural",
+      "family": "rule_of_three",
+      "signal_only": true,
+      "term": "parity, applies, and passes",
+      "severity": "low",
+      "line": 33,
+      "col": 161,
+      "excerpt": "\u2026completes fresh local measurement and parity, applies, and passes the full corpus checker. Preserve fai\u2026",
+      "note": "Tidy triad. One or two is prose; a habit of three is a formula. Signal only: fires on genuine enumerations."
+    }
+  ],
+  "cadence": {
+    "sentence_count": 116,
+    "mean_sentence_length": 15.3,
+    "length_variance": 76.0,
+    "variance_floor": 25.0,
+    "variance_below_floor": false,
+    "longest_similar_run": 8,
+    "max_allowed_run": 4,
+    "repeated_openers": {
+      "the parent": 3,
+      "run the": 3
+    }
+  }
+}

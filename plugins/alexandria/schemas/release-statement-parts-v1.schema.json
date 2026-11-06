@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ariadne.wildcat.finance/schemas/alexandria-release-statement-parts-v1.schema.json",
+  "title": "Alexandria release statement parts index v1",
+  "description": "A closed in-toto Statement v1 carrying https://ariadne.wildcat.finance/alexandria-release-parts/v1 evidence: the index of a verified Alexandria release's part set, binding each part file by SHA-256 in part order.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["_type", "subject", "predicateType", "predicate"],
+  "properties": {
+    "_type": {
+      "const": "https://in-toto.io/Statement/v1"
+    },
+    "subject": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 16385,
+      "prefixItems": [
+        {"$ref": "https://ariadne.wildcat.finance/schemas/alexandria-release-statement-v1.schema.json#/$defs/releaseSubject"}
+      ],
+      "items": {"$ref": "#/$defs/partSubject"}
+    },
+    "predicateType": {
+      "const": "https://ariadne.wildcat.finance/alexandria-release-parts/v1"
+    },
+    "predicate": {"$ref": "#/$defs/indexPredicate"}
+  },
+  "$defs": {
+    "partSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "digest"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^part/part-[0-9]{5}\\.json$"
+        },
+        "digest": {"$ref": "https://ariadne.wildcat.finance/schemas/alexandria-release-statement-v1.schema.json#/$defs/digest"}
+      }
+    },
+    "indexPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["release", "parts", "claims", "commands"],
+      "properties": {
+        "release": {"$ref": "https://ariadne.wildcat.finance/schemas/alexandria-release-statement-v1.schema.json#/$defs/release"},
+        "parts": {"$ref": "#/$defs/indexParts"},
+        "claims": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "https://ariadne.wildcat.finance/schemas/alexandria-release-statement-v1.schema.json#/$defs/verificationClaim"}
+        },
+        "commands": {
+          "const": []
+        }
+      }
+    },
+    "indexParts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "components", "captures"],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "components": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "captures": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16384
+        }
+      }
+    }
+  }
+}

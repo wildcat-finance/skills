@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "scripts/run_checks.py",
+    "--base",
+    "a3c9cf5730bbe80db1e1aa72d47a915af7f29956",
+    "--scope",
+    "hexaemeron",
+    "--jobs",
+    "26",
+    "--report",
+    ".reports/issue-1273-custody-checked-5.json"
+  ],
+  "head": "c572009b7922b4b7b9400893c5adc6d4df641a72",
+  "exit": 0,
+  "wall_seconds": 543.5180293329759,
+  "log_sha256": "f0ee98bad4e71e50a7befcfff4ef48a2693b9adc2a6a7447e98ea41a9239eb47",
+  "report_sha256": "5372c1b7ed96e4e376c7919918913bf1b713559197a7ff9cc5eb46f9c41108cd"
+}

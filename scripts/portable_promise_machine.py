@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
+import posixpath
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -33,6 +35,48 @@ PACKAGE_AUTHORED = (
     Path(".agents/skills/promise-machine/scripts/verify_runtime.py"),
 )
 PORTABLE_BOUNDARY = ".horos/boundary.json"
+MAX_RUNTIME_BYTES = 25 * 1024 * 1024
+MIN_BYTE_HEADROOM = 5 * 1024 * 1024
+# The local file-count tripwire on the complete package's file count.
+# tests/test_skills_sh_package.py keeps its own MAX_FILES as an independent
+# mirror and asserts the two are equal, the same pattern it uses for
+# MAX_RUNTIME_BYTES and MIN_BYTE_HEADROOM; that test file carries the
+# historical figures behind the current value.
+FILE_TRIPWIRE = 1_700
+MEASUREMENT_SCHEMA = "portable-payload-measurement/v1"
+DUPLICATE_LAZARUS_PAYLOADS = (
+    "anchors.jsonl", "header.json", "plan.json", "proofs.jsonl",
+    "receipt-witness.json", "rpc.jsonl",
+)
+# The one retained complete release; every other file under plugins/*/examples/
+# that is not Markdown is omitted unless a packaged document links it. See
+# docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md.
+LAZARUS_RETAINED_RELEASE = "plugins/lazarus/examples/aave-v4-spoke-v1-release/"
+EXAMPLE_ROOT = re.compile(r"^plugins/[^/]+/examples/")
+# One linear pattern over bounded file bytes: an ordinary Markdown link, with
+# an optional title, no nested or overlapping quantifiers over the same
+# characters. The bracket text, target and title are each capped and refuse a
+# newline, so an unmatched "[" cannot force a scan across the rest of a large
+# or hostile file looking for its "]" -- every real link in this repository's
+# packaged Markdown stays inside these limits by a wide margin. Reused by the
+# link-kept scan below; `transform_portrait_images` matches images with a
+# related, narrower pattern.
+MARKDOWN_LINK = re.compile(
+    r'\[[^\]\n]{0,1000}\]\(([^)\s]{1,1000})(?:\s+"[^"\n]{0,500}")?\)'
+)
+# The regex groups above bound one *match*; nothing bounded the file this
+# reads in *bytes* before this cap existed, so a single enormous packaged
+# Markdown file had no ceiling on the memory or (still-linear) time this scan
+# spent on it. The largest packaged Markdown file today is 272,388 bytes; this
+# leaves comfortable headroom over that, over the >1MB hostile fixture
+# `test_oversized_or_hostile_markdown_link_scan_completes_quickly` already
+# exercises, and stays a small fraction of the whole 25 MiB runtime budget.
+# Same discipline as Phylax's own `TYPESCRIPT_MAX_BYTES` boundary.
+MARKDOWN_LINK_SCAN_MAX_BYTES = 8 * 1024 * 1024
+PORTRAIT_TRANSFORM = "remove-decorative-portrait-images/v1"
+EVALUATION_TRANSFORM = "replay-unchanged-evaluation-prompts/v1"
+EVALUATION_RUN = "docs/promise-machine/obligation-gates/evaluation-run.json"
+EVALUATION_ANSWERS = "docs/promise-machine/obligation-gates/evaluation-answers.json"
 
 ROOT_FILES = (
     Path(".python-version"),
@@ -165,9 +209,35 @@ PORTABLE_TEST_FILES = (
     Path(
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     ),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/hostile-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-body.txt'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-source.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-title.txt'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/queue-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/rejection-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/runtime-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/valid-request.json'),
 )
 
 OMISSIONS = (
+    {
+        "pattern": "plugins/ariadne/examples/wildcat-datasets-v0/** (except README.md)",
+        "reason": "the dataset demonstration and its preserved evidence require a full source checkout; only its README remains, while core Ariadne capture, verifier and schema runtime files stay",
+    },
+    {
+        "pattern": "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
+        "reason": "the historical interval demonstration payloads remain in the full source checkout; their documents and entrypoints stay, and both metadata verification and rebuild require that checkout",
+    },
+    {
+        "pattern": "assets/characters/*.{png,webp}",
+        "reason": "decorative portraits remain in the source checkout",
+    },
+    {
+        "pattern": "plugins/*/assets/characters/*.{png,webp}",
+        "reason": "decorative portraits remain in the source checkout",
+    },
     {
         "pattern": "plugins/*/.claude-plugin/**",
         "reason": "host discovery manifests are not part of the portable runtime",
@@ -190,6 +260,13 @@ OMISSIONS = (
         ),
     },
     {
+        "pattern": "plugins/anamnesis/docs/source-rights/**",
+        "reason": (
+            "retained-rights delivery studies, evidence and reproduction records "
+            "remain in the full source checkout beside the corpus specimens"
+        ),
+    },
+    {
         "pattern": "plugins/anamnesis/specimens/**",
         "reason": (
             "the preserved audit sources and the corpus release built from them are "
@@ -198,16 +275,29 @@ OMISSIONS = (
         ),
     },
     {
-        "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
-        "reason": "the large offline trace inputs remain in the full source checkout",
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+        "reason": (
+            "the checkpoint authority record, signature and replay conformance "
+            "corpora are data the router never reads; only the conformance "
+            "reporters read them, and those run from the full source checkout"
+        ),
     },
     {
-        "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
-        "reason": "the built offline trace release remains in the full source checkout",
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
+        "reason": (
+            "the native boundary conformance fixture is data the router never "
+            "reads; only the native conformance reporter reads it, and that runs "
+            "from the full source checkout"
+        ),
     },
     {
-        "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
-        "reason": "the offline trace release sources remain in the full source checkout",
+        "pattern": "plugins/*/examples/**",
+        "exceptions": ["**/*.md", LAZARUS_RETAINED_RELEASE + "**"],
+        "reason": (
+            "demonstration payloads remain in the full source checkout; "
+            "their documents, every file a packaged document links, and "
+            "the one complete Lazarus release stay"
+        ),
     },
 )
 
@@ -246,43 +336,310 @@ def _tracked_plugin_files(root: Path) -> list[Path]:
     return [Path(raw.decode("utf-8")) for raw in result.stdout.split(b"\0") if raw]
 
 
+def _example_class_matches(relative: Path) -> bool:
+    """True for a non-Markdown file under plugins/*/examples/ outside the
+    retained Lazarus release -- the example-payload-class predicate on its
+    own, independent of any other, unrelated omission rule below."""
+    posix = relative.as_posix()
+    return (
+        EXAMPLE_ROOT.match(posix) is not None
+        and relative.suffix != ".md"
+        and not posix.startswith(LAZARUS_RETAINED_RELEASE)
+    )
+
+
 def _omitted(relative: Path) -> bool:
     parts = relative.parts
+    if _example_class_matches(relative):
+        return True
     if len(parts) < 3 or parts[0] != "plugins":
         return False
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
         return True
+    if (
+        parts[:3] == ("plugins", "alexandria", "examples")
+        and len(parts) >= 5
+        and parts[3] in {"wildcat-v1-interval-v0", "wildcat-v2-interval-v0"}
+        and ((len(parts) == 5 and relative.suffix == ".json") or parts[4] == "pre-plan-probes")
+    ):
+        return True
+    if (
+        parts[:4] == ("plugins", "ariadne", "examples", "wildcat-datasets-v0")
+        and len(parts) >= 5
+        and parts[4:] != ("README.md",)
+    ):
+        return True
+    if parts[:4] == ("plugins", "anamnesis", "docs", "source-rights"):
+        return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True
-    example = parts[:4] == (
-        "plugins",
-        "alexandria",
-        "examples",
-        "compound-v3-phase0-v0",
+    if parts[:5] == ("plugins", "hexaemeron", "skills", "fiat", "checkpoint-authority") and len(parts) >= 7 and parts[5] in {"fixtures", "native-fixture"}:
+        return True
+    return False
+
+
+def decorative_portrait(relative: Path) -> bool:
+    """Recognise only direct PNG/WebP children of the two portrait homes."""
+    parts = relative.parts
+    return relative.suffix in {".png", ".webp"} and (
+        len(parts) == 3 and parts[:2] == ("assets", "characters")
+        or len(parts) == 5 and parts[0] == "plugins"
+        and parts[2:4] == ("assets", "characters")
     )
-    return example and len(parts) >= 5 and parts[4] in {"input", "release", "source"}
 
 
-def source_files(root: Path) -> list[Path]:
-    """Return the exact canonical files copied into the portable runtime."""
+def check_duplicate_fixture_payload(root: Path, tracked: list[Path]) -> None:
+    """Refuse an omission unless its complete release retains the same input."""
+    source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
+    retained = Path("plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture")
+    known = set(tracked)
+    if not any(path.is_relative_to(source) for path in known):
+        return
+    for name in DUPLICATE_LAZARUS_PAYLOADS:
+        pair = (source / name, retained / name)
+        for relative in pair:
+            path = root / relative
+            if relative not in known or not path.is_file() or any(
+                (root / Path(*relative.parts[:end])).is_symlink()
+                for end in range(1, len(relative.parts) + 1)
+            ):
+                raise PackageError(f"duplicate fixture input is absent or linked: {relative}")
+        left, right = (root / relative for relative in pair)
+        if (
+            (left.stat().st_mode & 0o777) != (right.stat().st_mode & 0o777)
+            or left.read_bytes() != right.read_bytes()
+        ):
+            raise PackageError(f"duplicate fixture input differs from retained copy: {source / name}")
+
+
+def _link_kept_examples(root: Path, packaged: set[Path], tracked: list[Path]) -> set[Path]:
+    """Return every example payload a packaged Markdown document links.
+
+    Reads each already-selected Markdown file, up to
+    `MARKDOWN_LINK_SCAN_MAX_BYTES`, and follows its ordinary links with one
+    linear pattern over that file's bytes -- no network, no recursion into a
+    found target's own content. A link is a file candidate
+    only when it resolves, relative to its own document, to a non-Markdown
+    path under `plugins/*/examples/`; everything this finds is handed to the
+    caller, which lets the existing source validation in `_source_candidates`
+    refuse a missing, symlinked or unsafe target the same way it refuses any
+    other candidate path (study section 9;
+    docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md).
+
+    A link naming an existing plain directory is ordinary navigation, not one
+    payload reference, so it never refuses generation on its own; but if the
+    class would otherwise omit every file under that directory, this keeps
+    its single smallest tracked file so the link still resolves inside the
+    package, the same tie-break `.hexaemeron/design/resolve.py` uses.
+    """
+    linked: set[Path] = set()
+    directories: set[str] = set()
+    for relative in sorted(path for path in packaged if path.suffix == ".md"):
+        with (root / relative).open("rb") as handle:
+            data = handle.read(MARKDOWN_LINK_SCAN_MAX_BYTES + 1)
+        if len(data) > MARKDOWN_LINK_SCAN_MAX_BYTES:
+            raise PackageError(
+                "packaged Markdown exceeds the "
+                f"{MARKDOWN_LINK_SCAN_MAX_BYTES}-byte link-scan cap: {relative}"
+            )
+        text = data.decode("utf-8", errors="replace")
+        document_dir = relative.parent.as_posix()
+        for raw in MARKDOWN_LINK.findall(text):
+            link = raw.split("#", 1)[0]
+            if not link or "://" in link or link.startswith(("mailto:", "/")):
+                continue
+            target = posixpath.normpath(posixpath.join(document_dir, link))
+            if not EXAMPLE_ROOT.match(target):
+                continue
+            candidate = root / target
+            if candidate.is_dir() and not candidate.is_symlink():
+                directories.add(target)
+                continue
+            if target.endswith(".md"):
+                continue
+            linked.add(Path(target))
+    if directories:
+        kept_posix = {path.as_posix() for path in packaged} | {path.as_posix() for path in linked}
+        for target in sorted(directories):
+            prefix = target + "/"
+            if any(path.startswith(prefix) for path in kept_posix):
+                continue
+            inside = sorted(
+                (path for path in tracked if path.as_posix().startswith(prefix)),
+                key=lambda path: ((root / path).stat().st_size, path.as_posix()),
+            )
+            if inside:
+                linked.add(inside[0])
+    return linked
+
+
+def _kept_by_link_rows(root: Path, candidates: list[Path]) -> list[dict]:
+    """List every packaged example payload the class predicate would omit.
+
+    Every survivor here was pulled back by `_link_kept_examples`; nothing
+    else adds a path the example-payload-class predicate still matches into
+    `_source_candidates`'s selected set, so this walk of its output is a
+    complete and exact report.
+    """
+    rows = [
+        {"path": relative.as_posix(), "bytes": len((root / relative).read_bytes())}
+        for relative in candidates
+        if _example_class_matches(relative)
+    ]
+    rows.sort(key=lambda row: row["path"])
+    return rows
+
+
+def _source_candidates(root: Path) -> list[Path]:
+    """Return the previous package boundary before decorative omission."""
     selected = set(ROOT_FILES)
     selected.update(OBLIGATION_FIXTURE_FILES)
     selected.update(EVALUATION_FIXTURE_FILES)
     selected.update(SEMANTIC_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
-    selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
+    tracked = _tracked_plugin_files(root)
+    check_duplicate_fixture_payload(root, tracked)
+    selected.update(path for path in tracked if not _omitted(path))
+    selected.update(_link_kept_examples(root, selected, tracked))
     ordered = sorted(selected, key=lambda path: path.as_posix())
+    # A tracked git path can never have a symlinked directory as an ancestor:
+    # git records a symlink as one blob, never as a tree with children, so
+    # `_tracked_plugin_files` never yields a path underneath one. The
+    # link-kept scan above has no such guarantee -- it reads a Markdown link
+    # and walks the live filesystem, so `plugins/<plugin>/examples` itself
+    # being a committed symlink to a directory outside the checkout would let
+    # an ordinary-looking link name a file the leaf-only `is_symlink` check
+    # below never inspects. Resolve every selected path once and require it
+    # to stay inside the checkout, so an intermediate symlinked directory
+    # refuses generation the same way a symlinked leaf already does.
+    resolved_root = root.resolve()
     for relative in ordered:
         if relative.is_absolute() or ".." in relative.parts:
             raise PackageError(f"unsafe source path: {relative}")
         source = root / relative
         if source.is_symlink() or not source.is_file():
             raise PackageError(f"portable source is absent or not a regular file: {relative}")
+        if not source.resolve().is_relative_to(resolved_root):
+            raise PackageError(f"portable source resolves outside the checkout: {relative}")
     return ordered
+
+
+def source_files(root: Path) -> list[Path]:
+    """Return authored inputs after the declared decorative omission."""
+    return [path for path in _source_candidates(root) if not decorative_portrait(path)]
+
+
+def transform_portrait_images(relative: Path, data: bytes, omitted: set[str]) -> tuple[bytes, list[dict]]:
+    """Remove only inline images resolving to an actually omitted portrait.
+
+    The recorded source byte ranges permit independent replay. Every byte
+    outside those ranges stays unchanged; remote images and ordinary links
+    are not this transform's input. See adr/omit-portable-decorative-portraits.
+    """
+    if relative.suffix != ".md":
+        return data, []
+    removed = []
+    pattern = re.compile(
+        rb"!\[[^\]\r\n]*\]\(([^)\r\n]+)\)|<img\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>",
+        re.IGNORECASE,
+    )
+    for match in pattern.finditer(data):
+        destination = match.group(1)
+        if destination is None:
+            attributes = re.finditer(
+                rb"\s+([A-Za-z_:][A-Za-z0-9_.:-]*)(?:\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+)))?",
+                match.group(0)[4:-1],
+            )
+            for attribute in attributes:
+                if attribute.group(1).lower() == b"src":
+                    destination = attribute.group(2) if attribute.group(2) is not None else attribute.group(3)
+                    break
+            if destination is None:
+                continue
+        try:
+            link = destination.decode("utf-8")
+        except UnicodeError:
+            continue
+        if ":" in link or link.startswith(("/", "#")) or "?" in link or "#" in link:
+            continue
+        target = posixpath.normpath(posixpath.join(relative.parent.as_posix(), link))
+        if target in omitted:
+            removed.append({"start": match.start(), "end": match.end(), "target": target})
+    result = data
+    for span in reversed(removed):
+        result = result[:span["start"]] + result[span["end"]:]
+    return result, removed
+
+
+def require_byte_headroom(total_bytes: int) -> None:
+    """Refuse a payload that spends any of the reserved five MiB margin.
+
+    Names the bytes measured, the line it must stay under and the margin it
+    missed by, and points at `measure` for the current figures on any tree.
+    """
+    line = MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM
+    margin = line - total_bytes
+    if margin < 0:
+        raise PackageError(
+            f"portable payload uses {total_bytes} bytes, past the {line}-byte "
+            f"line by {-margin} bytes (margin {margin}); run "
+            f"`python3 {GENERATOR} measure` for the current margin"
+        )
 
 
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def derive_portable_evaluation(root: Path, payload: dict[str, bytes]) -> tuple[bytes, dict]:
+    """Replay the owner tally only when every packaged prompt is unchanged."""
+    owner_path = root / "tests/promise_evaluation_driver.py"
+    spec = importlib.util.spec_from_file_location("portable_evaluation_owner", owner_path)
+    owner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(owner)
+    try:
+        with tempfile.TemporaryDirectory(prefix="promise-machine-evaluation.") as raw:
+            work = Path(raw).resolve()
+            candidate = work / "runtime"
+            candidate.mkdir()
+            inputs = {path.relative_to(root).as_posix() for path in owner.input_files(root)}
+            inputs.update((EVALUATION_RUN, EVALUATION_ANSWERS))
+            for name in sorted(inputs):
+                if name not in payload:
+                    raise PackageError(f"portable evaluation input is absent: {name}")
+                target = candidate / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(payload[name])
+            source_packet = work / "source-packet"
+            derived_packet = work / "derived-packet"
+            source_manifest = owner.emit(source_packet, root=root)
+            owner.verify(source_packet, root / EVALUATION_ANSWERS, root / EVALUATION_RUN, root=root)
+            derived_manifest = owner.emit(derived_packet, root=candidate)
+            if source_manifest["cases"] != derived_manifest["cases"]:
+                raise PackageError("portable evaluation prompts changed; historical answers cannot be replayed")
+            prompts = []
+            for case in source_manifest["cases"]:
+                source_prompt = (source_packet / case["prompt"]).read_bytes()
+                if source_prompt != (derived_packet / case["prompt"]).read_bytes():
+                    raise PackageError(f"portable evaluation prompt changed: {case['id']}")
+                prompts.append({"case": case["id"], "sha256": _digest(source_prompt)})
+            original = json.loads((root / EVALUATION_RUN).read_bytes())
+            output = work / "evaluation-run.json"
+            derived = owner.tally(
+                derived_packet, candidate / EVALUATION_ANSWERS, output,
+                original["model"], original["date"], root=candidate,
+            )
+            if any(original[key] != derived[key] for key in original if key != "tree_sha256"):
+                raise PackageError("portable evaluation tally changed more than the source tree binding")
+            return output.read_bytes(), {
+                "transform": EVALUATION_TRANSFORM,
+                "generated_by": "tests/promise_evaluation_driver.py",
+                "unchanged_prompts": prompts,
+                "answers_sha256": _digest((root / EVALUATION_ANSWERS).read_bytes()),
+                "new_model_observation": False,
+            }
+    except owner.DriverError as error:
+        raise PackageError(f"portable evaluation derivation refused: {error}") from error
 
 
 def _render_portable_boundary(root: Path, payload: dict[str, bytes]) -> bytes:
@@ -313,14 +670,22 @@ def _render_portable_boundary(root: Path, payload: dict[str, bytes]) -> bytes:
     return (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
-def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
+def expected_files(root: Path, *, enforce_headroom: bool = True) -> tuple[dict[str, bytes], bytes]:
     """Return payload bytes and the deterministic manifest bytes."""
     payload: dict[str, bytes] = {}
     rows = []
     total_bytes = 0
-    for relative in source_files(root):
-        data = (root / relative).read_bytes()
+    candidates = _source_candidates(root)
+    linked_rows = _kept_by_link_rows(root, candidates)
+    omitted = {path.as_posix() for path in candidates if decorative_portrait(path)}
+    omitted_files = []
+    for relative in candidates:
+        source = (root / relative).read_bytes()
         name = relative.as_posix()
+        if name in omitted:
+            omitted_files.append({"path": name, "bytes": len(source), "sha256": _digest(source)})
+            continue
+        data, removed = transform_portrait_images(relative, source, omitted)
         payload[name] = data
         total_bytes += len(data)
         rows.append(
@@ -331,6 +696,21 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
                 "source": name,
             }
         )
+        if removed:
+            rows[-1].update(
+                source_sha256=_digest(source), source_bytes=len(source),
+                transform=PORTRAIT_TRANSFORM, removed_images=removed,
+            )
+    source_evaluation = payload[EVALUATION_RUN]
+    evaluation, provenance = derive_portable_evaluation(root, payload)
+    payload[EVALUATION_RUN] = evaluation
+    total_bytes += len(evaluation) - len(source_evaluation)
+    evaluation_row = next(row for row in rows if row["path"] == EVALUATION_RUN)
+    evaluation_row.update(
+        bytes=len(evaluation), sha256=_digest(evaluation),
+        source_bytes=len(source_evaluation), source_sha256=_digest(source_evaluation),
+        **provenance,
+    )
     boundary = _render_portable_boundary(root, payload)
     payload[PORTABLE_BOUNDARY] = boundary
     total_bytes += len(boundary)
@@ -344,13 +724,25 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
         }
     )
     rows.sort(key=lambda row: row["path"])
+    if enforce_headroom:
+        require_byte_headroom(total_bytes)
+    omissions = [dict(entry) for entry in OMISSIONS]
+    example_row = next(entry for entry in omissions if entry["pattern"] == "plugins/*/examples/**")
+    example_row["exceptions"] = list(example_row["exceptions"]) + [row["path"] for row in linked_rows]
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "contract": CONTRACT_ID,
         "generated_by": GENERATOR,
         "file_count": len(rows),
         "total_bytes": total_bytes,
-        "omissions": list(OMISSIONS),
+        "omissions": omissions,
+        "omitted_files": omitted_files,
+        "kept_by_link": linked_rows,
+        "byte_budget": {
+            "cap": MAX_RUNTIME_BYTES,
+            "minimum_headroom": MIN_BYTE_HEADROOM,
+            "headroom": MAX_RUNTIME_BYTES - total_bytes,
+        },
         "files": rows,
     }
     encoded = (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
@@ -577,6 +969,20 @@ def source_commit(root: Path) -> str:
     return commit
 
 
+def _tree_status_clean(root: Path) -> bool:
+    """True when `git status --porcelain` reports nothing outstanding."""
+    result = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+        ["git", "-C", str(root), "status", "--porcelain"],
+        check=False,
+        capture_output=True,
+        env=_git_environment(),
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise PackageError(f"git could not read the working tree status: {detail}")
+    return result.stdout == b""
+
+
 def _package_config() -> bytes:
     """The grouping the published package carries, independent of this tree."""
     document = {
@@ -632,7 +1038,9 @@ Changes belong upstream. Open issues and pull requests against
     return text.encode("utf-8")
 
 
-def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str, int]]:
+def _package_bytes(
+    root: Path, commit: str, *, enforce_headroom: bool = True
+) -> tuple[dict[str, bytes], dict[str, int]]:
     """Return every path the published package carries, keyed relative to it.
 
     The second mapping carries the permission bits of the entries that come
@@ -641,14 +1049,14 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
     only the key cannot find the origin to read its mode from.  Both paths are
     in hand here, which is the only place the pairing can be recorded.
     """
-    payload, manifest = expected_files(root)
+    payload, manifest = expected_files(root, enforce_headroom=enforce_headroom)
     files: dict[str, bytes] = {}
     modes: dict[str, int] = {}
     for relative in PACKAGE_AUTHORED:
         source = root / relative
         if source.is_symlink() or not source.is_file():
             raise PackageError(f"authored package file is absent: {relative}")
-        files[relative.as_posix()] = source.read_bytes()
+        files[relative.as_posix()] = payload.get(relative.as_posix(), source.read_bytes())
         modes[relative.as_posix()] = source.stat().st_mode & 0o777
     runtime = PACKAGE_ROOT / "runtime"
     for relative, data in payload.items():
@@ -662,6 +1070,8 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
     files[(runtime / "MANIFEST.json").as_posix()] = manifest
     files[SKILLS_CONFIG.as_posix()] = _package_config()
     files["README.md"] = _package_readme(commit)
+    if enforce_headroom:
+        require_byte_headroom(sum(len(data) for data in files.values()))
     return files, modes
 
 
@@ -669,6 +1079,118 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
 # else that is not empty belongs to somebody, and writing a package replaces the
 # whole directory, so an occupied destination is refused rather than cleared.
 PACKAGE_MARKER = PACKAGE_ROOT / "runtime" / "MANIFEST.json"
+
+MEASUREMENT_HELP = (
+    "measure --json prints one portable-payload-measurement/v1 object with "
+    "these fields: schema, source_commit, tree_clean, cap, reserve, line, "
+    "file_tripwire, package {bytes, files, margin}, runtime {bytes, files, "
+    "margin}, manifest_bytes, outer_bytes, omission_classes, "
+    "largest_default_included [{path, bytes}] and kept_by_link [{path, "
+    "bytes}]: every plugins/*/examples/ payload a packaged Markdown document "
+    "links, and so keeps packaged despite the example-payload-class omission."
+)
+
+
+def measure_tree(root: Path, top: int) -> dict:
+    """Measure the runtime and complete package without writing or refusing.
+
+    Reads the exact code path `package` and `check` read -- `_package_bytes`,
+    which itself calls `expected_files` -- with headroom enforcement
+    disabled, so a tree over the line is measured rather than refused here
+    (study risk `over-line-blind`). The runtime and package figures below are
+    therefore always a walk of the same in-memory payload `package --out`
+    would write, and the runtime figures equal the manifest's own
+    `total_bytes` and `file_count` (study risk `measure-drift`).
+    """
+    commit = source_commit(root)
+    tree_clean = _tree_status_clean(root)
+    files, _modes = _package_bytes(root, commit, enforce_headroom=False)
+    line = MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM
+
+    runtime_prefix = TARGET.as_posix() + "/"
+    manifest_key = (TARGET / "MANIFEST.json").as_posix()
+    runtime_keys = [key for key in files if key.startswith(runtime_prefix)]
+    runtime_total_bytes = sum(len(files[key]) for key in runtime_keys)
+    manifest_bytes = len(files[manifest_key])
+    runtime_bytes = runtime_total_bytes - manifest_bytes
+    runtime_files = len(runtime_keys) - 1
+    manifest_document = json.loads(files[manifest_key])
+
+    package_bytes = sum(len(data) for data in files.values())
+    package_files = len(files)
+    outer_bytes = package_bytes - runtime_total_bytes
+
+    named = {
+        path.as_posix()
+        for group in (
+            ROOT_FILES, OBLIGATION_FIXTURE_FILES, EVALUATION_FIXTURE_FILES,
+            SEMANTIC_FIXTURE_FILES, PORTABLE_TEST_FILES,
+        )
+        for path in group
+    }
+    default_included: dict[str, int] = {}
+    for key in runtime_keys:
+        if key == manifest_key:
+            continue
+        relative = key[len(runtime_prefix):]
+        if relative in named or relative == PORTABLE_BOUNDARY:
+            continue
+        default_included[relative] = len(files[key])
+    largest_default_included = [
+        {"path": path, "bytes": size}
+        for path, size in sorted(
+            default_included.items(), key=lambda kv: (-kv[1], kv[0])
+        )[:top]
+    ]
+
+    return {
+        "schema": MEASUREMENT_SCHEMA,
+        "source_commit": commit,
+        "tree_clean": tree_clean,
+        "cap": MAX_RUNTIME_BYTES,
+        "reserve": MIN_BYTE_HEADROOM,
+        "line": line,
+        "file_tripwire": FILE_TRIPWIRE,
+        "package": {
+            "bytes": package_bytes,
+            "files": package_files,
+            "margin": line - package_bytes,
+        },
+        "runtime": {
+            "bytes": runtime_bytes,
+            "files": runtime_files,
+            "margin": line - runtime_bytes,
+        },
+        "manifest_bytes": manifest_bytes,
+        "outer_bytes": outer_bytes,
+        "omission_classes": len(OMISSIONS),
+        "largest_default_included": largest_default_included,
+        "kept_by_link": manifest_document["kept_by_link"],
+    }
+
+
+def _format_measurement_text(measurement: dict) -> str:
+    """Render bytes, line, margin, files-against-tripwire and top paths."""
+    lines = [
+        f"commit {measurement['source_commit']} "
+        f"(tree {'clean' if measurement['tree_clean'] else 'dirty'})",
+        f"bytes: package {measurement['package']['bytes']}, "
+        f"runtime {measurement['runtime']['bytes']}",
+        f"line: {measurement['line']} "
+        f"(cap {measurement['cap']}, reserve {measurement['reserve']})",
+        f"margin: package {measurement['package']['margin']}, "
+        f"runtime {measurement['runtime']['margin']}",
+        f"files: package {measurement['package']['files']}, "
+        f"runtime {measurement['runtime']['files']}, "
+        f"tripwire {measurement['file_tripwire']}",
+    ]
+    paths = measurement["largest_default_included"]
+    if paths:
+        lines.append("largest default-included paths:")
+        lines.extend(f"  {row['bytes']:>10} {row['path']}" for row in paths)
+    else:
+        lines.append("largest default-included paths: none")
+    return "\n".join(lines)
 
 
 def _checked_output(raw: str) -> Path:
@@ -726,12 +1248,35 @@ def repository_root(raw: str | None) -> Path:
     return root
 
 
+def _non_negative_int(raw: str) -> int:
+    """argparse type: a base-10 integer that is not negative."""
+    try:
+        value = int(raw)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"not an integer: {raw!r}") from error
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"must not be negative: {value}")
+    return value
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("check", "sync", "package"))
+    parser = argparse.ArgumentParser(description=__doc__, epilog=MEASUREMENT_HELP)
+    parser.add_argument("action", choices=("check", "sync", "package", "measure"))
     parser.add_argument("--out", help="directory to write a complete package into")
     parser.add_argument("--source-commit", help="exact source commit to record in the package")
     parser.add_argument("--root", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--json", action="store_true",
+        help="measure: print the portable-payload-measurement/v1 object",
+    )
+    parser.add_argument(
+        "--top", type=_non_negative_int, default=10,
+        help="measure: largest default-included paths to list (default: 10)",
+    )
+    parser.add_argument(
+        "--require-margin", type=_non_negative_int, default=None, metavar="BYTES",
+        help="measure: exit 1 unless the complete package's margin is at least BYTES",
+    )
     args = parser.parse_args(argv)
     try:
         root = repository_root(args.root)
@@ -743,6 +1288,20 @@ def main(argv: list[str] | None = None) -> int:
                 parser.exit(2, "portable Promise Machine: package needs --out\n")
             written = package(root, args.out, args.source_commit)
             print(f"packaged {written}")
+        elif args.action == "measure":
+            measurement = measure_tree(root, args.top)
+            if (
+                args.require_margin is not None
+                and measurement["package"]["margin"] < args.require_margin
+            ):
+                raise PackageError(
+                    f"required margin of {args.require_margin} bytes is not met: "
+                    f"package margin is {measurement['package']['margin']} bytes"
+                )
+            if args.json:
+                print(json.dumps(measurement, indent=2))
+            else:
+                print(_format_measurement_text(measurement))
         else:
             check(root)
             print(f"checked {TARGET.as_posix()}")

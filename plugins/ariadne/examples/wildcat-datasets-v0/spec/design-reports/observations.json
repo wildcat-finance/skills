@@ -1,0 +1,48 @@
+{
+  "command": "python3 -c 'exec(\"import json,pathlib,sys,time\\nsys.path.insert(0,'\\''plugins/ariadne/scripts'\\'')\\nfrom ariadne_lib.capture import dataset as d\\nfrom ariadne_lib import digests\\nrows=json.load(open('\\''.hexaemeron/input-evidence/inputs.json'\\''))\\nout={}\\nfor candidate in ('\\''full-release'\\'','\\''manifest-only'\\''):\\n elapsed=0; size=0; complete=True; compatible=True; recover=True; evidence=[]\\n for row in rows:\\n  root=pathlib.Path(row['\\''release'\\'']); m=json.load(open(root/'\\''manifest.json'\\''))\\n  counts={'\\''manifest.json'\\'':1}\\n  for component in m['\\''components'\\'']:\\n   captures=[a for a in m['\\''captures'\\''] if a['\\''component'\\'']==component['\\''name'\\'']]\\n   values={a['\\''coverage'\\'']['\\''record_count'\\''] for a in captures}\\n   assert len(values)==1\\n   counts[component['\\''object_path'\\'']]=values.pop()\\n  start=time.perf_counter_ns()\\n  if candidate=='\\''full-release'\\'': subjects=d.subjects(str(root),counts)\\n  else: subjects=[{'\\''name'\\'':'\\''manifest.json'\\'','\\''path'\\'':'\\''manifest.json'\\'','\\''digest'\\'':digests.of_file(str(root/'\\''manifest.json'\\'')),'\\''record_count'\\'':1}]\\n  elapsed+=time.perf_counter_ns()-start\\n  expected={str(p.relative_to(root)) for p in root.rglob('\\''*'\\'') if p.is_file()}\\n  complete=complete and {s['\\''path'\\''] for s in subjects}==expected\\n  compatible=compatible and all(set(s)=={'\\''name'\\'','\\''path'\\'','\\''digest'\\'','\\''record_count'\\''} and isinstance(s['\\''record_count'\\''],int) and s['\\''record_count'\\'']>=0 for s in subjects)\\n  size+=len(json.dumps(subjects,sort_keys=True).encode())\\n  try: d.subjects(str(root),dict(counts,**{'\\''missing.json'\\'':1}))\\n  except d.CaptureError: pass\\n  else: recover=False\\n  evidence.append({'\\''estate'\\'':row['\\''estate'\\''],'\\''release_id'\\'':m['\\''release_id'\\''],'\\''subjects'\\'':len(subjects),'\\''files'\\'':len(expected)})\\n out[candidate]={'\\''all-files'\\'':complete,'\\''capture-time'\\'':max(1,round(elapsed/1000000)),'\\''listing-bytes'\\'':size,'\\''existing-interface'\\'':compatible,'\\''bad-count-refused'\\'':recover,'\\''evidence'\\'':evidence}\\nprint(json.dumps(out))\")'",
+  "exit": 0,
+  "observations": {
+    "full-release": {
+      "all-files": true,
+      "capture-time": 149,
+      "listing-bytes": 71128,
+      "existing-interface": true,
+      "bad-count-refused": true,
+      "evidence": [
+        {
+          "estate": "v1",
+          "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+          "subjects": 110,
+          "files": 110
+        },
+        {
+          "estate": "v2",
+          "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+          "subjects": 128,
+          "files": 128
+        }
+      ]
+    },
+    "manifest-only": {
+      "all-files": false,
+      "capture-time": 1,
+      "listing-bytes": 322,
+      "existing-interface": true,
+      "bad-count-refused": true,
+      "evidence": [
+        {
+          "estate": "v1",
+          "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+          "subjects": 1,
+          "files": 110
+        },
+        {
+          "estate": "v2",
+          "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+          "subjects": 1,
+          "files": 128
+        }
+      ]
+    }
+  }
+}

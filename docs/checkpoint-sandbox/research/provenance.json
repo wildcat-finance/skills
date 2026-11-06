@@ -1,0 +1,56 @@
+{
+  "schema": "checkpoint-network-research-copies/v1",
+  "base": "66f52785813a8453e7c7d54f2371aa8f6e465640",
+  "copies": [
+    {
+      "source": ".hexaemeron/sources/study/selection_probe.py",
+      "copy": "docs/checkpoint-sandbox/research/selection_probe.py",
+      "sha256": "e51569c894bdb68091a1d6b13b0cd9b83388546a1f07827f19904db3f92fe27d"
+    },
+    {
+      "source": ".hexaemeron/sources/study/design_report.py",
+      "copy": "docs/checkpoint-sandbox/research/design_report.py",
+      "sha256": "d4a68776a56876bc64c5b2279627502d02987eaea03e6df87977bb0edc77a08b"
+    },
+    {
+      "source": ".hexaemeron/sources/study/selection-inputs.json",
+      "copy": "docs/checkpoint-sandbox/research/selection-inputs.json",
+      "sha256": "ae258531cfde87da48d0a73d65256c343b9efbd8aa90309ef40859bb653f663a"
+    },
+    {
+      "source": ".hexaemeron/sources/study/selection-probe.json",
+      "copy": "docs/checkpoint-sandbox/research/selection-probe.json",
+      "sha256": "284bffdadb69f8aab34840cbb855c49ced790b6e5d99bf85877e5de1c964184f"
+    },
+    {
+      "source": ".hexaemeron/sources/study/selection-report-executions.json",
+      "copy": "docs/checkpoint-sandbox/research/selection-report-executions.json",
+      "sha256": "63df565649f3174e4416e1c6c48c29a703203976446f7795e6b152de55409ad0"
+    },
+    {
+      "source": ".hexaemeron/sources/study/host-packages.json",
+      "copy": "docs/checkpoint-sandbox/research/host-packages.json",
+      "sha256": "cbb68c19a31b9c955975f1cab4be65cf5c50e8f26c2e3ff3d6cbefc3b149d965"
+    },
+    {
+      "source": ".hexaemeron/sources/linux-feasibility/x86_64-deny-network.bpf",
+      "copy": "docs/checkpoint-sandbox/linux-feasibility/x86_64-deny-network.bpf",
+      "sha256": "8b97e4880f19e22990d9994580127bd38249e9f51594f1e3f63218edcd286412"
+    },
+    {
+      "source": ".hexaemeron/sources/linux-feasibility/prototype-integration.json",
+      "copy": "docs/checkpoint-sandbox/linux-feasibility/prototype-integration.json",
+      "sha256": "6cf84c59018c3ef0c8b27c470513284438129e2aab2bd6d4f3e21449912dc1fe"
+    },
+    {
+      "source": ".hexaemeron/sources/linux-feasibility/prototype-limits.json",
+      "copy": "docs/checkpoint-sandbox/linux-feasibility/prototype-limits.json",
+      "sha256": "bedf100006ba30041ce7310e03ad4c742b58f8b7d2f4b423a1e9043d82e93bfc"
+    },
+    {
+      "source": ".hexaemeron/sources/linux-feasibility/device-controls.json",
+      "copy": "docs/checkpoint-sandbox/linux-feasibility/device-controls.json",
+      "sha256": "e14dcaa808f0a221ed372f2dd97f1fb53b9178375685800c972b3109cde9b4d2"
+    }
+  ]
+}

@@ -37,14 +37,14 @@ FIXTURE_COMMIT_MATRIX = (
             "hexctl-ad-hoc",
             (sys.executable, "plugins/hexaemeron/tests/test_hexctl.py",
              "TestStudyAmendments."
-             "test_temporary_git_repositories_demonstrate_holding_and_broken_runs"),
+             "test_temp_git_repos_demonstrate_holding_and_broken_runs"),
         ),
         (
             "hexctl-integration-path-bounds",
             (sys.executable,
              "plugins/hexaemeron/tests/test_hexctl_integration_path_bounds.py",
              "V2OutsideSurfaceTests."
-             "test_a_v2_artifact_with_more_than_500_outside_paths_is_accepted"),
+             "test_v2_artifact_with_over_500_outside_paths_accepted"),
         ),
         (
             "hexctl-prose-packet-bounds",
@@ -58,7 +58,7 @@ FIXTURE_COMMIT_MATRIX = (
             (sys.executable,
              "plugins/hexaemeron/tests/test_hexctl_sync_resolution_guard.py",
              "SyncResolutionGuardTests."
-             "test_first_sync_accepts_a_semantic_union_without_acknowledgement"),
+             "test_first_sync_accepts_semantic_union_unacknowledged"),
         ),
         (
             "horos-demonstration",

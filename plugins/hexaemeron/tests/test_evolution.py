@@ -105,7 +105,7 @@ class EvolutionContractTests(unittest.TestCase):
             self.assertEqual(rows[-1]["digest"], digest)
             self.assertEqual(rows[-1]["revision"], field(ledger, "Frontier revision"))
 
-    def test_history_axes_enforce_independent_counters_and_frontier_hold(self):
+    def test_axes_enforce_independent_counters_frontier_hold(self):
         for skill in FIRST_PARTY:
             ledger = (SKILLS / skill / "EVOLUTION.md").read_text(encoding="utf-8")
             rows = history_rows(ledger)
@@ -174,7 +174,7 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("Kronos itself", kronos)
         self.assertIn("Never edit, implement, audit, or rewrite a target itself", kronos)
 
-    def test_kronos_phase_only_mode_keeps_the_loop_and_closes_the_market(self):
+    def test_kronos_phase_only_mode_keeps_loop_closes_market(self):
         kronos = (SKILLS / "kronos" / "SKILL.md").read_text(encoding="utf-8")
         phase_mode = kronos.split("## Phase-only mode", 1)[1].split("## Loop", 1)[0]
         for skill in ("Protasis", "Phylax", "Ephoros", "Metron", "Elenchus", "Hypomnema"):

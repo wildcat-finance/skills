@@ -1,0 +1,258 @@
+{
+  "$id": "https://wildcat.finance/attestations/checkpoint-authority/v1/run-registration",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "environment": {
+      "enum": [
+        "test",
+        "production"
+      ]
+    },
+    "initial_base": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+      "type": "string"
+    },
+    "initial_parent": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "sha256": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "acceptance"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "sha256"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "issued_at": {
+      "maxLength": 20,
+      "minLength": 1,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z(?![\\s\\S])",
+      "type": "string"
+    },
+    "issuer": {
+      "oneOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "maxLength": 50,
+          "minLength": 1,
+          "pattern": "^SHA256:[A-Za-z0-9+/]{43}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "maxLength": 40,
+          "minLength": 1,
+          "pattern": "^[0-9A-F]{40}(?![\\s\\S])",
+          "type": "string"
+        }
+      ]
+    },
+    "native_anchor_sha256": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+      "type": "string"
+    },
+    "owner_id": {
+      "maximum": 9223372036854775807,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "permitted_protocols": {
+      "items": {
+        "enum": [
+          "checkpoint-authority/v1"
+        ]
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "policy": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "authority-policy"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "previous": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "sha256": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "authority-policy",
+                "enrollment-challenge",
+                "key-enrollment",
+                "key-rotation",
+                "key-revocation",
+                "run-grant",
+                "run-registration",
+                "upload-endorsement",
+                "validation",
+                "storage-copy",
+                "parent-link",
+                "acceptance",
+                "cancellation",
+                "publication-finalization",
+                "denial",
+                "authorized-removal",
+                "journal-entry",
+                "authority-head",
+                "stream-permit"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "sha256"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "protocol": {
+      "enum": [
+        "checkpoint-authority/v1"
+      ]
+    },
+    "root_authorized": {
+      "type": "boolean"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "repository_id": {
+          "maximum": 9223372036854775807,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository_id",
+        "run_id"
+      ],
+      "type": "object"
+    },
+    "sequence": {
+      "maximum": 9223372036854775807,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "service": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+      "type": "string"
+    },
+    "source": {
+      "additionalProperties": false,
+      "properties": {
+        "executable_sha256": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+          "type": "string"
+        },
+        "profile": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])",
+          "type": "string"
+        },
+        "source_commit": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_commit",
+        "executable_sha256",
+        "profile"
+      ],
+      "type": "object"
+    },
+    "type": {
+      "enum": [
+        "run-registration"
+      ]
+    }
+  },
+  "required": [
+    "protocol",
+    "environment",
+    "service",
+    "scope",
+    "type",
+    "sequence",
+    "previous",
+    "issued_at",
+    "issuer",
+    "policy",
+    "native_anchor_sha256",
+    "initial_base",
+    "source",
+    "owner_id",
+    "permitted_protocols",
+    "initial_parent",
+    "root_authorized"
+  ],
+  "type": "object"
+}

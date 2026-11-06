@@ -1,0 +1,43 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is hexaemeron-fizz-convert-properties. Its source path is plugins/hexaemeron/PROMISES.md.
+The exact declaration is:
+
+### hexaemeron-fizz-convert-properties
+
+- Path: `plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md`
+- Repository: `https://github.com/pashov/skills.git`
+- Commit: `aadee2ca49cae20246af378ef791d2d4f941e237`
+- Upstream path: `fizz/skills/fizz-convert/SKILL.md`
+- Upstream SHA-256: `59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7`
+- Local SHA-256: `59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7`
+- Verification status: upstream-bytes-verified, local-bytes-identical, publisher-authentication-unknown
+- Promise: A completed Fizz Convert run establishes that the selected pending property was translated into wired Solidity assertion code, the harness builds and the corresponding source checklist entry was updated.
+- Evidence: The digest-matched instruction, selected property text and identifier, generated assertion and handler wiring, build output, changed checkbox and bounded diff.
+- Evidence classes: checked, recorded
+- Boundary: The result proves mechanical conversion and buildability of the selected property; it does not establish that the property is semantically correct, reachable, complete or adequate for security review.
+- Authorises: Treating the selected checklist entry as implemented in the named harness and passing it to a real fuzz campaign.
+- Consequence: 2
+- Refuses: A stale overlay digest, an ambiguous property, unwired assertion, failed build, unchecked source update or a semantic-completeness claim unsupported by execution.
+- Recovery: Reconcile the upstream instruction digest, clarify one property, repair its assertion and wiring, rebuild the harness and update only the matching checklist entry.
+- Exceptions: none
+
+The evaluation request is:
+
+Classify a Fizz Convert result under its digest-bound overlay.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A built assertion is presented as semantically correct, reachable, complete or adequate for security review.
+E02. One selected property is translated into a wired assertion, the harness builds and only its checklist entry changes.
+E03. Clarify one property, repair its assertion and wiring, rebuild and update only the matching checklist entry.
+E04. The assertion is unwired, the build fails or the matching checklist entry is unchanged.
+E05. The overlay digest, selected property or harness differs from the conversion record.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

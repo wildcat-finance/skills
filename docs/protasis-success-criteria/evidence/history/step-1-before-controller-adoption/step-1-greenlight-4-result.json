@@ -1,0 +1,9 @@
+{
+  "command": [
+    ".githooks/greenlight"
+  ],
+  "exit": 0,
+  "seconds": 260.17136412498076,
+  "staged_tree": "798741ae1a2d1c3d6c79651c40073ce8ed02166c",
+  "log_sha256": "12864398b678e75ef846531593900210473ba2bc686d3791e62c1d8aeb2b12a8"
+}

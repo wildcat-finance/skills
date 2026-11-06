@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "external-sidecar",
+  "criterion": "immutable-recovery",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate external-sidecar --criterion immutable-recovery --report .hexaemeron/reports/external-sidecar-immutable-recovery.json",
+  "exit": 0
+}

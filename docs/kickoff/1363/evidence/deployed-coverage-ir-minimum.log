@@ -1,0 +1,10 @@
+Warning: Found unknown `fuzz_runs` config for profile `coverage` defined in foundry.toml.
+Warning: `--ir-minimum` enables `viaIR` with minimum optimization, which can result in inaccurate source mappings.
+Only use this flag as a workaround if you are experiencing "stack too deep" errors.
+Note that `viaIR` is production ready since Solidity 0.8.13 and above.
+See more: https://book.getfoundry.sh/guides/best-practices/stack-too-deep
+Compiling 205 files with Solc 0.8.25
+Solc 0.8.25 finished in 6.42s
+Error: Compiler run failed:
+Error: Yul exception:Cannot swap Variable _29 with Variable expr_72398_mpos: too deep in the stack by 3 slots in [ var_market RET _29 expr_14 expr_1 expr_72353_mpos expr_72340_mpos expr_72223_address var_hooksTemplate var_salt _37 expr_16 expr_17 _36 _35 _34 _28 _33 _32 _31 _30 expr_72398_mpos ]
+No memoryguard was present. Consider using memory-safe assembly only and annotating it via 'assembly ("memory-safe") { ... }'.

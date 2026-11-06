@@ -1,0 +1,50 @@
+{
+  "schema": "issue-1363-provenance/v1",
+  "producer": "/root",
+  "source_readers": [
+    "/root",
+    "/root/xray_hooks",
+    "/root/xray_specs",
+    "/root/xray_support"
+  ],
+  "skills_repository": "wildcat-finance/skills",
+  "skills_base": "95dca9d0f04353856f4e1684333b3ed94e85de87",
+  "inputs": [
+    {
+      "path": "plugins/hexaemeron/skills/x-ray/SKILL.md",
+      "sha256": "b23bb94517805c1b8ce717d0e1e0282b0b5c14c7b16f4c32e73940292d3d4a41",
+      "bytes": 41327
+    },
+    {
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/enumerate.sh",
+      "sha256": "8f3818932dca13341d201ce2fb9f90a3f928e3efba91153f6599dafadabb6345",
+      "bytes": 9074
+    },
+    {
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+      "sha256": "16ec666bd21609da512d815890bf41d2ad91b00738cd91c00f8cf237a0272267",
+      "bytes": 49224
+    },
+    {
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "sha256": "cc0a596763856c2a71ea8e51f61b892cc29f42c6c1a2e0ca4cc33e206c2ca71e",
+      "bytes": 34177
+    },
+    {
+      "path": "docs/kickoff/1359/targets.json",
+      "sha256": "ccc5e89816258f537af532bf7ea5c34fd48fa05282dacc1e20341859a7c0b319",
+      "bytes": 400627
+    },
+    {
+      "path": "docs/kickoff/1372/eventdecision.json",
+      "sha256": "4939cff1921558300476808cc3ea81df96ccf78d07008b78e4b6d0c419f971d9",
+      "bytes": 22380
+    }
+  ],
+  "accepted_eventdecision_merge": "9182d0adcb7e9a5330c259d9dc1e044b511711c2",
+  "roles": {
+    "deployed": "f5a26146987926f4811b72a795d662813dedfe85",
+    "candidate": "bea503c2736d47de7fd34130c64f10783dc35b39"
+  },
+  "boundary": "The deployed-comparison pin is not a claim that its entire tree matches every deployed address. Existing verification inputs establish only their named blob matches. Candidate Sepolia evidence does not establish mainnet deployment."
+}

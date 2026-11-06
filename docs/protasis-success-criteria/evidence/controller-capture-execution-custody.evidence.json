@@ -1,0 +1,91 @@
+{
+  "checks": [
+    {
+      "case": "completed-zero",
+      "result": {
+        "elapsed_ms": 18,
+        "failure": null,
+        "reason": "zero-exit",
+        "returncode": 0,
+        "status": "completed",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 8,
+          "sha256": "1d299d29e36d128541b1def7c04ff7138e6a5169013984f5a9c6b99106eb0871",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "completed-exit-seven",
+      "result": {
+        "elapsed_ms": 18,
+        "failure": "startup",
+        "reason": "nonzero-exit",
+        "returncode": 7,
+        "status": "completed",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "incremental-stream-overflow",
+      "result": {
+        "elapsed_ms": 17,
+        "failure": "stream-overflow",
+        "reason": "stdout-stream-cap",
+        "returncode": -15,
+        "status": "stream-overflow",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 16,
+          "sha256": "9c5729595fb287cc2a2256280448bbe706c0a866f0372515c7483de2af4e6532",
+          "truncated": true
+        }
+      }
+    }
+  ],
+  "controller": {
+    "bytes": 1216532,
+    "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "sha256": "8e663745dd5774b2170bcc3ee485303a146a37c1c0f5bc62fc0736e85125414a"
+  },
+  "executor": {
+    "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py",
+    "sha256": "e36abfe5dafa0d748dbaf28f6c0c223dac09e0c779707e5a553425f215117211"
+  },
+  "report": {
+    "path": ".hexaemeron/reports/controller-capture-execution-custody.json",
+    "sha256": "d1ce509225e4cb818292e7bd5fc0dc2c7cdc62900441eb0d19140311da0f2396"
+  },
+  "schema": "success-criteria-execution-evidence/v1",
+  "scope": "Real child-process observations of bounded execution outcomes.",
+  "sources": [
+    {
+      "bytes": 22182,
+      "path": "docs/protasis-success-criteria/proof.py",
+      "sha256": "80286f75b16f101ef1868e5cc9ac7c510822933043118b3595a468cc05fb8d5a"
+    },
+    {
+      "bytes": 24583,
+      "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py",
+      "sha256": "e36abfe5dafa0d748dbaf28f6c0c223dac09e0c779707e5a553425f215117211"
+    }
+  ]
+}

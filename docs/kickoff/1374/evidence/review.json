@@ -1,0 +1,183 @@
+{
+  "schema": "wildcat.kickoff-review.v1",
+  "record": "docs/kickoff/1374/capture.md",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1490",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1374",
+  "reviewer": {
+    "kind": "independent agent",
+    "chosen_by": "Dr Laurence E. Day, capture maintainer, as the answer to the attribution question in evidence/decision.json",
+    "relation_to_producer": "separate agent, separate context; it was given read-only instructions and made no edit to the repository",
+    "boundary": "an agent review. It is not a human review, not a GitHub review, and it establishes that the record's numbers recompute from its sources, not that the record's judgement is right"
+  },
+  "source_revision": "f0fa0c6632bd5fbef7f35e731646c32741ef282a",
+  "rounds": [
+    {
+      "round": 1,
+      "scope": "the whole record and every digest, command, count and line reference in it",
+      "checks": [
+        {
+          "id": 1,
+          "what": "every SHA-256 and byte count in evidence/sources.json, recomputed",
+          "result": "pass",
+          "detail": "13 files, no mismatch"
+        },
+        {
+          "id": 2,
+          "what": "the head commit claimed by capture.json and capture.md",
+          "result": "pass"
+        },
+        {
+          "id": 3,
+          "what": "all six commands in evidence/commands.json, re-run",
+          "result": "pass",
+          "detail": "commands 1 to 4 exit 0 with byte-identical stdout; commands 5 and 6 exit 1 with byte-identical stderr at the stated refusal points"
+        },
+        {
+          "id": 4,
+          "what": "the release identifier produced identically by commands 1, 2, 3 and 4",
+          "result": "pass"
+        },
+        {
+          "id": 5,
+          "what": "nine admitted targets, all blocked, seven without a deployment, and the compound-v3 exclusion reason quoted verbatim",
+          "result": "pass"
+        },
+        {
+          "id": 6,
+          "what": "every Wildcat number in the specification table",
+          "result": "pass with a finding",
+          "detail": "start blocks, hashes, dates, factory and shared addresses, observed head and both spans all correct; the contract objects in capture.json are byte-identical to the registry's; the Sourcify claim was overstated, see finding 3"
+        },
+        {
+          "id": 7,
+          "what": "that no contract in either Wildcat row is an upgradeable proxy",
+          "result": "pass",
+          "detail": "read from roles and names across all 18 contracts; a documentary check, not a bytecode check, which the record already states"
+        },
+        {
+          "id": 8,
+          "what": "the nine components, their roles, byte counts, the 429,114 total, and the four partial and five complete coverage rows",
+          "result": "pass with a finding",
+          "detail": "every number confirmed and the total independently summed from the object store; two of three gap reasons were paraphrased, see finding 2"
+        },
+        {
+          "id": 9,
+          "what": "shard log counts 47, 25, 6 and 15 summing to 93, and 106 compared, 106 matched, 0 disputed",
+          "result": "pass"
+        },
+        {
+          "id": 10,
+          "what": "next_shard 4, last accepted block, declared interval end, finality boundary and the 14,052 difference",
+          "result": "pass"
+        },
+        {
+          "id": 11,
+          "what": "the four line references",
+          "result": "pass",
+          "detail": "compound_registry.py:216 is the digest comparison and :165 the format check, each raising on the following line; usdc_interval.py:1184 calls validate_registry; interval.py:77-78 define the slot and topic, used at :1188 and :1243"
+        },
+        {
+          "id": 12,
+          "what": "the decision comment's byte count and SHA-256 against the live comment",
+          "result": "pass",
+          "detail": "7,207 bytes, digest identical, stored body byte-identical to the live body, timestamps match, and the six recorded decisions match the comment"
+        },
+        {
+          "id": 13,
+          "what": "a full read for claims the evidence does not support",
+          "result": "four findings",
+          "detail": "see findings"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "scope": "only the changes made in answer to round one's findings, plus a re-check that the digests in evidence/sources.json still hold",
+      "checks": [
+        {
+          "id": 1,
+          "what": "the corrected mutation note",
+          "result": "pass",
+          "detail": "entries[0] and entries[11] confirmed, and mutating index 11 was run: exit 1 with the same byte-pin refusal as index 0"
+        },
+        {
+          "id": 2,
+          "what": "the new capture.json match-breakdown fields",
+          "result": "pass",
+          "detail": "recomputed from the registry for both rows; no contract misclassified"
+        },
+        {
+          "id": 3,
+          "what": "the split table rows and the paragraph replacing the overstated claim",
+          "result": "fail",
+          "detail": "counts and the CollateralFactory quote correct; the replacement paragraph itself claimed compiler reproduction for V1's two init-code rows, which the registry explicitly denies, and omitted V2's MarketLens at 0xc672760757da93b5f3275dc97203d145806dae33"
+        },
+        {
+          "id": 4,
+          "what": "the three gap reasons as verbatim quotes and their component attribution",
+          "result": "pass",
+          "detail": "all three byte-identical, checked programmatically; attribution confirmed, including that credit-event-mapping is unsupported on boundary-blocks and logs only"
+        },
+        {
+          "id": 5,
+          "what": "that evidence/sources.json still holds and does not pin capture.md or capture.json",
+          "result": "pass"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": 1,
+      "round": 1,
+      "severity": "factual error",
+      "finding": "evidence/commands.json described the mutated registry entry as mainnet/usdc; entries[0] is arbitrum/usdc, and mainnet/usdc is at index 11",
+      "effect": "the recorded command, exit status and refusal were correct; only the prose describing what was mutated was wrong",
+      "answered": "the note now names arbitrum/usdc with its proxy, names index 11 as mainnet/usdc, and states that either index reaches the same refusal",
+      "verified_in_round": 2,
+      "result": "pass"
+    },
+    {
+      "id": 2,
+      "round": 1,
+      "severity": "precision",
+      "finding": "two of the three gap reasons were paraphrased while the record's framing implied they were the rows' own words",
+      "answered": "the three reasons are now a quoted list taken byte for byte from the manifest, with each reason attributed to the components that carry it",
+      "verified_in_round": 2,
+      "result": "pass"
+    },
+    {
+      "id": 3,
+      "round": 1,
+      "severity": "overstatement",
+      "finding": "a table row claimed 6 and 12 contracts with a code hash and a Sourcify match; only 4 of 6 V1 and 6 of 12 V2 carry sourcify match",
+      "answered": "the row was split into a recorded-code-hash count and a Sourcify-match count, capture.json now computes both from the registry rather than asserting them, and a paragraph describes the other eight rows",
+      "verified_in_round": 2,
+      "result": "partly failed on the first attempt, see finding 5"
+    },
+    {
+      "id": 4,
+      "round": 1,
+      "severity": "unsupported claim",
+      "finding": "capture.md and capture.json both named evidence/review.json as part of the record while that file did not exist",
+      "answered": "this file",
+      "verified_in_round": null,
+      "result": "not re-reviewed; the file did not exist when round two ran, and round two said so"
+    },
+    {
+      "id": 5,
+      "round": 2,
+      "severity": "factual error",
+      "finding": "the paragraph written to answer finding 3 claimed compiler reproduction for V1's two init-code storage rows, whose registry method says 'not reproduced from source in this pass', and omitted V2's MarketLens at 0xc672760757da93b5f3275dc97203d145806dae33 from its account of the non-Sourcify rows",
+      "answered": "the paragraph was replaced with four grouped cases that follow each row's own recorded method, separating the V1 keccak-only rows, the V2 rows reproduced by solc, the 730-day template reproduced from a different commit, and CollateralFactory",
+      "verified_in_round": null,
+      "result": "not re-reviewed"
+    }
+  ],
+  "not_established_by_this_review": [
+    "that the record's selection, scope and blocker judgements are correct; the review checked that its numbers recompute, not that its conclusions follow",
+    "any bytecode, deployment or on-chain fact; every contract-identity check was read from docs/kickoff/1359/targets.json rather than from a chain",
+    "that the bytes now on disk were reviewed in full; findings 4 and 5 were answered after round two ran, and no third round was requested",
+    "human review, GitHub review, or any signature"
+  ]
+}

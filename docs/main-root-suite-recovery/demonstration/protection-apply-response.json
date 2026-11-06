@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "gh",
+    "api",
+    "--method",
+    "PUT",
+    "repos/wildcat-finance/skills/branches/main/protection",
+    "--input",
+    ".hexaemeron/step-2-protection/request.json"
+  ],
+  "observed_at": "2026-09-12T20:51:23.089272+00:00",
+  "exit_code": 1,
+  "stdout": "{\"message\":\"Invalid request.\\n\\nNo subschema in \\\"anyOf\\\" matched.\\nMore than one subschema in \\\"oneOf\\\" matched.\\nNot all subschemas of \\\"allOf\\\" matched.\\nFor 'anyOf/1', {\\\"strict\\\" => true, \\\"contexts\\\" => [], \\\"checks\\\" => [{\\\"context\\\" => \\\"invariants\\\", \\\"app_id\\\" => 15368}]} is not a null.\",\"documentation_url\":\"https://docs.github.com/rest/branches/branch-protection#update-branch-protection\",\"status\":\"422\"}",
+  "stderr": "gh: Invalid request.\n\nNo subschema in \"anyOf\" matched.\nMore than one subschema in \"oneOf\" matched.\nNot all subschemas of \"allOf\" matched.\nFor 'anyOf/1', {\"strict\" => true, \"contexts\" => [], \"checks\" => [{\"context\" => \"invariants\", \"app_id\" => 15368}]} is not a null. (HTTP 422)\n"
+}

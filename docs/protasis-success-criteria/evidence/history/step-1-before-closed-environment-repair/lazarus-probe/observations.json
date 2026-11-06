@@ -1,0 +1,64 @@
+[
+  {
+    "case": "restricted",
+    "exit_code": 2,
+    "seconds": 0.131,
+    "argv": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "scripts/demonstrations.py",
+      "run",
+      "--record",
+      "plugins/lazarus/skills/lazarus",
+      "--report",
+      "restricted.json",
+      "--output-root",
+      "/private/tmp/issue-1273-lazarus-environment-probe"
+    ],
+    "environment": {
+      "GIT_CONFIG_GLOBAL": "/dev/null",
+      "GIT_CONFIG_NOSYSTEM": "1",
+      "GIT_NO_LAZY_FETCH": "1",
+      "GIT_NO_REPLACE_OBJECTS": "1",
+      "GIT_TERMINAL_PROMPT": "0",
+      "LANG": "C",
+      "LC_ALL": "C",
+      "PATH": "/bin:/usr/bin",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "PYTHONUTF8": "1",
+      "TZ": "UTC"
+    },
+    "report_sha256": null
+  },
+  {
+    "case": "pinned-child-python",
+    "exit_code": 2,
+    "seconds": 0.135,
+    "argv": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "scripts/demonstrations.py",
+      "run",
+      "--record",
+      "plugins/lazarus/skills/lazarus",
+      "--report",
+      "pinned-child-python.json",
+      "--output-root",
+      "/private/tmp/issue-1273-lazarus-environment-probe"
+    ],
+    "environment": {
+      "GIT_CONFIG_GLOBAL": "/dev/null",
+      "GIT_CONFIG_NOSYSTEM": "1",
+      "GIT_NO_LAZY_FETCH": "1",
+      "GIT_NO_REPLACE_OBJECTS": "1",
+      "GIT_TERMINAL_PROMPT": "0",
+      "LANG": "C",
+      "LC_ALL": "C",
+      "PATH": "/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/issue-1273-pinned-python-lu2g8erv:/bin:/usr/bin",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "PYTHONUTF8": "1",
+      "TZ": "UTC"
+    },
+    "report_sha256": null
+  }
+]

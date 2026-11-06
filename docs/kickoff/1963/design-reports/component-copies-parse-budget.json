@@ -1,0 +1,1 @@
+{"candidate":"component-copies","command":"python3 .hexaemeron/research/design_probe.py --candidate component-copies --criterion parse-budget --report .hexaemeron/design-reports/component-copies-parse-budget.json","criterion":"parse-budget","exit":0,"schema":"protasis-design-report/v1","unit":"milliseconds","value":7}

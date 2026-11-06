@@ -1,0 +1,29 @@
+{
+  "reviewer": "parent; not an independent Warden",
+  "candidate_commit": "c572009b7922b4b7b9400893c5adc6d4df641a72",
+  "candidate_tree": "d12e1daef747d0cd84cb7d8466410f0f3125e173",
+  "integration_base": "a3c9cf5730bbe80db1e1aa72d47a915af7f29956",
+  "reviewed_composition": [
+    "Committed-pair implementation and native fixture isolation retained unchanged from the reviewed repair.",
+    "Incoming main signature refusal and final-green environment changes retained.",
+    "Fiat checkpoint compatibility still includes the published candidate version.",
+    "Package manifests and both test expectations agree on 1.6.49.",
+    "Owner reconciliation refreshed the instruction bindings.",
+    "Historical evaluation replay preserved eleven exact prompts and all fifty-five outcomes; only tree_sha256 changed.",
+    "Original main evaluation and projection bytes are preserved under main-a3c9cf.",
+    "Read-only compatibility probe changed no run, ledger or original-controller byte and found adapter digest drift only."
+  ],
+  "findings_remaining": 0,
+  "validation": {
+    "native_checkpoint_family": {
+      "tests": 24,
+      "exit": 0
+    },
+    "normal_root_gate": {
+      "tests": 2017,
+      "exit": 0
+    },
+    "clean_checked_runner": "pending"
+  },
+  "adoption": false
+}

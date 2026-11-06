@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bubblewrap-netns",
+  "criterion": "policy-bytes",
+  "value": 0,
+  "unit": "bytes",
+  "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion policy-bytes --report .hexaemeron/reports/selection/bubblewrap-netns-policy-bytes.json",
+  "exit": 0
+}

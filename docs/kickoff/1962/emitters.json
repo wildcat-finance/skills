@@ -1,0 +1,2464 @@
+{
+  "declaration_disagreements": [
+    {
+      "name": "AssetBlacklisted",
+      "variants": [
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "WildcatArchController.AssetBlacklisted",
+          "declared_at": "src/WildcatArchController.sol:51",
+          "in_abi_of": [
+            "WildcatArchController"
+          ],
+          "indexed_positions": [],
+          "signature": "AssetBlacklisted(address)",
+          "solidity_emit_sites": [
+            "src/WildcatArchController.sol:204"
+          ]
+        },
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "IWildcatArchController.AssetBlacklisted",
+          "declared_at": "src/interfaces/IWildcatArchController.sol:126",
+          "in_abi_of": [],
+          "indexed_positions": [],
+          "signature": "AssetBlacklisted()",
+          "solidity_emit_sites": []
+        }
+      ]
+    },
+    {
+      "name": "AssetPermitted",
+      "variants": [
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "WildcatArchController.AssetPermitted",
+          "declared_at": "src/WildcatArchController.sol:52",
+          "in_abi_of": [
+            "WildcatArchController"
+          ],
+          "indexed_positions": [],
+          "signature": "AssetPermitted(address)",
+          "solidity_emit_sites": [
+            "src/WildcatArchController.sol:211"
+          ]
+        },
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "IWildcatArchController.AssetPermitted",
+          "declared_at": "src/interfaces/IWildcatArchController.sol:124",
+          "in_abi_of": [],
+          "indexed_positions": [],
+          "signature": "AssetPermitted()",
+          "solidity_emit_sites": []
+        }
+      ]
+    },
+    {
+      "name": "ControllerAdded",
+      "variants": [
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "WildcatArchController.ControllerAdded",
+          "declared_at": "src/WildcatArchController.sol:54",
+          "in_abi_of": [
+            "WildcatArchController"
+          ],
+          "indexed_positions": [
+            0
+          ],
+          "signature": "ControllerAdded(address,address)",
+          "solidity_emit_sites": [
+            "src/WildcatArchController.sol:301"
+          ]
+        },
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "IWildcatArchController.ControllerAdded",
+          "declared_at": "src/interfaces/IWildcatArchController.sol:78",
+          "in_abi_of": [],
+          "indexed_positions": [],
+          "signature": "ControllerAdded(address,address)",
+          "solidity_emit_sites": []
+        }
+      ]
+    },
+    {
+      "name": "MarketAdded",
+      "variants": [
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "WildcatArchController.MarketAdded",
+          "declared_at": "src/WildcatArchController.sol:42",
+          "in_abi_of": [
+            "WildcatArchController"
+          ],
+          "indexed_positions": [
+            0
+          ],
+          "signature": "MarketAdded(address,address)",
+          "solidity_emit_sites": [
+            "src/WildcatArchController.sol:352"
+          ]
+        },
+        {
+          "anonymous": false,
+          "assembly_emitters": [],
+          "declaration": "IWildcatArchController.MarketAdded",
+          "declared_at": "src/interfaces/IWildcatArchController.sol:147",
+          "in_abi_of": [],
+          "indexed_positions": [],
+          "signature": "MarketAdded(address,address)",
+          "solidity_emit_sites": []
+        }
+      ]
+    }
+  ],
+  "declarations_without_emitter": [
+    {
+      "declaration": "WildcatArchController.MarketAdded",
+      "declared_at": "src/WildcatArchController.sol:42",
+      "signature": "MarketAdded(address,address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:352"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.MarketRemoved",
+      "declared_at": "src/WildcatArchController.sol:43",
+      "signature": "MarketRemoved(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:359"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.ControllerFactoryAdded",
+      "declared_at": "src/WildcatArchController.sol:45",
+      "signature": "ControllerFactoryAdded(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:250"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.ControllerFactoryRemoved",
+      "declared_at": "src/WildcatArchController.sol:46",
+      "signature": "ControllerFactoryRemoved(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:257"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.BorrowerAdded",
+      "declared_at": "src/WildcatArchController.sol:48",
+      "signature": "BorrowerAdded(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:161"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.BorrowerRemoved",
+      "declared_at": "src/WildcatArchController.sol:49",
+      "signature": "BorrowerRemoved(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:168"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.AssetBlacklisted",
+      "declared_at": "src/WildcatArchController.sol:51",
+      "signature": "AssetBlacklisted(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:204"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.AssetPermitted",
+      "declared_at": "src/WildcatArchController.sol:52",
+      "signature": "AssetPermitted(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:211"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.ControllerAdded",
+      "declared_at": "src/WildcatArchController.sol:54",
+      "signature": "ControllerAdded(address,address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:301"
+      ]
+    },
+    {
+      "declaration": "WildcatArchController.ControllerRemoved",
+      "declared_at": "src/WildcatArchController.sol:55",
+      "signature": "ControllerRemoved(address)",
+      "solidity_emit_sites": [
+        "src/WildcatArchController.sol:308"
+      ]
+    },
+    {
+      "declaration": "IWildcatArchController.BorrowerAdded",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:101",
+      "signature": "BorrowerAdded(address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.BorrowerRemoved",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:103",
+      "signature": "BorrowerRemoved(address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.AssetPermitted",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:124",
+      "signature": "AssetPermitted()",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.AssetBlacklisted",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:126",
+      "signature": "AssetBlacklisted()",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.MarketAdded",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:147",
+      "signature": "MarketAdded(address,address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.MarketRemoved",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:149",
+      "signature": "MarketRemoved(address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.ControllerFactoryAdded",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:55",
+      "signature": "ControllerFactoryAdded(address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.ControllerFactoryRemoved",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:57",
+      "signature": "ControllerFactoryRemoved(address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.ControllerAdded",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:78",
+      "signature": "ControllerAdded(address,address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatArchController.ControllerRemoved",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:80",
+      "signature": "ControllerRemoved(address)",
+      "solidity_emit_sites": []
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.LenderAuthorized",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:54",
+      "signature": "LenderAuthorized(address)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:227",
+        "src/WildcatMarketController.sol:243"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.LenderDeauthorized",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:56",
+      "signature": "LenderDeauthorized(address)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:278",
+        "src/WildcatMarketController.sol:314"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.MarketDeployed",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:58",
+      "signature": "MarketDeployed(address,string,string,address,uint256,uint256,uint256,uint256,uint256,uint256)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:521"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.TemporaryExcessReserveRatioActivated",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:71",
+      "signature": "TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:726"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.TemporaryExcessReserveRatioUpdated",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:78",
+      "signature": "TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:740"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.TemporaryExcessReserveRatioCanceled",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:85",
+      "signature": "TemporaryExcessReserveRatioCanceled(address)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:753"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerEventsAndErrors.TemporaryExcessReserveRatioExpired",
+      "declared_at": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol:87",
+      "signature": "TemporaryExcessReserveRatioExpired(address)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketController.sol:770"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerFactory.NewController",
+      "declared_at": "src/interfaces/IWildcatMarketControllerFactory.sol:7",
+      "signature": "NewController(address,address)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketControllerFactory.sol:376"
+      ]
+    },
+    {
+      "declaration": "IWildcatMarketControllerFactory.UpdateProtocolFeeConfiguration",
+      "declared_at": "src/interfaces/IWildcatMarketControllerFactory.sol:8",
+      "signature": "UpdateProtocolFeeConfiguration(address,uint16,address,uint256)",
+      "solidity_emit_sites": [
+        "src/WildcatMarketControllerFactory.sol:235"
+      ]
+    },
+    {
+      "declaration": "IWildcatSanctionsEscrow.EscrowReleased",
+      "declared_at": "src/interfaces/IWildcatSanctionsEscrow.sol:5",
+      "signature": "EscrowReleased(address,address,uint256)",
+      "solidity_emit_sites": [
+        "src/WildcatSanctionsEscrow.sol:43"
+      ]
+    },
+    {
+      "declaration": "IWildcatSanctionsSentinel.SanctionOverride",
+      "declared_at": "src/interfaces/IWildcatSanctionsSentinel.sol:11",
+      "signature": "SanctionOverride(address,address)",
+      "solidity_emit_sites": [
+        "src/WildcatSanctionsSentinel.sol:98",
+        "src/WildcatSanctionsSentinel.sol:139"
+      ]
+    },
+    {
+      "declaration": "IWildcatSanctionsSentinel.SanctionOverrideRemoved",
+      "declared_at": "src/interfaces/IWildcatSanctionsSentinel.sol:13",
+      "signature": "SanctionOverrideRemoved(address,address)",
+      "solidity_emit_sites": [
+        "src/WildcatSanctionsSentinel.sol:106"
+      ]
+    },
+    {
+      "declaration": "IWildcatSanctionsSentinel.NewSanctionsEscrow",
+      "declared_at": "src/interfaces/IWildcatSanctionsSentinel.sol:5",
+      "signature": "NewSanctionsEscrow(address,address,address)",
+      "solidity_emit_sites": [
+        "src/WildcatSanctionsSentinel.sol:135"
+      ]
+    }
+  ],
+  "mismatches": [],
+  "rows": [
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "value"
+      ],
+      "data_bytes": 32,
+      "declaration": "IERC20.Transfer",
+      "declared_at": "src/interfaces/IERC20.sol:5",
+      "emitter": "emit_Transfer",
+      "emitter_at": "src/libraries/MarketEvents.sol:12",
+      "indexed_positions": [
+        0,
+        1
+      ],
+      "log_arity": 3,
+      "log_at": "src/libraries/MarketEvents.sol:15",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "Transfer(address,address,uint256)",
+      "status": "compared",
+      "topic0": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "topic0_literal": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "topic_args": [
+        "from",
+        "to"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "value"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.Transfer",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:69",
+      "emitter": "emit_Transfer",
+      "emitter_at": "src/libraries/MarketEvents.sol:12",
+      "indexed_positions": [
+        0,
+        1
+      ],
+      "log_arity": 3,
+      "log_at": "src/libraries/MarketEvents.sol:15",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "Transfer(address,address,uint256)",
+      "status": "compared",
+      "topic0": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "topic0_literal": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "topic_args": [
+        "from",
+        "to"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "value"
+      ],
+      "data_bytes": 32,
+      "declaration": "IERC20.Approval",
+      "declared_at": "src/interfaces/IERC20.sol:6",
+      "emitter": "emit_Approval",
+      "emitter_at": "src/libraries/MarketEvents.sol:19",
+      "indexed_positions": [
+        0,
+        1
+      ],
+      "log_arity": 3,
+      "log_at": "src/libraries/MarketEvents.sol:22",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "Approval(address,address,uint256)",
+      "status": "compared",
+      "topic0": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+      "topic0_literal": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+      "topic_args": [
+        "owner",
+        "spender"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "value"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.Approval",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:71",
+      "emitter": "emit_Approval",
+      "emitter_at": "src/libraries/MarketEvents.sol:19",
+      "indexed_positions": [
+        0,
+        1
+      ],
+      "log_arity": 3,
+      "log_at": "src/libraries/MarketEvents.sol:22",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "Approval(address,address,uint256)",
+      "status": "compared",
+      "topic0": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+      "topic0_literal": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+      "topic_args": [
+        "owner",
+        "spender"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "assets"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.MaxTotalSupplyUpdated",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:73",
+      "emitter": "emit_MaxTotalSupplyUpdated",
+      "emitter_at": "src/libraries/MarketEvents.sol:32",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:35",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "MaxTotalSupplyUpdated(uint256)",
+      "status": "compared",
+      "topic0": "0xf2672935fc79f5237559e2e2999dbe743bf65430894ac2b37666890e7c69e1af",
+      "topic0_literal": "0xf2672935fc79f5237559e2e2999dbe743bf65430894ac2b37666890e7c69e1af",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "annualInterestBipsUpdated"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.AnnualInterestBipsUpdated",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:75",
+      "emitter": "emit_AnnualInterestBipsUpdated",
+      "emitter_at": "src/libraries/MarketEvents.sol:39",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:42",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "AnnualInterestBipsUpdated(uint256)",
+      "status": "compared",
+      "topic0": "0xff7b6c8be373823323d3c5d99f5d027dd409dce5db54eae511bbdd5546b75037",
+      "topic0_literal": "0xff7b6c8be373823323d3c5d99f5d027dd409dce5db54eae511bbdd5546b75037",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "reserveRatioBipsUpdated"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.ReserveRatioBipsUpdated",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:77",
+      "emitter": "emit_ReserveRatioBipsUpdated",
+      "emitter_at": "src/libraries/MarketEvents.sol:46",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:49",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "ReserveRatioBipsUpdated(uint256)",
+      "status": "compared",
+      "topic0": "0x72877a153052500f5edbb2f9da96a0f45d671d4b4555fdf8628a709dc4eab43a",
+      "topic0_literal": "0x72877a153052500f5edbb2f9da96a0f45d671d4b4555fdf8628a709dc4eab43a",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "escrow",
+        "amount"
+      ],
+      "data_bytes": 64,
+      "declaration": "IMarketEventsAndErrors.SanctionedAccountAssetsSentToEscrow",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:79",
+      "emitter": "emit_SanctionedAccountAssetsSentToEscrow",
+      "emitter_at": "src/libraries/MarketEvents.sol:53",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:57",
+      "notes": [
+        "sub-word values `escrow` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "SanctionedAccountAssetsSentToEscrow(address,address,uint256)",
+      "status": "compared",
+      "topic0": "0x571e706c2f09ae0632313e5f3ae89fffdedfc370a2ea59a07fb0d8091147645b",
+      "topic0_literal": "0x571e706c2f09ae0632313e5f3ae89fffdedfc370a2ea59a07fb0d8091147645b",
+      "topic_args": [
+        "account"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "assetAmount",
+        "scaledAmount"
+      ],
+      "data_bytes": 64,
+      "declaration": "IMarketEventsAndErrors.Deposit",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:85",
+      "emitter": "emit_Deposit",
+      "emitter_at": "src/libraries/MarketEvents.sol:61",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:65",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "Deposit(address,uint256,uint256)",
+      "status": "compared",
+      "topic0": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+      "topic0_literal": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+      "topic_args": [
+        "account"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "assetAmount"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.Borrow",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:87",
+      "emitter": "emit_Borrow",
+      "emitter_at": "src/libraries/MarketEvents.sol:69",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:72",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "Borrow(uint256)",
+      "status": "compared",
+      "topic0": "0xb848ae6b1253b6cb77e81464128ce8bd94d3d524fea54e801e0da869784dca33",
+      "topic0_literal": "0xb848ae6b1253b6cb77e81464128ce8bd94d3d524fea54e801e0da869784dca33",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "assetAmount"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.DebtRepaid",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:89",
+      "emitter": "emit_DebtRepaid",
+      "emitter_at": "src/libraries/MarketEvents.sol:76",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:79",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "DebtRepaid(address,uint256)",
+      "status": "compared",
+      "topic0": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+      "topic0_literal": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+      "topic_args": [
+        "from"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "_timestamp"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.MarketClosed",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:91",
+      "emitter": "emit_MarketClosed",
+      "emitter_at": "src/libraries/MarketEvents.sol:83",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:86",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "MarketClosed(uint256)",
+      "status": "compared",
+      "topic0": "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155",
+      "topic0_literal": "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "assets"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.FeesCollected",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:93",
+      "emitter": "emit_FeesCollected",
+      "emitter_at": "src/libraries/MarketEvents.sol:90",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:93",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "FeesCollected(uint256)",
+      "status": "compared",
+      "topic0": "0x860c0aa5520013080c2f65981705fcdea474d9f7c3daf954656ed5e65d692d1f",
+      "topic0_literal": "0x860c0aa5520013080c2f65981705fcdea474d9f7c3daf954656ed5e65d692d1f",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "scaleFactor",
+        "isDelinquent"
+      ],
+      "data_bytes": 64,
+      "declaration": "IMarketEventsAndErrors.StateUpdated",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:95",
+      "emitter": "emit_StateUpdated",
+      "emitter_at": "src/libraries/MarketEvents.sol:97",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:101",
+      "notes": [
+        "sub-word values `isDelinquent` (`bool`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "StateUpdated(uint256,bool)",
+      "status": "compared",
+      "topic0": "0x9385f9ff65bcd2fb81cece54b27d4ec7376795fc4dcff686e370e347b0ed86c0",
+      "topic0_literal": "0x9385f9ff65bcd2fb81cece54b27d4ec7376795fc4dcff686e370e347b0ed86c0",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "fromTimestamp",
+        "toTimestamp",
+        "scaleFactor",
+        "baseInterestRay",
+        "delinquencyFeeRay",
+        "protocolFees"
+      ],
+      "data_bytes": 192,
+      "declaration": "IMarketEventsAndErrors.InterestAndFeesAccrued",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:97",
+      "emitter": "emit_InterestAndFeesAccrued",
+      "emitter_at": "src/libraries/MarketEvents.sol:105",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/libraries/MarketEvents.sol:127",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
+      "status": "compared",
+      "topic0": "0x18247a393d0531b65fbd94f5e78bc5639801a4efda62ae7b43533c4442116c3a",
+      "topic0_literal": "0x18247a393d0531b65fbd94f5e78bc5639801a4efda62ae7b43533c4442116c3a",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "role"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.AuthorizationStatusUpdated",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:106",
+      "emitter": "emit_AuthorizationStatusUpdated",
+      "emitter_at": "src/libraries/MarketEvents.sol:135",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:138",
+      "notes": [
+        "sub-word values `role` (`AuthRole`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "AuthorizationStatusUpdated(address,uint8)",
+      "status": "compared",
+      "topic0": "0x4cdbc4f47aef831a90102e26cda881868aa5b0c95440b98fe37dbe530f34f5e4",
+      "topic0_literal": "0x4cdbc4f47aef831a90102e26cda881868aa5b0c95440b98fe37dbe530f34f5e4",
+      "topic_args": [
+        "account"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "scaledTotalAmount",
+        "scaledAmountBurned",
+        "normalizedAmountPaid"
+      ],
+      "data_bytes": 96,
+      "declaration": "IMarketEventsAndErrors.WithdrawalBatchExpired",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:112",
+      "emitter": "emit_WithdrawalBatchExpired",
+      "emitter_at": "src/libraries/MarketEvents.sol:142",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:153",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)",
+      "status": "compared",
+      "topic0": "0x9262dc39b47cad3a0512e4c08dda248cb345e7163058f300bc63f56bda288b6e",
+      "topic0_literal": "0x9262dc39b47cad3a0512e4c08dda248cb345e7163058f300bc63f56bda288b6e",
+      "topic_args": [
+        "expiry"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [],
+      "data_bytes": 0,
+      "declaration": "IMarketEventsAndErrors.WithdrawalBatchCreated",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:122",
+      "emitter": "emit_WithdrawalBatchCreated",
+      "emitter_at": "src/libraries/MarketEvents.sol:158",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:160",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "WithdrawalBatchCreated(uint256)",
+      "status": "compared",
+      "topic0": "0x5c9a946d3041134198ebefcd814de7748def6576efd3d1b48f48193e183e89ef",
+      "topic0_literal": "0x5c9a946d3041134198ebefcd814de7748def6576efd3d1b48f48193e183e89ef",
+      "topic_args": [
+        "expiry"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [],
+      "data_bytes": 0,
+      "declaration": "IMarketEventsAndErrors.WithdrawalBatchClosed",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:127",
+      "emitter": "emit_WithdrawalBatchClosed",
+      "emitter_at": "src/libraries/MarketEvents.sol:164",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:166",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "WithdrawalBatchClosed(uint256)",
+      "status": "compared",
+      "topic0": "0xcbdf25bf6e096dd9030d89bb2ba2e3e7adb82d25a233c3ca3d92e9f098b74e55",
+      "topic0_literal": "0xcbdf25bf6e096dd9030d89bb2ba2e3e7adb82d25a233c3ca3d92e9f098b74e55",
+      "topic_args": [
+        "expiry"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "scaledAmountBurned",
+        "normalizedAmountPaid"
+      ],
+      "data_bytes": 64,
+      "declaration": "IMarketEventsAndErrors.WithdrawalBatchPayment",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:129",
+      "emitter": "emit_WithdrawalBatchPayment",
+      "emitter_at": "src/libraries/MarketEvents.sol:170",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:178",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "WithdrawalBatchPayment(uint256,uint256,uint256)",
+      "status": "compared",
+      "topic0": "0x5272034725119f19d7236de4129fdb5093f0dcb80282ca5edbd587df91d2bd89",
+      "topic0_literal": "0x5272034725119f19d7236de4129fdb5093f0dcb80282ca5edbd587df91d2bd89",
+      "topic_args": [
+        "expiry"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "scaledAmount",
+        "normalizedAmount"
+      ],
+      "data_bytes": 64,
+      "declaration": "IMarketEventsAndErrors.WithdrawalQueued",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:135",
+      "emitter": "emit_WithdrawalQueued",
+      "emitter_at": "src/libraries/MarketEvents.sol:182",
+      "indexed_positions": [
+        0,
+        1
+      ],
+      "log_arity": 3,
+      "log_at": "src/libraries/MarketEvents.sol:191",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "WithdrawalQueued(uint256,address,uint256,uint256)",
+      "status": "compared",
+      "topic0": "0xecc966b282a372469fa4d3e497c2ac17983c3eaed03f3f17c9acf4b15591663e",
+      "topic0_literal": "0xecc966b282a372469fa4d3e497c2ac17983c3eaed03f3f17c9acf4b15591663e",
+      "topic_args": [
+        "expiry",
+        "account"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "normalizedAmount"
+      ],
+      "data_bytes": 32,
+      "declaration": "IMarketEventsAndErrors.WithdrawalExecuted",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:142",
+      "emitter": "emit_WithdrawalExecuted",
+      "emitter_at": "src/libraries/MarketEvents.sol:201",
+      "indexed_positions": [
+        0,
+        1
+      ],
+      "log_arity": 3,
+      "log_at": "src/libraries/MarketEvents.sol:204",
+      "notes": [],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "WithdrawalExecuted(uint256,address,uint256)",
+      "status": "compared",
+      "topic0": "0xd6cddb3d69146e96ebc2c87b1b3dd0b20ee2d3b0eadf134e011afb434a3e56e6",
+      "topic0_literal": "0xd6cddb3d69146e96ebc2c87b1b3dd0b20ee2d3b0eadf134e011afb434a3e56e6",
+      "topic_args": [
+        "expiry",
+        "account"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatMarket"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "escrow",
+        "expiry",
+        "amount"
+      ],
+      "data_bytes": 96,
+      "declaration": "IMarketEventsAndErrors.SanctionedAccountWithdrawalSentToEscrow",
+      "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:148",
+      "emitter": "emit_SanctionedAccountWithdrawalSentToEscrow",
+      "emitter_at": "src/libraries/MarketEvents.sol:214",
+      "indexed_positions": [
+        0
+      ],
+      "log_arity": 2,
+      "log_at": "src/libraries/MarketEvents.sol:225",
+      "notes": [
+        "sub-word values `escrow` (`address`), `expiry` (`uint32`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatMarket"
+      ],
+      "signature": "SanctionedAccountWithdrawalSentToEscrow(address,address,uint32,uint256)",
+      "status": "compared",
+      "topic0": "0x0d0843a0fcb8b83f625aafb6e42f234ac48c6728b207d52d97cfa8fbd34d498f",
+      "topic0_literal": "0x0d0843a0fcb8b83f625aafb6e42f234ac48c6728b207d52d97cfa8fbd34d498f",
+      "topic_args": [
+        "account"
+      ]
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldSphereXAdmin",
+        "newSphereXAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "ISphereXProtectedRegisteredBase.ChangedSpherexOperator",
+      "declared_at": "src/interfaces/ISphereXProtectedRegisteredBase.sol:7",
+      "emitter": "emit_ChangedSpherexOperator",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:4",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:8",
+      "notes": [
+        "sub-word values `oldSphereXAdmin` (`address`), `newSphereXAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexOperator(address,address)",
+      "status": "compared",
+      "topic0": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic0_literal": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldSphereXAdmin",
+        "newSphereXAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "IWildcatArchController.ChangedSpherexOperator",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:15",
+      "emitter": "emit_ChangedSpherexOperator",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:4",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:8",
+      "notes": [
+        "sub-word values `oldSphereXAdmin` (`address`), `newSphereXAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexOperator(address,address)",
+      "status": "compared",
+      "topic0": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic0_literal": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldSphereXAdmin",
+        "newSphereXAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "SphereXConfig.ChangedSpherexOperator",
+      "declared_at": "src/spherex/SphereXConfig.sol:42",
+      "emitter": "emit_ChangedSpherexOperator",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:4",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:8",
+      "notes": [
+        "sub-word values `oldSphereXAdmin` (`address`), `newSphereXAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexOperator(address,address)",
+      "status": "compared",
+      "topic0": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic0_literal": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldSphereXAdmin",
+        "newSphereXAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "SphereXProtectedRegisteredBase.ChangedSpherexOperator",
+      "declared_at": "src/spherex/SphereXProtectedRegisteredBase.sol:58",
+      "emitter": "emit_ChangedSpherexOperator",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:4",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:8",
+      "notes": [
+        "sub-word values `oldSphereXAdmin` (`address`), `newSphereXAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexOperator(address,address)",
+      "status": "compared",
+      "topic0": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic0_literal": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldEngineAddress",
+        "newEngineAddress"
+      ],
+      "data_bytes": 64,
+      "declaration": "ISphereXProtectedRegisteredBase.ChangedSpherexEngineAddress",
+      "declared_at": "src/interfaces/ISphereXProtectedRegisteredBase.sol:9",
+      "emitter": "emit_ChangedSpherexEngineAddress",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:12",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:16",
+      "notes": [
+        "sub-word values `oldEngineAddress` (`address`), `newEngineAddress` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "status": "compared",
+      "topic0": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic0_literal": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldEngineAddress",
+        "newEngineAddress"
+      ],
+      "data_bytes": 64,
+      "declaration": "IWildcatArchController.ChangedSpherexEngineAddress",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:17",
+      "emitter": "emit_ChangedSpherexEngineAddress",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:12",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:16",
+      "notes": [
+        "sub-word values `oldEngineAddress` (`address`), `newEngineAddress` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "status": "compared",
+      "topic0": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic0_literal": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldEngineAddress",
+        "newEngineAddress"
+      ],
+      "data_bytes": 64,
+      "declaration": "SphereXConfig.ChangedSpherexEngineAddress",
+      "declared_at": "src/spherex/SphereXConfig.sol:43",
+      "emitter": "emit_ChangedSpherexEngineAddress",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:12",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:16",
+      "notes": [
+        "sub-word values `oldEngineAddress` (`address`), `newEngineAddress` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "status": "compared",
+      "topic0": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic0_literal": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldEngineAddress",
+        "newEngineAddress"
+      ],
+      "data_bytes": 64,
+      "declaration": "SphereXProtectedRegisteredBase.ChangedSpherexEngineAddress",
+      "declared_at": "src/spherex/SphereXProtectedRegisteredBase.sol:59",
+      "emitter": "emit_ChangedSpherexEngineAddress",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:12",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:16",
+      "notes": [
+        "sub-word values `oldEngineAddress` (`address`), `newEngineAddress` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController",
+        "WildcatMarket",
+        "WildcatMarketController",
+        "WildcatMarketControllerFactory"
+      ],
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "status": "compared",
+      "topic0": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic0_literal": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "currentAdmin",
+        "pendingAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "IWildcatArchController.SpherexAdminTransferStarted",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:19",
+      "emitter": "emit_SpherexAdminTransferStarted",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:20",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:24",
+      "notes": [
+        "sub-word values `currentAdmin` (`address`), `pendingAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController"
+      ],
+      "signature": "SpherexAdminTransferStarted(address,address)",
+      "status": "compared",
+      "topic0": "0x5778f1547abbbb86090a43c32aec38334b31df4beeb6f8f3fa063f593b53a526",
+      "topic0_literal": "0x5778f1547abbbb86090a43c32aec38334b31df4beeb6f8f3fa063f593b53a526",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "currentAdmin",
+        "pendingAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "SphereXConfig.SpherexAdminTransferStarted",
+      "declared_at": "src/spherex/SphereXConfig.sol:44",
+      "emitter": "emit_SpherexAdminTransferStarted",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:20",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:24",
+      "notes": [
+        "sub-word values `currentAdmin` (`address`), `pendingAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController"
+      ],
+      "signature": "SpherexAdminTransferStarted(address,address)",
+      "status": "compared",
+      "topic0": "0x5778f1547abbbb86090a43c32aec38334b31df4beeb6f8f3fa063f593b53a526",
+      "topic0_literal": "0x5778f1547abbbb86090a43c32aec38334b31df4beeb6f8f3fa063f593b53a526",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldAdmin",
+        "newAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "IWildcatArchController.SpherexAdminTransferCompleted",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:21",
+      "emitter": "emit_SpherexAdminTransferCompleted",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:28",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:32",
+      "notes": [
+        "sub-word values `oldAdmin` (`address`), `newAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController"
+      ],
+      "signature": "SpherexAdminTransferCompleted(address,address)",
+      "status": "compared",
+      "topic0": "0x67ebaebcd2ca5a91a404e898110f221747e8d15567f2388a34794aab151cf3e6",
+      "topic0_literal": "0x67ebaebcd2ca5a91a404e898110f221747e8d15567f2388a34794aab151cf3e6",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "oldAdmin",
+        "newAdmin"
+      ],
+      "data_bytes": 64,
+      "declaration": "SphereXConfig.SpherexAdminTransferCompleted",
+      "declared_at": "src/spherex/SphereXConfig.sol:45",
+      "emitter": "emit_SpherexAdminTransferCompleted",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:28",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:32",
+      "notes": [
+        "sub-word values `oldAdmin` (`address`), `newAdmin` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController"
+      ],
+      "signature": "SpherexAdminTransferCompleted(address,address)",
+      "status": "compared",
+      "topic0": "0x67ebaebcd2ca5a91a404e898110f221747e8d15567f2388a34794aab151cf3e6",
+      "topic0_literal": "0x67ebaebcd2ca5a91a404e898110f221747e8d15567f2388a34794aab151cf3e6",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "sender"
+      ],
+      "data_bytes": 32,
+      "declaration": "IWildcatArchController.NewAllowedSenderOnchain",
+      "declared_at": "src/interfaces/IWildcatArchController.sol:23",
+      "emitter": "emit_NewAllowedSenderOnchain",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:36",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:39",
+      "notes": [
+        "sub-word values `sender` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController"
+      ],
+      "signature": "NewAllowedSenderOnchain(address)",
+      "status": "compared",
+      "topic0": "0x6de0a1fd3a59e5479e6480ba65ef28d4f3ab8143c2c631bbfd9969ab39074797",
+      "topic0_literal": "0x6de0a1fd3a59e5479e6480ba65ef28d4f3ab8143c2c631bbfd9969ab39074797",
+      "topic_args": []
+    },
+    {
+      "abi_checked": [
+        "WildcatArchController"
+      ],
+      "anonymous": false,
+      "classes": [],
+      "data_args": [
+        "sender"
+      ],
+      "data_bytes": 32,
+      "declaration": "SphereXConfig.NewAllowedSenderOnchain",
+      "declared_at": "src/spherex/SphereXConfig.sol:46",
+      "emitter": "emit_NewAllowedSenderOnchain",
+      "emitter_at": "src/spherex/SphereXProtectedEvents.sol:36",
+      "indexed_positions": [],
+      "log_arity": 1,
+      "log_at": "src/spherex/SphereXProtectedEvents.sol:39",
+      "notes": [
+        "sub-word values `sender` (`address`) are written by mstore as full words; their cleaning is not graded"
+      ],
+      "reached_by": [
+        "WildcatArchController"
+      ],
+      "signature": "NewAllowedSenderOnchain(address)",
+      "status": "compared",
+      "topic0": "0x6de0a1fd3a59e5479e6480ba65ef28d4f3ab8143c2c631bbfd9969ab39074797",
+      "topic0_literal": "0x6de0a1fd3a59e5479e6480ba65ef28d4f3ab8143c2c631bbfd9969ab39074797",
+      "topic_args": []
+    }
+  ],
+  "schema": "wildcat.emitter-declarations.v1",
+  "source": {
+    "build_origin": "sourcify",
+    "chain_id": 1,
+    "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+    "declaration_scope": "every .sol file under src/ at commit",
+    "deployments": [
+      {
+        "abi": "https://sourcify.dev/server/v2/contract/1/0x25083923f2174c5ff00d26cd6bc497221713c5b9?fields=stdJsonOutput",
+        "abi_sha256": "9bd4a12db95749695bed33cb802fb09878b2f3dbc4cd397d80b1452854573187",
+        "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+        "compiler": "0.8.22+commit.4fc1097e",
+        "contract": "WildcatMarket",
+        "fully_qualified_name": "src/market/WildcatMarket.sol:WildcatMarket",
+        "instances": 7,
+        "match": "match",
+        "registry_build_input": false,
+        "registry_name": "WildcatMarket instance",
+        "role": "market",
+        "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "standard_input": "https://sourcify.dev/server/v2/contract/1/0x25083923f2174c5ff00d26cd6bc497221713c5b9?fields=stdJsonInput",
+        "standard_input_sha256": "34e1f0f7cc5d832ff8f93e7666b63b4a68528f8efe1350a71a7accc99188f569"
+      },
+      {
+        "abi": "https://sourcify.dev/server/v2/contract/1/0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8?fields=stdJsonOutput",
+        "abi_sha256": "fa97cc7df0bd85384d9a048f7614847f4c6f6869761f4aa151859a7ff3864db1",
+        "address": "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+        "compiler": "0.8.22+commit.4fc1097e",
+        "contract": "WildcatMarketController",
+        "fully_qualified_name": "src/WildcatMarketController.sol:WildcatMarketController",
+        "instances": 3,
+        "match": "match",
+        "registry_build_input": false,
+        "registry_name": "WildcatMarketController instance",
+        "role": "controller",
+        "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "standard_input": "https://sourcify.dev/server/v2/contract/1/0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8?fields=stdJsonInput",
+        "standard_input_sha256": "0d61494a711ed5f50c8f7c74bc7d2391a98c3144c7b50f15bcd5d9ce9be685a8"
+      },
+      {
+        "abi": "https://sourcify.dev/server/v2/contract/1/0xfd31007613c9f671df6a8d4234901324986bfd13?fields=stdJsonOutput",
+        "abi_sha256": "0fdbd3547005ed715e0734b433cc3d8189ac1f0bbecfcdb07cc6175ae9290be3",
+        "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+        "compiler": "0.8.22+commit.4fc1097e",
+        "contract": "WildcatMarketControllerFactory",
+        "fully_qualified_name": "src/WildcatMarketControllerFactory.sol:WildcatMarketControllerFactory",
+        "instances": 1,
+        "match": "match",
+        "registry_build_input": true,
+        "registry_name": "WildcatMarketControllerFactory",
+        "role": "factory",
+        "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "standard_input": "https://sourcify.dev/server/v2/contract/1/0xfd31007613c9f671df6a8d4234901324986bfd13?fields=stdJsonInput",
+        "standard_input_sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706"
+      },
+      {
+        "abi": "https://sourcify.dev/server/v2/contract/1/0xfeb516d9d946dd487a9346f6fee11f40c6945ee4?fields=stdJsonOutput",
+        "abi_sha256": "918f83f51ad6b2447ad83038cd2f9285aa9ec01286b88ae7446439a74170aa25",
+        "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+        "compiler": "0.8.22+commit.4fc1097e",
+        "contract": "WildcatArchController",
+        "fully_qualified_name": "src/WildcatArchController.sol:WildcatArchController",
+        "instances": 1,
+        "match": "match",
+        "registry_build_input": true,
+        "registry_name": "WildcatArchController",
+        "role": "registry",
+        "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "standard_input": "https://sourcify.dev/server/v2/contract/1/0xfeb516d9d946dd487a9346f6fee11f40c6945ee4?fields=stdJsonInput",
+        "standard_input_sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db"
+      },
+      {
+        "abi": "https://sourcify.dev/server/v2/contract/1/0x437e0551892c2c9b06d3ffd248fe60572e08cd1a?fields=stdJsonOutput",
+        "abi_sha256": "e05410125fa483c6120566aeacca5f84d4b0f9b898f19b1225e595b24071fd5b",
+        "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+        "compiler": "0.8.22+commit.4fc1097e",
+        "contract": "WildcatSanctionsSentinel",
+        "fully_qualified_name": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+        "instances": 1,
+        "match": "match",
+        "registry_build_input": true,
+        "registry_name": "WildcatSanctionsSentinel",
+        "role": "sanctions-sentinel",
+        "source_commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+        "standard_input": "https://sourcify.dev/server/v2/contract/1/0x437e0551892c2c9b06d3ffd248fe60572e08cd1a?fields=stdJsonInput",
+        "standard_input_sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6"
+      },
+      {
+        "abi": "https://sourcify.dev/server/v2/contract/1/0xf1d516954f96c1363f8b0ae48d79c8dde6237847?fields=stdJsonOutput",
+        "abi_sha256": "17ff3b2ef8654ceeadf5bd165a4bb09de2ae4904fb910d482ef3e2c6d14265ca",
+        "address": "0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+        "compiler": "0.8.22+commit.4fc1097e",
+        "contract": "MarketLens",
+        "fully_qualified_name": "src/lens/MarketLens.sol:MarketLens",
+        "instances": 1,
+        "match": "match",
+        "registry_build_input": false,
+        "registry_name": "MarketLens (V1)",
+        "role": "lens",
+        "source_commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+        "standard_input": "https://sourcify.dev/server/v2/contract/1/0xf1d516954f96c1363f8b0ae48d79c8dde6237847?fields=stdJsonInput",
+        "standard_input_sha256": "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377"
+      }
+    ],
+    "emitter_files": [
+      "src/libraries/MarketEvents.sol",
+      "src/spherex/SphereXProtectedEvents.sol"
+    ],
+    "files": [
+      {
+        "blob": "164f2c69218cd3d431ed3af508e79c3c50075cb8",
+        "bytes": 2451,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/ReentrancyGuard.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "03813938eb3e9cf3527ddf93507dfebfb296f7d1961a8cab5bd83266c50ca7af"
+      },
+      {
+        "blob": "30c7f52204c14047a0ea866172fb777c95c47d85",
+        "bytes": 12700,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/WildcatArchController.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "890e4eb4375b03b512395e21047c3c57328bd25f2f58e32e256e2a832432878b"
+      },
+      {
+        "blob": "9405a067ed80931671728081fc146e111a2c791b",
+        "bytes": 28826,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/WildcatMarketController.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "59ee64ca44fc3605030ab62bb9b18a7adcecd4d4c823facef2a325fe335a14e0"
+      },
+      {
+        "blob": "bd7f587165721cee200b0cea146ca95567ed986a",
+        "bytes": 15397,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/WildcatMarketControllerFactory.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "3ffc4e6aec03699e0abb373c198a6d7a4c272eb6cbb9c736da7287344b57cb7b"
+      },
+      {
+        "blob": "ea8f19316ae54f39a26d627222bcac838ffb32ff",
+        "bytes": 1335,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "comments-only"
+        },
+        "path": "src/WildcatSanctionsEscrow.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "19a3ba456c4238d4cbf1103ae97cf270bc705b441065e7a1e48f37dba2785093"
+      },
+      {
+        "blob": "160edf417aeb53b563bbec792d12cd6aefa369dc",
+        "bytes": 6660,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "comments-only"
+        },
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "8106f610cf55bc591807d9006ff21186434872451d019cddfeb7b9d0e1744ff6"
+      },
+      {
+        "blob": "fd32ea892d9fe71d3f0370158e7a17aca169bce0",
+        "bytes": 174,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "comments-only"
+        },
+        "path": "src/interfaces/IChainalysisSanctionsList.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "961d26966c5875136b1415c628619185be6fbb7ea8fee954eb5a231f25b9c1b4"
+      },
+      {
+        "blob": "559e4a4398661a2bcb71d8d99b268a1e06e5ceed",
+        "bytes": 903,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "comments-only"
+        },
+        "path": "src/interfaces/IERC20.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "9be1cd0f2af9c956e7006df88cad664e942a6ccb079287e145fbf3af1453d910"
+      },
+      {
+        "blob": "d004fd9c11bfc8e8611c78c5097fe8ac1c13b585",
+        "bytes": 293,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/IERC20Metadata.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "5c0b77b13558bfcc84abd49878e19628c3f4d53e0286db51b742c1beaa6876c0"
+      },
+      {
+        "blob": "8bf4fa7c36dde0edc5d8e0c5034177f26befcce1",
+        "bytes": 3973,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/IMarketEventsAndErrors.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "a70da020697e141623617155151111cdc8b00c9e7264bca53b554de48e9ffe58"
+      },
+      {
+        "blob": "fb78df057b3ff2dbf9a0fe3de3c11a9494898367",
+        "bytes": 512,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "20491e2d3b8aedb1a1d8665d54a5b8368d9b90b95ff0b30f4cffe572fa66db78"
+      },
+      {
+        "blob": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+        "bytes": 5503,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/IWildcatArchController.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "f87a7b647177b0993f5920599423df8b6a4494c8ae262743ef0cc333f412cd36"
+      },
+      {
+        "blob": "ecfb601ba691c7ec6ad088e30e79a83a97ab24a7",
+        "bytes": 6500,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/IWildcatMarketController.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "5e66fa3a49bf5895ba1e623a1dff09dc7678f002f02e3264050827d12bed09c7"
+      },
+      {
+        "blob": "66dfe6f9e58f4d7d7d99f847cf7cb1bac0fc39f6",
+        "bytes": 2658,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "5a5f07085698e53cf14efe000534c2a347e140f041080c2847fa69d2bf6f3f5f"
+      },
+      {
+        "blob": "28c98f56bc161c2266373f393849abb33aaf978c",
+        "bytes": 4909,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/IWildcatMarketControllerFactory.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "ee7cb39fe15a6395523cfb7052ddf294912d48aeae3e6e632ac170c72d4b423b"
+      },
+      {
+        "blob": "47c122005656394404ae82f97667bb822d24bdc6",
+        "bytes": 621,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "comments-only"
+        },
+        "path": "src/interfaces/IWildcatSanctionsEscrow.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "109ed484bf5914a3513a790f31a0c5286a71d630d32c076c87a26e22cb0130af"
+      },
+      {
+        "blob": "5d4ab7049bffce99ee72532272011f3066a1325f",
+        "bytes": 2506,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "comments-only"
+        },
+        "path": "src/interfaces/IWildcatSanctionsSentinel.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "c1dbda0ffc1b14b3e8c5941f6355ba2f980a3871cf5de9275e9942d5371ee13a"
+      },
+      {
+        "blob": "fcae0a3121d925d2f5071c08790ea160310a5c2c",
+        "bytes": 1742,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/interfaces/WildcatStructsAndEnums.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "1ad7ee0f4787bab87db9f77fd546e039201a55bf92fcfcb56a8785e858839084"
+      },
+      {
+        "blob": "1dc970da74dd84602f4d07d1cd94fe33f70aba7b",
+        "bytes": 1659,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/lens/ArchControllerData.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "d593d295063a4a65ffecdc6ae3d9a7596c2023a8fa3fe0ea9035bfacbe4cc08d"
+      },
+      {
+        "blob": "322d4ffcb80be8a45095a05595a6c61c68bb742d",
+        "bytes": 2575,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/lens/ControllerData.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "2f86f8f5b8b9fb313f53431cda089e47e1cebfeb0a0c6e02a26c1f5e03ce1531"
+      },
+      {
+        "blob": "be3d4ec94282f4df001458e0b9599118d532899b",
+        "bytes": 11143,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/lens/MarketData.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "c5ba93b8278094307aa5d5aad3130de26ddfd89964a9ad00de76899ce0dc5b37"
+      },
+      {
+        "blob": "2bea76e4bf2899ab7fc120f196a193729ad4f673",
+        "bytes": 10100,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/lens/MarketLens.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "0db0e59a55af707a397ed87fd994012c90a4e289ff5b31b3f4d08715e7c2ecba"
+      },
+      {
+        "blob": "869a9a3b10046df4b9a31c1c8047bd5d05a44bea",
+        "bytes": 118,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/lens/SliceParameters.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "8a0f2c4b1fbef641ff0bec7eef96ce2f7be2a33d07e7342669cd9de859e6efe5"
+      },
+      {
+        "blob": "e61c5f7d0cd9d4e298fa0d8818ee812428180c94",
+        "bytes": 922,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/lens/TokenData.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "8f03aa1758cf5f5b609dbd017ed596656e5545146d57233662b5f7f8bb54bc9c"
+      },
+      {
+        "blob": "0bc92966a016577244934b70240e4e65977cc17d",
+        "bytes": 411,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/BoolUtils.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "b8e5c7e4a38ff68bded5e234b6966cdf9d6e94da9976015f1bcda69e74e18336"
+      },
+      {
+        "blob": "8bbff641f4e1580eb5c3f11e9b1719a2ce281dda",
+        "bytes": 1943,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/Errors.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "86d9275b17f6d82d28659bb920138eae1b1b1fbe8e4340436e9840239547764d"
+      },
+      {
+        "blob": "e8d0dde5839cc36dfb22bab494d8a3683e9eac0e",
+        "bytes": 2298,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/FIFOQueue.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "7805eaa4c77f475ac11d6e055cd5b90c08219fce0d39fdd395a3fa12cb1505a0"
+      },
+      {
+        "blob": "8005ce5423744edb87813e6dc28135ee254baed8",
+        "bytes": 6650,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/FeeMath.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "1cd0cc829cf06d229ab03b986b71d915bfa7ded363902e6fec04f84f2fc92df6"
+      },
+      {
+        "blob": "7785e81aa254aa30a6a23186fb08ce8018d4564f",
+        "bytes": 4240,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/LibStoredInitCode.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "904aa87e55f9ab5386ab824414141e9965501b1f799d0b933f3bfb51d4ef59d1"
+      },
+      {
+        "blob": "4c42cb0c2cce25d40350697c8cc0af920f1a355e",
+        "bytes": 5159,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/MarketErrors.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "cec79d3df664a6055bc3a834b3073faca3c5db255aeebbec9a18b42b2a757c9f"
+      },
+      {
+        "blob": "f4e164f0013dcf62206ffb75337d9dc0cf8dff77",
+        "bytes": 6358,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/MarketEvents.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "d393bdeab6f425d346c6e8b3aeaa54f4fa1f9af9dcbad17ea85b76c3a30faa0f"
+      },
+      {
+        "blob": "572430e287ef5ac7e1982168260928a03c703e5d",
+        "bytes": 4930,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/MarketState.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "7c5d2c3ba1508c937dfabc998204bdf2c5955e79bf43d47a932618d7ae5cb6cf"
+      },
+      {
+        "blob": "5e6c9ba1fbc45bbecec9994bf5a6fa86ff36d299",
+        "bytes": 6646,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/MathUtils.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "d55d2ffda4059d79049d90e734b2bbc8b99ff61ae47d61c6817735db1d62d522"
+      },
+      {
+        "blob": "5645851a9016850322ce314c70273caa07d4ebf9",
+        "bytes": 4074,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/SafeCastLib.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "844e319a8e2494fa03a74696ffa8b4507205229aa68bf1fb253edc5d6f86645d"
+      },
+      {
+        "blob": "6a5c29da3cd5f8ac4ae678e8d566b70da0855e66",
+        "bytes": 3746,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/StringQuery.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "b0ff5b2f9b15b15fce9d014bfb882af706234d4a1e3af09059ce5e6f62881417"
+      },
+      {
+        "blob": "90721578912383e3b94614abd5ddd0e9df571da2",
+        "bytes": 2016,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/libraries/Withdrawal.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "cfec16658fed200fe75f57129139a5d5b448b5a65afbb36edba4877cbeb8b00b"
+      },
+      {
+        "blob": "bad64ace0fcde6a05e8a0ecddc06963ec28ab11b",
+        "bytes": 8037,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/market/WildcatMarket.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "d8d84c73ea010dec8d9e097641d5f972365431018ef083a012c924bdf5665d3f"
+      },
+      {
+        "blob": "2ce38555c6711fb77fbc8118abaaa7bab875f62e",
+        "bytes": 24630,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/market/WildcatMarketBase.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "8310b1453ccfe599537df2523c9c9bd62ac5b4b2937fc970d63bc79d4e50330e"
+      },
+      {
+        "blob": "d0bb6c97080b03375546b3f3f2a22f3be25c862e",
+        "bytes": 7782,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/market/WildcatMarketConfig.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "bc10f8f142ddbf90b684740b8db19d75413d5fcc948f82a269dbf2d95adaf2e1"
+      },
+      {
+        "blob": "fd8a1b073ec4fcb85bb6ac8440273f8473e1cb9b",
+        "bytes": 2909,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/market/WildcatMarketToken.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "cc687fc328237b6beaf0314b14b5b2c8b410a54d669d167ad417bd9bd4511aed"
+      },
+      {
+        "blob": "fa09b9805bbebca48c4d11a39e5f8e3115ec6ba3",
+        "bytes": 10350,
+        "in_builds": {
+          "MarketLens": "comments-only",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/market/WildcatMarketWithdrawals.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "c3192056618fe2167699196180b9fa43b19783b9fce93e03b07a4e2723b22f2a"
+      },
+      {
+        "blob": "b0f6e995669b39dee51f6960c18398e71f8cd351",
+        "bytes": 1743,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/spherex/ISphereXEngine.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92"
+      },
+      {
+        "blob": "1656e5bc5844d2bec95ea454d1577996c80770b0",
+        "bytes": 7681,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "absent",
+          "WildcatMarketController": "absent",
+          "WildcatMarketControllerFactory": "absent",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/spherex/SphereXConfig.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "35bb7a0506954ebdd456a1c031019b6cf663d91fc3930d072d406f505753f324"
+      },
+      {
+        "blob": "0c4d4c85d7b992a2c335a24da8ee14fd34404c5c",
+        "bytes": 643,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/spherex/SphereXProtectedErrors.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884"
+      },
+      {
+        "blob": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+        "bytes": 1262,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "equal",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/spherex/SphereXProtectedEvents.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63"
+      },
+      {
+        "blob": "fec029bfa09934cad39970912eadfd124a6259a0",
+        "bytes": 13725,
+        "in_builds": {
+          "MarketLens": "equal",
+          "WildcatArchController": "absent",
+          "WildcatMarket": "equal",
+          "WildcatMarketController": "equal",
+          "WildcatMarketControllerFactory": "equal",
+          "WildcatSanctionsSentinel": "absent"
+        },
+        "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+        "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "role": "source",
+        "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2"
+      }
+    ],
+    "registry": {
+      "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "compiler": "0.8.22+commit.4fc1097e",
+      "emitter_paths": [
+        "src/libraries/MarketEvents.sol",
+        "src/spherex/SphereXProtectedEvents.sol"
+      ],
+      "path": "docs/kickoff/1359/targets.json",
+      "row": "wildcat-v1-ethereum-mainnet"
+    },
+    "repository": "wildcat-finance/wildcat-protocol"
+  },
+  "summary": {
+    "abi_checked_rows": 37,
+    "binding_comments_only": [
+      "src/WildcatArchController.sol",
+      "src/WildcatMarketController.sol",
+      "src/WildcatMarketControllerFactory.sol",
+      "src/WildcatSanctionsEscrow.sol",
+      "src/WildcatSanctionsSentinel.sol",
+      "src/interfaces/IChainalysisSanctionsList.sol",
+      "src/interfaces/IERC20.sol",
+      "src/interfaces/IERC20Metadata.sol",
+      "src/interfaces/IMarketEventsAndErrors.sol",
+      "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+      "src/interfaces/IWildcatArchController.sol",
+      "src/interfaces/IWildcatMarketController.sol",
+      "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+      "src/interfaces/IWildcatMarketControllerFactory.sol",
+      "src/interfaces/IWildcatSanctionsEscrow.sol",
+      "src/interfaces/IWildcatSanctionsSentinel.sol",
+      "src/interfaces/WildcatStructsAndEnums.sol",
+      "src/lens/ArchControllerData.sol",
+      "src/lens/ControllerData.sol",
+      "src/lens/MarketData.sol",
+      "src/lens/MarketLens.sol",
+      "src/lens/SliceParameters.sol",
+      "src/lens/TokenData.sol",
+      "src/libraries/BoolUtils.sol",
+      "src/libraries/Errors.sol",
+      "src/libraries/FIFOQueue.sol",
+      "src/libraries/LibStoredInitCode.sol",
+      "src/libraries/MarketErrors.sol",
+      "src/libraries/MarketEvents.sol",
+      "src/libraries/MarketState.sol",
+      "src/libraries/StringQuery.sol",
+      "src/libraries/Withdrawal.sol",
+      "src/market/WildcatMarket.sol",
+      "src/market/WildcatMarketBase.sol",
+      "src/market/WildcatMarketConfig.sol",
+      "src/market/WildcatMarketToken.sol",
+      "src/market/WildcatMarketWithdrawals.sol"
+    ],
+    "binding_differs": [],
+    "compared_rows": 37,
+    "declaration_disagreements": 4,
+    "declarations_without_emitter": 33,
+    "emitters": 26,
+    "mismatch_rows": 0,
+    "non_emitting_declarations": 10,
+    "rows": 37,
+    "unreached_rows": 0,
+    "unreviewed": 0
+  },
+  "unreviewed": []
+}

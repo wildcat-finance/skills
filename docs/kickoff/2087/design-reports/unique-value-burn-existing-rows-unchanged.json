@@ -1,0 +1,9 @@
+{
+  "candidate": "unique-value-burn",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate unique-value-burn --criterion existing-rows-unchanged --report .hexaemeron/design-reports/unique-value-burn-existing-rows-unchanged.json",
+  "criterion": "existing-rows-unchanged",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

@@ -1,0 +1,30 @@
+{
+  "content_parity": true,
+  "final_imprimatur_exit": 0,
+  "protected_inventory": [
+    "existing README claims, qualifications, paths, bounds, operations and source limitations",
+    "two fixture causes and owned-leak guard",
+    "historical outcomes retain their original source bindings",
+    "accepted #1273 study and amended runbook",
+    "package 1.6.44"
+  ],
+  "readme_sha256": "71ed5af7ba194538e672b24fb71a2132bd031fa73e7752462ac9b7305b3de192",
+  "schema": "success-criteria-prose-review/v1",
+  "sequence": [
+    "sapheneia-durable-record-shape",
+    "imprimatur",
+    "vulgate",
+    "imprimatur"
+  ],
+  "sources": [
+    {
+      "path": ".hexaemeron/evidence/step-1-readme-fixture-candidate.txt",
+      "sha256": "71ed5af7ba194538e672b24fb71a2132bd031fa73e7752462ac9b7305b3de192"
+    },
+    {
+      "path": ".hexaemeron/step-1-commit-message-2.txt",
+      "sha256": "10179de1a1a92d24d5972e5102c00bacf82aa44df859c5e12af437dd2d9d046d"
+    }
+  ],
+  "vulgate_changed_bytes": false
+}

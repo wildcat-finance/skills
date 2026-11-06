@@ -23,6 +23,22 @@ capture boundary or corrected raw record is new source evidence and must be
 published separately. Offline verification establishes internal consistency,
 not publisher identity, authenticity or an independent chain proof.
 
+A schema change is one of those changes, and it is met the same way. A
+published release keeps the `schema_version` it was built under, and its
+documents keep saying so. The newer envelope arrives as a superseding release
+directory built from the same `source.json` bytes, with a new release
+identifier, its own `capture.json` differing only in `release`, and its own
+canonical and coverage bytes. The superseded release stays on disk, stays
+verifiable, and gains a note naming its successor. `verify` therefore reads
+every schema version the tree still ships, not only the one `build` writes: at
+present `build` writes 3 and `verify` reads 2 and 3. Dropping a version from
+the read path would strand the releases published under it, so a version leaves
+the read path only when no release names it.
+
+`aave-v4-v1`, `euler-v1-v1` and `euler-v2-v1` are that pattern applied to the
+three v0 releases. Their `source.json` digests equal the v0 digests, and the
+only difference in a canonical row is `schema_version`.
+
 Protocol generations and data-service versions are separate release fields.
 For example, the current Euler V2 protocol activity source is the Euler V3 API.
 Changing either field requires a new release; an API name alone does not prove

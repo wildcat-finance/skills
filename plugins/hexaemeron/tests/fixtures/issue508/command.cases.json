@@ -1,0 +1,54 @@
+[
+  {
+    "id": "valid-shape",
+    "valid": true,
+    "value": {
+      "schema": "issue508-command-fixture/v1",
+      "source": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}",
+      "adapter": "hexaemeron-unittest",
+      "cli_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "adapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "report_source": ".hexaemeron/reports/fixture.json",
+      "report_format": "elenchus.unittest.v1"
+    }
+  },
+  {
+    "id": "missing-schema",
+    "valid": false,
+    "value": {
+      "source": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}",
+      "adapter": "hexaemeron-unittest",
+      "cli_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "adapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "report_source": ".hexaemeron/reports/fixture.json",
+      "report_format": "elenchus.unittest.v1"
+    }
+  },
+  {
+    "id": "unknown-field",
+    "valid": false,
+    "value": {
+      "schema": "issue508-command-fixture/v1",
+      "source": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}",
+      "adapter": "hexaemeron-unittest",
+      "cli_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "adapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "report_source": ".hexaemeron/reports/fixture.json",
+      "report_format": "elenchus.unittest.v1",
+      "unregistered": true
+    }
+  },
+  {
+    "id": "wrong-schema-type",
+    "valid": false,
+    "value": {
+      "schema": 3,
+      "source": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}",
+      "adapter": "hexaemeron-unittest",
+      "cli_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "adapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "report_source": ".hexaemeron/reports/fixture.json",
+      "report_format": "elenchus.unittest.v1"
+    }
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "candidate": "topic-only",
+  "command": "python3 .hexaemeron/design-probe.py --candidate topic-only --criterion scope-retained --report .hexaemeron/design-reports/topic-only-scope-retained.json",
+  "criterion": "scope-retained",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

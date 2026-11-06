@@ -30,7 +30,7 @@ def source_runner_module():
 
 
 class ObservationBindingTests(HexctlCase):
-    def test_binding_validates_the_captured_bytes_not_a_later_path_snapshot(self):
+    def test_binding_validates_captured_bytes_not_path_snapshot(self):
         self.to_steps(("Bind",))
         relative, _, captured = self.write_prefix()
         events = [json.loads(line) for line in captured.splitlines()]
@@ -54,7 +54,7 @@ class ObservationBindingTests(HexctlCase):
                     controller.load_state(self.target),
                 )
 
-    def test_binding_finally_rechecks_the_named_bytes_after_validation(self):
+    def test_binding_finally_rechecks_bytes_after_validation(self):
         self.to_steps(("Bind",))
         relative, target, _ = self.write_prefix()
         controller = hexctl_module()
@@ -105,7 +105,7 @@ class ObservationBindingTests(HexctlCase):
         self.assertEqual(root, target_dir)
         self.assertEqual(parts, (".elenchus", "binding.json"))
 
-    def test_fixture_manifest_names_the_normal_and_nine_negative_mechanisms(self):
+    def test_fixture_manifest_names_normal_and_nine_negatives(self):
         manifest = json.loads(CASES.read_text(encoding="utf-8"))
         self.assertEqual(manifest["contract"], BINDING_CONTRACT)
         cases = manifest["cases"]
@@ -260,13 +260,13 @@ class ObservationBindingTests(HexctlCase):
         verified = self.run_ctl("verify", "--observations")
         self.assertIn("1 observation prefix", verified.stdout)
 
-    def test_legacy_run_stays_valid_until_the_dependent_claim_is_requested(self):
+    def test_legacy_run_valid_until_dependent_claim_requested(self):
         self.to_steps(("Bind",))
         self.run_ctl("verify")
         refused = self.run_ctl("verify", "--observations", expect=1)
         self.assertIn("FOB001", refused.stderr)
 
-    def test_non_available_capture_records_no_digest_and_does_not_break_verify(self):
+    def test_non_available_capture_records_no_digest_verify_ok(self):
         self.to_steps(("Bind",))
         self.run_ctl(
             "observe",
@@ -285,7 +285,7 @@ class ObservationBindingTests(HexctlCase):
         refused = self.run_ctl("verify", "--observations", expect=1)
         self.assertIn("FOB005", refused.stderr)
 
-    def test_replacement_and_truncation_break_only_the_dependent_claim(self):
+    def test_replacement_truncation_break_only_dependent_claim(self):
         replacements = (b"{}\n", b"")
         for replacement in replacements:
             with self.subTest(replacement=replacement):
@@ -327,7 +327,7 @@ class ObservationBindingTests(HexctlCase):
         binding = self.state()["receipts"]["run_observations"][0]
         self.assertEqual(binding["byte_count"], len(original))
 
-    def test_later_receipt_binds_only_a_strict_extension_of_the_same_stream(self):
+    def test_later_receipt_binds_only_a_strict_stream_extension(self):
         self.to_steps(("Bind",))
         relative, target, first = self.write_prefix()
         self.bind(relative)
@@ -404,7 +404,7 @@ class ObservationBindingTests(HexctlCase):
         refused = self.run_ctl("verify", "--observations", expect=1)
         self.assertIn("FOB003", refused.stderr)
 
-    def test_verification_finally_rechecks_named_bytes_after_validation(self):
+    def test_verify_finally_rechecks_bytes_after_validation(self):
         self.to_steps(("Bind",))
         relative, target, _ = self.write_prefix()
         self.bind(relative)
@@ -428,7 +428,7 @@ class ObservationBindingTests(HexctlCase):
                     controller.load_state(self.target),
                 )
 
-    def test_verification_joins_each_binding_to_one_exact_ledger_record(self):
+    def test_verify_joins_each_binding_to_exact_ledger_record(self):
         self.to_steps(("Bind",))
         relative, _, _ = self.write_prefix()
         self.bind(relative)
@@ -476,7 +476,7 @@ class ObservationBindingTests(HexctlCase):
         refused = self.run_ctl("verify", "--observations", expect=1)
         self.assertIn("FOB003", refused.stderr)
 
-    def test_wrong_run_contract_and_failed_redaction_refuse_before_receipt(self):
+    def test_wrong_contract_failed_redaction_refuse_pre_receipt(self):
         cases = (
             ("wrong-run", OBSERVATION_CONTRACT, "passed", "FOB003"),
             (None, "wrong-contract/v1", "passed", "FOB003"),
@@ -579,7 +579,7 @@ class ObservationBindingTests(HexctlCase):
         self.assertEqual(refused.exception.code, 2)
         self.assertFalse(os.path.exists(target))
 
-    def test_consecutive_binding_cannot_select_an_observation_receipt(self):
+    def test_consecutive_binding_cannot_select_receipt(self):
         self.to_steps(("Bind",))
         relative, _, _ = self.write_prefix()
         self.bind(relative)

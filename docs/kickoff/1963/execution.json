@@ -1,0 +1,463 @@
+{
+  "records": [
+    {
+      "argv": [
+        "python3",
+        "scripts/kickoff_xray_1963.py",
+        "derive",
+        "--inputs",
+        ".hexaemeron/research/accepted-corpus",
+        "--out",
+        "<scratch>/rerun/denominator-inputs.json"
+      ],
+      "exit": 0,
+      "id": "derive",
+      "log": {
+        "path": "evidence/derive.log",
+        "sha256": "ae2f52e3724d002e8323aaf7bd75575cd8cf0b1201832fe640e0d342bf90dd64"
+      },
+      "observation": "{\"identities\": {\"creation\": 7, \"read\": 148, \"state-changing\": 62}, \"out\": \"<scratch>/rerun/denominator-inputs.json\", \"outputs\": {\"MarketLensMixed\": \"d63965ae5f31d731fe765ab891a9238b649c63ebe0c4053c8d818046225abc6c\", \"WildcatArchController\": \"19605dc9eed17f9c69a22736db5cf6e508c038de3cdc4e15be6bd2c118d2b530\", \"WildcatMarketControllerFactory\": \"1cf68e057a7981d581804f4a34f452668beed5ffb64efad560727b02",
+      "purpose": "derive the callable denominator and ABI event catalogue from the four accepted inputs; the output was then copied to docs/kickoff/1963/denominator-inputs.json",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "docs/kickoff/1963/evidence/producers/build_sources.py",
+        "--corpus",
+        ".hexaemeron/research/accepted-corpus",
+        "--protocol",
+        "<wildcat-protocol clone>",
+        "--out",
+        "<scratch>/rerun/sources.json"
+      ],
+      "exit": 0,
+      "id": "build-sources",
+      "log": {
+        "path": "evidence/build-sources.log",
+        "sha256": "09e878c0f616b5a3ddcfd8bac550e692b1c682e007ddc9295c3b942443e54cfc"
+      },
+      "observation": "{\"inputs\": {\"MarketLensMixed\": 50, \"WildcatArchController\": 10, \"WildcatMarketControllerFactory\": 40, \"WildcatSanctionsSentinel\": 7}, \"out\": \"<scratch>/rerun/sources.json\"}",
+      "purpose": "bind each input file's digest, size and lines to the public Git objects; the output was then copied to docs/kickoff/1963/sources.json",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "docs/kickoff/1963/evidence/producers/build_linkage.py",
+        "--protocol",
+        "<wildcat-protocol clone>",
+        "--denominator",
+        "docs/kickoff/1963/denominator-inputs.json",
+        "--out",
+        "<scratch>"
+      ],
+      "exit": 0,
+      "id": "build-linkage",
+      "log": {
+        "path": "evidence/build-linkage.log",
+        "sha256": "24de14471b51c9332e9d0316c98e239b78dc4a987e05fcecd13682fb921e79f8"
+      },
+      "observation": "217 actions; 69 linkage rows",
+      "purpose": "build actions.json and linkage.json from anchored public source locations",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "bash",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/enumerate.sh",
+        "<scratch>/v1-protocol",
+        "src"
+      ],
+      "exit": 0,
+      "id": "xray-enumerate-bsd-grep",
+      "log": {
+        "path": "evidence/xray-enumerate-bsd-grep.log",
+        "sha256": "ea8217c79639f521bfb893c3b9a88ce75c71ccb2572d59164ec08bd3cdf58a27"
+      },
+      "observation": "Exit 0, but every `grep -P` in the enumerator failed under macOS BSD grep 2.6.0 ('grep: invalid option -- P'), so nSLOC TOTAL, NatSpec and test_functions printed 0; retained as a superseded attempt, replaced by xray-enumerate.",
+      "purpose": "Enumerate V1 sources, nSLOC, tests, docs and git stats with the X-Ray enumerator",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "env",
+        "PATH=/opt/homebrew/opt/grep/libexec/gnubin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin",
+        "bash",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/enumerate.sh",
+        "<scratch>/v1-protocol",
+        "src"
+      ],
+      "exit": 0,
+      "id": "xray-enumerate",
+      "log": {
+        "path": "evidence/xray-enumerate.log",
+        "sha256": "4021fca385cabc6de9500d958e1ffa723f22ab955b9f57c2759876328da12d0d"
+      },
+      "observation": "GNU grep 3.12 first on PATH: 46 src/*.sol files, nSLOC TOTAL 4754, NatSpec line 46 (a file count, not a tag count), 51 test files, 370 test functions, stateless_fuzz 8, foundry_invariant 8, echidna 0:0, medusa 0:0, certora 0:0, halmos 0:0, hevm 0, fork 0; git 660 commits, 34 merges, 4 author identities, commit da74452.",
+      "purpose": "Enumerate V1 sources, nSLOC, tests, docs and git stats with the X-Ray enumerator, GNU grep first on PATH (the macOS BSD grep lacks -P)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "git",
+        "submodule",
+        "update",
+        "--init",
+        "lib/forge-std",
+        "lib/ds-test",
+        "lib/solmate",
+        "lib/sol-utils",
+        "lib/vulcan"
+      ],
+      "exit": 0,
+      "id": "xray-coverage-submodules",
+      "log": {
+        "path": "evidence/xray-coverage-submodules.log",
+        "sha256": "0583e3b6951d0072c7cbfe30983cf960a9ba424588bf4643568d5c8bf7d2a3e4"
+      },
+      "observation": "Initialised lib/ds-test, lib/forge-std (v1.7.2), lib/sol-utils, lib/solmate and lib/vulcan at the gitlinks da74452a records; superproject HEAD still da74452aa7d1a0f024d99efd22cc6d950a8116b7 and tracked tree clean.",
+      "purpose": "Initialise the public test-dependency submodules forge coverage compiles (forge-std, ds-test, solmate, sol-utils, vulcan); superproject commit unchanged",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "forge",
+        "coverage"
+      ],
+      "exit": 1,
+      "id": "xray-coverage-default",
+      "log": {
+        "path": "evidence/xray-coverage-default.log",
+        "sha256": "fb5195baa111df52160fc14148b91a780627048742706c833dc965dec575aec9"
+      },
+      "observation": "Failed (no percentage): compiled 165 files with Solc 0.8.28, then 'Error: solar run failed: error: unresolved symbol `locals`' at src/spherex/SphereXProtectedRegisteredBase.sol:153:39 during analysis.",
+      "purpose": "Measure line and branch coverage with forge coverage (default pipeline)",
+      "status": "failed"
+    },
+    {
+      "argv": [
+        "forge",
+        "coverage",
+        "--ir-minimum"
+      ],
+      "exit": 1,
+      "id": "xray-coverage-ir-minimum",
+      "log": {
+        "path": "evidence/xray-coverage-ir-minimum.log",
+        "sha256": "3ffe0ecee98d910ff4807f1bcdb6caa4c6fe0215ce20095273deb112fdcd7a6d"
+      },
+      "observation": "Failed (no percentage): 'Error: Compiler run failed: Error: Yul exception:Cannot swap Variable expr_4 with Variable expr_95608_mpos: too deep in the stack by 1 slots' with Solc 0.8.28; the log points at test/helpers/ExpectedBalances.sol:710.",
+      "purpose": "Retry coverage with --ir-minimum after the default attempt failed",
+      "status": "failed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+        "--repo",
+        ".",
+        "--src-dir",
+        "src",
+        "--json",
+        "<scratch>/xray-v1/evidence/git-security-analysis.json"
+      ],
+      "exit": 0,
+      "id": "xray-git-analysis",
+      "log": {
+        "path": "evidence/xray-git-analysis.json",
+        "sha256": "266512d51c9f6e44c9e045e98e6280e0a2b510bb1cc8716faebf0624c275a228"
+      },
+      "observation": "Wrote evidence/git-security-analysis.json (stdout empty): repo_shape normal_dev, 660 commits (365 source-touching), git_branch HEAD (detached) at da74452; 10 fix candidates, top 5a17f02 score 17; 92 late source commits (81 without tests); tech_debt 0; top contributor d1ll0n 87.2%. Retained in the bundle as evidence/xray-git-analysis.json.",
+      "purpose": "Score git history for fix candidates, dangerous-area churn, late changes, forked deps, tech debt and dev patterns on the detached da74452a HEAD",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "grep -rnE 'function[[:space:]]+[[:alnum:]_]+[[:space:]]*\\([^)]*\\)[[:space:]]+(external|public)' src/ --include='*.sol' | grep -v '/interfaces/' | grep -v '/mock/' | grep -Ev '(^|[^[:alnum:]_])(view|pure)([^[:alnum:]_]|$)'"
+      ],
+      "exit": 0,
+      "id": "xray-entry-scan-single",
+      "log": {
+        "path": "evidence/xray-entry-scan-single.log",
+        "sha256": "125d3aa09daf5f1fa606ec0e39846602410e57ee1cfaa19ad00e84139c814da1"
+      },
+      "observation": "33 matching lines: 31 state-changing src/ declarations plus 2 ISphereXEngine interface lines (excluded).",
+      "purpose": "X-Ray Step 2 entry-point grep: single-line external/public non-view signatures",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "/bin/sh",
+        "-c",
+        "grep -rnE '^[[:space:]]*\\)[[:space:]]+(external|public)' src/ --include='*.sol' -B5 | grep -v '/interfaces/' | grep -v '/mock/' | grep -Ev '(^|[^[:alnum:]_])(view|pure)([^[:alnum:]_]|$)'"
+      ],
+      "exit": 0,
+      "id": "xray-entry-scan-multiline",
+      "log": {
+        "path": "evidence/xray-entry-scan-multiline.log",
+        "sha256": "b46199e182fa4a53309ccdd96adfa1801574b4949a93032d20c1b6829e83ba07"
+      },
+      "observation": "27 visibility lines: 24 state-changing src/ declarations plus 3 ISphereXEngine interface lines (excluded); with the single-line scan, 55 declarations, which map to 62 context-level actions after counting inherited changeSphereXEngine three times and the 5 solady Ownable actions.",
+      "purpose": "X-Ray Step 2 entry-point grep: multiline signatures with visibility on the closing-paren line",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+        "architecture.json",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-iter1",
+      "log": null,
+      "observation": "Generated a 2262x645 SVG from 14 nodes and 17 uniquely labelled edges.",
+      "purpose": "Generate architecture.svg from architecture.json (iteration 1)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "qlmanage",
+        "-t",
+        "-s",
+        "1600",
+        "-o",
+        "evidence/render-iter1",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render-iter1",
+      "log": {
+        "path": "evidence/xray-svg-render-iter1.log",
+        "sha256": "99b4bb449b79b2f75e5c1ccb1e74dcf12789530cdbe0ee634dbcbcdbce6c056e"
+      },
+      "observation": "Quick Look wrote a 1600px square thumbnail that crops the 2262x645 canvas to its left third; not usable for the audit, so the canvas was re-rendered with rsvg-convert.",
+      "purpose": "Render architecture.svg to PNG for the visual audit (iteration 1)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "rsvg-convert",
+        "-w",
+        "2262",
+        "-o",
+        "evidence/render-iter1/architecture.png",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render-iter1-rsvg",
+      "log": null,
+      "observation": "Full-canvas render. Audit found three edges (checks sanctions, moves assets, reads state) fanning from one point under WildcatMarket and MarketLens isolated at the far right of row 2.",
+      "purpose": "Full-canvas PNG render of architecture.svg with rsvg-convert (iteration 1; the Quick Look thumbnail crops the 2262x645 canvas to a square)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+        "architecture.json",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-iter2",
+      "log": null,
+      "observation": "Changed the MarketLens edge to MarketLens -> WildcatArchController 'reads registry' and reordered row 2; canvas 2051x645.",
+      "purpose": "Generate architecture.svg (iteration 2: lens edge reads the registry to balance row 2 and clear the fan under WildcatMarket)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "rsvg-convert",
+        "-w",
+        "2262",
+        "-o",
+        "evidence/render-iter2/architecture.png",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render-iter2",
+      "log": null,
+      "observation": "Audit: no row-skipping edges, no arrows through boxes, no overlapping labels; WildcatMarketController has two same-row arcs, one each side; rows 2-3 stay right-weighted because the sanctions subtree hangs from WildcatMarket. Accepted after 2 of 3 allowed iterations.",
+      "purpose": "Full-canvas PNG render (iteration 2)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+        "architecture.json",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg",
+      "log": null,
+      "observation": "Final generation from the iteration-2 JSON; architecture.svg SHA-256 8ac9a93f2db30d9497abd8553ba064f34af4ea37d6877b6262057ad9272e70e5, identical to iteration 2; all seven context names present as SVG text.",
+      "purpose": "Final architecture.svg generation from the iteration-2 architecture.json",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "rsvg-convert",
+        "-w",
+        "2262",
+        "-o",
+        "evidence/architecture.png",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render",
+      "log": null,
+      "observation": "Wrote evidence/architecture.png at 2262x712; visual check matches the iteration-2 render. Its PNG was superseded by later renders and is not retained.",
+      "purpose": "Final full-canvas PNG render of architecture.svg for the visual audit (rsvg-convert)",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "x-ray.md",
+        "entry-points.md",
+        "invariants.md"
+      ],
+      "exit": 0,
+      "id": "xray-imprimatur-lint-pass1",
+      "log": {
+        "path": "evidence/xray-imprimatur-lint-pass1.log",
+        "sha256": "bb112331764fc4f7e65e2b48337853a7e54a880b979f2c608bd2575493bc778d"
+      },
+      "observation": "Informational lint: x-ray.md score 48.7 (68 defects, mostly em dashes and the template's bold-lead bullets and title-case headings), entry-points.md 92.4, invariants.md 91.2.",
+      "purpose": "Informational Imprimatur lexicon lint of the three X-Ray markdown reports",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "x-ray.md",
+        "entry-points.md",
+        "invariants.md"
+      ],
+      "exit": 0,
+      "id": "xray-imprimatur-lint",
+      "log": {
+        "path": "evidence/xray-imprimatur-lint.log",
+        "sha256": "a6c4dfbaeae3c988a5649b10e0aa971649ef7b67713c25d9a8c384365326d984"
+      },
+      "observation": "After replacing avoidable em dashes: x-ray.md 78.0 (30 medium defects: template bold-lead bullets and title-case headings), entry-points.md 97.6, invariants.md 91.2; no high-severity defects remain.",
+      "purpose": "Informational Imprimatur lexicon lint of the three X-Ray markdown reports after removing avoidable em dashes",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+        "architecture.json",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-review-fix",
+      "log": {
+        "path": "evidence/xray-svg-review-fix.log",
+        "sha256": "28d3b9e880a77975493dc7e359144c0295a4f694cfe0af4f928c22307bc5c320"
+      },
+      "observation": "18 edges; SVG SHA-256 82029e7491d227092c9951329306668b446a95e428f90512e433f03fa5859719. Superseded by xray-svg-review-fix-2 after review finding R-43.",
+      "purpose": "regenerate the architecture SVG after review finding R-41 relabelled the arch-to-engine edge and added the market-to-engine edge",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "rsvg-convert",
+        "-w",
+        "2262",
+        "-o",
+        "evidence/architecture.png",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render-review-fix",
+      "log": {
+        "path": "evidence/xray-svg-render-review-fix.log",
+        "sha256": "28d3b9e880a77975493dc7e359144c0295a4f694cfe0af4f928c22307bc5c320"
+      },
+      "observation": "Full-canvas render; all seven contexts and every edge label legible. Review finding R-43 found two labels drawn beside the wrong edges. Its PNG was written as evidence/architecture.png, superseded by xray-svg-render-review-fix-2 and is not retained.",
+      "purpose": "render the final SVG for visual inspection",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+        "architecture.json",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-review-fix-2",
+      "log": {
+        "path": "evidence/xray-svg-review-fix-2.log",
+        "sha256": "28d3b9e880a77975493dc7e359144c0295a4f694cfe0af4f928c22307bc5c320"
+      },
+      "observation": "18 edges; SVG SHA-256 86654740d691a080c8275587d7472eb837677f30e82ee36dec3a2910a764b0d5. Superseded by xray-svg-review-fix-3 after review finding R-45.",
+      "purpose": "regenerate the architecture SVG after review finding R-43 moved WildcatArchController to row 2 and MarketLens to row 1 so each edge label sits on its own edge",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "rsvg-convert",
+        "-w",
+        "2262",
+        "-o",
+        "evidence/xray-svg-render-review-fix-2.png",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render-review-fix-2",
+      "log": {
+        "path": "evidence/xray-svg-render-review-fix-2.log",
+        "sha256": "28d3b9e880a77975493dc7e359144c0295a4f694cfe0af4f928c22307bc5c320"
+      },
+      "observation": "Full-canvas render at 2262x710; all seven contexts named, and each of the 18 edge labels sits on its own edge. Review finding R-45 found that the Protocol admin to WildcatArchController edge skipped a row and drew a second arrowhead on MarketLens. Its PNG was superseded by xray-svg-render-review-fix-3 and is not retained.",
+      "purpose": "render the final SVG for visual inspection",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "<skills>/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+        "architecture.json",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-review-fix-3",
+      "log": {
+        "path": "evidence/xray-svg-review-fix-3.log",
+        "sha256": "28d3b9e880a77975493dc7e359144c0295a4f694cfe0af4f928c22307bc5c320"
+      },
+      "observation": "18 edges drawn as 18 paths with one arrowhead each; SVG SHA-256 4aef764080dc82aac37c849cd1865b5085570b83a2c402e7b2f6f6d005923561",
+      "purpose": "regenerate the architecture SVG after review finding R-45: WildcatArchController returns to row 1 so no edge skips a row, MarketLens moves to row 0, and nodes and edges are reordered so each label sits on its own edge",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "rsvg-convert",
+        "-w",
+        "2262",
+        "-o",
+        "evidence/xray-svg-render-review-fix-3.png",
+        "architecture.svg"
+      ],
+      "exit": 0,
+      "id": "xray-svg-render-review-fix-3",
+      "log": {
+        "path": "evidence/xray-svg-render-review-fix-3.png",
+        "sha256": "be5d4928bda005da66fc291fb3ff132f4a2268e023da82c463bb8fa567b555fa"
+      },
+      "observation": "Full-canvas render at 2262x796; all seven contexts named. Every edge joins adjacent or same rows, so no edge skips a row and no arrowhead is drawn mid-route. Each of the 18 edge labels sits on its own edge. MarketLens sits in the actor row.",
+      "purpose": "render the final SVG for visual inspection",
+      "status": "passed"
+    }
+  ],
+  "schema": "issue-1963-execution/v1"
+}

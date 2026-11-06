@@ -61,6 +61,21 @@ writes non-canonical facts and a witness manifest to the named paths.
 `verify-compound-witness` reads the release and those two outputs, rebuilds the
 facts and writes nothing. Neither command changes the Alexandria release.
 
+`wildcat-view` verifies an Alexandria Wildcat V1/V2 interval release and
+writes a separate historical view to `--out`. `verify-wildcat-view` rebuilds
+the expected view and compares every byte. Both operate offline and preserve
+unsupported fields, raw capture coverage and source references. Neither
+changes the raw release or writes canonical schema 3 events.
+
+`wildcat-canonical --alexandria-release DIR --release ID --out NEW_DIR`
+builds canonical schema 3 events for deployed Wildcat V1/V2 from one verified
+Alexandria raw release. It copies the full raw release into
+`source/raw-release/` inside a fresh output directory. `verify coverage.json`
+rederives generation, emitter role, concrete ABI, parties, amounts, evidence
+classes and coverage from those copied bytes. Both operate offline; constructed
+inputs retain their fixture qualification. Read `docs/wildcat-canonical.md`
+before using the result.
+
 ## What this skill must refuse
 
 - No path escape. Absolute paths, parent traversal, symlinks and release
@@ -76,8 +91,8 @@ facts and writes nothing. Neither command changes the Alexandria release.
   universal claim about repayment, delinquency or default.
 - No identity inference or score. The ledger records sourced events; it does
   not identify people or rate a counterparty.
-- No chain-proof claim. The captured block is what the hosted indexer reported;
-  neither it nor each event is independently proved against Ethereum here.
+- No chain-proof claim. Captured logs and block hashes are provider-reported;
+  neither the block nor each event is independently proved against Ethereum here.
 
 If a build, verification, source check or test did not run, say so plainly and
 do not describe it as successful.

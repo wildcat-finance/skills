@@ -1,0 +1,22 @@
+{
+  "LIQUIDATION_COOLDOWN()": "a5905b55",
+  "availableCollateral()": "1a63dfe0",
+  "collateralAsset()": "aabaecd6",
+  "deposit(uint256)": "b6b55f25",
+  "factory()": "c45a0155",
+  "fullLiquidationIndex()": "7ed9f4a9",
+  "getDepositor(address)": "6e2baf48",
+  "getMarketDelinquencyStatus()": "f811c6fb",
+  "getReclaimableAmount(address)": "35c21d5d",
+  "liquidateCollateral(address,bytes,uint256,uint256,uint256)": "bee26b36",
+  "market()": "80f55605",
+  "marketBorrower()": "a481cc9a",
+  "maxRepaymentBips()": "037139bc",
+  "name()": "06fdde03",
+  "nextLiquidationTrigger()": "ad7a57c9",
+  "reclaimCollateral()": "f9686e72",
+  "rescueTokens(address)": "00ae3bf8",
+  "sharesOf(address)": "f5eb42dc",
+  "totalShares()": "3a98ef39",
+  "underlyingAsset()": "7158da7c"
+}

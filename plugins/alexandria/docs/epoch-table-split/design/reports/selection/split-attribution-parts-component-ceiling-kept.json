@@ -1,0 +1,9 @@
+{
+  "candidate": "split-attribution-parts",
+  "command": "python3 .hexaemeron/design/resolve.py component-ceiling-kept --candidate split-attribution-parts",
+  "criterion": "component-ceiling-kept",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 50873606
+}

@@ -1,0 +1,76 @@
+{
+  "schema": "wildcat.kickoff-recovery-issues.v1",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+  "observed_on": "2026-09-13",
+  "issues": [
+    {
+      "issue": 1589,
+      "url": "https://github.com/wildcat-finance/skills/issues/1589",
+      "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+      "title": "protasis-wish: recover Wildcat V1 deployment epochs and build inputs",
+      "targets": [
+        "wildcat-v1-ethereum-mainnet"
+      ],
+      "body_sha256": "04bc020d8a00b08356198291b51c83a718caf216f2fe7f3f74f8ac271c068c13",
+      "body": "V1 controller and market init-code source matches have not been reproduced. The preserved Ethereum observation at block 25960042 identifies candidate contracts but does not establish all historical implementation epochs.\n\nThis is a source-recovery child of https://github.com/wildcat-finance/skills/issues/1482, under the [approved scope](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034). Surveyor under Protasis owns recovery; the target reviewer checks the resulting source/deployment mapping.\n\nRegistry rows: `wildcat-v1-ethereum-mainnet` in `docs/kickoff/1359/targets.json`.\n\nPin the V1 factory, controllers, stored init code and covered market instances on Ethereum. Recover exact source revisions and compiler inputs, reproduce the code matches, and bind each deployment epoch to block hashes. Preserve the distinct arch-controller and sanctions-sentinel revisions.\n\nAcceptance: Commit the retrievable evidence, input/output digests and exact reproduction commands/results. Link every scoped address and epoch to its source and build inputs; name every exclusion. Update the named registry rows only when the required matches are established. Until then they remain blocked for deployed-code use. This child requires no downstream corpus, adapter, audit or campaign implementation.\n\nFiat-Required: 0\n\n```carryover\nnone | none | this child owns the named source-recovery gap; downstream implementation remains with its existing tickets\n```\n"
+    },
+    {
+      "issue": 1590,
+      "url": "https://github.com/wildcat-finance/skills/issues/1590",
+      "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+      "title": "protasis-wish: complete the approved Wildcat V2 estate source map",
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "body_sha256": "8fb6db51f475d73cf2c6e110a8e6e7fba4a33ede941c94ec2895dea99ff1e434",
+      "body": "The existing row matches core factory and stored init code but lacks the complete instance, hook and role-provider inventory. WildcatFeeRecipient and CollateralFactory source identity remains unestablished.\n\nThis is a source-recovery child of https://github.com/wildcat-finance/skills/issues/1482, under the [approved scope](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034). Surveyor under Protasis owns recovery; the target reviewer checks the resulting source/deployment mapping.\n\nRegistry rows: `wildcat-v2-ethereum-mainnet` in `docs/kickoff/1359/targets.json`.\n\nComplete the Ethereum factory-to-instance, template, hook and role-provider map, including the third FixedTermHooks template. Resolve both recorded MarketLens deployments by epoch and consumer use. Recover missing fee-recipient and collateral source/build inputs; bind the PR #1460 emitter pin to the relevant deployed epochs. Record any protected-set exclusions with their owner and reason.\n\nAcceptance: Commit the retrievable evidence, input/output digests and exact reproduction commands/results. Link every scoped address and epoch to its source and build inputs; name every exclusion. Update the named registry rows only when the required matches are established. Until then they remain blocked for deployed-code use. This child requires no downstream corpus, adapter, audit or campaign implementation.\n\nFiat-Required: 0\n\n```carryover\nnone | none | this child owns the named source-recovery gap; downstream implementation remains with its existing tickets\n```\n"
+    },
+    {
+      "issue": 1591,
+      "url": "https://github.com/wildcat-finance/skills/issues/1591",
+      "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+      "title": "protasis-wish: recover Aave V3 deployment and corpus input pins",
+      "targets": [
+        "aave-v3"
+      ],
+      "body_sha256": "0168ded8d23ff655badb0ade7176d788b39edb7450a039ea530c87d40d9f173c",
+      "body": "The registry locates aave-v3-origin source, but carries no approved deployment/source epoch table or compiler-input bundle. The roughly 35 deployments cited by #1395 have not been enumerated against source.\n\nThis is a source-recovery child of https://github.com/wildcat-finance/skills/issues/1482, under the [approved scope](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034). Surveyor under Protasis owns recovery; the target reviewer checks the resulting source/deployment mapping.\n\nRegistry rows: `aave-v3` in `docs/kickoff/1359/targets.json`.\n\nEnumerate the Aave V3 deployments required by #1395, distinguishing aave-v3-core and aave-v3-origin revisions. Pin chains, proxy/implementation addresses, reference blocks and hashes, exact source/build/compiler inputs and documentation revisions. Keep Aave V4 outside this scope.\n\nAcceptance: Commit the retrievable evidence, input/output digests and exact reproduction commands/results. Link every scoped address and epoch to its source and build inputs; name every exclusion. Update the named registry rows only when the required matches are established. Until then they remain blocked for deployed-code use. This child requires no downstream corpus, adapter, audit or campaign implementation.\n\nFiat-Required: 0\n\n```carryover\nnone | none | this child owns the named source-recovery gap; downstream implementation remains with its existing tickets\n```\n"
+    },
+    {
+      "issue": 1592,
+      "url": "https://github.com/wildcat-finance/skills/issues/1592",
+      "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+      "title": "protasis-wish: recover the three approved Maple contract-family input bundles",
+      "targets": [
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term"
+      ],
+      "body_sha256": "231fe4a7f1dfdabf5a3bfec8536cc86c2679334e7343c9392772438b173a5d8e",
+      "body": "The registry locates Maple repositories but has no deployment-to-source or compiler-input bundles for the approved three contract families.\n\nThis is a source-recovery child of https://github.com/wildcat-finance/skills/issues/1482, under the [approved scope](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034). Surveyor under Protasis owns recovery; the target reviewer checks the resulting source/deployment mapping.\n\nRegistry rows: `maple-v1`, `maple-v2-fixed-term`, `maple-v2-open-term` in `docs/kickoff/1359/targets.json`.\n\nDeliver separate bundles for legacy V1, V2 fixed-term and V2 open-term. Include factories, loans, loan managers, pools, pool managers and relevant Syrup routers; distinguish shared V2 code from family-specific sources. Pin chain/address/block epochs, source and submodule commits, compiler inputs and documentation. Keep fixed-term and open-term labelled as V2, and preserve historical V1 documentation for the V1 corpus.\n\nAcceptance: Commit the retrievable evidence, input/output digests and exact reproduction commands/results. Link every scoped address and epoch to its source and build inputs; name every exclusion. Update the named registry rows only when the required matches are established. Until then they remain blocked for deployed-code use. This child requires no downstream corpus, adapter, audit or campaign implementation.\n\nFiat-Required: 0\n\n```carryover\nnone | none | this child owns the named source-recovery gap; downstream implementation remains with its existing tickets\n```\n"
+    },
+    {
+      "issue": 1593,
+      "url": "https://github.com/wildcat-finance/skills/issues/1593",
+      "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+      "title": "protasis-wish: recover Euler V1 and V2 deployment and compiler inputs",
+      "targets": [
+        "euler-v1",
+        "euler-v2"
+      ],
+      "body_sha256": "a728b5a099cffeb9327ca37f9cf8c03f6aba58b2e2d96aa248e25c465d914882",
+      "body": "The registry locates the V1 source, V2 vault kit and EVC repositories but has no complete deployed-source or compiler-input bundles. Existing event-adapter evidence does not establish those source matches.\n\nThis is a source-recovery child of https://github.com/wildcat-finance/skills/issues/1482, under the [approved scope](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034). Surveyor under Protasis owns recovery; the target reviewer checks the resulting source/deployment mapping.\n\nRegistry rows: `euler-v1`, `euler-v2` in `docs/kickoff/1359/targets.json`.\n\nDeliver separate V1 and V2 deployment tables, including the V1 proxy/module relationships and V2 vault/factory/EVC relationships. Pin exact source and dependency revisions, chain/address/block hashes, build/compiler inputs and documentation. Distinguish V2 protocol code from the service named Euler V3 API.\n\nAcceptance: Commit the retrievable evidence, input/output digests and exact reproduction commands/results. Link every scoped address and epoch to its source and build inputs; name every exclusion. Update the named registry rows only when the required matches are established. Until then they remain blocked for deployed-code use. This child requires no downstream corpus, adapter, audit or campaign implementation.\n\nFiat-Required: 0\n\n```carryover\nnone | none | this child owns the named source-recovery gap; downstream implementation remains with its existing tickets\n```\n"
+    },
+    {
+      "issue": 1594,
+      "url": "https://github.com/wildcat-finance/skills/issues/1594",
+      "parent": "https://github.com/wildcat-finance/skills/issues/1482",
+      "title": "protasis-wish: recover Centrifuge V3 hub and spoke input bindings",
+      "targets": [
+        "centrifuge-v3"
+      ],
+      "body_sha256": "a98ef3a30e4ff251e566c6b57d0fcbdfef7ce087ad1676ffd42f43556318f5e8",
+      "body": "The registry locates the V3 protocol repository but has no bound hub/spoke deployment epochs or compiler-input bundle.\n\nThis is a source-recovery child of https://github.com/wildcat-finance/skills/issues/1482, under the [approved scope](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034). Surveyor under Protasis owns recovery; the target reviewer checks the resulting source/deployment mapping.\n\nRegistry rows: `centrifuge-v3` in `docs/kickoff/1359/targets.json`.\n\nPin the selected V3 hub and corresponding ERC-7540 spokes as one joined deployment inventory: chain IDs, pool/share identifiers, contract addresses, blocks and hashes, source revisions, build/compiler inputs and documentation. Preserve the hub-to-spoke accounting relationship. Legacy Tinlake and V2 liquidity pools remain outside this approved slot.\n\nAcceptance: Commit the retrievable evidence, input/output digests and exact reproduction commands/results. Link every scoped address and epoch to its source and build inputs; name every exclusion. Update the named registry rows only when the required matches are established. Until then they remain blocked for deployed-code use. This child requires no downstream corpus, adapter, audit or campaign implementation.\n\nFiat-Required: 0\n\n```carryover\nnone | none | this child owns the named source-recovery gap; downstream implementation remains with its existing tickets\n```\n"
+    }
+  ]
+}

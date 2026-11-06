@@ -1,0 +1,9 @@
+{
+  "candidate": "reviewed-prior-pins",
+  "command": "python3 .hexaemeron/design/resolve.py --candidate reviewed-prior-pins --criterion verify-wall-ms --report .hexaemeron/reports/design/reviewed-prior-pins-verify-wall-ms.json",
+  "criterion": "verify-wall-ms",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 1313
+}

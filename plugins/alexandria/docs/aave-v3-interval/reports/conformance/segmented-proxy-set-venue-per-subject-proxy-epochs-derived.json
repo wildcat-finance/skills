@@ -1,0 +1,9 @@
+{
+  "candidate": "segmented-proxy-set-venue",
+  "command": "python3 .hexaemeron/design/conformance.py per-subject-proxy-epochs-derived --candidate segmented-proxy-set-venue",
+  "criterion": "per-subject-proxy-epochs-derived",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

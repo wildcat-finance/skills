@@ -219,9 +219,9 @@ Do not carry on and mention it.
    grep '^- Current version' <target>/plugins/*/skills/fiat/EVOLUTION.md
    ```
 
-5. If the run has already been initialised, `hexctl reset` is wrong: it archives
-   a run that has done nothing. Continue the initialised run under the updated
-   controller, which the durable state is designed for.
+5. If the run has already been initialised, `hexctl reset` is wrong: it
+   refuses an incomplete run that is not halted. Continue the initialised run
+   under the updated controller, which the durable state is designed for.
 
 ## When it cannot be updated
 

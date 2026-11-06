@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-limit-matched-reader",
+  "command": "python3 .hexaemeron/design/resolve.py pinned-statements-stay-single --candidate raised-limit-matched-reader",
+  "criterion": "pinned-statements-stay-single",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

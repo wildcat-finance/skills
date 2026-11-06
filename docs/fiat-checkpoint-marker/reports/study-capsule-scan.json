@@ -1,0 +1,8 @@
+{
+  "schema": "fiat-1755-study-capsule-scan/v1",
+  "controller_sha256": "7633f59421ea1e648e2d1f86b5a268caf60fea7b177525f59b4c70d3d800b35a",
+  "files": 64,
+  "bytes": 226505,
+  "findings": [],
+  "boundary": "Read-only current-scanner pass over study controller files; no archive created."
+}

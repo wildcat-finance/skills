@@ -10,7 +10,7 @@ the omissions listed below.
 Use this path only when the router is installed as one Agent Skills package.
 The full-source path is valid only when `../../../PROMISE_MACHINE.md` identifies
 `promise-machine/v1` and the sibling `../../../plugins/` directory holds all
-sixteen runtime contracts. A target repository's own `AGENTS.md` does not make
+eighteen runtime contracts. A target repository's own `AGENTS.md` does not make
 it a Wildcat Skills source checkout.
 
 ## Verify the copy
@@ -45,9 +45,80 @@ After a passing verification:
 `runtime/MANIFEST.json` binds every copied file to its canonical source path,
 byte count, and SHA-256 digest. It also binds the installed-tree Horos boundary
 generated from those files. The package deliberately omits host discovery
-manifests, plugin development suites, historical audit records, and
-Alexandria's 16 MB Compound v3 Phase 0 trace inputs and built release. The
-example's explanation and rebuild entrypoint remain present, but they do not
-make the offline demonstration runnable. If a selected operation needs one of
-the omitted surfaces, stop and use a full checkout of
-`wildcat-finance/skills`; absence does not authorise a substitute claim.
+manifests, plugin development suites, historical audit records, the checkpoint
+authority conformance corpora under
+`plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/` and
+`native-fixture/`, and Alexandria's 16 MB Compound v3 Phase 0 trace inputs and
+built release. The example's explanation remains present, but it does not
+make the offline demonstration runnable, and the checkpoint authority schemas,
+native profile and capability map remain present without the corpora their
+conformance reporters read. If a selected operation needs one of the omitted
+surfaces, stop and use a full checkout of `wildcat-finance/skills`; absence
+does not authorise a substitute claim.
+
+Beyond those specific surfaces, one example-payload-class omits every other
+non-Markdown file under `plugins/*/examples/`: the full source checkout stays
+the home for a demonstration payload the package does not carry. Two
+exceptions keep a file packaged regardless: the retained Lazarus release
+below, and any example payload a packaged Markdown document links, which
+`measure --json` lists under `kept_by_link`. Rebuilding, replaying, or running
+an example's demonstration program that the manifest does not carry needs a
+full checkout of `wildcat-finance/skills`. The decision is recorded in
+`adr/omit-example-payloads-from-the-portable-runtime`.
+
+Anamnesis retained-rights delivery records under
+`plugins/anamnesis/docs/source-rights/` also remain in the full source checkout,
+beside the omitted corpus specimens. Reproducing that delivery evidence needs
+the full checkout. The installed canonical skill, schemas and runtime commands
+remain present.
+
+The complete Lazarus Aave v4 v1 fixture remains under
+`runtime/plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/`, inside its
+unchanged preservation release. The package omits six duplicate payload files
+from `runtime/plugins/lazarus/examples/aave-v4-spoke-v1/`. Its program remains
+for the historical demonstration record, linked from
+`plugins/lazarus/skills/lazarus/EVOLUTION.md`, but that directory is not a
+complete installed fixture. Use the retained fixture for `verify` and
+`replay`, and its parent release for `verify-release`. Run the source
+reproduction demonstration from a full checkout. Before omitting any payload,
+the generator requires both copies to be tracked regular files with identical
+bytes and modes and no symlinked component. The decision is recorded in
+`adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime`.
+
+Tabularium's v0 and superseding v1 payloads and reconstruction programs also
+require a full checkout under the same class; each release's `README.md` and
+`DATA-DICTIONARY.md` remain in this package.
+
+Wildcat V1 and V2 interval demonstration payloads also remain in the full
+source checkout: the direct JSON files and V1 pre-plan probes under
+`plugins/alexandria/examples/wildcat-v1-interval-v0/` and
+`wildcat-v2-interval-v0/`. Their documents remain; their Python entrypoints
+stay in the full checkout under the example-payload class above.
+Run their metadata checks, including the combined `verify-preserved` operation,
+from a full checkout; rebuilding additionally requires the private staging
+archives. Collector, verifier and schema runtime files are retained. See
+`adr/keep-wildcat-interval-demonstration-payloads-in-full-checkouts`.
+
+The Ariadne `plugins/ariadne/examples/wildcat-datasets-v0/` example retains
+only its README in this package. Both metadata verification and its full
+demonstration require the source checkout. All example evidence stays in that
+checkout; core Ariadne capture, verifier and schema runtime files remain here.
+The same distribution decision above records this extension.
+
+Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
+directories also remain in the source checkout. Their inline Markdown images
+and quoted HTML `img` references are removed only from packaged copies. The
+manifest records the omitted files and each transformed file's original
+digest, original byte length and removed byte ranges, beside its output digest
+and length. Other Markdown content remains byte-identical to its source. Generation
+requires at least 5,242,880 bytes of headroom below the 26,214,400-byte ceiling;
+the complete package count includes the runtime manifest and outer files.
+The installed verifier checks the resulting output manifest.
+
+Portrait removal changes the whole-file identities used by the evaluation
+record. The generator verifies the canonical record, emits all eleven source
+and packaged prompts through the evaluation owner, and refuses if any prompt
+differs. Only then does it replay the unchanged historical answers through
+the owner's tally for the packaged record. Its manifest row binds the original
+and derived bytes, unchanged prompt digests and answer identity. The original
+model and date remain fixed; this derivation makes no new model observation.

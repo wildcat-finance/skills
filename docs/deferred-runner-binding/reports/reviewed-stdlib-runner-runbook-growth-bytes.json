@@ -1,0 +1,9 @@
+{
+  "candidate": "reviewed-stdlib-runner",
+  "command": "python3 .hexaemeron/design/probe.py --candidate reviewed-stdlib-runner --criterion runbook-growth-bytes --report .hexaemeron/reports/reviewed-stdlib-runner-runbook-growth-bytes.json",
+  "criterion": "runbook-growth-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 627
+}

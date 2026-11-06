@@ -6,6 +6,7 @@ import contextlib
 import io
 import json
 from pathlib import Path
+import secrets
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -118,6 +119,62 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(raised.exception.code, 2)
             self.assertEqual(existing.read_text(encoding="utf-8"), "keep\n")
             self.assertEqual(list(outside.iterdir()), [])
+
+    def test_absolute_report_below_worktree_path_alias_is_bound_to_the_root(self) -> None:
+        # Elenchus substitutes {report} with a path below TMPDIR, which on macOS
+        # sits under the /var alias of /private/var (#1815). Refusal here is an
+        # assertion failure, not an error, so the unfixed runner is classified.
+        with tempfile.TemporaryDirectory(prefix="brevitas-runner-") as directory:
+            parent = Path(directory).resolve()
+            root = parent / "worktree"
+            root.mkdir()
+            alias = parent / "worktree-alias"
+            alias.symlink_to(root, target_is_directory=True)
+            report = alias / "reports" / "result.json"
+
+            with mock.patch.object(
+                runner, "worktree_root", return_value=root
+            ), contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    target = runner.report_target([str(report)])
+                except SystemExit as raised:
+                    self.fail(f"alias path refused with exit {raised.code}")
+
+            self.assertEqual(target[0], root)
+            self.assertEqual(target[2], ("reports", "result.json"))
+
+    def test_an_alias_of_this_checkout_binds_the_report_to_the_real_root(self) -> None:
+        root = runner.worktree_root()
+        with tempfile.TemporaryDirectory(prefix="brevitas-runner-") as directory:
+            alias = Path(directory) / "link"
+            alias.symlink_to(root, target_is_directory=True)
+            name = f"brevitas-1815-{secrets.token_hex(8)}.json"
+            report = alias / ".hexaemeron" / name
+
+            with contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    target = runner.report_target([str(report)])
+                except SystemExit as raised:
+                    self.fail(f"alias of the checkout refused with exit {raised.code}")
+
+        self.assertEqual(target[0], root.resolve(strict=True))
+        self.assertEqual(target[2], (".hexaemeron", name))
+        self.assertFalse((root / ".hexaemeron" / name).exists())
+
+    def test_symlink_below_the_worktree_root_remains_refused(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="brevitas-runner-") as directory:
+            root = Path(directory).resolve()
+            self_link = root / "self-link"
+            self_link.symlink_to(root, target_is_directory=True)
+
+            with mock.patch.object(
+                runner, "worktree_root", return_value=root
+            ), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(
+                SystemExit
+            ) as raised:
+                runner.report_target([str(self_link / "report.json")])
+
+            self.assertEqual(raised.exception.code, 2)
 
     def test_interrupted_partial_write_leaves_no_report_or_temporary(self) -> None:
         result = SimpleNamespace(

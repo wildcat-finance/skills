@@ -1,0 +1,17 @@
+{
+  "change": "Name the archival .txt exception in the source-copy mapping. All commands, bounds, report semantics, selection limits and decision provenance remain unchanged.",
+  "schema": "step-1-prose-review/v1",
+  "sequence": [
+    "Sapheneia protected-content shape",
+    "Imprimatur zero defects before Vulgate",
+    "Vulgate surface review without further changes",
+    "protected content comparison",
+    "final Imprimatur zero defects"
+  ],
+  "subject": {
+    "before_sha256": "54e26ae19446da259564254bf384bd58515968a6cb5c3cd5766e425286ffbe81",
+    "path": "docs/protasis-success-criteria/README.md",
+    "sha256": "6e1bee7c2be604ccb5c489c6aab66a0bef90b4bc8c32a19418f27e6cbede7d32"
+  },
+  "supersedes_readme": "step-1-prose-review-final.json"
+}

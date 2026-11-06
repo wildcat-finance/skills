@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "plugins/hexaemeron/tests/run_tests.py",
+    "--jobs",
+    "12",
+    "--elenchus-report",
+    ".hexaemeron/reports/step-1-exit.json"
+  ],
+  "exit": 0,
+  "seconds": 660.3676616660086,
+  "staged_tree": "798741ae1a2d1c3d6c79651c40073ce8ed02166c",
+  "log_sha256": "e605d1153c5fe1d390f0e5be3a0beaf8a16c0ff0a0911083ed294a5a520685b3"
+}

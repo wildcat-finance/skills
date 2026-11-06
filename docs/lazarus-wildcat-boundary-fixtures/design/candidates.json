@@ -1,0 +1,48 @@
+{
+  "schema": "fiat-1384-design-inputs/v1",
+  "in_tree_margin_bytes": 2256023,
+  "in_tree_margin_source": "python3 scripts/portable_promise_machine.py measure at 2dbfe40e08ee41429c521e0089a31ed872a1890d on 2026-09-27: complete package 18715497 bytes against the 20971520-byte line (26214400-byte cap minus the 5242880-byte reserve), margin 2256023 bytes",
+  "plan_elapsed_ceiling_seconds": 86400,
+  "committed_design_files": [
+    "probe.py",
+    "wildcat_slots.py",
+    "plan_v3.py",
+    "resolve.py",
+    "candidates.json",
+    "probe-v1.json",
+    "probe-v2.json",
+    "plans/v1-full.summary.json",
+    "plans/v1-state-only.summary.json",
+    "plans/v2-full.summary.json",
+    "plans/v2-state-only.summary.json"
+  ],
+  "example_dir": "plugins/lazarus/examples/wildcat-boundary-v0",
+  "release_env": ["WILDCAT_BOUNDARY_V1_RELEASE", "WILDCAT_BOUNDARY_V2_RELEASE"],
+  "candidates": {
+    "full-map-r2-handoff": {
+      "map": "full",
+      "home": "external",
+      "summary": "One plan-v3 fixture per estate proving every mapped storage word, every subject's code and one scoped receipt witness; the value-map calls recorded byte for byte; fixture and release archives handed to Miskatonic R2 through a handoff pull request, with generator, boundary inputs, digests and relation report committed in skills."
+    },
+    "full-map-archive-repo": {
+      "map": "full",
+      "home": "external",
+      "summary": "The same two fixtures and releases, with their archives committed to the private archive repository beside the interval captures and only digests, generator, boundary inputs and relation report in skills."
+    },
+    "full-map-in-tree": {
+      "map": "full",
+      "home": "in-tree",
+      "summary": "The same two fixtures and releases committed under plugins/lazarus/examples/ as the Aave v4 example is."
+    },
+    "state-words-in-tree": {
+      "map": "state-only",
+      "home": "in-tree",
+      "summary": "A reduced fixture per estate proving only the four market state words, the unpaid-queue head and every subject's code, with account, batch, status and asset-balance numbers left as recorded calls, committed under plugins/lazarus/examples/."
+    }
+  },
+  "selection": {
+    "candidate": "full-map-r2-handoff",
+    "rule": "user-policy",
+    "policy_ref": "Maintainer ruling of 2026-09-26 on the skills#1924 run, recorded in that run's runbook amendment to Step 5: Wildcat fixture custody is Miskatonic and its R2 buckets, reached through a handoff pull request under storage/r2/handoffs/ and Miskatonic's own custody tooling after the operator accepts the source-register row by digest, rather than the private archive repository that holds the interval captures. Confirmed for skills#1384 by the maintainer on 2026-09-27, who also declined a public copy."
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "adjacent-only",
+  "criterion": "stable-primary-count",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate adjacent-only --criterion stable-primary-count --report .hexaemeron/reports/adjacent-only-stable-primary-count.json",
+  "exit": 0
+}

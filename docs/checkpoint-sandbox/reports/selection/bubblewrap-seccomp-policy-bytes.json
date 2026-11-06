@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bubblewrap-seccomp",
+  "criterion": "policy-bytes",
+  "value": 392,
+  "unit": "bytes",
+  "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion policy-bytes --report .hexaemeron/reports/selection/bubblewrap-seccomp-policy-bytes.json",
+  "exit": 0
+}

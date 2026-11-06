@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -21,6 +22,38 @@ def canonical_skills(plugin):
 
 
 class PortableSkillTests(unittest.TestCase):
+    def test_wildcat_dataset_omission_and_complete_package_budget(self):
+        module = portable_module()
+        prefix = "plugins/ariadne/examples/wildcat-datasets-v0/"
+        for name in ("inputs.json", "spec/study.md", "inputs/v1/manifest.json.gz",
+                     "demo.py", "nested/README.md"):
+            with self.subTest(name=name):
+                self.assertTrue(module._omitted(Path(prefix + name)))
+        self.assertFalse(module._omitted(Path(prefix + "README.md")))
+        # The example class omits non-Markdown example files, so a Markdown
+        # path in a look-alike directory isolates the Ariadne row's boundary.
+        self.assertFalse(module._omitted(
+            Path("plugins/ariadne/examples/wildcat-datasets-v01/notes.md")))
+        files, _modes = module._package_bytes(ROOT, "0" * 40)
+        runtime = ".agents/skills/promise-machine/runtime/"
+        retained = {name.removeprefix(runtime) for name in files if name.startswith(runtime)}
+        self.assertEqual({name for name in retained if name.startswith(prefix)},
+                         {prefix + "README.md"})
+        for directory in ("scripts", "schemas"):
+            sources = [source for source in (PLUGINS / "ariadne" / directory).rglob("*")
+                       if source.is_file() and source.suffix in {".py", ".json"}]
+            self.assertTrue(sources, directory)
+            for source in sources:
+                self.assertIn(source.relative_to(ROOT).as_posix(), retained)
+        self.assertIn("plugins/ariadne/examples/grounded_agent_demo.py", retained)
+        self.assertIn(runtime + "MANIFEST.json", files)
+        self.assertIn("README.md", files)
+        self.assertLessEqual(sum(map(len, files.values())),
+                             module.MAX_RUNTIME_BYTES - module.MIN_BYTE_HEADROOM)
+        manifest = json.loads(files[runtime + "MANIFEST.json"])
+        self.assertTrue(any(prefix.rstrip("/") in row["pattern"]
+                            for row in manifest["omissions"]))
+
     def test_plugin_manifests_name_the_public_repository(self):
         repository = "https://github.com/wildcat-finance/skills"
         marketplace = json.loads(
@@ -222,6 +255,34 @@ class RuntimeStagingTests(unittest.TestCase):
             write(outside, "%s/AGENTS.md" % self.target)
             status = self.module.stage_runtime(outside)
         self.assertEqual(status, "not a git work tree; mirror written but not staged")
+
+
+@unittest.skipIf(GIT is None, "git unavailable")
+class RuntimeWalkTests(unittest.TestCase):
+    def test_hypomnema_is_clean_after_sync_on_a_clean_source_tree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in tracked(ROOT):
+                destination = root / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / name, destination, follow_symlinks=False)
+            git(root, "init", "-q")
+            git(root, "add", ".")
+            git(root, "-c", "core.hooksPath=/dev/null", "commit", "-qm", "source tree")
+            self.assertEqual(b"", git(root, "status", "--porcelain").stdout)
+            commands = [
+                ["scripts/portable_promise_machine.py", "sync"],
+                ["scripts/portable_promise_machine.py", "check"],
+                ["plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+                 "README.md", "AGENTS.md", ".agents", "plugins", "docs"],
+            ]
+            for command in commands:
+                result = subprocess.run(  # phylax: allow subprocess: fixed repository checker argv in an isolated test tree
+                    [sys.executable, *command], cwd=root, env=git_env(),
+                    capture_output=True, text=True, timeout=120,
+                )
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual("clean\n", result.stdout)
 
 
 class ImportClosureTests(unittest.TestCase):

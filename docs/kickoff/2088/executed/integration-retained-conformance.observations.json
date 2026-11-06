@@ -1,0 +1,25 @@
+{
+  "candidate": "abi-named-amounts",
+  "criterion": "retained-conformance",
+  "observations": {
+    "inputs": [
+      {
+        "canonical_sha256": "2c0ddaf8bbcf28262f94a16051956fa1ea6957f7721246bade1f36bfab951f32",
+        "coverage_sha256": "3638999063722c17556096a16ef89a93cdf643acaca2015c5db904716268273d",
+        "generation": "wildcat-v1",
+        "raw_release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+      },
+      {
+        "canonical_sha256": "909fd266705331e665cfe132a7297348215d8f1ac6a5a2625c4ddc5c49ae1193",
+        "coverage_sha256": "05d0a2950c4a1f9f356575d05ccdc379dfd49fffaa9243938eb3dbbb0c5165bc",
+        "generation": "wildcat-v2",
+        "raw_release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"
+      }
+    ],
+    "passed_generations": [
+      "wildcat-v1",
+      "wildcat-v2"
+    ]
+  },
+  "schema": "wildcat-accrual-conformance-observations/v1"
+}

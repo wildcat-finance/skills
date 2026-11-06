@@ -2,7 +2,7 @@
 name: brevitas
 description: Enforce evidence-preserving structural output budgets on engineering prose. Apply automatically to chat answers and written drafts containing audit findings, security or diff review, gas analysis, `invariant` discussion, protocol analysis, or specification commentary, and on explicit $brevitas invocation. Govern volume, structure, and connective prose only. Do not apply to code comments, commit messages, or completeness-oriented specification documents.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 <p align="center">
@@ -111,6 +111,13 @@ bare digest, Git object id, `file:line` reference or numeric token disappears.
 Abbreviated Git ids require Markdown code quoting, an explicit Git label, or an
 `owner/repository@oid` form. Fix every diagnostic and rerun for exit 0.
 
+Fiat's canonical audit ledger may use `--mode fiat-audit-record` only after the
+same tree passes `audit_synopsis.py --check .`. This explicit mode starts from
+report behaviour and suppresses only B010 for the schema-owned single H2 and
+B011 for its findings table. Every other rule remains active. Brevitas does not
+parse or establish the Fiat schema, count findings, cover risks, or establish a
+controller receipt; the synopsis checker and Fiat controller retain those jobs.
+
 Host-required status commentary is outside the draft lint boundary. Do not suppress
 status messages required by the execution environment.
 
@@ -130,10 +137,10 @@ completeness is the point. Do not change lexicon, tone, register or accessibilit
 
 ### brevitas-structure-check
 
-- Promise: A successful answer- or report-mode lint establishes that the named draft satisfies Brevitas's mechanical line, finding, code-fence, table, heading and qualifier budgets.
+- Promise: A successful answer-, report-, or explicit Fiat-audit-record-mode lint establishes that the named draft satisfies the applicable Brevitas mechanical line, finding, code-fence, table, heading and qualifier budgets.
 - Evidence: The exact draft bytes, selected lint mode, emitted diagnostics and exit status from `scripts/brevitas.py`.
 - Evidence classes: checked
-- Boundary: The lint does not establish factual accuracy, evidence completeness, severity correctness, voice, accessibility or fitness for a completeness-oriented specification.
+- Boundary: The lint does not establish factual accuracy, evidence completeness, severity correctness, voice, accessibility or fitness for a completeness-oriented specification. `fiat-audit-record` suppresses only B010 and B011 and is admissible only after the same tree passes Fiat's synopsis check; Brevitas does not parse or establish the audit schema, finding count, risk coverage or controller receipt.
 - Authorises: Presentation of the checked draft as structurally conformant to the selected Brevitas mode.
 - Consequence: 0
 - Refuses: Calling prose Brevitas-clean when the checker did not run, reported a diagnostic, inferred the wrong mode or received an excluded document class.

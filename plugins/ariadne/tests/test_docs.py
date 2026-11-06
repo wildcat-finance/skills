@@ -13,6 +13,7 @@ from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
 from ariadne_lib import core_predicate, gates, registry  # noqa: E402
+from ariadne_lib.predicates import checkpoint_authority  # noqa: E402
 from ariadne_lib.predicates import dataset  # noqa: E402
 from ariadne_lib.predicates import grounded_agent  # noqa: E402
 from ariadne_lib.predicates import solidity_release as release  # noqa: E402
@@ -28,6 +29,7 @@ PREDICATE_DOC = os.path.join(PLUGIN, "docs", "solidity-release.md")
 DATASET_DOC = os.path.join(PLUGIN, "docs", "dataset.md")
 STATE_FIXTURE_DOC = os.path.join(PLUGIN, "docs", "state-fixture.md")
 GROUNDED_AGENT_DOC = os.path.join(PLUGIN, "docs", "grounded-agent.md")
+CHECKPOINT_AUTHORITY_DOC = os.path.join(PLUGIN, "docs", "checkpoint-authority.md")
 
 DOCUMENTED = (
     (release, PREDICATE_DOC),
@@ -35,6 +37,7 @@ DOCUMENTED = (
     (state_fixture, STATE_FIXTURE_DOC),
     (state_fixture.V2, STATE_FIXTURE_DOC),
     (grounded_agent, GROUNDED_AGENT_DOC),
+    (checkpoint_authority, CHECKPOINT_AUTHORITY_DOC),
 )
 """Each shipped predicate and the document that describes its fields."""
 EXAMPLES = os.path.join(PLUGIN, "examples")

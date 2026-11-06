@@ -1,0 +1,83 @@
+{
+  "results": {
+    "in-place-migration": {
+      "added-example-bytes": 0,
+      "documents_checked": 506,
+      "emitted-values-admitted": true,
+      "legacy-v2-read-path": false,
+      "published-release-bytes-unchanged": false,
+      "shipped-v3-ledgers": 3,
+      "v3-schema-files-declared": true
+    },
+    "repair-v2-only": {
+      "added-example-bytes": 0,
+      "documents_checked": 506,
+      "emitted-values-admitted": true,
+      "legacy-v2-read-path": true,
+      "published-release-bytes-unchanged": true,
+      "shipped-v3-ledgers": 0,
+      "v3-schema-files-declared": false
+    },
+    "superseding-releases": {
+      "added-example-bytes": 1710643,
+      "documents_checked": 506,
+      "emitted-values-admitted": true,
+      "legacy-v2-read-path": true,
+      "published-release-bytes-unchanged": true,
+      "shipped-v3-ledgers": 3,
+      "v3-schema-files-declared": true
+    },
+    "v3-without-shipped-examples": {
+      "added-example-bytes": 0,
+      "documents_checked": 506,
+      "emitted-values-admitted": true,
+      "legacy-v2-read-path": true,
+      "published-release-bytes-unchanged": true,
+      "shipped-v3-ledgers": 0,
+      "v3-schema-files-declared": true
+    }
+  },
+  "tuples": [
+    {
+      "adapter": "aave-v4",
+      "adapter_version": "2.0.0",
+      "evidence_class": "native-log",
+      "mapping_rules": [
+        "aave-v4.borrow.v2",
+        "aave-v4.repay.v2"
+      ],
+      "protocol_generation": "aave-v4",
+      "source_api": "ethereum-json-rpc",
+      "venue": "aave-v4"
+    },
+    {
+      "adapter": "euler-v1",
+      "adapter_version": "1.0.0",
+      "evidence_class": "hosted-rpc-reported-log-scope",
+      "mapping_rules": [
+        "euler-v1.borrow.v1",
+        "euler-v1.liquidation.v1",
+        "euler-v1.repay.v1"
+      ],
+      "protocol_generation": "euler-v1",
+      "source_api": "ethereum-json-rpc",
+      "venue": "euler-v1"
+    },
+    {
+      "adapter": "euler-v2",
+      "adapter_version": "1.0.0",
+      "evidence_class": "hosted-indexer-reported-query-scope",
+      "mapping_rules": [
+        "euler-v2.borrow.v1",
+        "euler-v2.debt-socialized.v1",
+        "euler-v2.interest-accrued.v1",
+        "euler-v2.liquidation.v1",
+        "euler-v2.pull-debt.v1",
+        "euler-v2.repay.v1"
+      ],
+      "protocol_generation": "euler-v2",
+      "source_api": "euler-v3",
+      "venue": "euler-v2"
+    }
+  ]
+}

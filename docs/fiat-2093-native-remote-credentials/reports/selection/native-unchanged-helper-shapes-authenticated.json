@@ -1,0 +1,9 @@
+{
+  "candidate": "native-unchanged",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate native-unchanged --criterion helper-shapes-authenticated --out .hexaemeron/design/reports/selection/native-unchanged-helper-shapes-authenticated.json",
+  "criterion": "helper-shapes-authenticated",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

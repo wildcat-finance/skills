@@ -7,9 +7,9 @@
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+**Current frontier.** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 
-**Next Fiat job.** Use /hexaemeron:fiat to attribute an implementation epoch by transaction position as well as by block, so a proxy log emitted earlier in an upgrade block is not credited to the implementation that replaced the one which produced it. Accepted when the epoch table carries the boundary transaction and log index beside its block number, `discover_epochs` refuses a preserved log it cannot place against that boundary, `check` re-derives the same attribution offline from the release alone, and an executable case over an upgrade block carrying a proxy log before the upgrade fails without the change. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to reconcile each provider log's transaction index as well as its identity, so a second provider that reports a different position for a log the v2 receipt attributes by position is disputed rather than agreed. Accepted when a versioned reconciliation record disputes an otherwise identical log whose providers differ only in `transactionIndex` and keeps both providers' bytes for that shard, identical positions still agree, a malformed position from either provider still leaves the interval unreconciled, every historical release keeps its identifier and recorded comparison meaning, and an executable case over that index-only difference fails without the change. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## START HERE
@@ -85,9 +85,12 @@ unharvested registry venues visible as gaps.
   separate explicit network capture command and pinned
   [production harvest specification](./docs/compound-v3-harvest.md);
 - the resumable [Ethereum USDC interval collector](./docs/usdc-interval-collector.md)
-  with its [offline demonstration](./examples/usdc-interval-v0/README.md); and
+  with its [offline demonstration](./examples/usdc-interval-v0/README.md);
 - a preserved [live Ethereum mainnet interval](./examples/usdc-interval-live-v0/README.md)
-  that rebuilds to its release identifier with no network.
+  that rebuilds to its release identifier with no network; and
+- a [positional epoch demonstration](./examples/usdc-interval-epochs-v0/README.md)
+  that pins each log's owner over a synthetic upgrade block and rebuilds the
+  live interval as an `alexandria-interval-receipt/v2` release.
 
 ## DAY TO DAY
 
@@ -170,9 +173,11 @@ python3 examples/credit-history-v0/demo.py build --output "$output"
 python3 examples/credit-history-v0/demo.py verify "$output"
 ```
 
-Its expected receipts bind 522 derived events, 31 observations, an 11-event
-Clearpool address query and 11 Probitas records. Aave v4 remains partial for
-that query because the mapping declares 25 unsupported native records.
+Its derived release holds 511 events and no position observations. The
+expected receipts bind a 49-event query over the two declared addresses, 38
+Aave v4 and 11 Clearpool, and 49 Probitas records. Aave v4 coverage is
+`covered` for that query; Clearpool is `partial` because its fixture covers
+only one of the two addresses.
 
 ## COMPOUND V3 PHASE 0
 
@@ -228,6 +233,12 @@ python3 examples/usdc-interval-live-v0/demo.py verify <that directory>
 The providers appear only as non-secret classes. No endpoint, hostname or
 credential is preserved anywhere in the capture.
 
+That demonstration reconstructs the capture's original v1 release. The same
+staging bytes also build as a v2 release with its own identifier, which
+[`usdc-interval-epochs-v0`](examples/usdc-interval-epochs-v0/README.md) pins;
+its upgrade block carries only the announcement, so both tables place each of
+the 93 logs in the same epoch.
+
 ## ARCHITECTURE
 
 The design separates:
@@ -263,6 +274,11 @@ its reported block was canonical.
   [`docs/usdc-interval-live-study.md`](docs/usdc-interval-live-study.md) and
   [`docs/usdc-interval-live-runbook.md`](docs/usdc-interval-live-runbook.md)
   record the live-boundaries run that followed.
+- [`docs/usdc-interval-epochs/study.md`](docs/usdc-interval-epochs/study.md),
+  [`runbook.md`](docs/usdc-interval-epochs/runbook.md) and
+  [`proof.md`](docs/usdc-interval-epochs/proof.md) record the
+  transaction-position epoch run, its selection evidence and its conformance
+  reports.
 - [`docs/compound-v3-harvest.md`](docs/compound-v3-harvest.md) pins Compound's
   official registry and specifies production capture, revision, checkpoint,
   reconciliation and acceptance rules. Phase 0 proves the required methods;
@@ -304,3 +320,34 @@ explicit Compound `capture`, and the interval collector's `collect` and
 ## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## BOTH PRESERVED WILDCAT ESTATES
+
+The [combined offline demonstration](examples/wildcat-estates-interval-v0/README.md) rebuilds the 16-subject V1 and
+137-subject V2 captures beside Compound, checks coverage parity and source
+identity, and exercises registry and foreign-subject refusals. Its separate
+`verify-preserved` operation checks committed metadata only. Neither operation
+makes a source-completeness or publisher-identity claim.
+
+## WILDCAT V2 WRAPPER SUBJECTS
+
+A `wildcat-v2` interval plan may declare wrapper instances in
+`wildcat_v2_wrappers`. Each one needs a preserved `WrapperDeployed` log from
+the registry's wrapper factory that names it and a registry market. It gets
+one epoch from that log's block, and its logs sit in the same `logs` journal
+as every other subject's. The release binds the derived set as the
+`wrapper-subjects` component, which `check` re-derives. Only constructed data
+has exercised this path; no real wrapper has been collected. Wrapper
+immutability and single-factory provenance are not established. The
+[collector document](docs/usdc-interval-collector.md#wildcat-v2-wrapper-instances)
+states the rule.
+
+## THE PRESERVED AAVE V3 INTERVAL
+
+The [Aave V3 demonstration](examples/aave-v3-interval-v0/README.md) holds the
+Ethereum main market's 356 subjects as twelve segment releases over blocks
+16,291,071 to 26,022,093: 32,437 shards, every segment reconciled `agreed`. Its
+`verify-preserved` operation checks committed metadata only and rebuilds nothing.
+The [proof](docs/aave-v3-interval/proof.md) records the executed criteria and
+each segment's measurements against its plan. Neither makes a
+source-completeness or publisher-identity claim.

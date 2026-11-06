@@ -1,0 +1,53 @@
+{
+  "score": 98.0,
+  "defects": 1,
+  "weighted": 3,
+  "per_1000_words": 1.38,
+  "word_count": 2179,
+  "by_pass": {
+    "structural": 1
+  },
+  "by_family": {
+    "structural:em_dash": 1
+  },
+  "hits": [
+    {
+      "pass": "structural",
+      "family": "em_dash",
+      "signal_only": false,
+      "term": "\u2013",
+      "severity": "high",
+      "line": 60,
+      "col": 20,
+      "excerpt": "\u2026098 Step 5 round 1 and Step 6 rounds 1\u20132; #909 Step 4 rounds 3 and 6 and Step\u2026",
+      "note": "Per the author's own slopbeth rule. Use a comma, colon, semicolon, or bracket."
+    }
+  ],
+  "signals": [
+    {
+      "pass": "structural",
+      "family": "rule_of_three",
+      "signal_only": true,
+      "term": "apply, check, and exercise",
+      "severity": "low",
+      "line": 26,
+      "col": 17,
+      "excerpt": "\u2026rated measurement and parity cohorts; apply, check, and exercise interruption recovery. Three before-s\u2026",
+      "note": "Tidy triad. One or two is prose; a habit of three is a formula. Signal only: fires on genuine enumerations."
+    }
+  ],
+  "cadence": {
+    "sentence_count": 167,
+    "mean_sentence_length": 13.0,
+    "length_variance": 74.7,
+    "variance_floor": 25.0,
+    "variance_below_floor": false,
+    "longest_similar_run": 5,
+    "max_allowed_run": 4,
+    "repeated_openers": {
+      "the exact": 4,
+      "the parent": 3,
+      "this is": 3
+    }
+  }
+}

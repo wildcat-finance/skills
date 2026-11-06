@@ -1,0 +1,9 @@
+{
+  "candidate": "producer-report",
+  "command": "python3 selection_probe.py --candidate producer-report --criterion unexecuted-result-refused --report reports/producer-report-unexecuted-result-refused.json",
+  "criterion": "unexecuted-result-refused",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

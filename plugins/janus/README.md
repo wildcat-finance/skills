@@ -52,11 +52,12 @@ contract.
 A host adapter exposes a host's actions, the state that matters, and its
 economic roles. A manifest, JSON checked against a schema, declares what a hook
 may observe and change at each threshold, its rollback rule, its gas budget,
-and the liveness a user's exit depends on. A stateful Foundry harness drives
-ordinary and hostile sequences, records the real storage writes, call targets,
-value movements, and gas across each threshold, and fails when the observed
-delta exceeds the manifest. A deterministic unit mode runs the same checks over
-fixed sequences.
+and the liveness a user's exit depends on. It also names the host source it
+was written against, by repository and full commit, or declares that it has
+none. A stateful Foundry harness drives ordinary and hostile sequences, records
+the real storage writes, call targets, value movements, and gas across each
+threshold, and fails when the observed delta exceeds the manifest. A
+deterministic unit mode runs the same checks over fixed sequences.
 
 The gates read the manifest rather than a copy of it. A reader picks the
 threshold by action name, never by position, and resolves each permitted call,

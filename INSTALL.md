@@ -122,15 +122,10 @@ every pull-request description. `sessionUrl` set to `false` omits the claude.ai
 session link a cloud or Remote Control session adds as a `Claude-Session`
 trailer on commits and as a link in pull-request descriptions.
 
-There are two important limits. The effect of `sessionUrl: false` is documented
-but has not been observed here in a live cloud session. No documented switch
-was found for Codex, GitHub Copilot, Cursor, Gemini CLI, or Windsurf; remove
-runtime-host bylines before the receipt on those harnesses. In every case Fiat
-reads the commit range and pull-request body back and refuses a runtime-host
-co-author, generated-by line, or session-link byline. A setting is not evidence
-that the line is absent. The rule is
-[ADR-016](./docs/decisions/ADR-016-attribute-governed-agent-work-to-shoggoth.md);
-the keys are documented in Anthropic's
+These settings are optional presentation preferences, not Fiat policy. Fiat
+accepts valid signed commits and records bylines or co-authors as attribution.
+It does not require a contributor to disable a host's footer. The keys are
+documented in Anthropic's
 [settings reference](https://code.claude.com/docs/en/settings-reference).
 
 ### LOCAL AGENTS
@@ -183,6 +178,44 @@ Work lands in the public repository, but an installed plugin can remain behind
 that revision. The two distribution routes below fetch and cache different
 things. In either case, verify the bytes a machine is actually serving instead
 of treating a successful update command as proof of currency.
+
+### PACKAGE RELEASE CHECK
+
+Every change under `plugins/<name>/` requires a newer package version before
+merge, including documentation, tests, assets, deletions, renames and file-mode
+changes. Use a patch bump for a content-only release. Package versions use
+stable `MAJOR.MINOR.PATCH` numbers; skill frontmatter and evolution ledgers keep
+their own version rules.
+
+Update both plugin manifests and `.claude-plugin/marketplace.json`, plus the
+version in `.agents/plugins/marketplace.json` wherever that entry declares one.
+Update current package expectations in the tests; leave historical evidence
+unchanged. A new plugin needs agreeing versions. Removing a whole plugin
+requires removing its marketplace entries.
+
+Check the complete staged release against fresh `main`:
+
+```bash
+git fetch origin main
+git add <changed-files>
+python3 scripts/plugin_release.py --base origin/main --head "$(git write-tree)"
+```
+
+The checker reads Git objects and leaves the working files alone. Exit 1 names
+a changed package whose version did not increase; exit 2 means the comparison
+could not be established. Correct the named versions or fetch the missing
+objects, then rerun. Root-only changes need no package bump.
+
+The required `invariants` job checks the PR's merge tree against its base,
+so a version another PR already released cannot be reused. Pushes compare with
+the previous head. Manual runs compare `main` with its first parent, or a
+feature branch with current `main`. This check prevents unchanged versions
+from shipping new files; it does not prove a particular installation updated.
+
+The release for issue [#895](https://github.com/wildcat-finance/skills/issues/895)
+releases Hexaemeron 1.6.42 to make its accumulated changes available through
+the normal update command. Refresh the marketplace before updating an installed
+plugin, then verify the installed bytes as described below.
 
 ### GIT-BACKED INSTALLATION
 

@@ -1,0 +1,230 @@
+{
+  "files": [
+    {
+      "bytes": 4821,
+      "path": "README.md",
+      "sha256": "0f0ee4e25527706488ac1fdf2545b35ebc3ec7a75a2ad13973a0650e04d45546"
+    },
+    {
+      "bytes": 1123206,
+      "path": "audit-reading-index.json",
+      "sha256": "4d74a7c88aeb33bcd7f059d50e17f3949a51346cb305c017069eb0825a437d61"
+    },
+    {
+      "bytes": 4175,
+      "path": "capture-admission-summary.json",
+      "sha256": "0d24f179ad2cc792e1abe2914e9cf908be91c37aca1afa20ef4b8859f1ac94f5"
+    },
+    {
+      "bytes": 10970,
+      "path": "design-evidence.json",
+      "sha256": "80282666266db259f1afb600ee981f28928fde0b077cf333967501672a04bb50"
+    },
+    {
+      "bytes": 336,
+      "path": "design-reports/role-qualified-dispatch-bytes.json",
+      "sha256": "218f0237c965e1200d3449adcc4c71a563bfbd0a355a0ef8276dfeded0041f1a"
+    },
+    {
+      "bytes": 4445,
+      "path": "design-reports/role-qualified-dispatch-bytes.observations.json",
+      "sha256": "a32b37c48d9353bfddbe924440fe72333e12fe5f04aab576b8ce77b14a40cb55"
+    },
+    {
+      "bytes": 338,
+      "path": "design-reports/role-qualified-dispatch-time.json",
+      "sha256": "b6fc7d12af9c223009786192441cdba1c57d8638685407ae88060f40d70d3583"
+    },
+    {
+      "bytes": 4519,
+      "path": "design-reports/role-qualified-dispatch-time.observations.json",
+      "sha256": "33f03d4ca923988d4b180ff3d9cb239d5e4e584934b98c7a6430de592b0d8424"
+    },
+    {
+      "bytes": 377,
+      "path": "design-reports/role-qualified-recoverable-source-identity.json",
+      "sha256": "310ebfc1e174db457d17d4a6d7598a60dde91af4b6c01b3d1b379d3e6af368d6"
+    },
+    {
+      "bytes": 4445,
+      "path": "design-reports/role-qualified-recoverable-source-identity.observations.json",
+      "sha256": "a32b37c48d9353bfddbe924440fe72333e12fe5f04aab576b8ce77b14a40cb55"
+    },
+    {
+      "bytes": 380,
+      "path": "design-reports/role-qualified-role-and-generation-retained.json",
+      "sha256": "c1a42430a7d9538f2fd1682b239af6a3b470a0b22feb17144aaaf4dc71b9f488"
+    },
+    {
+      "bytes": 4445,
+      "path": "design-reports/role-qualified-role-and-generation-retained.observations.json",
+      "sha256": "a32b37c48d9353bfddbe924440fe72333e12fe5f04aab576b8ce77b14a40cb55"
+    },
+    {
+      "bytes": 338,
+      "path": "design-reports/role-qualified-scope-retained.json",
+      "sha256": "8b5b4a42b1c54b0d9b3c90470e2e0b0237ff4d73d4ac2ef8f16eee0297304b5a"
+    },
+    {
+      "bytes": 4445,
+      "path": "design-reports/role-qualified-scope-retained.observations.json",
+      "sha256": "a32b37c48d9353bfddbe924440fe72333e12fe5f04aab576b8ce77b14a40cb55"
+    },
+    {
+      "bytes": 323,
+      "path": "design-reports/topic-only-dispatch-bytes.json",
+      "sha256": "a315e470a3ddd20d6f699ebd8a3b54ed0fe4987658de1c342137caf7ec6a32c2"
+    },
+    {
+      "bytes": 3853,
+      "path": "design-reports/topic-only-dispatch-bytes.observations.json",
+      "sha256": "0af4df269e6fed06a90689a177576a6cce4813e0fb5e0bcff4d2357930bc24d8"
+    },
+    {
+      "bytes": 326,
+      "path": "design-reports/topic-only-dispatch-time.json",
+      "sha256": "aad3068c6ec554402a8705acb8bf2cadb7d7b1de9d2c5714fc1fde8937a60165"
+    },
+    {
+      "bytes": 3927,
+      "path": "design-reports/topic-only-dispatch-time.observations.json",
+      "sha256": "31e25c071d33ba2ef3b810eaa9fa61ead3b0fb44268d0a0c87df4f5d7540edce"
+    },
+    {
+      "bytes": 365,
+      "path": "design-reports/topic-only-recoverable-source-identity.json",
+      "sha256": "db0d2a9ef6a6825ca9044c3d21779b4d98441bb086406130ea402be119d843d2"
+    },
+    {
+      "bytes": 3853,
+      "path": "design-reports/topic-only-recoverable-source-identity.observations.json",
+      "sha256": "0af4df269e6fed06a90689a177576a6cce4813e0fb5e0bcff4d2357930bc24d8"
+    },
+    {
+      "bytes": 369,
+      "path": "design-reports/topic-only-role-and-generation-retained.json",
+      "sha256": "cc14b90c381a6731d8dd7182d8c2f1b9a98fd800a7b1f7122533a6e35951bb77"
+    },
+    {
+      "bytes": 3853,
+      "path": "design-reports/topic-only-role-and-generation-retained.observations.json",
+      "sha256": "0af4df269e6fed06a90689a177576a6cce4813e0fb5e0bcff4d2357930bc24d8"
+    },
+    {
+      "bytes": 326,
+      "path": "design-reports/topic-only-scope-retained.json",
+      "sha256": "3d4cba977e6b7353341a73c9b8924bddb74881b8994de114e6f525bdfe84cc0c"
+    },
+    {
+      "bytes": 3853,
+      "path": "design-reports/topic-only-scope-retained.observations.json",
+      "sha256": "0af4df269e6fed06a90689a177576a6cce4813e0fb5e0bcff4d2357930bc24d8"
+    },
+    {
+      "bytes": 338,
+      "path": "design-reports/view-projection-dispatch-bytes.json",
+      "sha256": "c08ed748280aa505dcfe47ffa40f60db2c9e5ae1ef032a482f2ad87ddd571943"
+    },
+    {
+      "bytes": 3766,
+      "path": "design-reports/view-projection-dispatch-bytes.observations.json",
+      "sha256": "5c4f62b08e10ba46df0e6377f2a33652bb028902133c9b96e668f02453a4ebce"
+    },
+    {
+      "bytes": 341,
+      "path": "design-reports/view-projection-dispatch-time.json",
+      "sha256": "f36c1126e58dc528b281aeb252ecb1ac6291e2758b082877cdeb8b3f211947fd"
+    },
+    {
+      "bytes": 3839,
+      "path": "design-reports/view-projection-dispatch-time.observations.json",
+      "sha256": "df3e8121a47e0e059e900913df76a66db0a8289816c2df69a242c3fc76d4d3f3"
+    },
+    {
+      "bytes": 380,
+      "path": "design-reports/view-projection-recoverable-source-identity.json",
+      "sha256": "84cab28472caf225accce622250a02de775f2c37dd40b80a8b7582d2add8f382"
+    },
+    {
+      "bytes": 3766,
+      "path": "design-reports/view-projection-recoverable-source-identity.observations.json",
+      "sha256": "5c4f62b08e10ba46df0e6377f2a33652bb028902133c9b96e668f02453a4ebce"
+    },
+    {
+      "bytes": 383,
+      "path": "design-reports/view-projection-role-and-generation-retained.json",
+      "sha256": "5402ad4a15421f95aed614b6d15f8b7c55a49678f282d0a742ff6229e0149826"
+    },
+    {
+      "bytes": 3766,
+      "path": "design-reports/view-projection-role-and-generation-retained.observations.json",
+      "sha256": "5c4f62b08e10ba46df0e6377f2a33652bb028902133c9b96e668f02453a4ebce"
+    },
+    {
+      "bytes": 342,
+      "path": "design-reports/view-projection-scope-retained.json",
+      "sha256": "c1ab37040bd3b4c962487e61a8dabd9c25565dd337f77f1066b114731d440f6b"
+    },
+    {
+      "bytes": 3766,
+      "path": "design-reports/view-projection-scope-retained.observations.json",
+      "sha256": "5c4f62b08e10ba46df0e6377f2a33652bb028902133c9b96e668f02453a4ebce"
+    },
+    {
+      "bytes": 10256,
+      "path": "recovery.md",
+      "sha256": "6eee4cbb3aa4b8f7cc9b1460a12872f87da57dc8276170cead90bc3c9e1d5d3a"
+    },
+    {
+      "bytes": 7360,
+      "path": "reproduction-summary.json",
+      "sha256": "277283d2b37d0b3acbe3adfe34778f0b9bc3d82fd34cdb06878a6094f2148669"
+    },
+    {
+      "bytes": 6364,
+      "path": "reproduction.md",
+      "sha256": "19f2adfc595ba585a48203b0d6c6121b3c86d69c055eeebe426a1ea84e957014"
+    },
+    {
+      "bytes": 19276,
+      "path": "runbook-current.md",
+      "sha256": "490de2be72348fca47a34e6812f07a3f1a67ff1c653e35ae9d7137f46e365c42"
+    },
+    {
+      "bytes": 16748,
+      "path": "runbook.md",
+      "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
+    },
+    {
+      "bytes": 18694,
+      "path": "source-pins.json",
+      "sha256": "f65c426ac8d39d3242b53835e6dcaa85e2b7b3af15f58ac664d9eeb1bd2eb49d"
+    },
+    {
+      "bytes": 14660,
+      "path": "step-1-fixture-recovery.json",
+      "sha256": "bf5a17abf14cba800cf2e5a9baab3d03e8197882ae32f0e960487b41d5d5b479"
+    },
+    {
+      "bytes": 5021,
+      "path": "step-2-mapping-contract.md",
+      "sha256": "b22f495bbca52962b2a59b3b96237d0a4984233e4e95f06df48b9bb84cbf8804"
+    },
+    {
+      "bytes": 16449,
+      "path": "step-2-mappings.json",
+      "sha256": "a16d6c7d60d264a4cabb01841f911ecb0f2f48efc18e259894a608fcc8007d9f"
+    },
+    {
+      "bytes": 47494,
+      "path": "study-current.md",
+      "sha256": "e19a7b28c5e37056a3c5015b0444a0661fe0be18b6df46f3a476686f4bd955fc"
+    },
+    {
+      "bytes": 46208,
+      "path": "study.md",
+      "sha256": "a590d9c3661fe74f9ce53726a49c8fe6b214a4f08add183377d73cbefb3a1d6f"
+    }
+  ],
+  "schema": "fiat-1378-public-specification/v1"
+}

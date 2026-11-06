@@ -5,7 +5,7 @@
   "description": "Declares what a hook may observe and change at each host-action threshold. Every effect list must be present; an omitted list means no such effect is permitted, never that any effect is allowed. Wildcards are rejected, so a manifest cannot say a hook may change anything.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["manifestVersion", "host", "hook", "rollbackRule", "thresholds", "liveness"],
+  "required": ["manifestVersion", "host", "hostSource", "hook", "rollbackRule", "thresholds", "liveness"],
   "properties": {
     "manifestVersion": {
       "description": "The manifest format version. Only 1 is defined.",
@@ -16,6 +16,7 @@
       "type": "string",
       "minLength": 1
     },
+    "hostSource": {"$ref": "#/$defs/hostSource"},
     "hook": {
       "description": "A human name for the hook the manifest describes.",
       "type": "string",
@@ -44,6 +45,42 @@
     }
   },
   "$defs": {
+    "hostSource": {
+      "description": "The host source this manifest is written against. A bound source names the repository and the full commit whose host code the manifest and its adapter describe. A host with no such pin says so in the unbound form and gives the reason, so an absent pin is declared rather than left as an empty field. A binding names source only: it makes no deployment, chain or block claim, and it does not establish that the host adapter models that source faithfully.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "repository", "revision"],
+          "properties": {
+            "status": {"const": "bound"},
+            "repository": {
+              "description": "The https URL of the host source repository.",
+              "type": "string",
+              "pattern": "^https://[^\\s]+$"
+            },
+            "revision": {
+              "description": "The full 40-character lowercase commit. An abbreviated commit is refused because it can come to name more than one commit.",
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "reason"],
+          "properties": {
+            "status": {"const": "unbound"},
+            "reason": {
+              "description": "Why no source commit is named.",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
     "hostAction": {
       "description": "A Wildcat v2.5 host action. Adding a host adds its own actions in a separate adapter.",
       "enum": [

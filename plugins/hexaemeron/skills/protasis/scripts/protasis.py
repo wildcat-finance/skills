@@ -35,6 +35,9 @@ Study mode (`--study`):
   S007  a register field that is malformed: an id that is not kebab-case
         or already used, or an empty boundary or check
   S008  an appended study amendment is not one final dated four-field block
+  S010  a study names a known-failure inventory marker but carries no single
+        well-formed inventory fence, which `done runbook` would refuse as K001
+        after `done study` had already made the study immutable
 
 Exit 0 clean, 1 findings, 2 bad invocation.
 
@@ -67,6 +70,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import importlib.util
 import json
 import re
 import sys
@@ -149,6 +153,75 @@ DESIGN_LOCK_INFO = "design-lock"
 DESIGN_LOCK_SCHEMA = "protasis-design-evidence/v1"
 DESIGN_LOCK_FIELDS = ("schema", "sha256", "candidate")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _success_criteria_module():
+    """Load the sibling declaration parser without importing a target module."""
+    try:
+        import success_criteria
+        return success_criteria
+    except ImportError:
+        path = Path(__file__).with_name("success_criteria.py")
+        spec = importlib.util.spec_from_file_location("protasis_success_criteria", path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+
+def _known_failure_inventory_module():
+    """Load the sibling inventory loader, so both checks read one set of rules."""
+    try:
+        import known_failure_inventory
+        return known_failure_inventory
+    except ImportError:
+        name = "protasis_known_failure_inventory"
+        loaded = sys.modules.get(name)
+        if loaded is not None:
+            return loaded
+        path = Path(__file__).with_name("known_failure_inventory.py")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        # Its dataclasses resolve annotations through sys.modules.
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            sys.modules.pop(name, None)
+            raise
+        return module
+
+
+def _inventory_marker_findings(path: Path) -> list[Finding]:
+    """Report, before `done study`, the K001 refusal `done runbook` would raise.
+
+    The inventory loader treats a study naming its marker anywhere, code span
+    or not, as an attempted inventory, and then requires exactly one
+    blank-line-isolated fence. `done study` never runs that loader, so a stray
+    marker used to surface only after the study was receipted and immutable.
+    This applies the loader's own study-side rules, so the two cannot drift.
+    A runbook that names the marker is still caught by `done runbook`, while
+    the runbook can be rewritten.
+    """
+    try:
+        inventory = _known_failure_inventory_module()
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if inventory._surfaces_absent(text, ""):
+            return []
+        _body, line, error = inventory._inventory_block(text)
+    except Exception as exc:  # the rule could not run: fail closed, visibly
+        return [Finding(path, 1, "S010",
+                        f"known-failure inventory rules unavailable: {type(exc).__name__}")]
+    if error is None:
+        return []
+    return [Finding(
+        path, line, "S010",
+        "study names a known-failure inventory marker but its inventory fence "
+        f"is not usable ({error}); done runbook would refuse K001 once the "
+        "study is receipted, so carry one fence or reword the marker")]
 
 
 class Finding:
@@ -689,8 +762,8 @@ def _amendment_findings(
     return findings
 
 
-def check(path: Path) -> list[Finding]:
-    lines = _read(path)
+def check(path: Path, *, captured: bytes | None = None) -> list[Finding]:
+    lines = _read(path) if captured is None else captured.decode("utf-8", errors="replace").splitlines()
     if lines is None:
         return [Finding(path, 1, "P000", "cannot be read as a runbook")]
 
@@ -858,6 +931,22 @@ def check_study(path: Path) -> list[Finding]:
         ))
         return findings
 
+    # The declaration is optional for legacy studies, but when its fence is
+    # present it is a closed source-bound interface.  Keep the existing study
+    # findings and add one bounded finding rather than allowing malformed JSON
+    # to pass as ordinary prose.
+    try:
+        _success_criteria_module().parse("\n".join(lines))
+    except Exception as exc:
+        reason = str(exc)
+        if not reason or any(not character.isprintable() for character in reason):
+            reason = "success-criteria-invalid"
+        findings.append(Finding(
+            path, 1, "S009", "success-criteria declaration refused: " + reason,
+        ))
+
+    findings.extend(_inventory_marker_findings(path))
+
     for number in sorted(ITEMS):
         name = ITEMS[number]
         occurrences = spans.get(number, [])
@@ -898,12 +987,38 @@ def main(argv: list[str] | None = None) -> int:
                         help="check studies against the twelve-item contract "
                              "instead of runbooks against the step schema")
     parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--gate-root", help="validate registered runbook commands without executing them")
+    parser.add_argument("--criteria", help="admit a success-criteria declaration with the registered runbook commands")
     args = parser.parse_args(argv)
 
+    if args.study and args.gate_root:
+        parser.error("--gate-root applies only to runbooks")
+    if args.study and args.criteria:
+        parser.error("--criteria applies only to runbooks")
+    if args.criteria and not args.gate_root:
+        parser.error("--criteria requires --gate-root")
     checker = check_study if args.study else check
     findings: list[Finding] = []
     for name in args.paths:
-        findings.extend(checker(Path(name)))
+        if args.gate_root:
+            import gate_commands
+            try:
+                source = Path(name)
+                captured = gate_commands.read_source(source.absolute().parent, source.name, gate_commands.MAX_DOCUMENT)
+                findings.extend(check(source, captured=captured))
+                if args.criteria:
+                    criteria = Path(args.criteria)
+                    declaration = gate_commands.read_source(
+                        criteria.absolute().parent, criteria.name,
+                        gate_commands.MAX_DOCUMENT)
+                    gate_commands.validate_with_criteria(
+                        Path(args.gate_root).resolve(), declaration, captured)
+                else:
+                    gate_commands.validate(Path(args.gate_root).resolve(), captured)
+            except (gate_commands.Refusal, ValueError, OSError) as exc:
+                findings.append(Finding(Path(name), 1, "P008", str(exc)))
+        else:
+            findings.extend(checker(Path(name)))
 
     if args.format == "json":
         print(json.dumps([f.as_dict() for f in findings], indent=2))

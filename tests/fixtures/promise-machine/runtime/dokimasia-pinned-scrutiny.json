@@ -19,17 +19,17 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/dokimasia/tests/test_demonstration.py",
-                "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+                "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
               },
               {
                 "evidence_class": "measured",
                 "path": "plugins/dokimasia/tests/test_demonstration.py",
-                "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+                "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/dokimasia/tests/test_demonstration.py",
-                "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+                "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
               }
             ]
           },
@@ -62,17 +62,17 @@
           {
             "evidence_class": "checked",
             "path": "plugins/dokimasia/tests/test_demonstration.py",
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           },
           {
             "evidence_class": "measured",
             "path": "plugins/dokimasia/tests/test_demonstration.py",
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/dokimasia/tests/test_demonstration.py",
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           }
         ],
         "exception": {
@@ -114,17 +114,17 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/dokimasia/tests/test_demonstration.py",
-                "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+                "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
               },
               {
                 "evidence_class": "measured",
                 "path": "plugins/dokimasia/tests/test_demonstration.py",
-                "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+                "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/dokimasia/tests/test_demonstration.py",
-                "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+                "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
               }
             ]
           },
@@ -139,7 +139,7 @@
           ],
           "promise": "dokimasia-pinned-scrutiny",
           "source": {
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           },
           "target": {
             "scope": "structural binding for dokimasia-pinned-scrutiny",
@@ -157,17 +157,17 @@
           {
             "evidence_class": "checked",
             "path": "plugins/dokimasia/tests/test_demonstration.py",
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           },
           {
             "evidence_class": "measured",
             "path": "plugins/dokimasia/tests/test_demonstration.py",
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/dokimasia/tests/test_demonstration.py",
-            "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8"
+            "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156"
           }
         ],
         "exception": {
@@ -175,7 +175,7 @@
         },
         "promise_id": "dokimasia-pinned-scrutiny",
         "scope": "structural binding for dokimasia-pinned-scrutiny",
-        "source_digest": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8",
+        "source_digest": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156",
         "subject": "runtime source plugins/dokimasia/tests/test_demonstration.py#test_two_scrutinies_of_the_same_inputs_agree",
         "transition": {
           "action": "structurally bind dokimasia-pinned-scrutiny without running its domain operation",

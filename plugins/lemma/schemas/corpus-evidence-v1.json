@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "registry",
+    "records",
+    "inputs",
+    "rows",
+    "partitions",
+    "aggregate"
+  ],
+  "properties": {
+    "schema": {
+      "const": "lemma-corpus-evidence/v1"
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "commit",
+          "path",
+          "local"
+        ],
+        "properties": {
+          "commit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "local": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "local"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "local": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "sha256"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "disposition",
+          "partitions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "disposition": {
+            "enum": [
+              "inherited",
+              "sampled",
+              "complete",
+              "pending"
+            ]
+          },
+          "partitions": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "partitions": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "input_id",
+          "prepared",
+          "manifest",
+          "builds",
+          "census"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "input_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "prepared": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "manifest": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "builds": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "chunks",
+                "provenance"
+              ],
+              "properties": {
+                "chunks": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                },
+                "provenance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            },
+            "minItems": 2
+          },
+          "census": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_rows",
+        "required_inputs",
+        "verified_inputs",
+        "partitions",
+        "events",
+        "chunks"
+      ],
+      "properties": {
+        "registry_rows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_inputs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verified_inputs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "partitions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chunks": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

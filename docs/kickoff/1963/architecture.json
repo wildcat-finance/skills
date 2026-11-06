@@ -1,0 +1,195 @@
+{
+  "title": "Wildcat V1 Architecture",
+  "nodes": [
+    {
+      "id": "lens",
+      "label": "MarketLens",
+      "subtitle": "read-only views",
+      "type": "protocol",
+      "row": 0
+    },
+    {
+      "id": "borrower",
+      "label": "Borrower",
+      "subtitle": "registered, sets terms",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "anyone",
+      "label": "Any caller",
+      "subtitle": "keepers, sanctions, reads",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "lender",
+      "label": "Lender",
+      "subtitle": "authorised by borrower",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "owner",
+      "label": "Protocol admin",
+      "subtitle": "arch owner / SphereX admin",
+      "type": "actor",
+      "row": 0
+    },
+    {
+      "id": "market",
+      "label": "WildcatMarket",
+      "subtitle": "pool + rebasing market token",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "controller",
+      "label": "WildcatMarketController",
+      "subtitle": "per-borrower console",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "arch",
+      "label": "WildcatArchController",
+      "subtitle": "registry + SphereX config",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "factory",
+      "label": "WildcatMarketControllerFactory",
+      "subtitle": "deploys controllers, fee config",
+      "type": "protocol",
+      "row": 1
+    },
+    {
+      "id": "asset",
+      "label": "Underlying ERC20",
+      "subtitle": "arbitrary asset",
+      "type": "external",
+      "row": 2
+    },
+    {
+      "id": "spherex",
+      "label": "SphereX engine",
+      "subtitle": "validates guarded calls",
+      "type": "external",
+      "row": 2
+    },
+    {
+      "id": "sentinel",
+      "label": "WildcatSanctionsSentinel",
+      "subtitle": "sanctions + escrow factory",
+      "type": "protocol",
+      "row": 2
+    },
+    {
+      "id": "escrow",
+      "label": "WildcatSanctionsEscrow",
+      "subtitle": "holds blocked funds",
+      "type": "protocol",
+      "row": 3
+    },
+    {
+      "id": "chainalysis",
+      "label": "Chainalysis list",
+      "subtitle": "sanctions oracle",
+      "type": "external",
+      "row": 3
+    }
+  ],
+  "edges": [
+    {
+      "from": "borrower",
+      "to": "market",
+      "label": "borrows, repays"
+    },
+    {
+      "from": "market",
+      "to": "asset",
+      "label": "moves assets"
+    },
+    {
+      "from": "sentinel",
+      "to": "chainalysis",
+      "label": "queries list"
+    },
+    {
+      "from": "sentinel",
+      "to": "escrow",
+      "label": "create2 escrow"
+    },
+    {
+      "from": "owner",
+      "to": "factory",
+      "label": "sets fee config"
+    },
+    {
+      "from": "lens",
+      "to": "arch",
+      "label": "reads registry"
+    },
+    {
+      "from": "borrower",
+      "to": "factory",
+      "label": "deploys controller"
+    },
+    {
+      "from": "escrow",
+      "to": "asset",
+      "label": "releases funds"
+    },
+    {
+      "from": "arch",
+      "to": "spherex",
+      "label": "adds allowed senders"
+    },
+    {
+      "from": "borrower",
+      "to": "controller",
+      "label": "sets market terms"
+    },
+    {
+      "from": "market",
+      "to": "spherex",
+      "label": "validates guarded calls"
+    },
+    {
+      "from": "lender",
+      "to": "market",
+      "label": "deposits, withdraws"
+    },
+    {
+      "from": "factory",
+      "to": "arch",
+      "label": "registers controller"
+    },
+    {
+      "from": "controller",
+      "to": "market",
+      "label": "deploys, configures"
+    },
+    {
+      "from": "anyone",
+      "to": "market",
+      "label": "executes, blocks"
+    },
+    {
+      "from": "owner",
+      "to": "arch",
+      "label": "registers borrowers"
+    },
+    {
+      "from": "controller",
+      "to": "arch",
+      "label": "registers market"
+    },
+    {
+      "from": "market",
+      "to": "sentinel",
+      "label": "checks sanctions"
+    }
+  ]
+}

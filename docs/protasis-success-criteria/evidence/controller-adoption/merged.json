@@ -1,0 +1,17 @@
+{
+  "pr": "https://github.com/wildcat-finance/skills/pull/1698",
+  "merged": true,
+  "merged_at": "2026-09-16T12:33:27Z",
+  "merge_commit": "ed94a4564c53b28c8db6cd22d3fd38e809338d75",
+  "parents": [
+    "a3c9cf5730bbe80db1e1aa72d47a915af7f29956",
+    "c572009b7922b4b7b9400893c5adc6d4df641a72"
+  ],
+  "candidate_tree": "d12e1daef747d0cd84cb7d8466410f0f3125e173",
+  "github_merge_signature": {
+    "verified": true,
+    "reason": "valid"
+  },
+  "adoption_candidate": "c572009b7922b4b7b9400893c5adc6d4df641a72",
+  "original_signed_commits_retained": true
+}

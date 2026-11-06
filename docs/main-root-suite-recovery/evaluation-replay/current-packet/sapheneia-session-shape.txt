@@ -1,0 +1,36 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is sapheneia-session-shape. Its source path is plugins/sapheneia/skills/sapheneia/SKILL.md.
+The exact declaration is:
+
+### sapheneia-session-shape
+
+- Promise: While activated, each agent reply exposes the immediate action or result, literal ask, boundary, working state, evidence status and one next action when work remains, subject to the reader's stated preference.
+- Evidence: The user's activation and preferences, the exact reply, visible task state and the completed five-question pre-send check.
+- Evidence classes: recorded, checked
+- Boundary: The reply shape does not diagnose the reader, establish that one format works for every AuDHD person, change another skill's facts or override higher-priority instructions.
+- Authorises: Sending the checked reply and carrying the same interaction contract across topic changes and context compaction.
+- Consequence: 0
+- Refuses: Hidden state, implied obligation, invented urgency, diagnosis from communication style or an unlabelled change to scope.
+- Recovery: Restate the action, boundary, evidence and next step explicitly, apply the reader's correction and check the revised reply before sending.
+- Exceptions: none
+
+The evaluation request is:
+
+Shape an active Sapheneia reply under the canonical interaction contract.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. The reply shape is presented as a diagnosis or as a format that works for every AuDHD reader.
+E02. The reply names the immediate action, literal ask, boundary, working state, evidence and one next action while respecting the reader's stated preference.
+E03. Restate the action, boundary, evidence and next step, apply the reader's correction and check the revised reply.
+E04. The reply hides the working state or leaves an implied obligation and no next action while work remains.
+E05. The activation and preference record belongs to another user session.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

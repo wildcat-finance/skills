@@ -1,0 +1,11 @@
+{
+  "final_bytes": "planned\n",
+  "helper_sha256": "b75288b4c49c6e0863884e824e28414804fa38de9869008c134cdcf43f358dd5",
+  "injection": "Change target bytes after final identity check immediately before the real os.replace syscall",
+  "reproduced": true,
+  "schema": "fiat-1513-parent-race-reproduction/v1",
+  "subject": "Root.write existing target replacement",
+  "third_version_present_before_replace": true,
+  "third_version_preserved": false,
+  "write_returned_success": true
+}

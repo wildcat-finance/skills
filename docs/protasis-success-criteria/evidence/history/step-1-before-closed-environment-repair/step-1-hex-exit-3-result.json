@@ -1,0 +1,16 @@
+{
+  "command": [
+    "python3",
+    "plugins/hexaemeron/tests/run_tests.py",
+    "--jobs",
+    "12",
+    "--elenchus-report",
+    ".hexaemeron/reports/step-1-exit.json"
+  ],
+  "started": "2026-09-16T08:16:44.556430+00:00",
+  "ended": "2026-09-16T08:31:49.547272+00:00",
+  "exit": 0,
+  "seconds": 904.9842527080327,
+  "staged_tree": "ac5ef69b093a409f421dc31177f92df68b31f7ca",
+  "log_sha256": "18508cf5fee8cdfb949545282ded09c1a996fedc4c891ab6e7c8a7054977a94d"
+}

@@ -1,0 +1,44 @@
+{
+  "role": "deployed",
+  "commands": [
+    {
+      "argv": [
+        "bash",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/enumerate.sh",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+        "src"
+      ],
+      "cwd": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c",
+      "exit": 0,
+      "elapsed_seconds": 0.8527852920815349,
+      "log": ".hexaemeron/xray-preparation/deployed-enumeration.txt",
+      "log_sha256": "dfb83c8668e1f95e4e1d78540e6edb23a195485cf1511d765016731ad108926c",
+      "environment_override": {
+        "PATH_prefix": "/opt/homebrew/opt/grep/libexec/gnubin"
+      }
+    },
+    {
+      "argv": [
+        "/opt/homebrew/bin/python3",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+        "--repo",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+        "--src-dir",
+        "src",
+        "--json",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed/x-ray/git-security-analysis.json"
+      ],
+      "cwd": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c",
+      "exit": 0,
+      "elapsed_seconds": 7.2509264999534935,
+      "log": ".hexaemeron/sources/deployed/x-ray/git-security-analysis.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "environment_override": {
+        "PATH_prefix": "/opt/homebrew/opt/grep/libexec/gnubin"
+      }
+    }
+  ],
+  "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+  "recursive_submodules": " e282159d5170298eb2455a6c05280ab5a73a4ef0 lib/ds-test (heads/master)\n 937b1daa32d0343f538ac217b31e8eb1c6e1e6be lib/ethereum-access-token (heads/main)\n b6a506db2262cad5ff982a87789ee6d1558ec861 lib/forge-std (v1.8.0)\n fd81a96f01cc42ef1c9a5399364968d0e07e9e90 lib/openzeppelin-contracts (v4.9.3)\n 8b1d7c2ac248c33c3506b1bff8321758943c5e11 lib/openzeppelin-contracts/lib/erc4626-tests (v0.1.0)\n c2236853aadb8e2d9909bbecdc490099519b70a4 lib/openzeppelin-contracts/lib/forge-std (v1.5.0)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/openzeppelin-contracts/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n ffc4766f208e71901205a20cbb38a37d0c1619d5 lib/sol-utils (heads/main)\n 2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6 lib/sol-utils/lib/forge-std (v1.5.2)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/sol-utils/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n fd81a96f01cc42ef1c9a5399364968d0e07e9e90 lib/sol-utils/lib/openzeppelin-contracts (v4.9.3)\n 8b1d7c2ac248c33c3506b1bff8321758943c5e11 lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests (v0.1.0)\n c2236853aadb8e2d9909bbecdc490099519b70a4 lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std (v1.5.0)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n 507e0d84872f435d497e6d2ce10e7f484392db4f lib/sol-utils/lib/solady (v0.0.85)\n d155ee8d58f96426f57c015b34dee8a410c1eacc lib/sol-utils/lib/solady/lib/solmate (v6-153-gd155ee8)\n 9310e879db8ba3ea6d5c6489a579118fd264a3f5 lib/sol-utils/lib/solady/lib/solmate/lib/ds-test (remotes/origin/windows-compat-15-g9310e87)\n 1b3adf677e7e383cc684b5d5bd441da86bf4bf1c lib/sol-utils/lib/solmate (v6-186-g1b3adf6)\n cd98eff28324bfac652e63a239a60632a761790b lib/sol-utils/lib/solmate/lib/ds-test (remotes/origin/windows-compat-17-gcd98eff)\n 2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c lib/solady (v0.0.124)\n 9310e879db8ba3ea6d5c6489a579118fd264a3f5 lib/solady/lib/ds-test (remotes/origin/windows-compat-15-g9310e87)\n 1b3adf677e7e383cc684b5d5bd441da86bf4bf1c lib/solmate (v6-186-g1b3adf6)\n cd98eff28324bfac652e63a239a60632a761790b lib/solmate/lib/ds-test (remotes/origin/windows-compat-17-gcd98eff)\n 95d6be4c447a23400d876caff078abcf6a881a12 lib/vulcan (v0.3.0-55-g95d6be4)\n f73c73d2018eb6a111f35e4dae7b4f27401e9421 lib/vulcan/lib/forge-std (v1.7.1)\n e282159d5170298eb2455a6c05280ab5a73a4ef0 lib/vulcan/lib/forge-std/lib/ds-test (heads/master)\n",
+  "source_tracked_diff_exit": 0
+}

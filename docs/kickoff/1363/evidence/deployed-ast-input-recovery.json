@@ -1,0 +1,98 @@
+{
+  "role": "deployed",
+  "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+  "language": "Solidity",
+  "source_paths": [
+    "src/HooksFactory.sol",
+    "src/IHooksFactory.sol",
+    "src/ReentrancyGuard.sol",
+    "src/WildcatArchController.sol",
+    "src/WildcatSanctionsEscrow.sol",
+    "src/WildcatSanctionsSentinel.sol",
+    "src/access/BaseAccessControls.sol",
+    "src/access/FixedTermHooks.sol",
+    "src/access/IHooks.sol",
+    "src/access/IRoleProvider.sol",
+    "src/access/IRoleProviderFactory.sol",
+    "src/access/MarketConstraintHooks.sol",
+    "src/access/OpenTermHooks.sol",
+    "src/access/ProviderStructs.sol",
+    "src/interfaces/IChainalysisSanctionsList.sol",
+    "src/interfaces/IERC20.sol",
+    "src/interfaces/IMarketEventsAndErrors.sol",
+    "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+    "src/interfaces/IWildcatArchController.sol",
+    "src/interfaces/IWildcatSanctionsEscrow.sol",
+    "src/interfaces/IWildcatSanctionsSentinel.sol",
+    "src/interfaces/WildcatStructsAndEnums.sol",
+    "src/lens/HooksConfigData.sol",
+    "src/lens/HooksDataForBorrower.sol",
+    "src/lens/HooksInstanceData.sol",
+    "src/lens/HooksTemplateData.sol",
+    "src/lens/LenderAccountData.sol",
+    "src/lens/MarketData.sol",
+    "src/lens/MarketLens.sol",
+    "src/lens/RoleProviderData.sol",
+    "src/lens/TokenData.sol",
+    "src/lens/WithdrawalBatchData.sol",
+    "src/libraries/BoolUtils.sol",
+    "src/libraries/Errors.sol",
+    "src/libraries/FIFOQueue.sol",
+    "src/libraries/FeeMath.sol",
+    "src/libraries/FunctionTypeCasts.sol",
+    "src/libraries/LibERC20.sol",
+    "src/libraries/LibStoredInitCode.sol",
+    "src/libraries/MarketErrors.sol",
+    "src/libraries/MarketEvents.sol",
+    "src/libraries/MarketState.sol",
+    "src/libraries/MathUtils.sol",
+    "src/libraries/SafeCastLib.sol",
+    "src/libraries/StringQuery.sol",
+    "src/libraries/Withdrawal.sol",
+    "src/market/WildcatMarket.sol",
+    "src/market/WildcatMarketBase.sol",
+    "src/market/WildcatMarketConfig.sol",
+    "src/market/WildcatMarketToken.sol",
+    "src/market/WildcatMarketWithdrawals.sol",
+    "src/spherex/ISphereXEngine.sol",
+    "src/spherex/SphereXConfig.sol",
+    "src/spherex/SphereXProtectedErrors.sol",
+    "src/spherex/SphereXProtectedEvents.sol",
+    "src/spherex/SphereXProtectedRegisteredBase.sol",
+    "src/types/HooksConfig.sol",
+    "src/types/LenderStatus.sol",
+    "src/types/RoleProvider.sol",
+    "src/types/TransientBytesArray.sol",
+    "src/vault/Wildcat4626Wrapper.sol",
+    "src/vault/Wildcat4626WrapperFactory.sol"
+  ],
+  "settings": {
+    "remappings": [
+      "forge-std/=lib/forge-std/src/",
+      "ds-test/=lib/ds-test/src/",
+      "solmate/=lib/solmate/src/",
+      "solady/=lib/solady/src/",
+      "sol-utils/=lib/sol-utils/src/",
+      "openzeppelin/=lib/openzeppelin-contracts/",
+      "ethereum-access-token/=lib/ethereum-access-token/contracts/"
+    ],
+    "evmVersion": "cancun",
+    "outputSelection": {
+      "*": {
+        "": [
+          "ast"
+        ]
+      }
+    }
+  },
+  "serialization": {
+    "ensure_ascii": true,
+    "separators": [
+      ",",
+      ":"
+    ],
+    "trailing_newline": false
+  },
+  "input_sha256": "4c316bfdc2f895b718a25032eb90ccac80c7409f2ae4ebaccf1f5e6dcd4eafab",
+  "boundary": "Rebuild content from these exact repository files; inherited imports resolve through the pinned recursive submodules."
+}

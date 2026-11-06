@@ -1,0 +1,1 @@
+{"language": "Solidity", "sources": {"Pool.sol": {"content": "pragma solidity >=0.6.11 <0.9.0;\ncontract Pool { event Updated(address indexed who, uint256 value); }\nlibrary PoolLib { event Updated(address indexed who,\n uint256 value); }\n"}}, "settings": {}}

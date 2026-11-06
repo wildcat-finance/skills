@@ -1,0 +1,64 @@
+[
+  {
+    "case": "restricted-actual",
+    "exit_code": 2,
+    "seconds": 1.722,
+    "argv": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "scripts/demonstrations.py",
+      "run",
+      "--record",
+      "plugins/lazarus/skills/lazarus",
+      "--report",
+      "/private/tmp/issue-1273-lazarus-environment-probe/restricted-actual.json",
+      "--output-root",
+      "/private/tmp/issue-1273-lazarus-environment-probe"
+    ],
+    "environment": {
+      "GIT_CONFIG_GLOBAL": "/dev/null",
+      "GIT_CONFIG_NOSYSTEM": "1",
+      "GIT_NO_LAZY_FETCH": "1",
+      "GIT_NO_REPLACE_OBJECTS": "1",
+      "GIT_TERMINAL_PROMPT": "0",
+      "LANG": "C",
+      "LC_ALL": "C",
+      "PATH": "/bin:/usr/bin",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "PYTHONUTF8": "1",
+      "TZ": "UTC"
+    },
+    "report_sha256": "2afa350d47d0159f4688f5c3fedc94a0e61de122a41e2498ac8f2b14c94350b9"
+  },
+  {
+    "case": "pinned-child-python-actual",
+    "exit_code": 0,
+    "seconds": 5.566,
+    "argv": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "scripts/demonstrations.py",
+      "run",
+      "--record",
+      "plugins/lazarus/skills/lazarus",
+      "--report",
+      "/private/tmp/issue-1273-lazarus-environment-probe/pinned-child-python-actual.json",
+      "--output-root",
+      "/private/tmp/issue-1273-lazarus-environment-probe"
+    ],
+    "environment": {
+      "GIT_CONFIG_GLOBAL": "/dev/null",
+      "GIT_CONFIG_NOSYSTEM": "1",
+      "GIT_NO_LAZY_FETCH": "1",
+      "GIT_NO_REPLACE_OBJECTS": "1",
+      "GIT_TERMINAL_PROMPT": "0",
+      "LANG": "C",
+      "LC_ALL": "C",
+      "PATH": "/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/issue-1273-pinned-python-p0rb299r:/bin:/usr/bin",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "PYTHONUTF8": "1",
+      "TZ": "UTC"
+    },
+    "report_sha256": "d7841825c216f80ec90b4e47845605d8d78422a8408625d1f7634e642f2f06af"
+  }
+]

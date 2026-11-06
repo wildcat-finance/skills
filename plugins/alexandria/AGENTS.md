@@ -1,7 +1,7 @@
 # Alexandria runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -63,6 +63,21 @@ local tool.
   file and atomically replaces only an absent or regular output. It reaches no
   network and does not change the release. A result authorises only use of
   those statement bytes; signing and publisher identity remain downstream.
+- `statement <release-directory> --parts <directory>` completes the same
+  verification and writes a release whose one statement passes Ariadne's
+  8,388,608-byte input limit or 262,144-character key budget as `index.json`
+  and `part/part-<k>.json`. It refuses a release within both bounds and names
+  `--output`; `--output` refuses a release past either bound and names
+  `--parts`. The target must be absent, outside the release and reached
+  without a symlink. It writes owner-only files through exclusive no-follow
+  creates in a fresh hidden sibling directory, fsyncs every file and
+  directory, re-verifies the release and renames the directory into place.
+  Any failure removes that directory and installs nothing; a killed process
+  can leave it behind, never a partial set at the target, and the next
+  `--parts` run into that parent names every directory of that shape and
+  refuses until it is removed by hand. A writer with permission on the
+  output parent stays outside this promise. It reaches no network and does
+  not change the release.
 - `derive <raw-release> --output <directory>` first verifies and reads the raw
   release, then writes a new release through a temporary sibling directory.
   It does not change the input or reach the network. It reads components
@@ -87,13 +102,13 @@ local tool.
 - `scripts/usdc_interval.py collect` and `reconcile` are the interval
   collector's two network paths. Each reads the HTTPS endpoint from
   `ALEXANDRIA_COMPOUND_RPC_URL` and never records the endpoint, headers or
-  credentials. Every request carries exactly two headers, `Content-Type` and a
-  constant `User-Agent` of the form `alexandria-usdc-interval/<package
-  version>` built at import from the plugin manifest: no header value comes
-  from the environment, so no request can carry a credential and a provider
-  requiring one is out of scope. Both follow no redirect, bound every response
-  and the whole run, and leave a receipt for every refusal naming the provider
-  class the plan declared and never an endpoint. `collect` writes a checkpoint
+  credentials. Requests carry `Content-Type` and a constant `User-Agent` of the form
+  `alexandria-usdc-interval/<package version>` from the plugin manifest.
+  The HTTPS transport may use an explicitly configured bearer credential;
+  endpoints and credentials remain absent from durable evidence. Both follow no redirect, bound every response
+  and the whole run, and record structured failures with the provider class the plan declared.
+  CLI error strings do not universally include that class; neither surface
+  records an endpoint. `collect` writes a checkpoint
   only after fsync and closes with the opening reads that bind the interval's
   first block, the epoch boundaries and each implementation's runtime code.
   `build` and `check` reach no network: `build` writes one release through the
@@ -104,6 +119,18 @@ local tool.
   the preserved live Ethereum mainnet interval from its committed staging tree.
   Both remove a partial output after failure and open no socket; `verify`
   changes no file in either.
+- `examples/usdc-interval-epochs-v0/demo.py build --output <directory>` builds
+  a synthetic v2 release over an upgrade block and a second v2 release from the
+  live staging tree, refusing if that tree's digest moves. It removes a partial
+  output after failure and opens no socket. Its `verify` changes no tracked file
+  and nothing in the build directory; its refusal probes write only beneath a
+  temporary directory it removes.
+- `examples/aave-v3-interval-v0/demo.py verify-preserved` reads only committed
+  metadata: it checks each segment's rebuild record and expected values against
+  the staging manifest and the pinned plan digests, rebuilds nothing, opens no
+  socket and changes no file. Its `build` and `verify` rebuild a segment from
+  an unpacked staging tree the environment names, with Python socket
+  construction denied, and refuse by name when it is unset.
 - `scripts/compound_v3_phase0.py capture` is the third and last explicit network
   path, beside `collect` and `reconcile` above. It reads the HTTPS endpoint
   from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed

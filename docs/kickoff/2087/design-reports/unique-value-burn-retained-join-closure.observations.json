@@ -1,0 +1,18 @@
+{
+  "candidate": "unique-value-burn",
+  "inputs": [
+    {
+      "canonical_sha256": "6d11d49a6feaa2a2e95eb240636d18dd3dcb294db3170c326c91042dfe812b26",
+      "coverage_sha256": "2b5e8a104a601e150abc81cdaa1f88275b4b8daa15da99222cd0e2f1f09e2736",
+      "generation": "wildcat-v1",
+      "raw_release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+    },
+    {
+      "canonical_sha256": "7e01b3a71deede4c20fa17ee333f28f612ba339aa7ce4ad0f0f74bd72157a0a3",
+      "coverage_sha256": "1b13a488837079664fa9708f2034aaaef47de24df8980bbd02f570c4f4c607d5",
+      "generation": "wildcat-v2",
+      "raw_release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"
+    }
+  ],
+  "schema": "fiat-2087-retained-join-observations/v1"
+}

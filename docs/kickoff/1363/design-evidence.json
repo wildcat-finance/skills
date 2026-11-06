@@ -1,0 +1,194 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "source-bound-reports",
+      "summary": "Preserve fresh reports and source manifests; recover source through the two immutable Git commits."
+    },
+    {
+      "id": "reports-and-source-archive",
+      "summary": "Preserve the same fresh reports and manifests, and duplicate all Solidity source in a tar archive."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "source-identity",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "packaging-time",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "milliseconds",
+      "comparator": "at-most",
+      "threshold": 5000,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "preserved-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "format-compatibility",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "source-recovery",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "complete-pair",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "source-bound-reports",
+      "criterion": "source-identity",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/source-bound-reports-source-identity.json",
+        "sha256": "c2ab17f72eb30dee6f8367b0a4ac2b8fa88c7ff0cb3efdfd6a4b52e69ed149ff"
+      }
+    },
+    {
+      "candidate": "source-bound-reports",
+      "criterion": "packaging-time",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/source-bound-reports-packaging-time.json",
+        "sha256": "d00f0f53a92edb6647c48f83e48ae3dfa99a4ac4dcf6f626d12a347176c4592d"
+      }
+    },
+    {
+      "candidate": "source-bound-reports",
+      "criterion": "preserved-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/source-bound-reports-preserved-bytes.json",
+        "sha256": "4504b774f44dbfe5d46232f6bd0bd0afffbc4084c05d1fc6fcec0f1b77cdf2a2"
+      }
+    },
+    {
+      "candidate": "source-bound-reports",
+      "criterion": "format-compatibility",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/source-bound-reports-format-compatibility.json",
+        "sha256": "60bf96864d85df5b3f5fe7706c63b8adde485f3010885e81c8015ca98ea0da98"
+      }
+    },
+    {
+      "candidate": "source-bound-reports",
+      "criterion": "source-recovery",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/source-bound-reports-source-recovery.json",
+        "sha256": "636f780d670d6d635fe1607927fe0430128c771fc2bdfd4d88f30ae5d24e34f4"
+      }
+    },
+    {
+      "candidate": "source-bound-reports",
+      "criterion": "complete-pair",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1363.py conformance --candidate source-bound-reports --report .hexaemeron/design-reports/source-bound-reports-complete-pair.json",
+      "report": "design-reports/source-bound-reports-complete-pair.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "reports-and-source-archive",
+      "criterion": "source-identity",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/reports-and-source-archive-source-identity.json",
+        "sha256": "219086f648c962e267a72a0913684f6dd60aad73063589715e5365752fa994bf"
+      }
+    },
+    {
+      "candidate": "reports-and-source-archive",
+      "criterion": "packaging-time",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/reports-and-source-archive-packaging-time.json",
+        "sha256": "954fa7e744e20931de15f8e3a43d63e43c289af74b4063a769f954c2bdef7fb7"
+      }
+    },
+    {
+      "candidate": "reports-and-source-archive",
+      "criterion": "preserved-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/reports-and-source-archive-preserved-bytes.json",
+        "sha256": "7638ddf681c6ce11b19ab4a176abc97555a8701c10cb0a5bde0be919042af853"
+      }
+    },
+    {
+      "candidate": "reports-and-source-archive",
+      "criterion": "format-compatibility",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/reports-and-source-archive-format-compatibility.json",
+        "sha256": "066d9514ded94e280b728e3ae7a03de9faf0a328883b85a9f1e7c303dbbc068c"
+      }
+    },
+    {
+      "candidate": "reports-and-source-archive",
+      "criterion": "source-recovery",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/reports-and-source-archive-source-recovery.json",
+        "sha256": "818e4d4651ee87c34173d81f109f2247a262b6b839caf442fb774359c1f0b228"
+      }
+    },
+    {
+      "candidate": "reports-and-source-archive",
+      "criterion": "complete-pair",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1363.py conformance --candidate reports-and-source-archive --report .hexaemeron/design-reports/reports-and-source-archive-complete-pair.json",
+      "report": "design-reports/reports-and-source-archive-complete-pair.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "source-bound-reports",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

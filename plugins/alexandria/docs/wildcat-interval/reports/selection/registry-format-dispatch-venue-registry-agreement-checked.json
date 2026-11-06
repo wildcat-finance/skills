@@ -1,0 +1,9 @@
+{
+  "candidate": "registry-format-dispatch",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "venue-registry-agreement-checked",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "whole-lines-only",
+  "criterion": "input-preservation",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/measure_design.py --candidate whole-lines-only --criterion input-preservation --report .hexaemeron/reports/whole-lines-only-input-preservation.json",
+  "exit": 0
+}

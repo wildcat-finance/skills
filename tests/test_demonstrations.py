@@ -19,6 +19,8 @@ import time
 import unittest
 from unittest import mock
 
+from tests.fixture_python import pinned_python_path
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -998,7 +1000,7 @@ class RunnerBoundaryTests(RunnerHarness):
                 demonstrations.pinned_python_version(pathlib.Path(name))
         self.assertEqual(caught.exception.code, "D073")
 
-    def test_the_ceiling_bounds_every_command_and_the_aggregate(self):
+    def test_the_ceiling_bounds_the_per_command_budget(self):
         record = check(fixture_record("valid-ledger.md"))
         record["commands"] = [
             {"id": "run", "argv": ["python3", "-c", "import time; time.sleep(2)"], "expect_exit": 0}
@@ -1012,6 +1014,24 @@ class RunnerBoundaryTests(RunnerHarness):
         entry = payload["demonstrations"][0]
         self.assertEqual(entry["refusal"]["code"], "D076")
         self.assertLessEqual(entry["repetitions"][0]["commands"][0]["timeout_ms"], 50)
+
+    def test_the_aggregate_ceiling_refuses_before_any_command_starts(self):
+        # A zero ceiling has no wall-clock margin to race: the monotonic clock
+        # has always advanced past it by the time the first budget is checked,
+        # so this refuses deterministically instead of depending on how close
+        # a killed command's teardown lands to the ceiling.
+        record = check(fixture_record("valid-ledger.md"))
+        record["commands"] = [
+            {"id": "run", "argv": ["python3", "-c", "print('ok')"], "expect_exit": 0}
+        ]
+        record["observations"] = ['run: line "unreached"']
+        code, payload, _events, _target = self.run_records(
+            [(SPECIMEN, check(record))], ceiling_ms=0, mode="public-set"
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["ceiling_ms"], 0)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D082")
         self.assertIn("D082", [refusal["code"] for refusal in payload["refusals"]])
 
 
@@ -1562,10 +1582,11 @@ class RunnerReportTests(RunnerHarness):
         selected = demonstrations.select_records(
             records, skills, public_set=True, record_directory=None
         )
-        code, payload, events, _target = self.run_records(
-            selected, report="public-set.json",
-            ceiling_ms=demonstrations.PUBLIC_SET_CEILING_MS, mode="public-set",
-        )
+        with pinned_python_path():
+            code, payload, events, _target = self.run_records(
+                selected, report="public-set.json",
+                ceiling_ms=demonstrations.PUBLIC_SET_CEILING_MS, mode="public-set",
+            )
         if code != 0:
             absent = absent_dependencies(payload)
             if absent:
@@ -1672,9 +1693,30 @@ class HorosCensusCurrencyTests(unittest.TestCase):
         self.assertEqual(
             committed,
             json.loads(horos.render(fresh)),
-            "regenerate with: python3 plugins/horos/skills/horos/scripts/horos.py"
-            " scan . --census --write",
+            "stale census, usually from GitHub's \"Update branch\" merging"
+            " over a conflict a local merge would have shown: take main's"
+            " copy, then regenerate with: python3"
+            " plugins/horos/skills/horos/scripts/horos.py scan . --write"
+            " && python3 plugins/horos/skills/horos/scripts/horos.py scan ."
+            " --census --write",
         )
+
+    def test_the_generated_horos_files_conflict_rather_than_silently_merge(self):
+        for relpath in (".horos/census.json", ".horos/boundary.json"):
+            result = subprocess.run(
+                ["git", "check-attr", "merge", "--", relpath],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            self.assertEqual(
+                result.stdout.strip(),
+                f"{relpath}: merge: unset",
+                "a merge attribute weaker than '-merge' lets a web-flow merge"
+                " like GitHub's \"Update branch\" keep one side's stale copy"
+                " instead of conflicting",
+            )
 
 
 @unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")
@@ -1765,13 +1807,21 @@ class RunnerExecutionBoundaryTests(RunnerHarness):
         # is both a boundary the runner claims and the number `metron` reads.
         # The grip on the pipes is the evidence, so the command is refused
         # rather than recorded as a clean exit with an inflated duration.
+        # Wait for the child to acknowledge setsid before the parent exits,
+        # or teardown can kill the child before it leaves the group.
         code, payload, _events_seen, _target = self.run_argv(
             [
                 "python3", "-c",
                 "import os, sys, time;"
+                " ready_read, ready_write = os.pipe();"
                 " child = os.fork() == 0;"
-                " (os.setsid(), time.sleep(30), os._exit(0)) if child else"
-                " (print('parent-done'), sys.stdout.flush(), os._exit(0))",
+                " (os.close(ready_read), os.setsid(),"
+                " os.write(ready_write, b'R'), os.close(ready_write),"
+                " time.sleep(30), os._exit(0)) if child else"
+                " (os.close(ready_write),"
+                " os.read(ready_read, 1) == b'R' or os._exit(1),"
+                " os.close(ready_read), print('parent-done'),"
+                " sys.stdout.flush(), os._exit(0))",
             ],
             ['run: line "parent-done"'],
         )

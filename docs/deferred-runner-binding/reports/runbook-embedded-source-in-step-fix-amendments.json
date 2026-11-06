@@ -1,0 +1,9 @@
+{
+  "candidate": "runbook-embedded-source",
+  "command": "python3 .hexaemeron/design/probe.py --candidate runbook-embedded-source --criterion in-step-fix-amendments --report .hexaemeron/reports/runbook-embedded-source-in-step-fix-amendments.json",
+  "criterion": "in-step-fix-amendments",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

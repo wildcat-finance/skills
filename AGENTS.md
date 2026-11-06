@@ -37,8 +37,8 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The seventeen plugins form one marketplace, not seventeen competing descriptions
-of the same job. Alexandria preserves lending inputs; Tabularium interprets
+The <!-- front-door:count key="plugins" -->18 plugins form one marketplace, not
+competing descriptions of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
 needs, while Ariadne binds a released artefact digest to its evidence. Berean
@@ -84,7 +84,7 @@ skill.
 
 ## Issue queues
 
-Work arrives from four places and each is told apart by its issue title prefix,
+Work arrives from five places and each is told apart by its issue title prefix,
 so a reader knows which queue a thing came from without opening it.
 
 - `{skill}-next`, labelled `held-job`. A ledger's held frontier job. The system
@@ -96,10 +96,25 @@ so a reader knows which queue a thing came from without opening it.
 - `framework-N`, labelled `observation`. Something a run noticed about the
   system as a whole. Its body opens by stating that Protasis decides which
   skill or skills it upgrades, because the filer is the wrong party to guess.
+  `N` has to be a number no other issue holds, open or closed: the shorthand is
+  how this repository cites these issues in prose, and it is far from the issue
+  number, so a second claim on one number makes the citation ambiguous.
+  `issue-check` reads the titles already filed and refuses a duplicate. Nothing
+  allocates `N`, so pick the lowest free number and let the check settle it.
+- `kickoff/{skill}-N`, labelled `kickoff` and `held-job` together. A
+  maintainer's kickoff filing for one held frontier job, where `N` is the
+  entry's position in the list it was filed from. It keeps `held-job` because
+  closing one carries the same frontier meaning as a `{skill}-next`; `kickoff`
+  is what tells the two apart on the list, and `init` binds a run against it
+  the same way. Nothing checks `N` for uniqueness here.
 
 `{skill}` is the skill's own governed name rather than its plugin's, so Lemma's
-is `lemma`. The reasoning, the alternatives and the two questions still open are
-in [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md).
+is `lemma`. The reasoning and the alternatives for the first four are in
+[ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md), which
+left who assigns `N` to #370. That issue closed without answering it, and the
+uniqueness half is now checked rather than assigned. The fifth queue's
+reasoning is in `adr/register-the-kickoff-queue`, a
+decision record numberless until the merge that lands it.
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.
 
@@ -114,8 +129,10 @@ reasoning, the alternatives and what the checks deliberately do not read.
 the work needs a run and `Fiat-Required: 0` when one independent pull request
 will do. Not everything earns a study, a runbook and an audit loop per step; a
 wonky regular expression does not. A `0` names the pull request that answers it
-before the issue closes. `hexctl init` reads the line and refuses to start a run
-against a `0` before it creates any state, worktree or branch.
+before the issue closes. `hexctl init` reads the line before it creates any
+state, worktree or branch: on a `0` it prints one directive naming that pull
+request route and exits 0, and on a `1` it refuses a decision that moved inside
+the last fifteen minutes.
 
 The issue also carries a label matching that line: `fiat-run-needed` for `1`,
 `only-pr-needed` for `0`. The filer sets it the same way `held-job`, `wish` and
@@ -162,6 +179,21 @@ cannot close it.
 
 ## Written-record publication
 
+Fiat admission is signature-only. A valid local cryptographic signature or
+GitHub platform verification is independent of author, committer, co-author,
+runtime, opener, byline, or provenance trailer. Authenticated local GitHub
+access and an authenticated connector have equal standing when they provide
+the same exact fields to the bounded check. Admission never grants publication
+authority.
+
+At the first receipt of a new local OpenPGP commit, Fiat also checks whether
+the committer email is present in the verified signing key's user IDs. This is
+a local GitHub-readiness check, separate from cryptographic admission. A match
+does not establish that GitHub knows or has verified that email; the push gate
+still requires GitHub's exact commit verification. Existing receipts keep their
+signature-only replay rule. SSH and X.509 signatures have no GPG user ID to
+compare and keep their own signature checks.
+
 Before an agent writes prose into this repository or publishes it to a host,
 use this sequence on the complete candidate. It governs every record an agent
 writes down: an audit record, an issue title and body, an issue or pull request
@@ -179,8 +211,9 @@ message.
    `carryover` block are protected content, so a wording pass may not drop or
    reword them.
 
-The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
-`framework-N`. Keep every queue-specific body rule from the section above.
+The five frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`,
+`kickoff/{skill}-N`, and `framework-N`. Keep every queue-specific body rule from
+the section above.
 The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
 selectors, numbers, dates, links, quotations, severities, verdicts, status, the
@@ -192,6 +225,32 @@ Do not publish after a failed check, changed prefix or body opening, missing
 protected item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from
 these instructions.
+
+## GitHub App issue publication
+
+Create App-authored issues only through the checked Phylax publisher. Preserve
+the complete written-record publication sequence above, then encode its exact
+source, candidates, frozen inventory, authority and gate records using the
+[publisher request contract](plugins/hexaemeron/skills/phylax/references/github-issue-publisher-v1.md).
+The credential-free installed client accepts that request on stdin:
+
+```bash
+/Library/WildcatIssuePublisher/python3 -I /Library/WildcatIssuePublisher/publisher-client.py publish < request.json
+```
+
+Refuse App issue creation when current deployment evidence for the named caller
+and reviewed release digest is absent or failed. The
+[macOS deployment kit](plugins/hexaemeron/skills/phylax/deployment/macos/README.md)
+ships operator instructions and a read-only verifier; this repository does not
+claim that the service is installed. Offline conformance, prose instructions
+and Git hooks provide no live credential isolation.
+
+Do not source a helper, read the App key, mint or print a token, or substitute
+an arbitrary GitHub call for this route. Retiring direct helper and key access
+belongs to a separately authorised privileged deployment. Root and
+administrators remain outside the component promise. The App login
+`shoggoth-wildcat-labs[bot]` is a delivery actor and must remain absent from
+`HOST_PR_LOGINS`.
 
 ## Repository map
 
@@ -207,6 +266,9 @@ these instructions.
   running its skill or changing that plugin.
 - Brevitas is under `plugins/brevitas/`. Read `plugins/brevitas/AGENTS.md`
   before running its skill or changing that plugin.
+- Dokimasia is under `plugins/dokimasia/`. Read
+  `plugins/dokimasia/AGENTS.md` before running its skill or changing that
+  plugin.
 - Hermes is under `plugins/hermes/`. Read `plugins/hermes/AGENTS.md` before
   running its skill or changing that plugin.
 - Hexaemeron is under `plugins/hexaemeron/`. Read
@@ -278,6 +340,26 @@ A plan or run refuses when a changed path has no declared owner, a command in
 the map is stale, or the map is malformed; fix `tests/check-map-v1.json` in
 the same change. Hosted CI is unchanged by this entrypoint. The suites below
 are the inventory the map declares, and each remains directly runnable.
+
+### Most of these suites are a local gate only
+
+The map declares what a check is. It does not say anything about what hosted CI
+runs, and for most scopes the answer is nothing. Do not read a scope out of
+`tests/check-map-v1.json` and conclude a pull request will run it.
+
+Hosted CI covers `root` through the `invariants` job in `.github/workflows/repo.yml`,
+`dead-code`, and the `janus`, `lazarus`, `pandects` and `synkrisis` plugin suites
+through their own path-filtered workflows, plus the Hexaemeron harness tests
+through `hexaemeron-forge.yml`. Everything else, about 7,000 test methods across
+thirteen plugin suites and most of Hexaemeron, runs only where a contributor runs
+it. `invariants` is the one context the branch protection on `main` requires.
+
+So run `python3 scripts/run_checks.py` before you push. A green pull request is
+not evidence that a plugin suite passed, and a suite can go red on `main` without
+any check reporting it.
+
+The aggregate gate that used to shard every scope was removed; see the decision
+record beside this one for why, and open an issue rather than restoring it.
 
 Every `python3` command below means the exact interpreter recorded in
 [`.python-version`](.python-version). The supported minor is declared in
@@ -351,10 +433,15 @@ staged tree it passed on. `.githooks/pre-commit` then refuses any commit whose
 staged tree is not the one that record names. Run in the checkout itself,
 `python3 -m unittest discover -s tests` fails where `core.hooksPath` is unset
 or points anywhere else, and names the command above in the failure; that is
-how a fresh clone finds out the gate is off. The checked runner above executes
-the suite from a snapshot carrying a git directory of its own, and a hosted
-runner reports on the runner's own checkout, so the assertion is skipped in
-both and neither says whether your clone is activated.
+how a fresh clone finds out the gate is off.
+
+The checked runner verifies activation in the source checkout before creating
+its disposable snapshot, including when no checks are selected. `--plan` only
+plans and does not check activation. Inside a snapshot,
+`WILDCAT_CHECK_SNAPSHOT_ROOT` names the exact directory whose activation case
+is skipped. The separate `WILDCAT_CHECK_CONTAINMENT` token tracks descendants
+for cleanup and never skips that case. Hosted GitHub Actions jobs still check
+the shipped hook bytes rather than a contributor's local configuration.
 `FIAT_SKIP_PRECOMMIT=1` admits one commit without a recorded green.
 
 ## Reading boundary
@@ -387,4 +474,6 @@ python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
 Run that before recording a green rather than after, and stage what it writes
 alongside the change. Every merge to `main` rewrites the census as well, so a
 branch left open across another merge conflicts on the byte counts: take
-`main`'s copy, run the command again, and stage the result.
+`main`'s copy, run the command again, and stage the result. GitHub's "Update
+branch" button cannot run the scan, so sync `main` locally instead of using it
+on a branch touching `.horos/census.json` or `.horos/boundary.json`.

@@ -1,0 +1,51 @@
+src/WildcatSanctionsSentinel.sol:96:  function overrideSanction(address account) public override {
+src/WildcatSanctionsSentinel.sol:104:  function removeSanctionOverride(address account) public override {
+src/access/FixedTermHooks.sol:220:  function setMinimumDeposit(address market, uint128 newMinimumDeposit) external onlyBorrower {
+src/access/FixedTermHooks.sol:227:  function setFixedTermEndTime(address market, uint32 newFixedTermEndTime) external onlyBorrower {
+src/access/OpenTermHooks.sol:175:  function setMinimumDeposit(address market, uint128 newMinimumDeposit) external onlyBorrower {
+src/access/BaseAccessControls.sol:128:  function setName(string memory _name) external onlyBorrower {
+src/access/BaseAccessControls.sol:161:  function addRoleProvider(address providerAddress, uint32 timeToLive) external onlyBorrower {
+src/access/BaseAccessControls.sol:206:  function removeRoleProvider(address providerAddress) external onlyBorrower {
+src/access/BaseAccessControls.sol:370:  function grantRole(address account, uint32 roleGrantedTimestamp) external {
+src/access/BaseAccessControls.sol:387:  function grantRoles(address[] memory accounts, uint32[] memory roleGrantedTimestamps) external {
+src/access/BaseAccessControls.sol:429:  function revokeRole(address account) external {
+src/access/BaseAccessControls.sol:433:  function revokeRoles(address[] calldata accounts) external {
+src/access/BaseAccessControls.sol:449:  function blockFromDeposits(address account) external onlyBorrower {
+src/access/BaseAccessControls.sol:453:  function blockFromDeposits(address[] calldata accounts) external onlyBorrower {
+src/access/BaseAccessControls.sol:470:  function unblockFromDeposits(address account) external onlyBorrower {
+src/access/IRoleProviderFactory.sol:5:  function createRoleProvider(bytes calldata data) external returns (address);
+src/WildcatArchController.sol:157:  function registerBorrower(address borrower) external onlyOwner {
+src/WildcatArchController.sol:164:  function removeBorrower(address borrower) external onlyOwner {
+src/WildcatArchController.sol:200:  function addBlacklist(address asset) external onlyOwner {
+src/WildcatArchController.sol:207:  function removeBlacklist(address asset) external onlyOwner {
+src/WildcatArchController.sol:243:  function registerControllerFactory(address factory) external onlyOwner {
+src/WildcatArchController.sol:251:  function removeControllerFactory(address factory) external onlyOwner {
+src/WildcatArchController.sol:294:  function registerController(address controller) external onlyControllerFactory {
+src/WildcatArchController.sol:302:  function removeController(address controller) external onlyOwner {
+src/WildcatArchController.sol:345:  function registerMarket(address market) external onlyController {
+src/WildcatArchController.sol:353:  function removeMarket(address market) external onlyOwner {
+src/spherex/SphereXProtectedRegisteredBase.sol:113:  function changeSphereXEngine(address newSphereXEngine) external spherexOnlyOperator {
+src/spherex/SphereXConfig.sol:114:  function transferSphereXAdminRole(address newAdmin) public virtual onlySphereXAdmin {
+src/spherex/SphereXConfig.sol:120:  function acceptSphereXAdminRole() public virtual {
+src/spherex/SphereXConfig.sol:131:  function changeSphereXOperator(address newSphereXOperator) external onlySphereXAdmin {
+src/spherex/SphereXConfig.sol:143:  function changeSphereXEngine(address newSphereXEngine) external spherexOnlyOperator {
+src/spherex/ISphereXEngine.sol:31:  function sphereXValidateInternalPre(int256 num) external returns (bytes32[] memory);
+src/spherex/ISphereXEngine.sol:40:  function addAllowedSenderOnChain(address sender) external;
+src/WildcatSanctionsEscrow.sol:34:  function releaseEscrow() public override {
+src/market/WildcatMarket.sol:27:  function updateState() external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:37:  function rescueTokens(address token) external nonReentrant onlyBorrower {
+src/market/WildcatMarket.sol:117:  function deposit(uint256 amount) external virtual sphereXGuardExternal {
+src/market/WildcatMarket.sol:125:  function collectFees() external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:146:  function borrow(uint256 amount) external onlyBorrower nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:188:  function repay(uint256 amount) external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarket.sol:212:  function closeMarket() external onlyBorrower nonReentrant sphereXGuardExternal {
+src/market/WildcatMarketConfig.sol:82:  function nukeFromOrbit(address accountAddress) external nonReentrant sphereXGuardExternal {
+src/market/WildcatMarketConfig.sol:164:  function setProtocolFeeBips(uint16 _protocolFeeBips) external nonReentrant sphereXGuardExternal {
+src/HooksFactory.sol:112:  function registerWithArchController() external override {
+src/HooksFactory.sol:238:  function disableHooksTemplate(address hooksTemplate) external override onlyArchControllerOwner {
+src/HooksFactory.sol:673:  function pushProtocolFeeBipsUpdates(address hooksTemplate) external override {
+src/vault/Wildcat4626Wrapper.sol:343:  function sweep(address token, address to) external nonReentrant returns (uint256 amount) {
+src/vault/Wildcat4626WrapperFactory.sol:28:  function createWrapper(address market) external returns (address wrapper) {
+src/IHooksFactory.sol:90:  function registerWithArchController() external;
+src/IHooksFactory.sol:145:  function disableHooksTemplate(address hooksTemplate) external;
+src/IHooksFactory.sol:272:  function pushProtocolFeeBipsUpdates(address hooksTemplate) external;

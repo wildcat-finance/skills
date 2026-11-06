@@ -1,0 +1,9 @@
+{
+  "candidate": "require-location-independent",
+  "command": "python3 resolve.py --candidate require-location-independent --criterion check-latency-ms",
+  "criterion": "check-latency-ms",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 44
+}

@@ -49,9 +49,10 @@ No local harness holds a checked one-click Atlas launcher. The probe recorded ev
 Each harness carries the exact reason it stopped there in [the harness table](./docs/how-to-help-shoggoth.md#local-harnesses) and in [`docs/harness-classification.json`](./docs/harness-classification.json), which both surfaces are generated from.
 <!-- harness-roster:end -->
 
-You are the external contributor, not Shoggoth. Keep your own Git author,
-signing identity, and GitHub account. Shoggoth provenance supplements that
-authorship; it never authorises use of a private Shoggoth identity.
+Use any repository-valid signing identity for commits. Fiat admits valid
+signatures rather than a named author, trailer, runtime, or GitHub transport.
+Publication authority remains separate and must come from the repository or
+the user's explicit instruction.
 
 A daily job rebuilds [`CONTRIBUTORS.md`](./CONTRIBUTORS.md) and the thanks
 below from public history. Delivery records whether a pushed commit's author
@@ -73,7 +74,7 @@ command writes a report to a path that must not already exist.
 
 ### ANAMNESIS REBUILDS A PRESERVED AUDIT CORPUS
 
-<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="a862e3b018241f9e30f45404d1a83957a9185fa3fc1ed540b042baa7c9448a07" -->
+<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="51d801e50c7e94c54061d1b0a5f920ad87a64a8aea80c2889b45d6d57431c708" -->
 [Anamnesis](./plugins/anamnesis) admits, curates and projects preserved audit
 specimens from the producer's own bytes, and the mapper a curation policy
 declares now selects the implementation that reads each source rather than
@@ -105,26 +106,28 @@ finality or provider independence for the Aave v4 capture: transaction hashes
 are recorded RPC metadata, not a proved header identity, and nothing here
 describes current chain state.
 
-### ALEXANDRIA REBUILDS A CREDIT HISTORY
+### ALEXANDRIA PRESERVES BOTH WILDCAT ESTATES
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-credit-history-v0" digest="ddf1521f69c55d6e17562c8ac47612330e60b310eb8e9bd8a31e91faba7e9a5d" -->
-[Alexandria](./plugins/alexandria) rebuilds `credit-history-v0` through
-release, index, query and the Probitas hand-off, then verifies the result.
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="c30cff328ef31d28c5181bc90715b7234b952c819b9bfcae70ebbf05fba18097" -->
+[Alexandria](./plugins/alexandria) checks the committed archive manifests,
+rebuild records and expected values for both Wildcat mainnet intervals:
+16 V1 subjects and 137 V2 subjects. It checks the preserved Aave V3 Ethereum
+segments the same way. Each manifest binds the externally preserved staging
+files by byte count and SHA-256.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexandria --report tmp/demo/alexandria.json
 ```
 
-Over preserved records including
-`plugins/tabularium/examples/aave-v4-v0/source.json` it reports
-`sha256:fccc014cd400f553814b58911bb06cd450f395e6145e21c0071a06b092b181ec`. It
-does not establish source authenticity, complete venue coverage or
-canonical-chain finality; Clearpool coverage stays partial and the 14 unqueried
-venue rows are stated gaps, not clean venues.
+Over `plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json`,
+the registered operation reports `scope "committed-metadata-only"` and
+`rebuild_performed false`. The [combined demonstration](./plugins/alexandria/examples/wildcat-estates-interval-v0/README.md)
+provides the complete offline rebuild when both external staging trees are present.
+This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate build and verify commands require the external staging trees. The twelve Aave staging trees are one archive held outside this repository, and the check does not read it. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 
-<!-- front-door:demo skill="dokimasia" claim="dokimasia-wildcat-app-v2-scrutiny" digest="0f2d1b7edbc86ca2bea2ce5f39b564ba8c563110c718487535920ff467484e1d" -->
+<!-- front-door:demo skill="dokimasia" claim="dokimasia-wildcat-app-v2-scrutiny" digest="6cb032f1c2e4566af6bb93ff1f07bb99df244feab11d36bc7e4f530aa1685188" -->
 [Dokimasia](./plugins/dokimasia) regenerates the `wildcat-app-v2` coverage
 record, scrutiny record and rendered report, and checks that the three agree.
 

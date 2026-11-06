@@ -1,0 +1,24 @@
+error: unresolved symbol `locals`
+    ╭▸ src/spherex/SphereXProtectedRegisteredBase.sol:149:39
+    │
+149 │   ) internal returnsIfNotActivatedPre(locals) returns (ModifierLocals memory locals) {
+    ╰╴                                      ━━━━━━
+
+2026-09-26T12:13:11.515581Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:11.568817Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:21.209636Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:21.271015Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:22.378419Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:22.437645Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:23.454595Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:23.514006Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:49.394690Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:13:49.472813Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:09.786748Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:09.846407Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:10.269101Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:10.340589Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:11.038905Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:11.100959Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:54.605492Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)
+2026-09-26T12:14:54.729644Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21560)

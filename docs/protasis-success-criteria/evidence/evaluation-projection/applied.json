@@ -1,0 +1,84 @@
+{
+  "answers_sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855",
+  "applied": true,
+  "changed_fields": [
+    "tree_sha256"
+  ],
+  "counts": {
+    "answers": 11,
+    "cases": 11,
+    "failed": 0,
+    "outcomes": 55,
+    "passed": 55
+  },
+  "current_record": "docs/promise-machine/obligation-gates/evaluation-run.json",
+  "demonstration_sha256": "45209fc3e8aac42c7803c5d75e4af80b5ded6518f36c1e60a1ad53e1c8a2e652",
+  "new_model_observation": false,
+  "original_record": "docs/protasis-success-criteria/evidence/evaluation-projection/original-evaluation-run.json",
+  "original_run_sha256": "9dfd281ab10bdc449d670c053751748eb4985061357c0c0f9bc05bd666c8ea29",
+  "original_tree_sha256": "91a23931f60570c15ccbf34e388bc0d4c23aeafb20d7371feda292b3e1c538ce",
+  "producer": "tests/promise_evaluation_driver.py",
+  "producer_sha256": "385add206ab8ace2ed04857213670f7e427079498d8f6e2c404ddd3db3201fd6",
+  "proposed_run_sha256": "1273422fd38fdc7e35793271ab88f0438f40c2b55d290189c79858d5defa2c53",
+  "proposed_tree_sha256": "70c30d78076245c750cc2103ca2c449d145f6c353bd6ba3a3c10d7760480aeaf",
+  "proposed_verify": "passed",
+  "schema": "success-criteria-evaluation-projection/v1",
+  "source_verify": "passed",
+  "unchanged_prompts": [
+    {
+      "bytes": 3061,
+      "case": "hexaemeron-fizz-convert-properties",
+      "sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2"
+    },
+    {
+      "bytes": 3179,
+      "case": "hexaemeron-fizz-harness-campaign",
+      "sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10"
+    },
+    {
+      "bytes": 3222,
+      "case": "hexaemeron-fizz-sync-drift",
+      "sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb"
+    },
+    {
+      "bytes": 3390,
+      "case": "hexaemeron-solidity-audit-report",
+      "sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2"
+    },
+    {
+      "bytes": 5114,
+      "case": "hexaemeron-x-ray-preaudit",
+      "sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48"
+    },
+    {
+      "bytes": 2532,
+      "case": "hypomnema-record-placement",
+      "sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821"
+    },
+    {
+      "bytes": 2993,
+      "case": "kronos-fiat-dispatch",
+      "sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa"
+    },
+    {
+      "bytes": 2219,
+      "case": "sapheneia-deactivation",
+      "sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0"
+    },
+    {
+      "bytes": 3392,
+      "case": "sapheneia-durable-record-shape",
+      "sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385"
+    },
+    {
+      "bytes": 2461,
+      "case": "sapheneia-session-shape",
+      "sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53"
+    },
+    {
+      "bytes": 2496,
+      "case": "vulgate-register-rewrite",
+      "sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-limit-matched-reader",
+  "command": "python3 .hexaemeron/design/resolve.py statement-set-bytes --candidate raised-limit-matched-reader",
+  "criterion": "statement-set-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 121356890
+}

@@ -2,8 +2,8 @@
   "schema": "harness-classification/v1",
   "recorded": {
     "host": "darwin-arm64",
-    "date": "2026-09-05",
-    "base_ref": "8851ea80b59631cfafcdd3c8bbbb979ebe3bba79"
+    "date": "2026-10-11",
+    "base_ref": "c09c563a5afcab50ac30743533636a64e61f3c1c"
   },
   "harnesses": [
     {

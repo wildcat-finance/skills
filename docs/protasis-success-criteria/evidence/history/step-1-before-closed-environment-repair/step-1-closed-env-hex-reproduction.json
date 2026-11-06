@@ -1,0 +1,25 @@
+{
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "plugins/hexaemeron/tests/run_tests.py"
+  ],
+  "environment": {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/bin:/usr/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONUTF8": "1",
+    "TZ": "UTC"
+  },
+  "started_at": "2026-09-16T09:12:26.176661+00:00",
+  "finished_at": "2026-09-16T09:20:46.829609+00:00",
+  "elapsed_seconds": 500.644,
+  "exit_code": 1,
+  "log_sha256": "827652ce025e9aebaf24bfcd42532483e40dcfb93df093a38fc7efc34b04c256"
+}

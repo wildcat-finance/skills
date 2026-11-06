@@ -1,0 +1,38 @@
+{
+  "schema": "lemma-preparation-request/v1",
+  "input": {
+    "path": "original.json",
+    "sha256": "7757bef79b644b64317184b3be92d5a7ba31dbab5263515a94fd6a6d7e793201"
+  },
+  "compiler": {
+    "runtime": {
+      "path": "node",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "driver": {
+      "path": "driver.cjs",
+      "sha256": "c5f00e4837ae63d1acb289511caa8e965095fb3cb394ea8bcc24f5612bfffbcc"
+    },
+    "artifact": {
+      "path": "soljson.js",
+      "sha256": "663ba99f7c7ee907f0f03227502d48a78256c3c292ace3b79a5d3eb510665306"
+    },
+    "version": "0.8.7+commit.e28d00a7.Emscripten.clang"
+  },
+  "target": {
+    "source": "Target.sol",
+    "contract": "Target"
+  },
+  "transforms": {
+    "metadata_target": true,
+    "target_closure": false,
+    "source_map": {},
+    "remappings": []
+  },
+  "selection": {
+    "include": [
+      "**"
+    ],
+    "exclude": []
+  }
+}

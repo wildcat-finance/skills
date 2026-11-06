@@ -1,0 +1,819 @@
+{
+  "meta": {
+    "repo": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+    "src_dir": "src",
+    "generated_at": "2026-09-26T08:33:00.453702+00:00",
+    "git_head": "f5a2614",
+    "git_branch": "HEAD",
+    "total_commits": 1093,
+    "total_source_files": 62,
+    "analysis_time_ms": 7204
+  },
+  "repo_shape": {
+    "classification": "normal_dev",
+    "total_commits": 1093,
+    "source_touching_commits": 592,
+    "bulk_import_sha": null,
+    "date_spread_days": 1512,
+    "first_commit_date": "2022-06-29",
+    "last_commit_date": "2026-08-19",
+    "signals": [
+      "Date spread: 1512 days",
+      "592 commits touch source files out of 1093 total"
+    ]
+  },
+  "fix_candidates": [
+    {
+      "sha": "5a17f02",
+      "full_sha": "5a17f02dd9deee930f57bbe100efb7386f90b2a2",
+      "date": "2023-11-29",
+      "author": "d1ll0n",
+      "subject": "rm SphereX wrapped ReentrancyGuard and Ownable",
+      "score": 17,
+      "reasons": [
+        "explicit security language",
+        "removes runtime guards (+0/-3)",
+        "loosens access control (+0/-6)",
+        "focused change (2 source files)",
+        "net code removal"
+      ],
+      "source_files_touched": [
+        "src/Ownable.sol",
+        "src/ReentrancyGuardMinimal.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 331
+    },
+    {
+      "sha": "cbfa7c3",
+      "full_sha": "cbfa7c387e38cfab7ba0366f9f6af9971025c869",
+      "date": "2025-02-04",
+      "author": "d1ll0n",
+      "subject": "Remove minimumDeposit & allow closure before term if allowTermReduction enabled",
+      "score": 13,
+      "reasons": [
+        "unclassified",
+        "removes runtime guards (+0/-1)",
+        "loosens access control (+0/-1)",
+        "changes token transfer logic",
+        "spans 3 security domains (access_control, fund_flows, state_machines)",
+        "net code removal",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/access/FixedTermHooks.sol",
+        "src/access/IHooks.sol",
+        "src/access/OpenTermHooks.sol",
+        "src/interfaces/IMarketEventsAndErrors.sol",
+        "src/lens/HooksConfigData.sol",
+        "src/libraries/MarketEvents.sol",
+        "src/market/WildcatMarket.sol",
+        "src/types/HooksConfig.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 210
+    },
+    {
+      "sha": "b7e2f23",
+      "full_sha": "b7e2f234b2a887146cd5df5054a43435d89ee7a0",
+      "date": "2024-08-29",
+      "author": "d1ll0n",
+      "subject": "map markets to their hooks templates, add slice query for hooks templates and add bulk update function for protocol fees",
+      "score": 13,
+      "reasons": [
+        "unclassified",
+        "adds runtime guards (+1/-0)",
+        "tightens access control (+4/-0)",
+        "changes token transfer logic",
+        "spans 2 security domains (access_control, fund_flows)",
+        "focused change (2 source files)"
+      ],
+      "source_files_touched": [
+        "src/HooksFactory.sol",
+        "src/IHooksFactory.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 174
+    },
+    {
+      "sha": "a8409c5",
+      "full_sha": "a8409c5ec6fcf15edfad57eda78682f58e8278c0",
+      "date": "2024-03-30",
+      "author": "d1ll0n",
+      "subject": "Temporary fixes to get code to compile",
+      "score": 13,
+      "reasons": [
+        "bug fix",
+        "rewrites runtime guards (+2/-2)",
+        "tightens access control (+2/-0)",
+        "touches state_machines code",
+        "focused change (2 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/WildcatMarketController.sol",
+        "src/lens/MarketData.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 99
+    },
+    {
+      "sha": "95c8129",
+      "full_sha": "95c81293c8672d90343a616913626bd93ae41c64",
+      "date": "2023-11-29",
+      "author": "d1ll0n",
+      "subject": "Inherit SphereXProtectedRegisteredBase and original ReentrancyGuard, add arch controller query",
+      "score": 13,
+      "reasons": [
+        "explicit security language",
+        "spans 4 security domains (access_control, fund_flows, signatures, state_machines)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketBase.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 21
+    },
+    {
+      "sha": "255d932",
+      "full_sha": "255d932dcecc5a0504b45d59ebedd2cc62f01526",
+      "date": "2023-11-28",
+      "author": "d1ll0n",
+      "subject": "add reentrancy guard with minimal spherex",
+      "score": 13,
+      "reasons": [
+        "explicit security language",
+        "tightens access control (+1/-0)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/ReentrancyGuardMinimal.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 89
+    },
+    {
+      "sha": "c7be403",
+      "full_sha": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "date": "2026-04-01",
+      "author": "Jack",
+      "subject": "feat(4626-wrapper): 4626 style market debt token wrapper",
+      "score": 12,
+      "reasons": [
+        "feature addition",
+        "adds runtime guards (+25/-0)",
+        "tightens access control (+5/-0)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "touches fund_flows code",
+        "focused change (2 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/vault/Wildcat4626Wrapper.sol",
+        "src/vault/Wildcat4626WrapperFactory.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 486
+    },
+    {
+      "sha": "054d194",
+      "full_sha": "054d194703393ba66480bf741b5a92f4c15af59f",
+      "date": "2023-08-31",
+      "author": "d1ll0n",
+      "subject": "fix return params for _calculateCurrentState. rm use of increase/decrease fns",
+      "score": 12,
+      "reasons": [
+        "bug fix",
+        "tightens access control (+1/-0)",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketToken.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 16
+    },
+    {
+      "sha": "30d57b1",
+      "full_sha": "30d57b1b5bf8a0caad4943a6ea232bcab03baf8a",
+      "date": "2023-08-31",
+      "author": "d1ll0n",
+      "subject": "move most of the withdrawal library into WildcatMarketWithdrawals",
+      "score": 12,
+      "reasons": [
+        "unclassified",
+        "loosens access control (+2/-3)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (2 source files)",
+        "net code removal"
+      ],
+      "source_files_touched": [
+        "src/libraries/Withdrawal.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 296
+    },
+    {
+      "sha": "a946e77",
+      "full_sha": "a946e771b11ecac32e7c3bbf3e7711effeb6a8fc",
+      "date": "2022-08-18",
+      "author": "d1ll0n",
+      "subject": "Fix transfer, add MaxSupplyUpdated",
+      "score": 12,
+      "reasons": [
+        "bug fix",
+        "removes runtime guards (+0/-1)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/UncollateralizedDebtToken.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 14
+    }
+  ],
+  "dangerous_area_changes": {
+    "access_control": {
+      "commit_count": 101,
+      "files": [
+        "src/HooksFactory.sol",
+        "src/WildcatArchController.sol",
+        "src/access/BaseAccessControls.sol",
+        "src/access/FixedTermHooks.sol",
+        "src/access/OpenTermHooks.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/spherex/SphereXConfig.sol"
+      ],
+      "commits": [
+        {
+          "sha": "cbfa7c3",
+          "date": "2025-02-04",
+          "subject": "Remove minimumDeposit & allow closure before term if allowTermReduction enabled"
+        },
+        {
+          "sha": "aee02e7",
+          "date": "2025-02-02",
+          "subject": "add bulk blockFromDeposits"
+        },
+        {
+          "sha": "e9c55ea",
+          "date": "2024-11-19",
+          "subject": "multi revoke"
+        },
+        {
+          "sha": "acf12e7",
+          "date": "2024-10-29",
+          "subject": "formatting"
+        },
+        {
+          "sha": "0c713f2",
+          "date": "2024-10-29",
+          "subject": "formatting"
+        },
+        {
+          "sha": "e19c985",
+          "date": "2024-10-27",
+          "subject": "add push provider array to hooks"
+        },
+        {
+          "sha": "5943651",
+          "date": "2024-10-27",
+          "subject": "Rename NotPullProviderIndex -> NullProviderIndex"
+        },
+        {
+          "sha": "ece29a0",
+          "date": "2024-10-27",
+          "subject": "add name, createRoleProvider, and ability to initialize role providers"
+        },
+        {
+          "sha": "afa5ad7",
+          "date": "2024-10-25",
+          "subject": "add name to interface, add override for pushProtocolFeeBipsUpdates"
+        },
+        {
+          "sha": "f3e16be",
+          "date": "2024-10-22",
+          "subject": "chore: SPDX identifier change"
+        },
+        {
+          "sha": "6ca2755",
+          "date": "2024-10-19",
+          "subject": "Add mapped array from instance to markets"
+        },
+        {
+          "sha": "5cf23c1",
+          "date": "2024-10-10",
+          "subject": "Use create2 for deploying hooks instances and add a mapping from borrowers to th"
+        },
+        {
+          "sha": "b7e2f23",
+          "date": "2024-08-29",
+          "subject": "map markets to their hooks templates, add slice query for hooks templates and ad"
+        },
+        {
+          "sha": "f1070c8",
+          "date": "2024-08-29",
+          "subject": "Move protocolFeeBips to MarketState"
+        },
+        {
+          "sha": "bdc24b7",
+          "date": "2024-08-29",
+          "subject": "set max protocol fee to 10%"
+        }
+      ],
+      "truncated": true
+    },
+    "fund_flows": {
+      "commit_count": 202,
+      "files": [
+        "src/HooksFactory.sol",
+        "src/IHooksFactory.sol",
+        "src/WildcatSanctionsEscrow.sol",
+        "src/access/BaseAccessControls.sol",
+        "src/access/FixedTermHooks.sol",
+        "src/access/OpenTermHooks.sol",
+        "src/interfaces/IERC20.sol",
+        "src/interfaces/IMarketEventsAndErrors.sol",
+        "src/lens/HooksTemplateData.sol",
+        "src/lens/LenderAccountData.sol",
+        "src/libraries/LibERC20.sol",
+        "src/libraries/MarketState.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol",
+        "src/types/LenderStatus.sol",
+        "src/vault/Wildcat4626Wrapper.sol"
+      ],
+      "commits": [
+        {
+          "sha": "c7be403",
+          "date": "2026-04-01",
+          "subject": "feat(4626-wrapper): 4626 style market debt token wrapper"
+        },
+        {
+          "sha": "2c7e852",
+          "date": "2025-02-04",
+          "subject": "add nonReentrant to rescueTokens"
+        },
+        {
+          "sha": "cbfa7c3",
+          "date": "2025-02-04",
+          "subject": "Remove minimumDeposit & allow closure before term if allowTermReduction enabled"
+        },
+        {
+          "sha": "aee02e7",
+          "date": "2025-02-02",
+          "subject": "add bulk blockFromDeposits"
+        },
+        {
+          "sha": "e9c55ea",
+          "date": "2024-11-19",
+          "subject": "multi revoke"
+        },
+        {
+          "sha": "0c713f2",
+          "date": "2024-10-29",
+          "subject": "formatting"
+        },
+        {
+          "sha": "5c8b190",
+          "date": "2024-10-29",
+          "subject": "MIT license for interfaces/libraries"
+        },
+        {
+          "sha": "765a43f",
+          "date": "2024-10-27",
+          "subject": "rename AccessControlHooks -> OpenTermHooks, FixedTermLoanHooks -> FixedTermHooks"
+        },
+        {
+          "sha": "e19c985",
+          "date": "2024-10-27",
+          "subject": "add push provider array to hooks"
+        },
+        {
+          "sha": "5943651",
+          "date": "2024-10-27",
+          "subject": "Rename NotPullProviderIndex -> NullProviderIndex"
+        },
+        {
+          "sha": "ece29a0",
+          "date": "2024-10-27",
+          "subject": "add name, createRoleProvider, and ability to initialize role providers"
+        },
+        {
+          "sha": "b878593",
+          "date": "2024-10-25",
+          "subject": "queue withdrawal for borrower in force buyback"
+        },
+        {
+          "sha": "d025568",
+          "date": "2024-10-25",
+          "subject": "Allow buyback on closed market"
+        },
+        {
+          "sha": "73c2651",
+          "date": "2024-10-25",
+          "subject": "Fix amount emitted in forceBuyBack transfer"
+        },
+        {
+          "sha": "e7fc8fa",
+          "date": "2024-10-25",
+          "subject": "use MIT license for lens"
+        }
+      ],
+      "truncated": true
+    },
+    "signatures": {
+      "commit_count": 78,
+      "files": [
+        "src/access/IRoleProvider.sol",
+        "src/libraries/MathUtils.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/types/TransientBytesArray.sol"
+      ],
+      "commits": [
+        {
+          "sha": "6baa1f9",
+          "date": "2024-10-29",
+          "subject": "MIT license for interfaces/libraries"
+        },
+        {
+          "sha": "0c713f2",
+          "date": "2024-10-29",
+          "subject": "formatting"
+        },
+        {
+          "sha": "5c8b190",
+          "date": "2024-10-29",
+          "subject": "MIT license for interfaces/libraries"
+        },
+        {
+          "sha": "f3e16be",
+          "date": "2024-10-22",
+          "subject": "chore: SPDX identifier change"
+        },
+        {
+          "sha": "f1070c8",
+          "date": "2024-08-29",
+          "subject": "Move protocolFeeBips to MarketState"
+        },
+        {
+          "sha": "7896942",
+          "date": "2024-08-11",
+          "subject": "comment"
+        },
+        {
+          "sha": "aac6003",
+          "date": "2024-08-05",
+          "subject": "Add yul functions for sentinel calls. Remove interface type for sentinel immutab"
+        },
+        {
+          "sha": "65360ce",
+          "date": "2024-08-05",
+          "subject": "Fix name/symbol writes"
+        },
+        {
+          "sha": "c7f72a7",
+          "date": "2024-08-05",
+          "subject": "Use mulDiv for calculating withdrawal batch payments to ensure market can not en"
+        },
+        {
+          "sha": "11f9d81",
+          "date": "2024-08-03",
+          "subject": "Clean up comments, add manual call function for getMarketParameters and use LibE"
+        },
+        {
+          "sha": "6efa330",
+          "date": "2024-08-02",
+          "subject": "Code size optimizations."
+        },
+        {
+          "sha": "fcebf02",
+          "date": "2024-06-24",
+          "subject": "Check sentinel instead of .isSanctioned, make _blockAccount virtual"
+        },
+        {
+          "sha": "267c2cb",
+          "date": "2024-06-11",
+          "subject": "Replace controller interface import with hooks factory interface"
+        },
+        {
+          "sha": "220cdaa",
+          "date": "2024-06-09",
+          "subject": "version string"
+        },
+        {
+          "sha": "4594077",
+          "date": "2024-06-09",
+          "subject": "remove controller"
+        }
+      ],
+      "truncated": true
+    },
+    "state_machines": {
+      "commit_count": 180,
+      "files": [
+        "src/access/BaseAccessControls.sol",
+        "src/access/FixedTermHooks.sol",
+        "src/access/OpenTermHooks.sol",
+        "src/lens/LenderAccountData.sol",
+        "src/lens/MarketData.sol",
+        "src/lens/WithdrawalBatchData.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "commits": [
+        {
+          "sha": "2c7e852",
+          "date": "2025-02-04",
+          "subject": "add nonReentrant to rescueTokens"
+        },
+        {
+          "sha": "cbfa7c3",
+          "date": "2025-02-04",
+          "subject": "Remove minimumDeposit & allow closure before term if allowTermReduction enabled"
+        },
+        {
+          "sha": "aee02e7",
+          "date": "2025-02-02",
+          "subject": "add bulk blockFromDeposits"
+        },
+        {
+          "sha": "e9c55ea",
+          "date": "2024-11-19",
+          "subject": "multi revoke"
+        },
+        {
+          "sha": "0c713f2",
+          "date": "2024-10-29",
+          "subject": "formatting"
+        },
+        {
+          "sha": "765a43f",
+          "date": "2024-10-27",
+          "subject": "rename AccessControlHooks -> OpenTermHooks, FixedTermLoanHooks -> FixedTermHooks"
+        },
+        {
+          "sha": "e19c985",
+          "date": "2024-10-27",
+          "subject": "add push provider array to hooks"
+        },
+        {
+          "sha": "5943651",
+          "date": "2024-10-27",
+          "subject": "Rename NotPullProviderIndex -> NullProviderIndex"
+        },
+        {
+          "sha": "ece29a0",
+          "date": "2024-10-27",
+          "subject": "add name, createRoleProvider, and ability to initialize role providers"
+        },
+        {
+          "sha": "b878593",
+          "date": "2024-10-25",
+          "subject": "queue withdrawal for borrower in force buyback"
+        },
+        {
+          "sha": "d025568",
+          "date": "2024-10-25",
+          "subject": "Allow buyback on closed market"
+        },
+        {
+          "sha": "73c2651",
+          "date": "2024-10-25",
+          "subject": "Fix amount emitted in forceBuyBack transfer"
+        },
+        {
+          "sha": "e7fc8fa",
+          "date": "2024-10-25",
+          "subject": "use MIT license for lens"
+        },
+        {
+          "sha": "637e3b7",
+          "date": "2024-10-22",
+          "subject": "Add nonReentrant to forceBuyBack"
+        },
+        {
+          "sha": "f3e16be",
+          "date": "2024-10-22",
+          "subject": "chore: SPDX identifier change"
+        }
+      ],
+      "truncated": true
+    }
+  },
+  "late_changes": {
+    "window_days": 30,
+    "cutoff_date": "2026-07-20",
+    "latest_commit_date": "2026-08-19",
+    "late_commits": [],
+    "source_without_test_count": 0,
+    "total_late_source_commits": 0
+  },
+  "forked_deps": {
+    "detected_libs": [
+      {
+        "name": "ethereum-access-token",
+        "path": "lib/ethereum-access-token",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 10,
+        "pragma_versions": [
+          ">=0.8.13"
+        ],
+        "notes": []
+      },
+      {
+        "name": "openzeppelin-contracts",
+        "path": "lib/openzeppelin-contracts",
+        "known_upstream": "OpenZeppelin",
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 323,
+        "pragma_versions": [
+          ">0.5.0 <0.9.0",
+          ">=0.4.21 <0.9.0",
+          ">=0.4.22 <0.9.0",
+          ">=0.5.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.2",
+          ">=0.6.2 <0.9.0",
+          ">=0.6.9 <0.9.0",
+          ">=0.7.0 <0.9.0",
+          ">=0.8.0 <0.9.0",
+          "^0.8.0",
+          "^0.8.1",
+          "^0.8.19",
+          "^0.8.2",
+          "^0.8.4",
+          "^0.8.8",
+          "^0.8.9"
+        ],
+        "notes": [
+          "Pragma '>0.5.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.4.21 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.4.22 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.5.0' differs from expected upstream versions",
+          "Pragma '>=0.6.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.2' differs from expected upstream versions",
+          "Pragma '>=0.6.2 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.9 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.7.0 <0.9.0' differs from expected upstream versions"
+        ]
+      },
+      {
+        "name": "sol-utils",
+        "path": "lib/sol-utils",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 587,
+        "pragma_versions": [
+          "0.8.15",
+          ">0.5.0 <0.9.0",
+          ">=0.4.21 <0.9.0",
+          ">=0.4.22 <0.9.0",
+          ">=0.5.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.2",
+          ">=0.6.2 <0.9.0",
+          ">=0.6.9 <0.9.0",
+          ">=0.7.0 <0.9.0",
+          ">=0.8.0",
+          ">=0.8.0 <0.9.0",
+          ">=0.8.17",
+          ">=0.8.20",
+          "^0.8.0",
+          "^0.8.1",
+          "^0.8.13",
+          "^0.8.15",
+          "^0.8.17",
+          "^0.8.19",
+          "^0.8.2",
+          "^0.8.4",
+          "^0.8.8",
+          "^0.8.9"
+        ],
+        "notes": []
+      },
+      {
+        "name": "solady",
+        "path": "lib/solady",
+        "known_upstream": "Solady",
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 134,
+        "pragma_versions": [
+          ">=0.4.22 <0.9.0",
+          ">=0.5.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.12",
+          "^0.8.4"
+        ],
+        "notes": [
+          "Pragma '>=0.4.22 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.5.0' differs from expected upstream versions",
+          "Pragma '>=0.6.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.12' differs from expected upstream versions"
+        ]
+      },
+      {
+        "name": "solmate",
+        "path": "lib/solmate",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 58,
+        "pragma_versions": [
+          "0.8.15",
+          ">=0.5.0",
+          ">=0.8.0"
+        ],
+        "notes": []
+      },
+      {
+        "name": "vulcan",
+        "path": "lib/vulcan",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 163,
+        "pragma_versions": [
+          ">=0.4.22 <0.9.0",
+          ">=0.5.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.2",
+          ">=0.6.2 <0.9.0",
+          ">=0.7.0 <0.9.0",
+          ">=0.8.0 <0.9.0",
+          ">=0.8.13 <0.9.0",
+          "^0.8.0",
+          "^0.8.13",
+          "^0.8.17"
+        ],
+        "notes": []
+      }
+    ],
+    "removed_submodules": [
+      {
+        "path": "lib/solady",
+        "removed_in_sha": "e69111a",
+        "subject": "replace sol-utils AddressSet with OpenZeppelin EnumerableSet library"
+      }
+    ]
+  },
+  "tech_debt": {
+    "total_count": 0,
+    "items": [],
+    "files_with_debt": 0,
+    "capped": false
+  },
+  "dev_patterns": {
+    "test_co_change_rate": 0.152,
+    "fix_without_test_rate": 0.7,
+    "avg_commit_size": 93.4,
+    "avg_commit_size_note": null,
+    "single_developer_pct": 0.899,
+    "top_contributor": "d1ll0n",
+    "contributor_breakdown": [
+      {
+        "author": "d1ll0n",
+        "lines_added": 28854,
+        "pct": 0.899
+      },
+      {
+        "author": "Dr Laurence E. Day",
+        "lines_added": 2610,
+        "pct": 0.081
+      },
+      {
+        "author": "Jack",
+        "lines_added": 486,
+        "pct": 0.015
+      },
+      {
+        "author": "jtriley.eth",
+        "lines_added": 136,
+        "pct": 0.004
+      },
+      {
+        "author": "Tim Clancy",
+        "lines_added": 15,
+        "pct": 0.0
+      }
+    ]
+  }
+}

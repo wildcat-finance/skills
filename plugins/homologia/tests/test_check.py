@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -691,9 +692,18 @@ class CheckTests(unittest.TestCase):
             rewritten = value.data.replace(b'"integer":"1', b'"integer":"9', 1)
             self.assertEqual(len(rewritten), value.size)
             value.path.write_bytes(rewritten)
-            current = value.path.stat()
-            os.utime(value.path, ns=(current.st_atime_ns, value.mtime_ns))
-            current = value.path.stat()
+            # A rewrite and utime can share one filesystem timestamp tick.
+            # Establish the changed-ctime fixture before testing the guard.
+            deadline = time.monotonic() + 5
+            while True:
+                current = value.path.stat()
+                os.utime(value.path, ns=(current.st_atime_ns, value.mtime_ns))
+                current = value.path.stat()
+                if current.st_ctime_ns != value.ctime_ns:
+                    break
+                if time.monotonic() >= deadline:
+                    self.fail("fixture ctime did not advance within five seconds")
+                time.sleep(0.001)
             self.assertEqual(current.st_ino, value.inode)
             self.assertEqual(current.st_size, value.size)
             self.assertEqual(current.st_mtime_ns, value.mtime_ns)

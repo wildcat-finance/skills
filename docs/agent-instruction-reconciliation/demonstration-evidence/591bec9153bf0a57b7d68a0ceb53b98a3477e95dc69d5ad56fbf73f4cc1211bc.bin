@@ -1,0 +1,41 @@
+test_law_edit_selects_law (__main__.Guard.test_law_edit_selects_law) ... ERROR
+test_horos_edit_selects_horos (__main__.Guard.test_horos_edit_selects_horos) ... ERROR
+
+======================================================================
+ERROR: test_law_edit_selects_law (__main__.Guard.test_law_edit_selects_law)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 24, in test_law_edit_selects_law
+    def test_law_edit_selects_law(self):self.expected_selection('promise-machine-router-selection')
+                                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 21, in expected_selection
+    observed=a.prepare(self.root,baseline=self.commit,source=source,stage='tmp/guard')
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/scripts/agent_instruction_reconciliation.py", line 681, in prepare
+    "measured_streams": measured_streams(updated, candidate),
+                        ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/scripts/agent_instruction_reconciliation.py", line 619, in measured_streams
+    role: {"state": "ready" if documents[fixture["id"]][role]["sha256"] == sha(body) else "needs-evidence",
+                               ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'model'
+
+======================================================================
+ERROR: test_horos_edit_selects_horos (__main__.Guard.test_horos_edit_selects_horos)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 25, in test_horos_edit_selects_horos
+    def test_horos_edit_selects_horos(self):self.expected_selection('horos-boundary-check')
+                                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 21, in expected_selection
+    observed=a.prepare(self.root,baseline=self.commit,source=source,stage='tmp/guard')
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/scripts/agent_instruction_reconciliation.py", line 681, in prepare
+    "measured_streams": measured_streams(updated, candidate),
+                        ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/scripts/agent_instruction_reconciliation.py", line 619, in measured_streams
+    role: {"state": "ready" if documents[fixture["id"]][role]["sha256"] == sha(body) else "needs-evidence",
+                               ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'model'
+
+----------------------------------------------------------------------
+Ran 2 tests in 2.595s
+
+FAILED (errors=2)

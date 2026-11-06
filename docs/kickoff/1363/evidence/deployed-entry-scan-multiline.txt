@@ -1,0 +1,735 @@
+src/WildcatSanctionsSentinel.sol-120-   */
+src/WildcatSanctionsSentinel.sol-121-  function createEscrow(
+src/WildcatSanctionsSentinel.sol-122-    address borrower,
+src/WildcatSanctionsSentinel.sol-123-    address account,
+src/WildcatSanctionsSentinel.sol-124-    address asset
+src/WildcatSanctionsSentinel.sol:125:  ) public override returns (address escrowContract) {
+--
+src/WildcatSanctionsSentinel.sol-147-   */
+src/WildcatSanctionsSentinel.sol-148-  function getEscrowAddress(
+src/WildcatSanctionsSentinel.sol-149-    address borrower,
+src/WildcatSanctionsSentinel.sol-150-    address account,
+src/WildcatSanctionsSentinel.sol-151-    address asset
+--
+src/access/IHooks.sol-25-  function onCreateMarket(
+src/access/IHooks.sol-26-    address deployer,
+src/access/IHooks.sol-27-    address marketAddress,
+src/access/IHooks.sol-28-    DeployMarketInputs calldata parameters,
+src/access/IHooks.sol-29-    bytes calldata extraData
+src/access/IHooks.sol:30:  ) external returns (HooksConfig) {
+--
+src/access/IHooks.sol-42-  function onDeposit(
+src/access/IHooks.sol-43-    address lender,
+src/access/IHooks.sol-44-    uint256 scaledAmount,
+src/access/IHooks.sol-45-    MarketState calldata intermediateState,
+src/access/IHooks.sol-46-    bytes calldata extraData
+src/access/IHooks.sol:47:  ) external virtual;
+--
+src/access/IHooks.sol-50-    address lender,
+src/access/IHooks.sol-51-    uint32 expiry,
+src/access/IHooks.sol-52-    uint scaledAmount,
+src/access/IHooks.sol-53-    MarketState calldata intermediateState,
+src/access/IHooks.sol-54-    bytes calldata extraData
+src/access/IHooks.sol:55:  ) external virtual;
+--
+src/access/IHooks.sol-57-  function onExecuteWithdrawal(
+src/access/IHooks.sol-58-    address lender,
+src/access/IHooks.sol-59-    uint128 normalizedAmountWithdrawn,
+src/access/IHooks.sol-60-    MarketState calldata intermediateState,
+src/access/IHooks.sol-61-    bytes calldata extraData
+src/access/IHooks.sol:62:  ) external virtual;
+--
+src/access/IHooks.sol-66-    address from,
+src/access/IHooks.sol-67-    address to,
+src/access/IHooks.sol-68-    uint scaledAmount,
+src/access/IHooks.sol-69-    MarketState calldata intermediateState,
+src/access/IHooks.sol-70-    bytes calldata extraData
+src/access/IHooks.sol:71:  ) external virtual;
+src/access/IHooks.sol-72-
+src/access/IHooks.sol-73-  function onBorrow(
+src/access/IHooks.sol-74-    uint normalizedAmount,
+src/access/IHooks.sol-75-    MarketState calldata intermediateState,
+src/access/IHooks.sol-76-    bytes calldata extraData
+src/access/IHooks.sol:77:  ) external virtual;
+src/access/IHooks.sol-78-
+src/access/IHooks.sol-79-  function onRepay(
+src/access/IHooks.sol-80-    uint normalizedAmount,
+src/access/IHooks.sol-81-    MarketState calldata intermediateState,
+src/access/IHooks.sol-82-    bytes calldata extraData
+src/access/IHooks.sol:83:  ) external virtual;
+src/access/IHooks.sol-84-
+src/access/IHooks.sol-85-  function onCloseMarket(
+src/access/IHooks.sol-86-    MarketState calldata intermediateState,
+src/access/IHooks.sol-87-    bytes calldata extraData
+src/access/IHooks.sol:88:  ) external virtual;
+src/access/IHooks.sol-89-
+src/access/IHooks.sol-90-  function onNukeFromOrbit(
+src/access/IHooks.sol-91-    address lender,
+src/access/IHooks.sol-92-    MarketState calldata intermediateState,
+src/access/IHooks.sol-93-    bytes calldata extraData
+src/access/IHooks.sol:94:  ) external virtual;
+src/access/IHooks.sol-95-
+src/access/IHooks.sol-96-  function onSetMaxTotalSupply(
+src/access/IHooks.sol-97-    uint256 maxTotalSupply,
+src/access/IHooks.sol-98-    MarketState calldata intermediateState,
+src/access/IHooks.sol-99-    bytes calldata extraData
+src/access/IHooks.sol:100:  ) external virtual;
+--
+src/access/IHooks.sol-102-  function onSetAnnualInterestAndReserveRatioBips(
+src/access/IHooks.sol-103-    uint16 annualInterestBips,
+src/access/IHooks.sol-104-    uint16 reserveRatioBips,
+src/access/IHooks.sol-105-    MarketState calldata intermediateState,
+src/access/IHooks.sol-106-    bytes calldata extraData
+src/access/IHooks.sol:107:  ) external virtual returns (uint16 updatedAnnualInterestBips, uint16 updatedReserveRatioBips);
+src/access/IHooks.sol-108-
+src/access/IHooks.sol-109-  function onSetProtocolFeeBips(
+src/access/IHooks.sol-110-    uint16 protocolFeeBips,
+src/access/IHooks.sol-111-    MarketState memory intermediateState,
+src/access/IHooks.sol-112-    bytes calldata extraData
+src/access/IHooks.sol:113:  ) external virtual;
+--
+src/access/IRoleProvider.sol-13-   * @return timestamp The timestamp at which the credential was granted.
+src/access/IRoleProvider.sol-14-   */
+src/access/IRoleProvider.sol-15-  function validateCredential(
+src/access/IRoleProvider.sol-16-    address account,
+src/access/IRoleProvider.sol-17-    bytes calldata data
+src/access/IRoleProvider.sol:18:  ) external returns (uint32 timestamp);
+--
+src/access/FixedTermHooks.sol-242-    return _hookedMarkets[marketAddress];
+src/access/FixedTermHooks.sol-243-  }
+src/access/FixedTermHooks.sol-244-
+src/access/FixedTermHooks.sol-245-  function getHookedMarkets(
+src/access/FixedTermHooks.sol-246-    address[] calldata marketAddresses
+--
+src/access/FixedTermHooks.sol-263-  function onDeposit(
+src/access/FixedTermHooks.sol-264-    address lender,
+src/access/FixedTermHooks.sol-265-    uint scaledAmount,
+src/access/FixedTermHooks.sol-266-    MarketState calldata state,
+src/access/FixedTermHooks.sol-267-    bytes calldata hooksData
+src/access/FixedTermHooks.sol:268:  ) external override {
+--
+src/access/FixedTermHooks.sol-307-    address lender,
+src/access/FixedTermHooks.sol-308-    uint32 /* expiry */,
+src/access/FixedTermHooks.sol-309-    uint /* scaledAmount */,
+src/access/FixedTermHooks.sol-310-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-311-    bytes calldata hooksData
+src/access/FixedTermHooks.sol:312:  ) external override {
+--
+src/access/FixedTermHooks.sol-331-  function onExecuteWithdrawal(
+src/access/FixedTermHooks.sol-332-    address lender,
+src/access/FixedTermHooks.sol-333-    uint128 /* normalizedAmountWithdrawn */,
+src/access/FixedTermHooks.sol-334-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-335-    bytes calldata hooksData
+src/access/FixedTermHooks.sol:336:  ) external override {}
+--
+src/access/FixedTermHooks.sol-353-    address /* from */,
+src/access/FixedTermHooks.sol-354-    address to,
+src/access/FixedTermHooks.sol-355-    uint /* scaledAmount */,
+src/access/FixedTermHooks.sol-356-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-357-    bytes calldata extraData
+src/access/FixedTermHooks.sol:358:  ) external override {
+--
+src/access/FixedTermHooks.sol-389-   */
+src/access/FixedTermHooks.sol-390-  function onBorrow(
+src/access/FixedTermHooks.sol-391-    uint /* normalizedAmount */,
+src/access/FixedTermHooks.sol-392-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-393-    bytes calldata /* extraData */
+src/access/FixedTermHooks.sol:394:  ) external override {}
+--
+src/access/FixedTermHooks.sol-398-   */
+src/access/FixedTermHooks.sol-399-  function onRepay(
+src/access/FixedTermHooks.sol-400-    uint normalizedAmount,
+src/access/FixedTermHooks.sol-401-    MarketState calldata state,
+src/access/FixedTermHooks.sol-402-    bytes calldata hooksData
+src/access/FixedTermHooks.sol:403:  ) external override {}
+src/access/FixedTermHooks.sol-404-
+src/access/FixedTermHooks.sol-405-  function onCloseMarket(
+src/access/FixedTermHooks.sol-406-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-407-    bytes calldata /* hooksData */
+src/access/FixedTermHooks.sol:408:  ) external override {
+--
+src/access/FixedTermHooks.sol-419-
+src/access/FixedTermHooks.sol-420-  function onNukeFromOrbit(
+src/access/FixedTermHooks.sol-421-    address /* lender */,
+src/access/FixedTermHooks.sol-422-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-423-    bytes calldata /* hooksData */
+src/access/FixedTermHooks.sol:424:  ) external override {}
+src/access/FixedTermHooks.sol-425-
+src/access/FixedTermHooks.sol-426-  function onSetMaxTotalSupply(
+src/access/FixedTermHooks.sol-427-    uint256 /* maxTotalSupply */,
+src/access/FixedTermHooks.sol-428-    MarketState calldata /* state */,
+src/access/FixedTermHooks.sol-429-    bytes calldata /* hooksData */
+src/access/FixedTermHooks.sol:430:  ) external override {}
+--
+src/access/FixedTermHooks.sol-461-
+src/access/FixedTermHooks.sol-462-  function onSetProtocolFeeBips(
+src/access/FixedTermHooks.sol-463-    uint16 /* protocolFeeBips */,
+src/access/FixedTermHooks.sol-464-    MarketState memory /* intermediateState */,
+src/access/FixedTermHooks.sol-465-    bytes calldata /* extraData */
+src/access/FixedTermHooks.sol:466:  ) external override {}
+--
+src/access/OpenTermHooks.sol-187-    return _hookedMarkets[marketAddress];
+src/access/OpenTermHooks.sol-188-  }
+src/access/OpenTermHooks.sol-189-
+src/access/OpenTermHooks.sol-190-  function getHookedMarkets(
+src/access/OpenTermHooks.sol-191-    address[] calldata marketAddresses
+--
+src/access/OpenTermHooks.sol-209-  function onDeposit(
+src/access/OpenTermHooks.sol-210-    address lender,
+src/access/OpenTermHooks.sol-211-    uint scaledAmount,
+src/access/OpenTermHooks.sol-212-    MarketState calldata state,
+src/access/OpenTermHooks.sol-213-    bytes calldata hooksData
+src/access/OpenTermHooks.sol:214:  ) external override {
+--
+src/access/OpenTermHooks.sol-253-    address lender,
+src/access/OpenTermHooks.sol-254-    uint32 /* expiry */,
+src/access/OpenTermHooks.sol-255-    uint /* scaledAmount */,
+src/access/OpenTermHooks.sol-256-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-257-    bytes calldata hooksData
+src/access/OpenTermHooks.sol:258:  ) external override {
+--
+src/access/OpenTermHooks.sol-270-  function onExecuteWithdrawal(
+src/access/OpenTermHooks.sol-271-    address lender,
+src/access/OpenTermHooks.sol-272-    uint128 /* normalizedAmountWithdrawn */,
+src/access/OpenTermHooks.sol-273-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-274-    bytes calldata hooksData
+src/access/OpenTermHooks.sol:275:  ) external override {}
+--
+src/access/OpenTermHooks.sol-292-    address /* from */,
+src/access/OpenTermHooks.sol-293-    address to,
+src/access/OpenTermHooks.sol-294-    uint /* scaledAmount */,
+src/access/OpenTermHooks.sol-295-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-296-    bytes calldata extraData
+src/access/OpenTermHooks.sol:297:  ) external override {
+--
+src/access/OpenTermHooks.sol-328-   */
+src/access/OpenTermHooks.sol-329-  function onBorrow(
+src/access/OpenTermHooks.sol-330-    uint /* normalizedAmount */,
+src/access/OpenTermHooks.sol-331-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-332-    bytes calldata /* extraData */
+src/access/OpenTermHooks.sol:333:  ) external override {}
+--
+src/access/OpenTermHooks.sol-337-   */
+src/access/OpenTermHooks.sol-338-  function onRepay(
+src/access/OpenTermHooks.sol-339-    uint normalizedAmount,
+src/access/OpenTermHooks.sol-340-    MarketState calldata state,
+src/access/OpenTermHooks.sol-341-    bytes calldata hooksData
+src/access/OpenTermHooks.sol:342:  ) external override {}
+src/access/OpenTermHooks.sol-343-
+src/access/OpenTermHooks.sol-344-  function onCloseMarket(
+src/access/OpenTermHooks.sol-345-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-346-    bytes calldata /* hooksData */
+src/access/OpenTermHooks.sol:347:  ) external override {}
+src/access/OpenTermHooks.sol-348-
+src/access/OpenTermHooks.sol-349-  function onNukeFromOrbit(
+src/access/OpenTermHooks.sol-350-    address /* lender */,
+src/access/OpenTermHooks.sol-351-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-352-    bytes calldata /* hooksData */
+src/access/OpenTermHooks.sol:353:  ) external override {}
+src/access/OpenTermHooks.sol-354-
+src/access/OpenTermHooks.sol-355-  function onSetMaxTotalSupply(
+src/access/OpenTermHooks.sol-356-    uint256 /* maxTotalSupply */,
+src/access/OpenTermHooks.sol-357-    MarketState calldata /* state */,
+src/access/OpenTermHooks.sol-358-    bytes calldata /* hooksData */
+src/access/OpenTermHooks.sol:359:  ) external override {}
+--
+src/access/OpenTermHooks.sol-380-
+src/access/OpenTermHooks.sol-381-  function onSetProtocolFeeBips(
+src/access/OpenTermHooks.sol-382-    uint16 /* protocolFeeBips */,
+src/access/OpenTermHooks.sol-383-    MarketState memory /* intermediateState */,
+src/access/OpenTermHooks.sol-384-    bytes calldata /* extraData */
+src/access/OpenTermHooks.sol:385:  ) external override {}
+--
+src/access/BaseAccessControls.sol-136-
+src/access/BaseAccessControls.sol-137-  function createRoleProvider(
+src/access/BaseAccessControls.sol-138-    address providerFactory,
+src/access/BaseAccessControls.sol-139-    uint32 timeToLive,
+src/access/BaseAccessControls.sol-140-    bytes memory data
+src/access/BaseAccessControls.sol:141:  ) external onlyBorrower {
+--
+src/access/BaseAccessControls.sol-301-  //                                Role queries                                //
+src/access/BaseAccessControls.sol-302-  // ========================================================================== //
+src/access/BaseAccessControls.sol-303-
+src/access/BaseAccessControls.sol-304-  function getPreviousLenderStatus(
+src/access/BaseAccessControls.sol-305-    address accountAddress
+--
+src/access/BaseAccessControls.sol-318-   *      supported or will not refresh it, will loop over all providers to find
+src/access/BaseAccessControls.sol-319-   *      a valid credential.
+src/access/BaseAccessControls.sol-320-   */
+src/access/BaseAccessControls.sol-321-  function getLenderStatus(
+src/access/BaseAccessControls.sol-322-    address accountAddress
+--
+src/access/MarketConstraintHooks.sol-204-  function onSetAnnualInterestAndReserveRatioBips(
+src/access/MarketConstraintHooks.sol-205-    uint16 annualInterestBips,
+src/access/MarketConstraintHooks.sol-206-    uint16 /* reserveRatioBips */,
+src/access/MarketConstraintHooks.sol-207-    MarketState calldata intermediateState,
+src/access/MarketConstraintHooks.sol-208-    bytes calldata /* extraData */
+src/access/MarketConstraintHooks.sol:209:  ) public virtual override returns (uint16 newAnnualInterestBips, uint16 newReserveRatioBips) {
+--
+src/WildcatArchController.sol-72-   */
+src/WildcatArchController.sol-73-  function updateSphereXEngineOnRegisteredContracts(
+src/WildcatArchController.sol-74-    address[] calldata controllerFactories,
+src/WildcatArchController.sol-75-    address[] calldata controllers,
+src/WildcatArchController.sol-76-    address[] calldata markets
+src/WildcatArchController.sol:77:  ) external spherexOnlyOperatorOrAdmin {
+--
+src/WildcatArchController.sol-177-  }
+src/WildcatArchController.sol-178-
+src/WildcatArchController.sol-179-  function getRegisteredBorrowers(
+src/WildcatArchController.sol-180-    uint256 start,
+src/WildcatArchController.sol-181-    uint256 end
+--
+src/WildcatArchController.sol-220-  }
+src/WildcatArchController.sol-221-
+src/WildcatArchController.sol-222-  function getBlacklistedAssets(
+src/WildcatArchController.sol-223-    uint256 start,
+src/WildcatArchController.sol-224-    uint256 end
+--
+src/WildcatArchController.sol-264-  }
+src/WildcatArchController.sol-265-
+src/WildcatArchController.sol-266-  function getRegisteredControllerFactories(
+src/WildcatArchController.sol-267-    uint256 start,
+src/WildcatArchController.sol-268-    uint256 end
+--
+src/WildcatArchController.sol-315-  }
+src/WildcatArchController.sol-316-
+src/WildcatArchController.sol-317-  function getRegisteredControllers(
+src/WildcatArchController.sol-318-    uint256 start,
+src/WildcatArchController.sol-319-    uint256 end
+--
+src/WildcatArchController.sol-366-  }
+src/WildcatArchController.sol-367-
+src/WildcatArchController.sol-368-  function getRegisteredMarkets(
+src/WildcatArchController.sol-369-    uint256 start,
+src/WildcatArchController.sol-370-    uint256 end
+--
+src/lens/MarketLens.sol-19-  //                         All hooks data for borrower                        //
+src/lens/MarketLens.sol-20-  // ========================================================================== //
+src/lens/MarketLens.sol-21-
+src/lens/MarketLens.sol-22-  function getHooksDataForBorrower(
+src/lens/MarketLens.sol-23-    address borrower
+--
+src/lens/MarketLens.sol-29-  //                        Hooks instances for borrower                        //
+src/lens/MarketLens.sol-30-  // ========================================================================== //
+src/lens/MarketLens.sol-31-
+src/lens/MarketLens.sol-32-  function getHooksInstancesForBorrower(
+src/lens/MarketLens.sol-33-    address borrower
+--
+src/lens/MarketLens.sol-44-  // ========================================================================== //
+src/lens/MarketLens.sol-45-
+src/lens/MarketLens.sol-46-  function getHooksTemplateForBorrower(
+src/lens/MarketLens.sol-47-    address borrower,
+src/lens/MarketLens.sol-48-    address hooksTemplate
+--
+src/lens/MarketLens.sol-51-  }
+src/lens/MarketLens.sol-52-
+src/lens/MarketLens.sol-53-  function getHooksTemplatesForBorrower(
+src/lens/MarketLens.sol-54-    address borrower,
+src/lens/MarketLens.sol-55-    address[] memory hooksTemplates
+--
+src/lens/MarketLens.sol-60-    }
+src/lens/MarketLens.sol-61-  }
+src/lens/MarketLens.sol-62-
+src/lens/MarketLens.sol-63-  function getAllHooksTemplatesForBorrower(
+src/lens/MarketLens.sol-64-    address borrower
+--
+src/lens/MarketLens.sol-75-    info.fill(token);
+src/lens/MarketLens.sol-76-  }
+src/lens/MarketLens.sol-77-
+src/lens/MarketLens.sol-78-  function getTokensInfo(
+src/lens/MarketLens.sol-79-    address[] memory tokens
+--
+src/lens/MarketLens.sol-105-
+src/lens/MarketLens.sol-106-  function getPaginatedMarketsDataForHooksTemplate(
+src/lens/MarketLens.sol-107-    address hooksTemplate,
+src/lens/MarketLens.sol-108-    uint256 start,
+src/lens/MarketLens.sol-109-    uint256 end
+--
+src/lens/MarketLens.sol-112-    return getMarketsData(markets);
+src/lens/MarketLens.sol-113-  }
+src/lens/MarketLens.sol-114-
+src/lens/MarketLens.sol-115-  function getAllMarketsDataForHooksTemplate(
+src/lens/MarketLens.sol-116-    address hooksTemplate
+--
+src/lens/MarketLens.sol-124-  // ========================================================================== //
+src/lens/MarketLens.sol-125-
+src/lens/MarketLens.sol-126-  function getMarketDataWithLenderStatus(
+src/lens/MarketLens.sol-127-    address lender,
+src/lens/MarketLens.sol-128-    address market
+--
+src/lens/MarketLens.sol-131-  }
+src/lens/MarketLens.sol-132-
+src/lens/MarketLens.sol-133-  function getMarketsDataWithLenderStatus(
+src/lens/MarketLens.sol-134-    address lender,
+src/lens/MarketLens.sol-135-    address[] memory markets
+--
+src/lens/MarketLens.sol-145-  // ========================================================================== //
+src/lens/MarketLens.sol-146-
+src/lens/MarketLens.sol-147-  function getLenderAccountData(
+src/lens/MarketLens.sol-148-    address lender,
+src/lens/MarketLens.sol-149-    address market
+--
+src/lens/MarketLens.sol-152-  }
+src/lens/MarketLens.sol-153-
+src/lens/MarketLens.sol-154-  function getLenderAccountData(
+src/lens/MarketLens.sol-155-    address lender,
+src/lens/MarketLens.sol-156-    address[] memory markets
+--
+src/lens/MarketLens.sol-162-  }
+src/lens/MarketLens.sol-163-
+src/lens/MarketLens.sol-164-  function getLenderAccountsData(
+src/lens/MarketLens.sol-165-    address marketAddress,
+src/lens/MarketLens.sol-166-    address[] memory lenders
+--
+src/lens/MarketLens.sol-172-    }
+src/lens/MarketLens.sol-173-  }
+src/lens/MarketLens.sol-174-
+src/lens/MarketLens.sol-175-  function queryLenderAccount(
+src/lens/MarketLens.sol-176-    LenderAccountQuery memory query
+src/lens/MarketLens.sol-178-    result.fill(query);
+src/lens/MarketLens.sol-179-  }
+src/lens/MarketLens.sol-180-
+src/lens/MarketLens.sol-181-  function queryLenderAccounts(
+src/lens/MarketLens.sol-182-    LenderAccountQuery[] memory queries
+--
+src/lens/MarketLens.sol-192-  // ========================================================================== //
+src/lens/MarketLens.sol-193-
+src/lens/MarketLens.sol-194-  function getWithdrawalBatchData(
+src/lens/MarketLens.sol-195-    address market,
+src/lens/MarketLens.sol-196-    uint32 expiry
+--
+src/lens/MarketLens.sol-199-  }
+src/lens/MarketLens.sol-200-
+src/lens/MarketLens.sol-201-  function getWithdrawalBatchesData(
+src/lens/MarketLens.sol-202-    address market,
+src/lens/MarketLens.sol-203-    uint32[] memory expiries
+--
+src/lens/MarketLens.sol-214-
+src/lens/MarketLens.sol-215-  function getWithdrawalBatchesDataWithLenderStatus(
+src/lens/MarketLens.sol-216-    address market,
+src/lens/MarketLens.sol-217-    uint32[] memory expiries,
+src/lens/MarketLens.sol-218-    address lender
+--
+src/lens/MarketLens.sol-225-
+src/lens/MarketLens.sol-226-  function getWithdrawalBatchDataWithLenderStatus(
+src/lens/MarketLens.sol-227-    address market,
+src/lens/MarketLens.sol-228-    uint32 expiry,
+src/lens/MarketLens.sol-229-    address lender
+--
+src/spherex/ISphereXEngine.sol-17-interface ISphereXEngine {
+src/spherex/ISphereXEngine.sol-18-  function sphereXValidatePre(
+src/spherex/ISphereXEngine.sol-19-    int256 num,
+src/spherex/ISphereXEngine.sol-20-    address sender,
+src/spherex/ISphereXEngine.sol-21-    bytes calldata data
+src/spherex/ISphereXEngine.sol:22:  ) external returns (bytes32[] memory);
+--
+src/spherex/ISphereXEngine.sol-24-  function sphereXValidatePost(
+src/spherex/ISphereXEngine.sol-25-    int256 num,
+src/spherex/ISphereXEngine.sol-26-    uint256 gas,
+src/spherex/ISphereXEngine.sol-27-    bytes32[] calldata valuesBefore,
+src/spherex/ISphereXEngine.sol-28-    bytes32[] calldata valuesAfter
+src/spherex/ISphereXEngine.sol:29:  ) external;
+--
+src/spherex/ISphereXEngine.sol-33-  function sphereXValidateInternalPost(
+src/spherex/ISphereXEngine.sol-34-    int256 num,
+src/spherex/ISphereXEngine.sol-35-    uint256 gas,
+src/spherex/ISphereXEngine.sol-36-    bytes32[] calldata valuesBefore,
+src/spherex/ISphereXEngine.sol-37-    bytes32[] calldata valuesAfter
+src/spherex/ISphereXEngine.sol:38:  ) external;
+--
+src/market/WildcatMarket.sol-101-   *      Reverts if the market is closed or if the scaled token amount
+src/market/WildcatMarket.sol-102-   *      that would be minted for the deposit is zero.
+src/market/WildcatMarket.sol-103-   */
+src/market/WildcatMarket.sol-104-  function depositUpTo(
+src/market/WildcatMarket.sol-105-    uint256 amount
+src/market/WildcatMarket.sol:106:  ) external virtual sphereXGuardExternal returns (uint256 /* actualAmount */) {
+--
+src/market/WildcatMarketWithdrawals.sol-23-    return _withdrawalData.unpaidBatches.values();
+src/market/WildcatMarketWithdrawals.sol-24-  }
+src/market/WildcatMarketWithdrawals.sol-25-
+src/market/WildcatMarketWithdrawals.sol-26-  function getWithdrawalBatch(
+src/market/WildcatMarketWithdrawals.sol-27-    uint32 expiry
+--
+src/market/WildcatMarketWithdrawals.sol-38-  }
+src/market/WildcatMarketWithdrawals.sol-39-
+src/market/WildcatMarketWithdrawals.sol-40-  function getAccountWithdrawalStatus(
+src/market/WildcatMarketWithdrawals.sol-41-    address accountAddress,
+src/market/WildcatMarketWithdrawals.sol-42-    uint32 expiry
+--
+src/market/WildcatMarketWithdrawals.sol-49-  }
+src/market/WildcatMarketWithdrawals.sol-50-
+src/market/WildcatMarketWithdrawals.sol-51-  function getAvailableWithdrawalAmount(
+src/market/WildcatMarketWithdrawals.sol-52-    address accountAddress,
+src/market/WildcatMarketWithdrawals.sol-53-    uint32 expiry
+--
+src/market/WildcatMarketWithdrawals.sol-131-  /**
+src/market/WildcatMarketWithdrawals.sol-132-   * @dev Create a withdrawal request for a lender.
+src/market/WildcatMarketWithdrawals.sol-133-   */
+src/market/WildcatMarketWithdrawals.sol-134-  function queueWithdrawal(
+src/market/WildcatMarketWithdrawals.sol-135-    uint256 amount
+src/market/WildcatMarketWithdrawals.sol:136:  ) external nonReentrant sphereXGuardExternal returns (uint32 expiry) {
+--
+src/market/WildcatMarketWithdrawals.sol-191-   *      - `accountAddress` has already withdrawn the full amount owed
+src/market/WildcatMarketWithdrawals.sol-192-   */
+src/market/WildcatMarketWithdrawals.sol-193-  function executeWithdrawal(
+src/market/WildcatMarketWithdrawals.sol-194-    address accountAddress,
+src/market/WildcatMarketWithdrawals.sol-195-    uint32 expiry
+src/market/WildcatMarketWithdrawals.sol:196:  ) public nonReentrant sphereXGuardExternal returns (uint256) {
+--
+src/market/WildcatMarketWithdrawals.sol-209-  }
+src/market/WildcatMarketWithdrawals.sol-210-
+src/market/WildcatMarketWithdrawals.sol-211-  function executeWithdrawals(
+src/market/WildcatMarketWithdrawals.sol-212-    address[] calldata accountAddresses,
+src/market/WildcatMarketWithdrawals.sol-213-    uint32[] calldata expiries
+src/market/WildcatMarketWithdrawals.sol:214:  ) external nonReentrant sphereXGuardExternal returns (uint256[] memory amounts) {
+--
+src/market/WildcatMarketWithdrawals.sol-277-  }
+src/market/WildcatMarketWithdrawals.sol-278-
+src/market/WildcatMarketWithdrawals.sol-279-  function repayAndProcessUnpaidWithdrawalBatches(
+src/market/WildcatMarketWithdrawals.sol-280-    uint256 repayAmount,
+src/market/WildcatMarketWithdrawals.sol-281-    uint256 maxBatches
+src/market/WildcatMarketWithdrawals.sol:282:  ) public nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketConfig.sol-98-   *      The hooks contract may block the change but can not modify the
+src/market/WildcatMarketConfig.sol-99-   *      value being set.
+src/market/WildcatMarketConfig.sol-100-   */
+src/market/WildcatMarketConfig.sol-101-  function setMaxTotalSupply(
+src/market/WildcatMarketConfig.sol-102-    uint256 _maxTotalSupply
+src/market/WildcatMarketConfig.sol:103:  ) external onlyBorrower nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketConfig.sol-121-   *      because of the change.
+src/market/WildcatMarketConfig.sol-122-   */
+src/market/WildcatMarketConfig.sol-123-  function setAnnualInterestAndReserveRatioBips(
+src/market/WildcatMarketConfig.sol-124-    uint16 _annualInterestBips,
+src/market/WildcatMarketConfig.sol-125-    uint16 _reserveRatioBips
+src/market/WildcatMarketConfig.sol:126:  ) external onlyBorrower nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketToken.sol-31-  // ========================================================================== //
+src/market/WildcatMarketToken.sol-32-
+src/market/WildcatMarketToken.sol-33-  function approve(
+src/market/WildcatMarketToken.sol-34-    address spender,
+src/market/WildcatMarketToken.sol-35-    uint256 amount
+src/market/WildcatMarketToken.sol:36:  ) external virtual nonReentrant sphereXGuardExternal returns (bool) {
+--
+src/market/WildcatMarketToken.sol-39-  }
+src/market/WildcatMarketToken.sol-40-
+src/market/WildcatMarketToken.sol-41-  function transfer(
+src/market/WildcatMarketToken.sol-42-    address to,
+src/market/WildcatMarketToken.sol-43-    uint256 amount
+src/market/WildcatMarketToken.sol:44:  ) external virtual nonReentrant sphereXGuardExternal returns (bool) {
+--
+src/market/WildcatMarketToken.sol-48-
+src/market/WildcatMarketToken.sol-49-  function transferFrom(
+src/market/WildcatMarketToken.sol-50-    address from,
+src/market/WildcatMarketToken.sol-51-    address to,
+src/market/WildcatMarketToken.sol-52-    uint256 amount
+src/market/WildcatMarketToken.sol:53:  ) external virtual nonReentrant sphereXGuardExternal returns (bool) {
+--
+src/HooksFactory.sol-159-    string calldata name,
+src/HooksFactory.sol-160-    address feeRecipient,
+src/HooksFactory.sol-161-    address originationFeeAsset,
+src/HooksFactory.sol-162-    uint80 originationFeeAmount,
+src/HooksFactory.sol-163-    uint16 protocolFeeBips
+src/HooksFactory.sol:164:  ) external override onlyArchControllerOwner {
+--
+src/HooksFactory.sol-214-    address hooksTemplate,
+src/HooksFactory.sol-215-    address feeRecipient,
+src/HooksFactory.sol-216-    address originationFeeAsset,
+src/HooksFactory.sol-217-    uint80 originationFeeAmount,
+src/HooksFactory.sol-218-    uint16 protocolFeeBips
+src/HooksFactory.sol:219:  ) external override onlyArchControllerOwner {
+--
+src/HooksFactory.sol-244-    emit HooksTemplateDisabled(hooksTemplate);
+src/HooksFactory.sol-245-  }
+src/HooksFactory.sol-246-
+src/HooksFactory.sol-247-  function getHooksTemplateDetails(
+src/HooksFactory.sol-248-    address hooksTemplate
+--
+src/HooksFactory.sol-259-  }
+src/HooksFactory.sol-260-
+src/HooksFactory.sol-261-  function getHooksTemplates(
+src/HooksFactory.sol-262-    uint256 start,
+src/HooksFactory.sol-263-    uint256 end
+--
+src/HooksFactory.sol-275-    return _hooksTemplates.length;
+src/HooksFactory.sol-276-  }
+src/HooksFactory.sol-277-
+src/HooksFactory.sol-278-  function getMarketsForHooksTemplate(
+src/HooksFactory.sol-279-    address hooksTemplate
+--
+src/HooksFactory.sol-283-
+src/HooksFactory.sol-284-  function getMarketsForHooksTemplate(
+src/HooksFactory.sol-285-    address hooksTemplate,
+src/HooksFactory.sol-286-    uint256 start,
+src/HooksFactory.sol-287-    uint256 end
+--
+src/HooksFactory.sol-296-    }
+src/HooksFactory.sol-297-  }
+src/HooksFactory.sol-298-
+src/HooksFactory.sol-299-  function getMarketsForHooksTemplateCount(
+src/HooksFactory.sol-300-    address hooksTemplate
+--
+src/HooksFactory.sol-310-  ///      Callable by approved borrowers on the arch-controller.
+src/HooksFactory.sol-311-  ///      May require payment of origination fees.
+src/HooksFactory.sol-312-  function deployHooksInstance(
+src/HooksFactory.sol-313-    address hooksTemplate,
+src/HooksFactory.sol-314-    bytes calldata constructorArgs
+src/HooksFactory.sol:315:  ) external override nonReentrant returns (address hooksInstance) {
+--
+src/HooksFactory.sol-319-    hooksInstance = _deployHooksInstance(hooksTemplate, constructorArgs);
+src/HooksFactory.sol-320-  }
+src/HooksFactory.sol-321-
+src/HooksFactory.sol-322-  function getHooksInstancesForBorrower(
+src/HooksFactory.sol-323-    address borrower
+src/HooksFactory.sol-325-    return _hooksInstancesByBorrower[borrower];
+src/HooksFactory.sol-326-  }
+src/HooksFactory.sol-327-
+src/HooksFactory.sol-328-  function getHooksInstancesCountForBorrower(
+src/HooksFactory.sol-329-    address borrower
+--
+src/HooksFactory.sol-384-  //                                   Markets                                  //
+src/HooksFactory.sol-385-  // ========================================================================== //
+src/HooksFactory.sol-386-
+src/HooksFactory.sol-387-  function getMarketsForHooksInstance(
+src/HooksFactory.sol-388-    address hooksInstance
+--
+src/HooksFactory.sol-392-
+src/HooksFactory.sol-393-  function getMarketsForHooksInstance(
+src/HooksFactory.sol-394-    address hooksInstance,
+src/HooksFactory.sol-395-    uint256 start,
+src/HooksFactory.sol-396-    uint256 end
+--
+src/HooksFactory.sol-404-    }
+src/HooksFactory.sol-405-  }
+src/HooksFactory.sol-406-
+src/HooksFactory.sol-407-  function getMarketsForHooksInstanceCount(
+src/HooksFactory.sol-408-    address hooksInstance
+--
+src/HooksFactory.sol-572-    DeployMarketInputs calldata parameters,
+src/HooksFactory.sol-573-    bytes calldata hooksData,
+src/HooksFactory.sol-574-    bytes32 salt,
+src/HooksFactory.sol-575-    address originationFeeAsset,
+src/HooksFactory.sol-576-    uint256 originationFeeAmount
+src/HooksFactory.sol:577:  ) external override nonReentrant returns (address market) {
+--
+src/HooksFactory.sol-601-    DeployMarketInputs memory parameters,
+src/HooksFactory.sol-602-    bytes calldata hooksData,
+src/HooksFactory.sol-603-    bytes32 salt,
+src/HooksFactory.sol-604-    address originationFeeAsset,
+src/HooksFactory.sol-605-    uint256 originationFeeAmount
+src/HooksFactory.sol:606:  ) external override nonReentrant returns (address market, address hooksInstance) {
+--
+src/HooksFactory.sol-632-   */
+src/HooksFactory.sol-633-  function pushProtocolFeeBipsUpdates(
+src/HooksFactory.sol-634-    address hooksTemplate,
+src/HooksFactory.sol-635-    uint marketStartIndex,
+src/HooksFactory.sol-636-    uint marketEndIndex
+src/HooksFactory.sol:637:  ) public override nonReentrant {
+--
+src/vault/Wildcat4626Wrapper.sol-214-
+src/vault/Wildcat4626Wrapper.sol-215-  /// @notice Pull `assets` from the caller and mint the resulting shares to `receiver`.
+src/vault/Wildcat4626Wrapper.sol-216-  function deposit(
+src/vault/Wildcat4626Wrapper.sol-217-    uint256 assets,
+src/vault/Wildcat4626Wrapper.sol-218-    address receiver
+src/vault/Wildcat4626Wrapper.sol:219:  ) public override nonReentrant returns (uint256 shares) {
+--
+src/vault/Wildcat4626Wrapper.sol-242-
+src/vault/Wildcat4626Wrapper.sol-243-  /// @notice Mint exactly `shares` to `receiver`, pulling the minimum required assets from caller
+src/vault/Wildcat4626Wrapper.sol-244-  function mint(
+src/vault/Wildcat4626Wrapper.sol-245-    uint256 shares,
+src/vault/Wildcat4626Wrapper.sol-246-    address receiver
+src/vault/Wildcat4626Wrapper.sol:247:  ) public override nonReentrant returns (uint256 assets) {
+--
+src/vault/Wildcat4626Wrapper.sol-279-  /// @notice Withdraw `assets` to `receiver`, burning shares from `owner_` using half-up rounding
+src/vault/Wildcat4626Wrapper.sol-280-  function withdraw(
+src/vault/Wildcat4626Wrapper.sol-281-    uint256 assets,
+src/vault/Wildcat4626Wrapper.sol-282-    address receiver,
+src/vault/Wildcat4626Wrapper.sol-283-    address owner_
+src/vault/Wildcat4626Wrapper.sol:284:  ) public override nonReentrant returns (uint256 shares) {
+--
+src/vault/Wildcat4626Wrapper.sol-310-  /// @dev Uses half-up rounding for assets to match the market behavior
+src/vault/Wildcat4626Wrapper.sol-311-  function redeem(
+src/vault/Wildcat4626Wrapper.sol-312-    uint256 shares,
+src/vault/Wildcat4626Wrapper.sol-313-    address receiver,
+src/vault/Wildcat4626Wrapper.sol-314-    address owner_
+src/vault/Wildcat4626Wrapper.sol:315:  ) public override nonReentrant returns (uint256 assets) {
+--
+--
+--
+--
+--
+--
+--
+--
+src/IHooksFactory.sol-111-    string calldata name,
+src/IHooksFactory.sol-112-    address feeRecipient,
+src/IHooksFactory.sol-113-    address originationFeeAsset,
+src/IHooksFactory.sol-114-    uint80 originationFeeAmount,
+src/IHooksFactory.sol-115-    uint16 protocolFeeBips
+src/IHooksFactory.sol:116:  ) external;
+--
+src/IHooksFactory.sol-129-    address hooksTemplate,
+src/IHooksFactory.sol-130-    address feeRecipient,
+src/IHooksFactory.sol-131-    address originationFeeAsset,
+src/IHooksFactory.sol-132-    uint80 originationFeeAmount,
+src/IHooksFactory.sol-133-    uint16 protocolFeeBips
+src/IHooksFactory.sol:134:  ) external;
+--
+src/IHooksFactory.sol-145-  function disableHooksTemplate(address hooksTemplate) external;
+src/IHooksFactory.sol-146-
+src/IHooksFactory.sol-147-  /// @dev Get the name and fee configuration for an approved hooks template.
+src/IHooksFactory.sol-148-  function getHooksTemplateDetails(
+src/IHooksFactory.sol-149-    address hooksTemplate
+--
+src/IHooksFactory.sol-157-
+src/IHooksFactory.sol-158-  function getHooksTemplates(
+src/IHooksFactory.sol-159-    uint256 start,
+src/IHooksFactory.sol-160-    uint256 end
+src/IHooksFactory.sol-162-
+src/IHooksFactory.sol-164-
+src/IHooksFactory.sol-165-  function getMarketsForHooksTemplate(
+src/IHooksFactory.sol-166-    address hooksTemplate
+src/IHooksFactory.sol-168-
+src/IHooksFactory.sol-169-  function getMarketsForHooksTemplate(
+src/IHooksFactory.sol-170-    address hooksTemplate,
+src/IHooksFactory.sol-171-    uint256 start,
+src/IHooksFactory.sol-172-    uint256 end
+--
+src/IHooksFactory.sol-191-  ///      - The template is not enabled.
+src/IHooksFactory.sol-192-  ///      - The deployment fails.
+src/IHooksFactory.sol-193-  function deployHooksInstance(
+src/IHooksFactory.sol-194-    address hooksTemplate,
+src/IHooksFactory.sol-195-    bytes calldata constructorArgs
+src/IHooksFactory.sol:196:  ) external returns (address hooksDeployment);
+--
+src/IHooksFactory.sol-208-  // ========================================================================== //
+src/IHooksFactory.sol-209-  //                                   Markets                                  //
+src/IHooksFactory.sol-210-  // ========================================================================== //
+src/IHooksFactory.sol-211-  function getMarketsForHooksInstance(
+src/IHooksFactory.sol-212-    address hooksInstance
+src/IHooksFactory.sol-214-
+src/IHooksFactory.sol-215-  function getMarketsForHooksInstance(
+src/IHooksFactory.sol-216-    address hooksInstance,
+src/IHooksFactory.sol-217-    uint256 start,
+src/IHooksFactory.sol-218-    uint256 len
+--
+src/IHooksFactory.sol-244-    DeployMarketInputs calldata parameters,
+src/IHooksFactory.sol-245-    bytes calldata hooksData,
+src/IHooksFactory.sol-246-    bytes32 salt,
+src/IHooksFactory.sol-247-    address originationFeeAsset,
+src/IHooksFactory.sol-248-    uint256 originationFeeAmount
+src/IHooksFactory.sol:249:  ) external returns (address market);
+--
+src/IHooksFactory.sol-257-    DeployMarketInputs calldata parameters,
+src/IHooksFactory.sol-258-    bytes calldata hooksData,
+src/IHooksFactory.sol-259-    bytes32 salt,
+src/IHooksFactory.sol-260-    address originationFeeAsset,
+src/IHooksFactory.sol-261-    uint256 originationFeeAmount
+src/IHooksFactory.sol:262:  ) external returns (address market, address hooks);
+--
+src/IHooksFactory.sol-265-
+src/IHooksFactory.sol-266-  function pushProtocolFeeBipsUpdates(
+src/IHooksFactory.sol-267-    address hooksTemplate,
+src/IHooksFactory.sol-268-    uint marketStartIndex,
+src/IHooksFactory.sol-269-    uint marketEndIndex
+src/IHooksFactory.sol:270:  ) external;

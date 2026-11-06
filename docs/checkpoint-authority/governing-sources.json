@@ -1,0 +1,54 @@
+{
+  "schema": "checkpoint-authority-governing-sources/v1",
+  "source_commit": "1d4e4eebcba1825d0eb3192bf08a6c509bdc0d74",
+  "adoption": "https://github.com/wildcat-finance/skills/issues/862#issuecomment-5688850333",
+  "exact_copies": [
+    {
+      "path": "docs/checkpoint-authority/study.md",
+      "sha256": "1efc7bb7710f75cab7f824b8952ee08b668e2c3722dee6b834bccbe8bba36a62",
+      "bytes": 55813
+    },
+    {
+      "path": "docs/checkpoint-authority/runbook.md",
+      "sha256": "e16fb947a1fa9f6d495e43bd7cf677f42fb33a93ab89d7f0085f56e85f5f243e",
+      "bytes": 23540
+    },
+    {
+      "path": "docs/checkpoint-authority/design-evidence.json",
+      "sha256": "a34e662db37cdfed1d3c82520402ffb41790b94c977ca99813a12ea25e3785b1",
+      "bytes": 9146
+    },
+    {
+      "path": "docs/checkpoint-authority/specimens/adopted-specification.md",
+      "sha256": "8ee755c1f9e5c29703af30bd08caffb6fad80c8a0990ee0acecebef09b02f541",
+      "bytes": 103107
+    },
+    {
+      "path": "docs/decisions/drafts/verify-checkpoint-authority-by-ordered-replay.md",
+      "sha256": "dfa1a0a10f82dcc1ba8a26065bf33a7a7cea1b13e49affb90d744da8fec7538a",
+      "bytes": 3584
+    }
+  ],
+  "preserved_prefixes": [
+    {
+      "path": "docs/decisions/ADR-070-separate-the-checkpoint-protocol-from-its-authority-service.md",
+      "bytes": 7829,
+      "sha256": "00a8034de4c257d735c351bd0ed340e30717616f78c7887354078562e8f67b40"
+    },
+    {
+      "path": "docs/decisions/ADR-071-hold-checkpoint-authority-in-locked-storage-behind-replaceable-compute.md",
+      "bytes": 8147,
+      "sha256": "3afcec068d32cafeef2c437448ec1504558b329eb475a20f68f5bd841716f42c"
+    },
+    {
+      "path": "docs/wave-delta-checkpoint-programme-study.md",
+      "bytes": 14790,
+      "sha256": "cdba6c02e086449ca1490d40488cc62b0d0b98f0adc42e33c7ad65ab8732fb0d"
+    },
+    {
+      "path": "docs/wave-delta-checkpoint-programme-runbook.md",
+      "bytes": 10893,
+      "sha256": "465ba56a38fff421fb13696cad5818efefd936d3aa3b4b7f23e00f23e5deb113"
+    }
+  ]
+}

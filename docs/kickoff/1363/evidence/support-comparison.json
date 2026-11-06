@@ -1,0 +1,1379 @@
+{
+  "schema": "issue-1363-support-comparison/v1",
+  "producer": "/root/xray_support",
+  "before_commit": "f5a26146987926f4811b72a795d662813dedfe85",
+  "after_commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "basis": "Direct source reads plus explicit helper review; no inference of unchanged semantics from top-level body equality alone. Local event equivalence is not external emission equivalence.",
+  "counts": {
+    "added": 30,
+    "removed": 0,
+    "changed": 8,
+    "unchanged": 26
+  },
+  "observations": [
+    {
+      "id": "AccessListRoleProvider:acceptAdministratorTransfer()",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ManagedRoleProvider.sol",
+        "line": 54
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProvider:addMember(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/AccessListRoleProvider.sol",
+        "line": 35
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProvider:addMembers(address[])",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/AccessListRoleProvider.sol",
+        "line": 39
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProvider:cancelAdministratorTransfer()",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ManagedRoleProvider.sol",
+        "line": 43
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProvider:removeMember(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/AccessListRoleProvider.sol",
+        "line": 57
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProvider:removeMembers(address[])",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/AccessListRoleProvider.sol",
+        "line": 61
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProvider:requestAdministratorTransfer(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ManagedRoleProvider.sol",
+        "line": 27
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProviderFactory:createAccessListRoleProvider((address,address[],bytes32))",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/AccessListRoleProviderFactory.sol",
+        "line": 25
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "AccessListRoleProviderFactory:createRoleProvider(bytes)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/AccessListRoleProviderFactory.sol",
+        "line": 14
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC1155RoleProviderFactory:createERC1155RoleProvider((address,uint256,bool,bytes32))",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC1155RoleProviderFactory.sol",
+        "line": 24
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC1155RoleProviderFactory:createRoleProvider(bytes)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC1155RoleProviderFactory.sol",
+        "line": 13
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC20RoleProviderFactory:createERC20RoleProvider((address,uint256,bytes32))",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC20RoleProviderFactory.sol",
+        "line": 24
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC20RoleProviderFactory:createRoleProvider(bytes)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC20RoleProviderFactory.sol",
+        "line": 13
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC4626AssetsRoleProviderFactory:createERC4626AssetsRoleProvider((address,uint256,bytes32))",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+        "line": 24
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC4626AssetsRoleProviderFactory:createRoleProvider(bytes)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+        "line": 13
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC721RoleProviderFactory:createERC721RoleProvider((address,bool,bytes32))",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC721RoleProviderFactory.sol",
+        "line": 24
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "ERC721RoleProviderFactory:createRoleProvider(bytes)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ERC721RoleProviderFactory.sol",
+        "line": 13
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "MerkleRoleProvider:acceptAdministratorTransfer()",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ManagedRoleProvider.sol",
+        "line": 54
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "MerkleRoleProvider:cancelAdministratorTransfer()",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ManagedRoleProvider.sol",
+        "line": 43
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "MerkleRoleProvider:requestAdministratorTransfer(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/ManagedRoleProvider.sol",
+        "line": 27
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "MerkleRoleProvider:updateRoot(bytes32)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/MerkleRoleProvider.sol",
+        "line": 31
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "MerkleRoleProviderFactory:createMerkleRoleProvider((address,bytes32,bytes32))",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/MerkleRoleProviderFactory.sol",
+        "line": 25
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "MerkleRoleProviderFactory:createRoleProvider(bytes)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/providers/MerkleRoleProviderFactory.sol",
+        "line": 14
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:approve(address,uint256)",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 172
+      },
+      "after": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 172
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:deposit(uint256,address)",
+      "classification": "changed",
+      "before": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 216
+      },
+      "after": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 316
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects",
+        "rounding",
+        "amounts"
+      ],
+      "observation": "Inherited transfer hook now uses live principal sanctions and wrapper solvency, with deterministic escrow quarantine/release exceptions; same event signatures do not imply same admitted paths. Execution changes half-up scaling to floor/ceil composition, adds operational/solvency checks and exact scaled movement checks; Deposit/Withdraw and mint/burn Transfer names remain. New transfer-policy gate checks whether wrapper may receive market tokens.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: inherited sanctions/solvency path or execution amount",
+        "value_flow": "changed: exact scaled amount and rounding; direction retained",
+        "events": "same local event signatures; admission and emitting-path conditions changed"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:mint(uint256,address)",
+      "classification": "changed",
+      "before": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 244
+      },
+      "after": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 355
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects",
+        "rounding",
+        "amounts"
+      ],
+      "observation": "Inherited transfer hook now uses live principal sanctions and wrapper solvency, with deterministic escrow quarantine/release exceptions; same event signatures do not imply same admitted paths. Execution changes half-up scaling to floor/ceil composition, adds operational/solvency checks and exact scaled movement checks; Deposit/Withdraw and mint/burn Transfer names remain. New transfer-policy gate checks whether wrapper may receive market tokens.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: inherited sanctions/solvency path or execution amount",
+        "value_flow": "changed: exact scaled amount and rounding; direction retained",
+        "events": "same local event signatures; admission and emitting-path conditions changed"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:nukeFromOrbit(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 483
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 303
+      },
+      "after": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 303
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:redeem(uint256,address,address)",
+      "classification": "changed",
+      "before": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 311
+      },
+      "after": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 442
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects",
+        "rounding",
+        "amounts"
+      ],
+      "observation": "Inherited transfer hook now uses live principal sanctions and wrapper solvency, with deterministic escrow quarantine/release exceptions; same event signatures do not imply same admitted paths. Execution changes half-up scaling to floor/ceil composition, adds operational/solvency checks and exact scaled movement checks; Deposit/Withdraw and mint/burn Transfer names remain.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: inherited sanctions/solvency path or execution amount",
+        "value_flow": "changed: exact scaled amount and rounding; direction retained",
+        "events": "same local event signatures; admission and emitting-path conditions changed"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:sweep(address,address)",
+      "classification": "changed",
+      "before": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 343
+      },
+      "after": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 516
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects",
+        "access",
+        "rounding",
+        "amounts"
+      ],
+      "observation": "Caller must be live market borrower instead of captured marketOwner. Recipient sanctions follow live principal; market-token surplus normalization changes half-up to ceil. TokensSwept name remains.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "changed: live operational borrower",
+        "effects": "changed: live sanctions helper",
+        "value_flow": "changed: surplus rounding, direction retained",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:transfer(address,uint256)",
+      "classification": "changed",
+      "before": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 193
+      },
+      "after": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 193
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects"
+      ],
+      "observation": "Inherited transfer hook now uses live principal sanctions and wrapper solvency, with deterministic escrow quarantine/release exceptions; same event signatures do not imply same admitted paths.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: inherited sanctions/solvency path or execution amount",
+        "value_flow": "unchanged",
+        "events": "same local event signatures; admission and emitting-path conditions changed"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:transferFrom(address,address,uint256)",
+      "classification": "changed",
+      "before": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 233
+      },
+      "after": {
+        "path": "lib/solady/src/tokens/ERC20.sol",
+        "line": 233
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects"
+      ],
+      "observation": "Inherited transfer hook now uses live principal sanctions and wrapper solvency, with deterministic escrow quarantine/release exceptions; same event signatures do not imply same admitted paths.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: inherited sanctions/solvency path or execution amount",
+        "value_flow": "unchanged",
+        "events": "same local event signatures; admission and emitting-path conditions changed"
+      }
+    },
+    {
+      "id": "Wildcat4626Wrapper:withdraw(uint256,address,address)",
+      "classification": "changed",
+      "before": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 280
+      },
+      "after": {
+        "path": "src/vault/Wildcat4626Wrapper.sol",
+        "line": 402
+      },
+      "changed_fields": [
+        "conditions",
+        "downstream_effects",
+        "rounding",
+        "amounts"
+      ],
+      "observation": "Inherited transfer hook now uses live principal sanctions and wrapper solvency, with deterministic escrow quarantine/release exceptions; same event signatures do not imply same admitted paths. Execution changes half-up scaling to floor/ceil composition, adds operational/solvency checks and exact scaled movement checks; Deposit/Withdraw and mint/burn Transfer names remain.",
+      "helper_evidence": {
+        "before": [
+          "src/vault/Wildcat4626Wrapper.sol:428",
+          "src/vault/Wildcat4626Wrapper.sol:438"
+        ],
+        "after": [
+          "src/vault/Wildcat4626Wrapper.sol:764",
+          "src/vault/Wildcat4626Wrapper.sol:954",
+          "src/vault/Wildcat4626Wrapper.sol:991"
+        ]
+      },
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: inherited sanctions/solvency path or execution amount",
+        "value_flow": "changed: exact scaled amount and rounding; direction retained",
+        "events": "same local event signatures; admission and emitting-path conditions changed"
+      }
+    },
+    {
+      "id": "Wildcat4626WrapperFactory:createWrapper(address)",
+      "classification": "changed",
+      "before": {
+        "path": "src/vault/Wildcat4626WrapperFactory.sol",
+        "line": 28
+      },
+      "after": {
+        "path": "src/vault/Wildcat4626WrapperFactory.sol",
+        "line": 142
+      },
+      "changed_fields": [
+        "conditions",
+        "effects",
+        "calls",
+        "events"
+      ],
+      "observation": "Generation-aware legacy routing added; undeclared rounding returns legacy factory result without local WrapperDeployed, while supported floor market creates and registers local wrapper after policy queries.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "changed: generation routing and market registration",
+        "value_flow": "unchanged",
+        "events": "changed: local event absent on legacy return branch"
+      }
+    },
+    {
+      "id": "WildcatArchController:acceptSphereXAdminRole()",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 120
+      },
+      "after": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 130
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:addBlacklist(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 200
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 236
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:cancelOwnershipHandover()",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 170
+      },
+      "after": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 170
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:changeSphereXEngine(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 143
+      },
+      "after": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 150
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:changeSphereXOperator(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 131
+      },
+      "after": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 142
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:completeOwnershipHandover(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 184
+      },
+      "after": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 184
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:registerBorrower(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 157
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 184
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:registerController(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 294
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 347
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:registerControllerFactory(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 243
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 286
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:registerMarket(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 345
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 407
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:removeBlacklist(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 207
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 244
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:removeBorrower(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 164
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 192
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:removeController(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 302
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 358
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:removeControllerFactory(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 251
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 298
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:removeMarket(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 353
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 418
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:renounceOwnership()",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 148
+      },
+      "after": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 148
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:requestOwnershipHandover()",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 154
+      },
+      "after": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 154
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:transferOwnership(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 136
+      },
+      "after": {
+        "path": "lib/solady/src/auth/Ownable.sol",
+        "line": 136
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:transferSphereXAdminRole(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 114
+      },
+      "after": {
+        "path": "src/spherex/SphereXConfig.sol",
+        "line": 123
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatArchController:updateSphereXEngineOnRegisteredContracts(address[],address[],address[])",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatArchController.sol",
+        "line": 73
+      },
+      "after": {
+        "path": "src/WildcatArchController.sol",
+        "line": 99
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ. Ownable ownership and SphereX roles remain separate; new registry users of owner authority do not change these action bodies or local emitted topics.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatBorrowerIdentityRegistry:acceptBorrowerAccountPrincipalTransfer(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/WildcatBorrowerIdentityRegistry.sol",
+        "line": 160
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "WildcatBorrowerIdentityRegistry:addAccountFactory(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/WildcatBorrowerIdentityRegistry.sol",
+        "line": 51
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "WildcatBorrowerIdentityRegistry:cancelBorrowerAccountPrincipalTransfer(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/WildcatBorrowerIdentityRegistry.sol",
+        "line": 144
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "WildcatBorrowerIdentityRegistry:registerBorrowerAccount(address,address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/WildcatBorrowerIdentityRegistry.sol",
+        "line": 99
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "WildcatBorrowerIdentityRegistry:removeAccountFactory(address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/WildcatBorrowerIdentityRegistry.sol",
+        "line": 63
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "WildcatBorrowerIdentityRegistry:requestBorrowerAccountPrincipalTransfer(address,address)",
+      "classification": "added",
+      "before": null,
+      "after": {
+        "path": "src/WildcatBorrowerIdentityRegistry.sol",
+        "line": 126
+      },
+      "changed_fields": [
+        "action"
+      ],
+      "observation": "Candidate-only action; see candidate support facts for complete access, effects, value flow and event conditions.",
+      "field_dispositions": {
+        "access": "added",
+        "effects": "added",
+        "value_flow": "added",
+        "events": "added"
+      }
+    },
+    {
+      "id": "WildcatSanctionsEscrow:releaseEscrow()",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatSanctionsEscrow.sol",
+        "line": 34
+      },
+      "after": {
+        "path": "src/WildcatSanctionsEscrow.sol",
+        "line": 42
+      },
+      "changed_fields": [],
+      "observation": "Original-namespace release access, all-balance transfer and EscrowReleased retained. Sentinel query implementation changes high-level call to bounded bool-decoding assembly with the same successful ABI semantics; failed/malformed external reads still reject.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatSanctionsSentinel:createEscrow(address,address,address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "line": 121
+      },
+      "after": {
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "line": 135
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatSanctionsSentinel:overrideSanction(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "line": 96
+      },
+      "after": {
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "line": 119
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    },
+    {
+      "id": "WildcatSanctionsSentinel:removeSanctionOverride(address)",
+      "classification": "unchanged",
+      "before": {
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "line": 104
+      },
+      "after": {
+        "path": "src/WildcatSanctionsSentinel.sol",
+        "line": 125
+      },
+      "changed_fields": [],
+      "observation": "Access, persistent effects, value flow and successful-path local event families retained. Source prose and exact bytes may differ.",
+      "field_dispositions": {
+        "access": "unchanged",
+        "effects": "unchanged",
+        "value_flow": "unchanged",
+        "events": "unchanged"
+      }
+    }
+  ]
+}

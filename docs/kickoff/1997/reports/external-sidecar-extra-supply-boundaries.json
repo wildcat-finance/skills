@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "external-sidecar",
+  "criterion": "extra-supply-boundaries",
+  "value": 1,
+  "unit": "count",
+  "command": "python3 .hexaemeron/design_probe.py --candidate external-sidecar --criterion extra-supply-boundaries --report .hexaemeron/reports/external-sidecar-extra-supply-boundaries.json",
+  "exit": 0
+}

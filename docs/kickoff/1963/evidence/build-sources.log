@@ -1,0 +1,2 @@
+{"inputs": {"MarketLensMixed": 50, "WildcatArchController": 10, "WildcatMarketControllerFactory": 40, "WildcatSanctionsSentinel": 7}, "out": "<scratch>/rerun/sources.json"}
+exit 0

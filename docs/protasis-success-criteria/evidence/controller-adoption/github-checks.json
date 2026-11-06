@@ -1,0 +1,79 @@
+[
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/runs/104791889979",
+    "name": "CodeQL",
+    "state": "SUCCESS",
+    "workflow": ""
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095490628/job/104791680421",
+    "name": "Analyze (javascript-typescript)",
+    "state": "SUCCESS",
+    "workflow": "CodeQL"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095490628/job/104791679940",
+    "name": "Analyze (actions)",
+    "state": "SUCCESS",
+    "workflow": "CodeQL"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095492843/job/104791681695",
+    "name": "adr-assignments",
+    "state": "SUCCESS",
+    "workflow": "adr-assignments"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095492667/job/104791681753",
+    "name": "report",
+    "state": "SUCCESS",
+    "workflow": "dead-code"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095492794/job/104791681871",
+    "name": "identity",
+    "state": "SUCCESS",
+    "workflow": "identity"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095492609/job/104791681654",
+    "name": "invariants",
+    "state": "SUCCESS",
+    "workflow": "repo"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095490628/job/104791680464",
+    "name": "Analyze (go)",
+    "state": "SUCCESS",
+    "workflow": "CodeQL"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095490628/job/104791680412",
+    "name": "Analyze (python)",
+    "state": "SUCCESS",
+    "workflow": "CodeQL"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095492843",
+    "name": "adr-assignments",
+    "state": "SUCCESS",
+    "workflow": ""
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/wildcat-finance/skills/actions/runs/35095492794",
+    "name": "identity",
+    "state": "SUCCESS",
+    "workflow": ""
+  }
+]

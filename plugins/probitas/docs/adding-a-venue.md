@@ -9,10 +9,11 @@ lending venues: what they borrowed, whether they gave it back, and what could
 not be established. It reads lending venues through small adapters, one
 per venue, and it currently reads five of the fifteen it knows about.
 
-The other ten are the interesting part of this document. Each one is a named
-gap in every dossier the tool produces, and closing one is a self-contained
-piece of work that makes every future dossier better. This is what each gap
-actually is, and what it takes to close it.
+The other ten are the interesting part of this document. Each one lacks an
+adapter and is a named gap in any dossier where no selected route answered for
+it; a verified Alexandria index can answer for Aave v4 and Clearpool. Closing
+one is a self-contained piece of work that makes every future dossier better.
+This is what each gap actually is, and what it takes to close it.
 
 You don't need to know anything about Wildcat to write an adapter. You need to
 know one lending protocol well enough to say what its events mean.
@@ -54,6 +55,7 @@ live request.
 | Morpho Blue | `blue-api.morpho.org/graphql` | none |
 | Euler v1 | Canonical proxy log through `mainnet.gateway.tenderly.co` | none |
 | Euler v2 | `v3.euler.finance` activity, liquidation and EVK vault endpoints | none |
+| Morpho Midnight | `api.morpho.org/v0/midnight`, Base fixed-maturity markets | none |
 
 ### Reachable, keyless, and unbuilt
 

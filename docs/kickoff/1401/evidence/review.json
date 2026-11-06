@@ -1,0 +1,154 @@
+{
+  "issue": "https://github.com/wildcat-finance/skills/issues/1495",
+  "reviewed_at": "2026-09-28T00:49:08.541505+00:00",
+  "reviewer": {
+    "agent": "Codex",
+    "task_id": "01a0e56b-7d09-7121-87c6-32568c46a8f7",
+    "passes": [
+      "Janus",
+      "Pandects"
+    ],
+    "distinct_reviewers": 1,
+    "original_producer": "Claude",
+    "skill_versions": {
+      "janus": "0.3.0",
+      "pandects": "1.1.0"
+    }
+  },
+  "review_kind": "source-based policy review",
+  "janus": {
+    "verdict": "accepted-with-corrections",
+    "resolved_findings": [
+      "J1495-1",
+      "J1495-2",
+      "J1495-3"
+    ],
+    "execution_result": "not-run"
+  },
+  "pandects": {
+    "verdict": "accepted-with-corrections",
+    "resolved_findings": [
+      "P1495-1",
+      "P1495-2",
+      "P1495-3"
+    ],
+    "law_applicability": "conditional on target projection",
+    "execution_result": "not-run"
+  },
+  "evidence_classes": [
+    "recorded",
+    "checked",
+    "recomputed",
+    "inferred"
+  ],
+  "input_binding": {
+    "path": "docs/kickoff/1401/evidence/review-inputs.json",
+    "sha256": "6022cd4aac94f0a4892b50b13e496f972693ebf1a478781706d51367a35d53af",
+    "bytes": 18656
+  },
+  "outputs": [
+    {
+      "path": "docs/kickoff/1401/exitpolicy.md",
+      "sha256": "991150aa9a2e572e4a06fe896c90b79dae94f9d74969bc3d2c65e647c0602242",
+      "bytes": 21904
+    },
+    {
+      "path": "docs/kickoff/1401/policy-review.md",
+      "sha256": "5a9a2bd6f00eb5bf4b86373cfb899efc536a26f78e2c1e3dc5d8cef9b25bc0c8",
+      "bytes": 9734
+    }
+  ],
+  "publication_prose": {
+    "protected_inventory": [
+      "original five maintainer answers and acceptance date",
+      "original producer and current single reviewer attribution",
+      "R1-R5 obligations and P1-P4 scoped guards",
+      "O1-O3 exclusions",
+      "source and model/deployment boundaries",
+      "source revisions and digests",
+      "search caps and unperformed runs",
+      "six review findings and dispositions",
+      "conditional law applicability"
+    ],
+    "sapheneia_durable_record_shape": "completed",
+    "vulgate_register": "neutral",
+    "vulgate_content_comparison": "no surface changes required after first Imprimatur pass; facts, qualifications and structure retained",
+    "final_imprimatur": "recorded in checks"
+  },
+  "checks": [
+    {
+      "argv": [
+        "python3",
+        "-c",
+        "import hashlib, json, pathlib, re, subprocess, urllib.request\ninputs = json.loads(pathlib.Path(\"docs/kickoff/1401/evidence/review-inputs.json\").read_text())[\"inputs\"]\nraws = {}\nfor item in inputs:\n    repo, revision, path = item[\"repository\"], item[\"revision\"], item[\"path\"]\n    assert repo in {\"https://github.com/wildcat-finance/skills\", \"https://github.com/wildcat-finance/v2-protocol\"}\n    assert re.fullmatch(r\"[0-9a-f]{40}\", revision)\n    assert not pathlib.PurePosixPath(path).is_absolute() and \"..\" not in pathlib.PurePosixPath(path).parts\n    if repo.endswith(\"/skills\"):\n        data = subprocess.check_output([\"git\", \"show\", revision + \":\" + path])\n    else:\n        url = repo.replace(\"https://github.com/\", \"https://raw.githubusercontent.com/\") + \"/\" + revision + \"/\" + path\n        with urllib.request.urlopen(url, timeout=30) as response:\n            data = response.read(1048577)\n    assert len(data) == item[\"bytes\"], path\n    assert hashlib.sha256(data).hexdigest() == item[\"sha256\"], path\n    raws[(revision, path)] = data\noriginal = raws[(\"2dbfe40e08ee41429c521e0089a31ed872a1890d\", \"docs/kickoff/1401/exitpolicy.md\")].decode()\nrevised = pathlib.Path(\"docs/kickoff/1401/exitpolicy.md\").read_text()\nassert original[original.index(\"1. A holder\"):original.index(\"\\nProducer:\")] == revised[revised.index(\"1. A holder\"):revised.index(\"\\nProducer:\")]\na = raws[(\"a70f297fbd1b1ab597e0e9a3458a2d13a34b4657\", \"src/access/FixedTermHooks.sol\")]\nb = raws[(\"5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa\", \"src/access/FixedTermHooks.sol\")]\nassert a.replace(b\"MaximumLoanTerm = 365 days\", b\"MaximumLoanTerm = 730 days\", 1) == b\nassert raws[(\"e1f77540fef65736374de6c847743d8ca2233fb4\", \"src/OpenAccessRoleProvider.sol\")] == raws[(\"5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa\", \"src/OpenAccessRoleProvider.sol\")]\nfor item in inputs:\n    if item[\"kind\"] == \"suite-reference\":\n        assert subprocess.check_output([\"git\", \"show\", \"bdcf124b933a37a820d89e29e1d7b81413488150:\" + item[\"path\"]]) == raws[(item[\"revision\"], item[\"path\"])]\nprint(json.dumps({\"bindings_verified\": len(inputs), \"original_host_sources_verified\": 13, \"additional_host_sources_verified\": 6, \"suite_references_verified\": 14, \"original_records_verified\": 2, \"merged_correction_records_verified\": 2, \"maintainer_answers_unchanged\": True, \"fixed_term_only_difference\": \"MaximumLoanTerm: 365 to 730 days\"}, sort_keys=True))\n"
+      ],
+      "cwd": "repository root",
+      "exit_code": 0,
+      "stdout": "{\"additional_host_sources_verified\": 6, \"bindings_verified\": 37, \"fixed_term_only_difference\": \"MaximumLoanTerm: 365 to 730 days\", \"maintainer_answers_unchanged\": true, \"merged_correction_records_verified\": 2, \"original_host_sources_verified\": 13, \"original_records_verified\": 2, \"suite_references_verified\": 14}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "-c",
+        "import json\ncases = [(1, 1, 3, 0, 0), (9, 1, 3, 3, 0), (9, 1, 3, 1, 2)]\nfor paid, share, total, collected, expected in cases:\n    assert paid * share // total - collected == expected\nprint(json.dumps({\"formula_examples\": len(cases), \"results\": [0, 0, 2], \"evm_execution\": False}, sort_keys=True))\n"
+      ],
+      "cwd": "repository root",
+      "exit_code": 0,
+      "stdout": "{\"evm_execution\": false, \"formula_examples\": 3, \"results\": [0, 0, 2]}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "docs/kickoff/1401/exitpolicy.md",
+        "docs/kickoff/1401/policy-review.md",
+        "--format",
+        "json"
+      ],
+      "cwd": "repository root",
+      "exit_code": 0,
+      "stdout": "{\n  \"docs/kickoff/1401/exitpolicy.md\": {\n    \"score\": 100.0,\n    \"defects\": 0,\n    \"weighted\": 0,\n    \"per_1000_words\": 0.0,\n    \"word_count\": 2948,\n    \"by_pass\": {},\n    \"by_family\": {},\n    \"hits\": [],\n    \"signals\": [\n      {\n        \"pass\": \"structural\",\n        \"family\": \"whether_or\",\n        \"signal_only\": true,\n        \"term\": \"whether or\",\n        \"severity\": \"low\",\n        \"line\": 187,\n        \"col\": 25,\n        \"excerpt\": \"\\u2026ance once any fixed term has ended, whether or not the account is a known lender or\\u2026\",\n        \"note\": \"False-choice scaffolding. Absorbed from slopbeth STRUCTURE_PATTERNS. Signal only: fires on genuine enumerations.\"\n      }\n    ],\n    \"cadence\": {\n      \"sentence_count\": 180,\n      \"mean_sentence_length\": 16.4,\n      \"length_variance\": 186.9,\n      \"variance_floor\": 25.0,\n      \"variance_below_floor\": false,\n      \"longest_similar_run\": 5,\n      \"max_allowed_run\": 4,\n      \"repeated_openers\": {\n        \"a holder\": 3,\n        \"- the\": 4,\n        \"the janus\": 3,\n        \"answer 1\": 3,\n        \"is expected\": 3\n      }\n    }\n  },\n  \"docs/kickoff/1401/policy-review.md\": {\n    \"score\": 100.0,\n    \"defects\": 0,\n    \"weighted\": 0,\n    \"per_1000_words\": 0.0,\n    \"word_count\": 1177,\n    \"by_pass\": {},\n    \"by_family\": {},\n    \"hits\": [],\n    \"signals\": [],\n    \"cadence\": {\n      \"sentence_count\": 90,\n      \"mean_sentence_length\": 13.1,\n      \"length_variance\": 44.3,\n      \"variance_floor\": 25.0,\n      \"variance_below_floor\": false,\n      \"longest_similar_run\": 4,\n      \"max_allowed_run\": 4,\n      \"repeated_openers\": {}\n    }\n  }\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+        "docs/kickoff/1401/policy-review.md",
+        "--mode",
+        "report"
+      ],
+      "cwd": "repository root",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "repository root",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "unperformed": [
+    "target liveness search",
+    "target EVM execution",
+    "target credit-law campaign",
+    "deployment or live-state verification",
+    "R4 failure reproduction",
+    "second independent reviewer",
+    "new host-maintainer decision"
+  ],
+  "remaining_execution_owner": "https://github.com/wildcat-finance/skills/issues/1401",
+  "validation_environment": {
+    "python": "3.14.6",
+    "checkout_base": "bdcf124b933a37a820d89e29e1d7b81413488150"
+  }
+}

@@ -9,7 +9,7 @@ description: >
   person named. Horos decides what an agent does not read; Hexaemeron Fizz
   fuzzes contracts. Neither compiles a frontend inventory or holds an oracle.
 metadata:
-  version: "3.1.0"
+  version: "3.2.0"
 ---
 
 # Dokimasia
@@ -111,14 +111,14 @@ states whose judgement it is.
 
 ### dokimasia-scaffold-identity
 
-- Promise: A successful `dokimasia selftest` establishes that both host manifests, the canonical contract, the ledger and the command surface declare one version, that this plugin's installed law copy is byte-identical to the root law, and that the declared verb table matches the verbs the command surface answers on.
+- Promise: A successful `dokimasia selftest` establishes that both host manifests declare one package version, that the canonical contract, the ledger and the command surface declare one skill version, that this plugin's installed law copy is byte-identical to the root law, and that the declared verb table matches the verbs the command surface answers on.
 - Evidence: Bounded reads of both `plugin.json` files, the canonical `SKILL.md` and its `EVOLUTION.md`, a byte comparison against the root `PROMISE_MACHINE.md`, the declared verb table, and the emitted `protasis-design-report/v1` report.
 - Evidence classes: checked, recorded
-- Boundary: The report establishes that the packaging, the contract and the command surface agree on one version and one verb table. It does not establish that any inventory, workbook, disposition or scrutiny operation is correct; each of those has its own promise and its own evidence.
-- Authorises: Recording that the plugin is installed and internally consistent at the version it declares.
+- Boundary: The report establishes that both host manifests agree on one package version, that the canonical contract, the ledger and the command surface agree on one skill version, and that the packaging, the contract and the command surface agree on one verb table. It does not compare the package version with the skill version or check the marketplace listings. It does not establish that any inventory, workbook, disposition or scrutiny operation is correct; each of those has its own promise and its own evidence.
+- Authorises: Recording that the plugin is installed and internally consistent at its declared package and skill versions.
 - Consequence: 1
-- Refuses: A version that differs between any two declarations, a drifted installed law copy, an undeclared verb, an unsafe or oversized report path, and a report the design checker cannot consume.
-- Recovery: Read the named disagreement, restore the exact bytes or the declared version, and rerun `dokimasia selftest`.
+- Refuses: A package version that differs between the two host manifests, a skill version that differs between any two of the contract, the ledger and the command surface, a drifted installed law copy, an undeclared verb, an unsafe or oversized report path, and a report the design checker cannot consume.
+- Recovery: Read the named disagreement, restore the exact bytes or agreement within the named version group, and rerun `dokimasia selftest`.
 - Exceptions: none
 
 ### dokimasia-source-inventory

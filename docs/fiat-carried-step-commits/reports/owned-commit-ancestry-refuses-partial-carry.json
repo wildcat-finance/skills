@@ -1,0 +1,1 @@
+{"candidate": "owned-commit-ancestry", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate owned-commit-ancestry --criterion refuses-partial-carry --out .hexaemeron/design/reports/owned-commit-ancestry-refuses-partial-carry.json", "criterion": "refuses-partial-carry", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

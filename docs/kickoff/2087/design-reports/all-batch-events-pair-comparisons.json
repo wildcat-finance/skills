@@ -1,0 +1,9 @@
+{
+  "candidate": "all-batch-events",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate all-batch-events --criterion pair-comparisons --report .hexaemeron/design-reports/all-batch-events-pair-comparisons.json",
+  "criterion": "pair-comparisons",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 23
+}

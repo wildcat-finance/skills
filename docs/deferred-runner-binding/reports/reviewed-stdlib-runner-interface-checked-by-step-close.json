@@ -1,0 +1,9 @@
+{
+  "candidate": "reviewed-stdlib-runner",
+  "command": "python3 .hexaemeron/design/probe.py --candidate reviewed-stdlib-runner --criterion interface-checked-by-step-close --report .hexaemeron/reports/reviewed-stdlib-runner-interface-checked-by-step-close.json",
+  "criterion": "interface-checked-by-step-close",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

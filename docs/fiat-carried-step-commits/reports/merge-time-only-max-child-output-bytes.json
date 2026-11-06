@@ -1,0 +1,1 @@
+{"candidate": "merge-time-only", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate merge-time-only --criterion max-child-output-bytes --out .hexaemeron/design/reports/merge-time-only-max-child-output-bytes.json", "criterion": "max-child-output-bytes", "exit": 0, "schema": "protasis-design-report/v1", "unit": "bytes", "value": 0}

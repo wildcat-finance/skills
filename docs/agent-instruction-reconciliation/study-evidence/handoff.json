@@ -1,0 +1,29 @@
+{
+  "checks": {
+    "compile": "exit0",
+    "design-lock": "clean",
+    "imprimatur": {
+      "defects": 0,
+      "score": 100
+    },
+    "protasis": "clean",
+    "sections": "12/12",
+    "selected_conformance_pending": 3,
+    "selection_cells_resolved": 15
+  },
+  "outputs": {
+    "design-evidence.json": "ba069a46a51f1528dd6b8bf81dce76d7054b2df3806cbdb46342f795beaf4a3b",
+    "scripts/probe_reconciliation_design.py": "d70bde0aed58bc0220f06ecd7fa168228634e88d97d0d2bc432224002aba6e7b",
+    "scripts/resolve_reconciliation_conformance.py": "f9bb573048b0f6023e28a42a64483e49929e807ff146bb388079b19fd87bfe30",
+    "study-evidence/audit-read-inventory.json": "6d859c8e71d3266ef2c35290fb7a7d122960607bd8f91ea084deb1b3b4f2bde3",
+    "study-evidence/design-lock-final.txt": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+    "study-evidence/imprimatur-final.json": "3a4f773fe700237bf98cdc3042922210fe70e0b914f828f8e43ee026b6efaaf1",
+    "study-evidence/prose-proof.json": "75968cf2433e556db7f0410c85d5332a61db8f6fabf1eb724e79b31810c6f29f",
+    "study-evidence/protasis-final.txt": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+    "study.md": "79ee47e4f34623cfee12453df49d023654cc847677267b22fcebbd7ea4814716"
+  },
+  "ownership": "released to Fiat parent; no source commits, refs, receipt or external writes were made",
+  "schema": "issue1513-study-handoff/v1",
+  "selected_candidate": "staged-general-v1",
+  "tracked_status": ""
+}

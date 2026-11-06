@@ -1,0 +1,3095 @@
+{
+  "source_commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "boundary": "Direct non-view non-pure public/external implemented functions in non-interface non-library src contracts; inherited surfaces and overrides need reviewed expansion.",
+  "functions": [
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "registerWithArchController",
+      "kind": "function",
+      "visibility": "external",
+      "src": "5537:140:10",
+      "id": 244,
+      "selector": "41f259b8",
+      "parameters": []
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "addHooksTemplate",
+      "kind": "function",
+      "visibility": "external",
+      "src": "8222:1004:10",
+      "id": 452,
+      "selector": "3476b76d",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "name",
+          "string"
+        ],
+        [
+          "feeRecipient",
+          "address"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint80"
+        ],
+        [
+          "protocolFeeBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "updateHooksTemplateFees",
+      "kind": "function",
+      "visibility": "external",
+      "src": "9862:1267:10",
+      "id": 613,
+      "selector": "9c5cd31a",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "feeRecipient",
+          "address"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint80"
+        ],
+        [
+          "protocolFeeBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "disableHooksTemplate",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11262:444:10",
+      "id": 646,
+      "selector": "9f2f94b3",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "deployHooksInstance",
+      "kind": "function",
+      "visibility": "external",
+      "src": "14065:320:10",
+      "id": 904,
+      "selector": "cd01e52a",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "constructorArgs",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "onHooksAdministratorTransferred",
+      "kind": "function",
+      "visibility": "external",
+      "src": "15675:1847:10",
+      "id": 1212,
+      "selector": "3e65d71e",
+      "parameters": [
+        [
+          "previousAdministrator",
+          "address"
+        ],
+        [
+          "newAdministrator",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "deployMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "28639:931:10",
+      "id": 2111,
+      "selector": "e7ca86e3",
+      "parameters": [
+        [
+          "parameters",
+          "struct DeployMarketInputs"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ],
+        [
+          "salt",
+          "bytes32"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "deployMarketAndHooks",
+      "kind": "function",
+      "visibility": "external",
+      "src": "29606:1155:10",
+      "id": 2199,
+      "selector": "ad78e45a",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "hooksTemplateArgs",
+          "bytes"
+        ],
+        [
+          "parameters",
+          "struct DeployMarketInputs"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ],
+        [
+          "salt",
+          "bytes32"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "pushProtocolFeeBipsUpdates",
+      "kind": "function",
+      "visibility": "public",
+      "src": "30797:1876:10",
+      "id": 2297,
+      "selector": "33ee81f2",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "marketStartIndex",
+          "uint256"
+        ],
+        [
+          "marketEndIndex",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "contract": "HooksFactory",
+      "name": "pushProtocolFeeBipsUpdates",
+      "kind": "function",
+      "visibility": "external",
+      "src": "32709:151:10",
+      "id": 2315,
+      "selector": "155733ef",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "registerWithArchController",
+      "kind": "function",
+      "visibility": "external",
+      "src": "5709:140:11",
+      "id": 2588,
+      "selector": "41f259b8",
+      "parameters": []
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "addHooksTemplate",
+      "kind": "function",
+      "visibility": "external",
+      "src": "8758:1007:11",
+      "id": 2829,
+      "selector": "3476b76d",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "name_",
+          "string"
+        ],
+        [
+          "feeRecipient",
+          "address"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint80"
+        ],
+        [
+          "protocolFeeBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "updateHooksTemplateFees",
+      "kind": "function",
+      "visibility": "external",
+      "src": "10661:1267:11",
+      "id": 2990,
+      "selector": "9c5cd31a",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "feeRecipient",
+          "address"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint80"
+        ],
+        [
+          "protocolFeeBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "disableHooksTemplate",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11932:444:11",
+      "id": 3022,
+      "selector": "9f2f94b3",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "deployHooksInstance",
+      "kind": "function",
+      "visibility": "external",
+      "src": "14735:320:11",
+      "id": 3280,
+      "selector": "cd01e52a",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "constructorArgs",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "onHooksAdministratorTransferred",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16479:1847:11",
+      "id": 3588,
+      "selector": "3e65d71e",
+      "parameters": [
+        [
+          "previousAdministrator",
+          "address"
+        ],
+        [
+          "newAdministrator",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "deployMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "30564:1065:11",
+      "id": 4578,
+      "selector": "cad2a887",
+      "parameters": [
+        [
+          "parameters",
+          "struct DeployMarketInputs"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ],
+        [
+          "marketData",
+          "bytes"
+        ],
+        [
+          "salt",
+          "bytes32"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "deployMarketAndHooks",
+      "kind": "function",
+      "visibility": "external",
+      "src": "31674:1338:11",
+      "id": 4668,
+      "selector": "ad4c77f5",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "hooksConstructorArgs",
+          "bytes"
+        ],
+        [
+          "parameters",
+          "struct DeployMarketInputs"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ],
+        [
+          "marketData",
+          "bytes"
+        ],
+        [
+          "salt",
+          "bytes32"
+        ],
+        [
+          "originationFeeAsset",
+          "address"
+        ],
+        [
+          "originationFeeAmount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "pushProtocolFeeBipsUpdates",
+      "kind": "function",
+      "visibility": "public",
+      "src": "33057:1876:11",
+      "id": 4766,
+      "selector": "33ee81f2",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ],
+        [
+          "marketStartIndex",
+          "uint256"
+        ],
+        [
+          "marketEndIndex",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "contract": "HooksFactoryRevolving",
+      "name": "pushProtocolFeeBipsUpdates",
+      "kind": "function",
+      "visibility": "external",
+      "src": "35127:151:11",
+      "id": 4784,
+      "selector": "155733ef",
+      "parameters": [
+        [
+          "hooksTemplate",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "updateSphereXEngineOnRegisteredContracts",
+      "kind": "function",
+      "visibility": "external",
+      "src": "4718:1366:15",
+      "id": 6179,
+      "selector": "f631241e",
+      "parameters": [
+        [
+          "controllerFactories",
+          "address[]"
+        ],
+        [
+          "controllers",
+          "address[]"
+        ],
+        [
+          "markets",
+          "address[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "registerBorrower",
+      "kind": "function",
+      "visibility": "external",
+      "src": "7624:183:15",
+      "id": 6286,
+      "selector": "abad7426",
+      "parameters": [
+        [
+          "borrower",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "removeBorrower",
+      "kind": "function",
+      "visibility": "external",
+      "src": "7878:185:15",
+      "id": 6309,
+      "selector": "76c7fc55",
+      "parameters": [
+        [
+          "borrower",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "addBlacklist",
+      "kind": "function",
+      "visibility": "external",
+      "src": "9627:180:15",
+      "id": 6432,
+      "selector": "9cfe42da",
+      "parameters": [
+        [
+          "asset",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "removeBlacklist",
+      "kind": "function",
+      "visibility": "external",
+      "src": "9886:180:15",
+      "id": 6455,
+      "selector": "eb91e651",
+      "parameters": [
+        [
+          "asset",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "registerControllerFactory",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11488:476:15",
+      "id": 6582,
+      "selector": "1b4f512c",
+      "parameters": [
+        [
+          "factory",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "removeControllerFactory",
+      "kind": "function",
+      "visibility": "external",
+      "src": "12045:219:15",
+      "id": 6605,
+      "selector": "8b13e382",
+      "parameters": [
+        [
+          "factory",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "registerController",
+      "kind": "function",
+      "visibility": "external",
+      "src": "13931:403:15",
+      "id": 6749,
+      "selector": "d91ae8c2",
+      "parameters": [
+        [
+          "controller",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "removeController",
+      "kind": "function",
+      "visibility": "external",
+      "src": "14407:199:15",
+      "id": 6772,
+      "selector": "f6a74ed7",
+      "parameters": [
+        [
+          "controller",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "registerMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16174:374:15",
+      "id": 6916,
+      "selector": "a79b9ec9",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "contract": "WildcatArchController",
+      "name": "removeMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16617:171:15",
+      "id": 6939,
+      "selector": "db913236",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "contract": "WildcatBorrowerIdentityRegistry",
+      "name": "addAccountFactory",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1924:383:16",
+      "id": 7190,
+      "selector": "6c55fa8a",
+      "parameters": [
+        [
+          "accountFactory",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "contract": "WildcatBorrowerIdentityRegistry",
+      "name": "removeAccountFactory",
+      "kind": "function",
+      "visibility": "external",
+      "src": "2311:271:16",
+      "id": 7215,
+      "selector": "d5f98335",
+      "parameters": [
+        [
+          "accountFactory",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "contract": "WildcatBorrowerIdentityRegistry",
+      "name": "registerBorrowerAccount",
+      "kind": "function",
+      "visibility": "external",
+      "src": "3471:915:16",
+      "id": 7448,
+      "selector": "356abd8b",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ],
+        [
+          "principal",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "contract": "WildcatBorrowerIdentityRegistry",
+      "name": "requestBorrowerAccountPrincipalTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "4390:614:16",
+      "id": 7496,
+      "selector": "61b88bd7",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ],
+        [
+          "newPrincipal",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "contract": "WildcatBorrowerIdentityRegistry",
+      "name": "cancelBorrowerAccountPrincipalTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "5008:589:16",
+      "id": 7545,
+      "selector": "23cb2baa",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "contract": "WildcatBorrowerIdentityRegistry",
+      "name": "acceptBorrowerAccountPrincipalTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "5601:654:16",
+      "id": 7609,
+      "selector": "68ed98f1",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatSanctionsEscrow.sol",
+      "contract": "WildcatSanctionsEscrow",
+      "name": "releaseEscrow",
+      "kind": "function",
+      "visibility": "public",
+      "src": "1542:293:17",
+      "id": 8183,
+      "selector": "757a5543",
+      "parameters": []
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "contract": "WildcatSanctionsSentinel",
+      "name": "overrideSanction",
+      "kind": "function",
+      "visibility": "public",
+      "src": "5108:163:18",
+      "id": 8341,
+      "selector": "681909a0",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "contract": "WildcatSanctionsSentinel",
+      "name": "removeSanctionOverride",
+      "kind": "function",
+      "visibility": "public",
+      "src": "5319:177:18",
+      "id": 8364,
+      "selector": "490a8653",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "contract": "WildcatSanctionsSentinel",
+      "name": "createEscrow",
+      "kind": "function",
+      "visibility": "public",
+      "src": "5794:675:18",
+      "id": 8435,
+      "selector": "a1054f6b",
+      "parameters": [
+        [
+          "borrower",
+          "address"
+        ],
+        [
+          "account",
+          "address"
+        ],
+        [
+          "asset",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "requestAdministratorTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "10015:408:19",
+      "id": 8901,
+      "selector": "73915306",
+      "parameters": [
+        [
+          "newAdministrator",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "cancelAdministratorTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "10504:377:19",
+      "id": 8937,
+      "selector": "b208583e",
+      "parameters": []
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "acceptAdministratorTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11274:601:19",
+      "id": 8987,
+      "selector": "3dc1dc72",
+      "parameters": []
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "setName",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11937:184:19",
+      "id": 9011,
+      "selector": "c47f0027",
+      "parameters": [
+        [
+          "_name",
+          "string"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "12753:221:19",
+      "id": 9032,
+      "selector": "36c89214",
+      "parameters": [
+        [
+          "providerFactory",
+          "address"
+        ],
+        [
+          "timeToLive",
+          "uint32"
+        ],
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "addRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "13818:152:19",
+      "id": 9081,
+      "selector": "ea5b13bd",
+      "parameters": [
+        [
+          "providerAddress",
+          "address"
+        ],
+        [
+          "timeToLive",
+          "uint32"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "removeRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "17508:732:19",
+      "id": 9301,
+      "selector": "8adfe0f8",
+      "parameters": [
+        [
+          "providerAddress",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "grantRole",
+      "kind": "function",
+      "visibility": "external",
+      "src": "26491:269:19",
+      "id": 9698,
+      "selector": "6b2b369b",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ],
+        [
+          "roleGrantedTimestamp",
+          "uint32"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "grantRoles",
+      "kind": "function",
+      "visibility": "external",
+      "src": "26926:460:19",
+      "id": 9756,
+      "selector": "9d2a76fe",
+      "parameters": [
+        [
+          "accounts",
+          "address[]"
+        ],
+        [
+          "roleGrantedTimestamps",
+          "uint32[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "revokeRole",
+      "kind": "function",
+      "visibility": "external",
+      "src": "28844:77:19",
+      "id": 9865,
+      "selector": "80e52e3f",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "revokeRoles",
+      "kind": "function",
+      "visibility": "external",
+      "src": "29021:154:19",
+      "id": 9892,
+      "selector": "e5ef8405",
+      "parameters": [
+        [
+          "accounts",
+          "address[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "blockFromDeposits",
+      "kind": "function",
+      "visibility": "external",
+      "src": "29876:109:19",
+      "id": 9951,
+      "selector": "064ed53b",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "blockFromDeposits",
+      "kind": "function",
+      "visibility": "external",
+      "src": "30041:181:19",
+      "id": 9979,
+      "selector": "6d1587a6",
+      "parameters": [
+        [
+          "accounts",
+          "address[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "contract": "BaseAccessControls",
+      "name": "unblockFromDeposits",
+      "kind": "function",
+      "visibility": "external",
+      "src": "30771:274:19",
+      "id": 10066,
+      "selector": "aa948689",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "setMinimumDeposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "10435:533:20",
+      "id": 11197,
+      "selector": "1c4b3694",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ],
+        [
+          "newMinimumDeposit",
+          "uint128"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "setFixedTermEndTime",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11155:714:20",
+      "id": 11261,
+      "selector": "02420e7f",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ],
+        [
+          "newFixedTermEndTime",
+          "uint32"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onDeposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "14562:1478:20",
+      "id": 11477,
+      "selector": "5aeb713f",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "scaledAmount",
+          "uint256"
+        ],
+        [
+          "state",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onQueueWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16337:677:20",
+      "id": 11549,
+      "selector": "3521cccc",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "",
+          "uint32"
+        ],
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onExecuteWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "17103:211:20",
+      "id": 11566,
+      "selector": "3b8314a5",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "",
+          "uint32"
+        ],
+        [
+          "",
+          "uint128"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "17743:1583:20",
+      "id": 11665,
+      "selector": "a018f90e",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "address"
+        ],
+        [
+          "to",
+          "address"
+        ],
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "extraData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onBorrow",
+      "kind": "function",
+      "visibility": "external",
+      "src": "19394:149:20",
+      "id": 11678,
+      "selector": "b1cfda0d",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onRepay",
+      "kind": "function",
+      "visibility": "external",
+      "src": "19607:130:20",
+      "id": 11691,
+      "selector": "83d9e1eb",
+      "parameters": [
+        [
+          "normalizedAmount",
+          "uint256"
+        ],
+        [
+          "state",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onCloseMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "20053:690:20",
+      "id": 11761,
+      "selector": "9ecc64e6",
+      "parameters": [
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onNukeFromOrbit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "20841:149:20",
+      "id": 11774,
+      "selector": "8b3ce9b3",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onSetMaxTotalSupply",
+      "kind": "function",
+      "visibility": "external",
+      "src": "21046:161:20",
+      "id": 11787,
+      "selector": "849da129",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onSetAnnualInterestAndReserveRatioBips",
+      "kind": "function",
+      "visibility": "public",
+      "src": "21396:823:20",
+      "id": 11839,
+      "selector": "cc452642",
+      "parameters": [
+        [
+          "annualInterestBips",
+          "uint16"
+        ],
+        [
+          "reserveRatioBips",
+          "uint16"
+        ],
+        [
+          "intermediateState",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "contract": "FixedTermHooks",
+      "name": "onSetProtocolFeeBips",
+      "kind": "function",
+      "visibility": "external",
+      "src": "22277:172:20",
+      "id": 11852,
+      "selector": "03473d8d",
+      "parameters": [
+        [
+          "",
+          "uint16"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "contract": "IHooks",
+      "name": "onCreateMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1795:331:21",
+      "id": 11919,
+      "selector": "28fd0307",
+      "parameters": [
+        [
+          "administrator",
+          "address"
+        ],
+        [
+          "marketAddress",
+          "address"
+        ],
+        [
+          "parameters",
+          "struct DeployMarketInputs"
+        ],
+        [
+          "extraData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/MarketConstraintHooks.sol",
+      "contract": "MarketConstraintHooks",
+      "name": "onSetAnnualInterestAndReserveRatioBips",
+      "kind": "function",
+      "visibility": "public",
+      "src": "8157:3577:27",
+      "id": 12783,
+      "selector": "cc452642",
+      "parameters": [
+        [
+          "annualInterestBips",
+          "uint16"
+        ],
+        [
+          "",
+          "uint16"
+        ],
+        [
+          "intermediateState",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "setMinimumDeposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "8214:533:28",
+      "id": 13173,
+      "selector": "1c4b3694",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ],
+        [
+          "newMinimumDeposit",
+          "uint128"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onDeposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "11439:1478:28",
+      "id": 13389,
+      "selector": "5aeb713f",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "scaledAmount",
+          "uint256"
+        ],
+        [
+          "state",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onQueueWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "13159:521:28",
+      "id": 13447,
+      "selector": "3521cccc",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "",
+          "uint32"
+        ],
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onExecuteWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "13769:211:28",
+      "id": 13464,
+      "selector": "3b8314a5",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "",
+          "uint32"
+        ],
+        [
+          "",
+          "uint128"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "14409:1583:28",
+      "id": 13563,
+      "selector": "a018f90e",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "address"
+        ],
+        [
+          "to",
+          "address"
+        ],
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "extraData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onBorrow",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16066:149:28",
+      "id": 13576,
+      "selector": "b1cfda0d",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onRepay",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16285:130:28",
+      "id": 13589,
+      "selector": "83d9e1eb",
+      "parameters": [
+        [
+          "normalizedAmount",
+          "uint256"
+        ],
+        [
+          "state",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onCloseMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16488:121:28",
+      "id": 13600,
+      "selector": "9ecc64e6",
+      "parameters": [
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onNukeFromOrbit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16727:149:28",
+      "id": 13613,
+      "selector": "8b3ce9b3",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onSetMaxTotalSupply",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16932:161:28",
+      "id": 13626,
+      "selector": "849da129",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onSetAnnualInterestAndReserveRatioBips",
+      "kind": "function",
+      "visibility": "public",
+      "src": "17178:479:28",
+      "id": 13653,
+      "selector": "cc452642",
+      "parameters": [
+        [
+          "annualInterestBips",
+          "uint16"
+        ],
+        [
+          "reserveRatioBips",
+          "uint16"
+        ],
+        [
+          "intermediateState",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "contract": "OpenTermHooks",
+      "name": "onSetProtocolFeeBips",
+      "kind": "function",
+      "visibility": "external",
+      "src": "17715:172:28",
+      "id": 13666,
+      "selector": "03473d8d",
+      "parameters": [
+        [
+          "",
+          "uint16"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "setMinimumDeposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "15028:637:29",
+      "id": 14314,
+      "selector": "1c4b3694",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ],
+        [
+          "newMinimumDeposit",
+          "uint128"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "proposeAnnualInterestBips",
+      "kind": "function",
+      "visibility": "external",
+      "src": "16080:1566:29",
+      "id": 14429,
+      "selector": "9b87b818",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ],
+        [
+          "annualInterestBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onDeposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "23783:1532:29",
+      "id": 14863,
+      "selector": "5aeb713f",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "scaledAmount",
+          "uint256"
+        ],
+        [
+          "state",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onQueueWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "25595:701:29",
+      "id": 14940,
+      "selector": "3521cccc",
+      "parameters": [
+        [
+          "lender",
+          "address"
+        ],
+        [
+          "",
+          "uint32"
+        ],
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "state",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onExecuteWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "26384:223:29",
+      "id": 14957,
+      "selector": "3b8314a5",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "uint32"
+        ],
+        [
+          "",
+          "uint128"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "27036:1583:29",
+      "id": 15056,
+      "selector": "a018f90e",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "address"
+        ],
+        [
+          "to",
+          "address"
+        ],
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "extraData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onBorrow",
+      "kind": "function",
+      "visibility": "external",
+      "src": "28690:149:29",
+      "id": 15069,
+      "selector": "b1cfda0d",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onRepay",
+      "kind": "function",
+      "visibility": "external",
+      "src": "28906:148:29",
+      "id": 15082,
+      "selector": "83d9e1eb",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onCloseMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "29235:637:29",
+      "id": 15139,
+      "selector": "9ecc64e6",
+      "parameters": [
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onNukeFromOrbit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "29968:149:29",
+      "id": 15152,
+      "selector": "8b3ce9b3",
+      "parameters": [
+        [
+          "",
+          "address"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onSetMaxTotalSupply",
+      "kind": "function",
+      "visibility": "external",
+      "src": "30173:161:29",
+      "id": 15165,
+      "selector": "849da129",
+      "parameters": [
+        [
+          "",
+          "uint256"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "executePendingAnnualInterestBipsReduction",
+      "kind": "function",
+      "visibility": "external",
+      "src": "32262:547:29",
+      "id": 15315,
+      "selector": "c3f55268",
+      "parameters": [
+        [
+          "intermediateState",
+          "struct MarketState"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onSetAnnualInterestAndReserveRatioBips",
+      "kind": "function",
+      "visibility": "public",
+      "src": "33142:1421:29",
+      "id": 15411,
+      "selector": "cc452642",
+      "parameters": [
+        [
+          "annualInterestBips",
+          "uint16"
+        ],
+        [
+          "reserveRatioBips",
+          "uint16"
+        ],
+        [
+          "intermediateState",
+          "struct MarketState"
+        ],
+        [
+          "hooksData",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "contract": "PeriodicTermHooks",
+      "name": "onSetProtocolFeeBips",
+      "kind": "function",
+      "visibility": "external",
+      "src": "34621:172:29",
+      "id": 15424,
+      "selector": "03473d8d",
+      "parameters": [
+        [
+          "",
+          "uint16"
+        ],
+        [
+          "",
+          "struct MarketState"
+        ],
+        [
+          "",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "updateState",
+      "kind": "function",
+      "visibility": "external",
+      "src": "821:146:73",
+      "id": 27861,
+      "selector": "1d8557d7",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "rescueTokens",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1187:208:73",
+      "id": 27896,
+      "selector": "00ae3bf8",
+      "parameters": [
+        [
+          "token",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "depositUpTo",
+      "kind": "function",
+      "visibility": "external",
+      "src": "3163:158:73",
+      "id": 28033,
+      "selector": "b68ce7a2",
+      "parameters": [
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "deposit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "3554:185:73",
+      "id": 28055,
+      "selector": "b6b55f25",
+      "parameters": [
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "collectFees",
+      "kind": "function",
+      "visibility": "external",
+      "src": "3915:543:73",
+      "id": 28117,
+      "selector": "c8796572",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "borrow",
+      "kind": "function",
+      "visibility": "external",
+      "src": "4778:916:73",
+      "id": 28210,
+      "selector": "c5ebeaec",
+      "parameters": [
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "repay",
+      "kind": "function",
+      "visibility": "external",
+      "src": "6563:561:73",
+      "id": 28336,
+      "selector": "371fd8e6",
+      "parameters": [
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "contract": "WildcatMarket",
+      "name": "closeMarket",
+      "kind": "function",
+      "visibility": "external",
+      "src": "7472:3590:73",
+      "id": 28617,
+      "selector": "c511ed5e",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "contract": "WildcatMarketBase",
+      "name": "requestBorrowerTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "20248:730:74",
+      "id": 29278,
+      "selector": "de4d1558",
+      "parameters": [
+        [
+          "newBorrower",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "contract": "WildcatMarketBase",
+      "name": "cancelBorrowerTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "21069:603:74",
+      "id": 29334,
+      "selector": "c40944c7",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "contract": "WildcatMarketBase",
+      "name": "acceptBorrowerTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "21965:871:74",
+      "id": 29411,
+      "selector": "90c14376",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "contract": "WildcatMarketConfig",
+      "name": "registerWrapper",
+      "kind": "function",
+      "visibility": "external",
+      "src": "2836:296:75",
+      "id": 30674,
+      "selector": "d2595f1d",
+      "parameters": [
+        [
+          "wrapper",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "contract": "WildcatMarketConfig",
+      "name": "nukeFromOrbit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "5083:447:75",
+      "id": 30731,
+      "selector": "dcd549d4",
+      "parameters": [
+        [
+          "accountAddress",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "contract": "WildcatMarketConfig",
+      "name": "setMaxTotalSupply",
+      "kind": "function",
+      "visibility": "external",
+      "src": "6081:515:75",
+      "id": 30787,
+      "selector": "3f3e4c11",
+      "parameters": [
+        [
+          "_maxTotalSupply",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "contract": "WildcatMarketConfig",
+      "name": "setAnnualInterestAndReserveRatioBips",
+      "kind": "function",
+      "visibility": "external",
+      "src": "8525:658:75",
+      "id": 30938,
+      "selector": "e5adc635",
+      "parameters": [
+        [
+          "_annualInterestBips",
+          "uint16"
+        ],
+        [
+          "_reserveRatioBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "contract": "WildcatMarketConfig",
+      "name": "executePendingAnnualInterestBipsReduction",
+      "kind": "function",
+      "visibility": "external",
+      "src": "9464:868:75",
+      "id": 31004,
+      "selector": "09b70bc7",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "contract": "WildcatMarketConfig",
+      "name": "setProtocolFeeBips",
+      "kind": "function",
+      "visibility": "external",
+      "src": "10664:789:75",
+      "id": 31092,
+      "selector": "ae6ea191",
+      "parameters": [
+        [
+          "_protocolFeeBips",
+          "uint16"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "contract": "WildcatMarketToken",
+      "name": "approve",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1897:193:77",
+      "id": 31568,
+      "selector": "095ea7b3",
+      "parameters": [
+        [
+          "spender",
+          "address"
+        ],
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "contract": "WildcatMarketToken",
+      "name": "transfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "2515:191:77",
+      "id": 31593,
+      "selector": "a9059cbb",
+      "parameters": [
+        [
+          "to",
+          "address"
+        ],
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "contract": "WildcatMarketToken",
+      "name": "transferFrom",
+      "kind": "function",
+      "visibility": "external",
+      "src": "3157:444:77",
+      "id": 31650,
+      "selector": "23b872dd",
+      "parameters": [
+        [
+          "from",
+          "address"
+        ],
+        [
+          "to",
+          "address"
+        ],
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "contract": "WildcatMarketWithdrawals",
+      "name": "queueWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "7079:486:78",
+      "id": 32239,
+      "selector": "6b174f35",
+      "parameters": [
+        [
+          "amount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "contract": "WildcatMarketWithdrawals",
+      "name": "queueWithdrawalScaled",
+      "kind": "function",
+      "visibility": "external",
+      "src": "7943:592:78",
+      "id": 32298,
+      "selector": "5ee883f8",
+      "parameters": [
+        [
+          "scaledAmount",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "contract": "WildcatMarketWithdrawals",
+      "name": "queueFullWithdrawal",
+      "kind": "function",
+      "visibility": "external",
+      "src": "8678:601:78",
+      "id": 32354,
+      "selector": "7243d96c",
+      "parameters": []
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "contract": "WildcatMarketWithdrawals",
+      "name": "executeWithdrawal",
+      "kind": "function",
+      "visibility": "public",
+      "src": "9735:536:78",
+      "id": 32392,
+      "selector": "34bca29c",
+      "parameters": [
+        [
+          "accountAddress",
+          "address"
+        ],
+        [
+          "expiry",
+          "uint32"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "contract": "WildcatMarketWithdrawals",
+      "name": "executeWithdrawals",
+      "kind": "function",
+      "visibility": "external",
+      "src": "10621:712:78",
+      "id": 32470,
+      "selector": "74058859",
+      "parameters": [
+        [
+          "accountAddresses",
+          "address[]"
+        ],
+        [
+          "expiries",
+          "uint32[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "contract": "WildcatMarketWithdrawals",
+      "name": "repayAndProcessUnpaidWithdrawalBatches",
+      "kind": "function",
+      "visibility": "public",
+      "src": "13780:1813:78",
+      "id": 32740,
+      "selector": "6731ba6d",
+      "parameters": [
+        [
+          "repayAmount",
+          "uint256"
+        ],
+        [
+          "maxBatches",
+          "uint256"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "contract": "AccessListRoleProvider",
+      "name": "addMember",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1435:102:79",
+      "id": 32860,
+      "selector": "ca6d56dc",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "contract": "AccessListRoleProvider",
+      "name": "addMembers",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1541:175:79",
+      "id": 32888,
+      "selector": "6f4d469b",
+      "parameters": [
+        [
+          "accounts",
+          "address[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "contract": "AccessListRoleProvider",
+      "name": "removeMember",
+      "kind": "function",
+      "visibility": "external",
+      "src": "2089:108:79",
+      "id": 32956,
+      "selector": "0b1ca49a",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "contract": "AccessListRoleProvider",
+      "name": "removeMembers",
+      "kind": "function",
+      "visibility": "external",
+      "src": "2201:181:79",
+      "id": 32984,
+      "selector": "46ee84b0",
+      "parameters": [
+        [
+          "accounts",
+          "address[]"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/AccessListRoleProviderFactory.sol",
+      "contract": "AccessListRoleProviderFactory",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "732:294:80",
+      "id": 33199,
+      "selector": "29e45772",
+      "parameters": [
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/AccessListRoleProviderFactory.sol",
+      "contract": "AccessListRoleProviderFactory",
+      "name": "createAccessListRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1113:205:80",
+      "id": 33218,
+      "selector": "a2f689ed",
+      "parameters": [
+        [
+          "inputs",
+          "struct AccessListRoleProviderFactoryInputs"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC1155RoleProviderFactory.sol",
+      "contract": "ERC1155RoleProviderFactory",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "707:288:82",
+      "id": 33597,
+      "selector": "29e45772",
+      "parameters": [
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC1155RoleProviderFactory.sol",
+      "contract": "ERC1155RoleProviderFactory",
+      "name": "createERC1155RoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1078:199:82",
+      "id": 33616,
+      "selector": "d0216f5c",
+      "parameters": [
+        [
+          "inputs",
+          "struct ERC1155RoleProviderFactoryInputs"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC20RoleProviderFactory.sol",
+      "contract": "ERC20RoleProviderFactory",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "695:284:84",
+      "id": 33929,
+      "selector": "29e45772",
+      "parameters": [
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC20RoleProviderFactory.sol",
+      "contract": "ERC20RoleProviderFactory",
+      "name": "createERC20RoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1060:195:84",
+      "id": 33948,
+      "selector": "18b5a73e",
+      "parameters": [
+        [
+          "inputs",
+          "struct ERC20RoleProviderFactoryInputs"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+      "contract": "ERC4626AssetsRoleProviderFactory",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "741:300:86",
+      "id": 34274,
+      "selector": "29e45772",
+      "parameters": [
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+      "contract": "ERC4626AssetsRoleProviderFactory",
+      "name": "createERC4626AssetsRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1124:211:86",
+      "id": 34293,
+      "selector": "e88cfbd0",
+      "parameters": [
+        [
+          "inputs",
+          "struct ERC4626AssetsRoleProviderFactoryInputs"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC721RoleProviderFactory.sol",
+      "contract": "ERC721RoleProviderFactory",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "701:286:90",
+      "id": 35209,
+      "selector": "29e45772",
+      "parameters": [
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ERC721RoleProviderFactory.sol",
+      "contract": "ERC721RoleProviderFactory",
+      "name": "createERC721RoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1069:197:90",
+      "id": 35228,
+      "selector": "4c2add67",
+      "parameters": [
+        [
+          "inputs",
+          "struct ERC721RoleProviderFactoryInputs"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "contract": "ManagedRoleProvider",
+      "name": "requestAdministratorTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1134:484:103",
+      "id": 36017,
+      "selector": "73915306",
+      "parameters": [
+        [
+          "newAdministrator",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "contract": "ManagedRoleProvider",
+      "name": "cancelAdministratorTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1702:377:103",
+      "id": 36053,
+      "selector": "b208583e",
+      "parameters": []
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "contract": "ManagedRoleProvider",
+      "name": "acceptAdministratorTransfer",
+      "kind": "function",
+      "visibility": "external",
+      "src": "2242:394:103",
+      "id": 36091,
+      "selector": "3dc1dc72",
+      "parameters": []
+    },
+    {
+      "path": "src/providers/MerkleRoleProvider.sol",
+      "contract": "MerkleRoleProvider",
+      "name": "updateRoot",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1244:188:104",
+      "id": 36154,
+      "selector": "21ff9970",
+      "parameters": [
+        [
+          "newRoot",
+          "bytes32"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/MerkleRoleProviderFactory.sol",
+      "contract": "MerkleRoleProviderFactory",
+      "name": "createRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "711:286:105",
+      "id": 36310,
+      "selector": "29e45772",
+      "parameters": [
+        [
+          "data",
+          "bytes"
+        ]
+      ]
+    },
+    {
+      "path": "src/providers/MerkleRoleProviderFactory.sol",
+      "contract": "MerkleRoleProviderFactory",
+      "name": "createMerkleRoleProvider",
+      "kind": "function",
+      "visibility": "external",
+      "src": "1078:197:105",
+      "id": 36329,
+      "selector": "7da6c53d",
+      "parameters": [
+        [
+          "inputs",
+          "struct MerkleRoleProviderFactoryInputs"
+        ]
+      ]
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "contract": "SphereXConfig",
+      "name": "transferSphereXAdminRole",
+      "kind": "function",
+      "visibility": "public",
+      "src": "5529:216:108",
+      "id": 36931,
+      "selector": "daba7ef7",
+      "parameters": [
+        [
+          "newAdmin",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "contract": "SphereXConfig",
+      "name": "acceptSphereXAdminRole",
+      "kind": "function",
+      "visibility": "public",
+      "src": "5846:369:108",
+      "id": 36971,
+      "selector": "8426b968",
+      "parameters": []
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "contract": "SphereXConfig",
+      "name": "changeSphereXOperator",
+      "kind": "function",
+      "visibility": "external",
+      "src": "6313:308:108",
+      "id": 36996,
+      "selector": "4ee8f858",
+      "parameters": [
+        [
+          "newSphereXOperator",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "contract": "SphereXConfig",
+      "name": "changeSphereXEngine",
+      "kind": "function",
+      "visibility": "external",
+      "src": "6800:263:108",
+      "id": 37020,
+      "selector": "4c6c848f",
+      "parameters": [
+        [
+          "newSphereXEngine",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "contract": "SphereXProtectedRegisteredBase",
+      "name": "changeSphereXEngine",
+      "kind": "function",
+      "visibility": "external",
+      "src": "4498:286:111",
+      "id": 37352,
+      "selector": "4c6c848f",
+      "parameters": [
+        [
+          "newSphereXEngine",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "contract": "Wildcat4626Wrapper",
+      "name": "deposit",
+      "kind": "function",
+      "visibility": "public",
+      "src": "15109:1266:116",
+      "id": 40041,
+      "selector": "6e553f65",
+      "parameters": [
+        [
+          "assets",
+          "uint256"
+        ],
+        [
+          "receiver",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "contract": "Wildcat4626Wrapper",
+      "name": "mint",
+      "kind": "function",
+      "visibility": "public",
+      "src": "16545:1582:116",
+      "id": 40200,
+      "selector": "94bf804d",
+      "parameters": [
+        [
+          "shares",
+          "uint256"
+        ],
+        [
+          "receiver",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "contract": "Wildcat4626Wrapper",
+      "name": "withdraw",
+      "kind": "function",
+      "visibility": "public",
+      "src": "18428:1192:116",
+      "id": 40335,
+      "selector": "b460af94",
+      "parameters": [
+        [
+          "assets",
+          "uint256"
+        ],
+        [
+          "receiver",
+          "address"
+        ],
+        [
+          "owner_",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "contract": "Wildcat4626Wrapper",
+      "name": "redeem",
+      "kind": "function",
+      "visibility": "public",
+      "src": "19976:1188:116",
+      "id": 40470,
+      "selector": "ba087652",
+      "parameters": [
+        [
+          "shares",
+          "uint256"
+        ],
+        [
+          "receiver",
+          "address"
+        ],
+        [
+          "owner_",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "contract": "Wildcat4626Wrapper",
+      "name": "nukeFromOrbit",
+      "kind": "function",
+      "visibility": "external",
+      "src": "21509:978:116",
+      "id": 40551,
+      "selector": "dcd549d4",
+      "parameters": [
+        [
+          "account",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "contract": "Wildcat4626Wrapper",
+      "name": "sweep",
+      "kind": "function",
+      "visibility": "external",
+      "src": "22963:1521:116",
+      "id": 40724,
+      "selector": "b8dc491b",
+      "parameters": [
+        [
+          "token",
+          "address"
+        ],
+        [
+          "to",
+          "address"
+        ]
+      ]
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "contract": "Wildcat4626WrapperFactory",
+      "name": "createWrapper",
+      "kind": "function",
+      "visibility": "external",
+      "src": "7485:1127:117",
+      "id": 42128,
+      "selector": "a7c4f0ef",
+      "parameters": [
+        [
+          "market",
+          "address"
+        ]
+      ]
+    }
+  ]
+}

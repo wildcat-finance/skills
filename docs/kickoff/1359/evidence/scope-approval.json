@@ -1,0 +1,79 @@
+{
+  "schema": "wildcat.kickoff-scope-approval.v1",
+  "evidence_class": "attested",
+  "decision_maker": {
+    "name": "Dave Coleman",
+    "role": "approving operator and target maintainer",
+    "date": "2026-09-13",
+    "reference": "https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034"
+  },
+  "recorded_by": "kethcode",
+  "recorded_at": "2026-09-13T19:09:12Z",
+  "reference": "https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034",
+  "approval_quote": "approved.  go ahead and update teh PR if needed.",
+  "comment_body": "Dave Coleman approved the following scope in the delivery session on 2026-09-13 and authorised updating this PR. This comment records that approval; it does not claim that Dave posted a separate GitHub review.\n\nThe ordered #1359 slots are:\n\n1. Wildcat V1, then V2.\n2. Aave V3.\n3. Maple legacy V1, V2 fixed-term, then V2 open-term.\n4. Euler V1, then V2, including the vault kit and EVC.\n5. Centrifuge V3, including its hub and corresponding ERC-7540 spokes.\n\nMaple's three slots mean three contract families; fixed-term and open-term both belong to V2. Syrup pool and router coverage belongs alongside V2. This is an approved scope interpretation, not a claim that an earlier ticket explicitly named that split.\n\nFor #1355, #1354 and #1361, the estate is Wildcat V2 on Ethereum mainnet: factory, registered templates, instances, hooks and role providers. Reuse PR #1460's emitter source pin, `wildcat-finance/v2-protocol@f5a26146987926f4811b72a795d662813dedfe85`, matched to relevant deployed epochs. Plasma, unreleased Wildcat code, Compound and Clearpool are outside this initial scope.\n\nThe operator's approval was: “approved.  go ahead and update teh PR if needed.”\n\nThe approval selects targets and order. It does not establish source-to-deployment identity, change downstream acceptance, or approve a capture budget. Complete #1482's registry and checks; keep any unresolved source match in a blocked row with a specific recovery child, as #1482 requires.\n",
+  "comment_body_sha256": "22ea14b270a3888f3ada4957028967dae385b24874a495cdee312937c69729bd",
+  "slots": [
+    {
+      "order": 1,
+      "venue": "Wildcat",
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet"
+      ]
+    },
+    {
+      "order": 2,
+      "venue": "Aave",
+      "targets": [
+        "aave-v3"
+      ]
+    },
+    {
+      "order": 3,
+      "venue": "Maple",
+      "targets": [
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term"
+      ]
+    },
+    {
+      "order": 4,
+      "venue": "Euler",
+      "targets": [
+        "euler-v1",
+        "euler-v2"
+      ]
+    },
+    {
+      "order": 5,
+      "venue": "Centrifuge",
+      "targets": [
+        "centrifuge-v3"
+      ]
+    }
+  ],
+  "estate_targets": [
+    "wildcat-v2-ethereum-mainnet"
+  ],
+  "estate_chain_id": 1,
+  "estate_roles": [
+    "factory",
+    "registered templates",
+    "instances",
+    "hooks",
+    "role providers"
+  ],
+  "maple_interpretation": "Three contract families: legacy V1, V2 fixed-term and V2 open-term. Both term families belong to V2; include relevant Syrup pools and routers alongside V2.",
+  "excluded": [
+    "Wildcat Plasma",
+    "unreleased Wildcat source",
+    "Aave V4",
+    "Compound",
+    "Clearpool",
+    "Centrifuge Tinlake",
+    "Centrifuge V2"
+  ],
+  "boundary": "Session approval recorded by the publisher, not a separate GitHub review. It selects target scope and order; it does not establish deployment identity, approve capture spending or change downstream acceptance."
+}

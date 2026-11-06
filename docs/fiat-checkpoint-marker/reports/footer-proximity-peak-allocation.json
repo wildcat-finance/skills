@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "footer-proximity",
+  "criterion": "peak-allocation",
+  "value": 155656,
+  "unit": "bytes",
+  "command": "python3 .hexaemeron/measure_design.py --candidate footer-proximity --criterion peak-allocation --report .hexaemeron/reports/footer-proximity-peak-allocation.json",
+  "exit": 0
+}

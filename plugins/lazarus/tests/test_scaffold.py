@@ -158,14 +158,15 @@ class ScaffoldTests(unittest.TestCase):
             },
         )
 
-    def test_evolution_3_2_0_closes_the_empty_receipt_frontier_once(self):
-        self.assertEqual(support.skill_version(), "3.2.0")
+    def test_evolution_3_3_0_keeps_the_closed_empty_receipt_frontier(self):
+        self.assertEqual(support.skill_version(), "3.3.0")
         ledger = (support.SKILL.parent / "EVOLUTION.md").read_text(encoding="utf-8")
         self.assertEqual(ledger.count("| `lazarus-v1.2.0` |"), 1)
         self.assertEqual(ledger.count("| `lazarus-v2.2.0` |"), 1)
         self.assertEqual(ledger.count("| `lazarus-v3.2.0` |"), 1)
+        self.assertEqual(ledger.count("| `lazarus-v3.3.0` |"), 1)
         for line in (
-            "- Current version: `lazarus-v3.2.0`",
+            "- Current version: `lazarus-v3.3.0`",
             "- Frontier status: `mature`",
             "- Frontier revision: `empty-block-receipt-witnesses`",
             "- Next Fiat job: None -- mature",
@@ -374,21 +375,17 @@ class ScaffoldTests(unittest.TestCase):
                 self.assertTrue(lazarus_paths.isdisjoint(shared_paths))
                 self.assertIsNone(event_paths(repo_workflow, event, required=False))
 
-        plugins_path = support.REPO_ROOT / ".github/workflows/plugins.yml"
-        self.assertTrue(plugins_path.is_file(), "the complete plugin workflow is missing")
-        plugins_workflow = plugins_path.read_text(encoding="utf-8")
-        for event in ("push", "pull_request"):
-            with self.subTest(aggregate_event=event):
-                self.assertIsNone(event_paths(plugins_workflow, event, required=False))
-        # The aggregate gate shards the declared graph, one job per scope, so
-        # Lazarus is covered by its own shard rather than by a single --full
-        # invocation. What matters here is unchanged: the gate carries no path
-        # filter, so its context reaches every pull request.
-        self.assertIn(
-            "python3 scripts/run_checks.py\n          --scope ${{ matrix.scope }}",
-            plugins_workflow,
+        # The aggregate plugin gate used to shard the declared graph and carry a
+        # Lazarus shard. It was removed: it had been disabled since 30 August
+        # 2026, no branch protection required it, and the run that measured it
+        # cost 40.5 minutes and failed. `lazarus.yml` above is the whole of
+        # Lazarus's hosted coverage now, which is why its own path filter is
+        # what this case checks.
+        self.assertFalse(
+            (support.REPO_ROOT / ".github/workflows/plugins.yml").exists(),
+            "the aggregate plugin gate was removed; nothing should restore it "
+            "without a decision record",
         )
-        self.assertIn("          - lazarus\n", plugins_workflow)
 
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)

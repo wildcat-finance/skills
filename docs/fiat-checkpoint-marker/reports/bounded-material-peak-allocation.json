@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bounded-material",
+  "criterion": "peak-allocation",
+  "value": 173277,
+  "unit": "bytes",
+  "command": "python3 .hexaemeron/measure_design.py --candidate bounded-material --criterion peak-allocation --report .hexaemeron/reports/bounded-material-peak-allocation.json",
+  "exit": 0
+}

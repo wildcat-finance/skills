@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/interval-plan-v2.schema.json",
+  "title": "Alexandria chain interval plan v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "chain",
+    "venue",
+    "deployment",
+    "subjects",
+    "interval",
+    "shard_width",
+    "shards",
+    "evidence_classes",
+    "finality",
+    "provider"
+  ],
+  "dependentRequired": {
+    "log_attribution_parts": [
+      "shards_per_component"
+    ]
+  },
+  "properties": {
+    "format": {
+      "const": "alexandria-interval-plan/v2"
+    },
+    "chain": {
+      "type": "string",
+      "pattern": "^eip155:(0|[1-9][0-9]*)$"
+    },
+    "venue": {
+      "$ref": "#/$defs/name"
+    },
+    "deployment": {
+      "$ref": "#/$defs/name"
+    },
+    "subjects": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/address"
+      },
+      "description": "The declared subject set this plan collects over, in place of v1's single proxy address. Every preserved log and trace is checked against this exact set: one from an address outside it refuses, and a duplicate address inside it refuses when the plan is validated. Every preserved log is attributed to the epoch of its own declared subject."
+    },
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/block"
+        },
+        "end": {
+          "$ref": "#/$defs/block"
+        }
+      }
+    },
+    "shard_width": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50000
+    },
+    "shards": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/shard"
+      }
+    },
+    "shards_per_component": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096,
+      "description": "Optional. The most shards one journal component may hold. When present, each shard-class journal (boundary-blocks, logs, traces) is staged and released as one component per contiguous shard range of at most this many shards, named <class>.<k> in shard order, and the component count is derived from the shard count and this field alone, so the boundaries move only when the plan changes and never because a re-collection returned one more record. Absent means one component per class under the class's own name, which is how every plan before this field was released. The opening-read journal epoch-evidence is never split. A split tree writes an alexandria-interval-checkpoint/v2 checkpoint keyed by journal component."
+    },
+    "log_attribution_parts": {
+      "const": "journal-ranges",
+      "description": "Optional, and admitted only beside shards_per_component. When present, the release moves the attribution rows out of the epoch table into one log-attributions.<k> component per journal range, the range logs.<k> covers, and carries an alexandria-interval-receipt/v4 receipt that lists them. journal-ranges is the one admitted value. Absent means every row stays in the epoch table under an alexandria-interval-receipt/v3 receipt, as before this field."
+    },
+    "evidence_classes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "boundary-blocks",
+          "logs",
+          "traces"
+        ]
+      },
+      "description": "The evidence classes this plan collects, a non-empty subset of the three the collector can request, in the order it requests them. The collector issues no request and opens no journal for a class the plan omits; the release names an omitted class as a coverage gap with its reason. The collector refuses a plan that omits boundary-blocks, because every shard is checkpointed by its boundary block's hash."
+    },
+    "finality": {
+      "$ref": "#/$defs/finality"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "page_limit",
+        "timeout_seconds"
+      ],
+      "properties": {
+        "class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "A non-secret provider class. Never an endpoint, host or credential."
+        },
+        "page_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        }
+      }
+    },
+    "wildcat_event_headers": {
+      "const": "selected-event-blocks/v1"
+    },
+    "wildcat_v2_wrappers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "subjects"
+      ],
+      "properties": {
+        "rule": {
+          "const": "wrapper-deployed/v1"
+        },
+        "subjects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/address"
+          }
+        }
+      },
+      "description": "Optional. Declares Wildcat V2 wrapper instances on a wildcat-v2 plan whose evidence_classes include logs and whose subjects include the registry's wrapper factory. rule is wrapper-deployed/v1, its one admitted value. subjects is a non-empty list of lowercase addresses in strictly ascending order, disjoint from the plan's subjects and from every registry entry, and at most 4096 together with them; validate_plan and the venue enforce the order, the disjointness and the registry checks. A declared wrapper is admitted only when a preserved WrapperDeployed log from the wrapper factory names it and names a market the registry lists. Absent means no wrapper is declared, and the plan validates exactly as it did before this field."
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{40}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "block": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "finality": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "policy",
+            "block_number",
+            "block_hash"
+          ],
+          "properties": {
+            "policy": {
+              "enum": [
+                "finalized",
+                "safe"
+              ]
+            },
+            "block_number": {
+              "$ref": "#/$defs/block",
+              "description": "The boundary block the plan pins. The collector reads this block by number before any shard and refuses unless its hash equals block_hash. Under finalized or safe it then reads that tag and refuses unless the tag's number is at or above this one, so the plan stays valid while the tag advances and fails only when the boundary block leaves the chain. The interval's end must not be above this block."
+            },
+            "block_hash": {
+              "$ref": "#/$defs/hash",
+              "description": "The hash the boundary block carried when the plan was written. A provider reporting another hash for the same number is a boundary that left the chain, and the collector refuses by name with an error receipt."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "policy",
+            "confirmations",
+            "block_number",
+            "block_hash"
+          ],
+          "properties": {
+            "policy": {
+              "const": "confirmations"
+            },
+            "confirmations": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "block_number": {
+              "$ref": "#/$defs/block",
+              "description": "The boundary block the plan pins. The collector reads this block by number before any shard and refuses unless its hash equals block_hash. Under finalized or safe it then reads that tag and refuses unless the tag's number is at or above this one, so the plan stays valid while the tag advances and fails only when the boundary block leaves the chain. The interval's end must not be above this block."
+            },
+            "block_hash": {
+              "$ref": "#/$defs/hash",
+              "description": "The hash the boundary block carried when the plan was written. A provider reporting another hash for the same number is a boundary that left the chain, and the collector refuses by name with an error receipt."
+            }
+          }
+        }
+      ]
+    }
+  },
+  "dependentSchemas": {
+    "wildcat_event_headers": {
+      "properties": {
+        "venue": {
+          "enum": [
+            "wildcat-v1",
+            "wildcat-v2"
+          ]
+        },
+        "evidence_classes": {
+          "contains": {
+            "const": "logs"
+          }
+        }
+      }
+    },
+    "wildcat_v2_wrappers": {
+      "properties": {
+        "venue": {
+          "const": "wildcat-v2"
+        },
+        "evidence_classes": {
+          "contains": {
+            "const": "logs"
+          }
+        }
+      }
+    }
+  }
+}

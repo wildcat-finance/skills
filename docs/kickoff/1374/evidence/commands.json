@@ -1,0 +1,72 @@
+{
+  "schema": "wildcat.kickoff-commands.v1",
+  "record": "docs/kickoff/1374/capture.md",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1490",
+  "source_revision": "f0fa0c6632bd5fbef7f35e731646c32741ef282a",
+  "run_on": "2026-09-18",
+  "run_by": "Shoggoth, in the delivery session",
+  "working_directory": "the repository root",
+  "network": "none; the interval demonstration opens no socket and a test in plugins/alexandria/tests asserts it",
+  "placeholders": {
+    "<out>": "any empty directory the reader chooses; the commands below wrote to a session scratch directory",
+    "<swapped>": "a scratch file written by the recipe in the 'mutation_recipe' field of command 6"
+  },
+  "commands": [
+    {
+      "id": 1,
+      "purpose": "rebuild the preserved release from its checked-in staging tree",
+      "command": "python3 plugins/alexandria/examples/usdc-interval-live-v0/demo.py build --output <out>",
+      "exit_status": 0,
+      "stdout": "{\"end_hash\":\"0xc0ac604f5eaf0b78ee147ed3cec4f5c5ab1f7d66d1607266cbf343d7bdc959bd\",\"epochs\":2,\"format\":\"alexandria-usdc-interval-live-demo/v1\",\"implementations\":{\"0x63e749153baf1838f63ca22c275370bd2b1ceb15\":\"b942614560ef7218a52173cc501ce9198f74a558348edf957cda62a218aa20fe\",\"0x83d491269720ce925f92c6bf9f66b7a0779a293a\":\"93ac04f8ffb0962157af92ee7cf7c1583937d013bde1b6d592ec2a726d624b79\"},\"interval\":{\"end\":\"25905934\",\"start\":\"25903935\"},\"reconciliation\":\"agreed\",\"release_id\":\"sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32\",\"shard_statuses\":{\"complete\":4},\"start_hash\":\"0xa4e35dad60b77815249c12cf22ad83056f2ad041ef9b6340dee03e83502d70f0\"}"
+    },
+    {
+      "id": 2,
+      "purpose": "re-derive release id, epochs, reconciliation, both code digests and both boundary hashes, and compare them and the summary with expected.json",
+      "command": "python3 plugins/alexandria/examples/usdc-interval-live-v0/demo.py verify <out>",
+      "exit_status": 0,
+      "stdout": "{\"end_hash\":\"0xc0ac604f5eaf0b78ee147ed3cec4f5c5ab1f7d66d1607266cbf343d7bdc959bd\",\"epochs\":2,\"implementations\":{\"0x63e749153baf1838f63ca22c275370bd2b1ceb15\":\"b942614560ef7218a52173cc501ce9198f74a558348edf957cda62a218aa20fe\",\"0x83d491269720ce925f92c6bf9f66b7a0779a293a\":\"93ac04f8ffb0962157af92ee7cf7c1583937d013bde1b6d592ec2a726d624b79\"},\"interval\":{\"end\":\"25905934\",\"start\":\"25903935\"},\"receipt_semantics\":\"v1-block-only\",\"reconciliation\":\"agreed\",\"release_id\":\"sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32\",\"shard_statuses\":{\"complete\":4},\"start_hash\":\"0xa4e35dad60b77815249c12cf22ad83056f2ad041ef9b6340dee03e83502d70f0\"}"
+    },
+    {
+      "id": 3,
+      "purpose": "verify the release through the generic Alexandria path",
+      "command": "python3 plugins/alexandria/scripts/alexandria.py verify <out>/release",
+      "exit_status": 0,
+      "stdout": "sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32"
+    },
+    {
+      "id": 4,
+      "purpose": "verify the release through the interval collector's own check path",
+      "command": "python3 plugins/alexandria/scripts/usdc_interval.py check <out>/release",
+      "exit_status": 0,
+      "stdout": "{\"epochs\":2,\"implementations\":{\"0x63e749153baf1838f63ca22c275370bd2b1ceb15\":\"b942614560ef7218a52173cc501ce9198f74a558348edf957cda62a218aa20fe\",\"0x83d491269720ce925f92c6bf9f66b7a0779a293a\":\"93ac04f8ffb0962157af92ee7cf7c1583937d013bde1b6d592ec2a726d624b79\"},\"interval\":{\"end\":\"25905934\",\"start\":\"25903935\"},\"receipt_semantics\":\"v1-block-only\",\"reconciliation\":\"agreed\",\"release_id\":\"sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32\",\"shard_statuses\":{\"complete\":4}}"
+    },
+    {
+      "id": 5,
+      "purpose": "refusal specimen: build the same preserved staging tree against a registry declaring the Wildcat V2 HooksFactory",
+      "command": "python3 plugins/alexandria/scripts/usdc_interval.py build --plan plugins/alexandria/examples/usdc-interval-live-v0/plan.json --staging plugins/alexandria/examples/usdc-interval-live-v0/staging --registry docs/kickoff/1374/specimens/wildcat-v2-registry.json --created-at 2026-09-07T00:00:00Z --output <out>",
+      "exit_status": 1,
+      "stderr": "usdc-interval: Compound registry format is unknown",
+      "refused_at": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py:165"
+    },
+    {
+      "id": 6,
+      "purpose": "refusal specimen: the pinned registry with one proxy address changed to the Wildcat V2 HooksFactory, which reaches the byte-pin rather than the format check",
+      "command": "python3 plugins/alexandria/scripts/usdc_interval.py build --plan plugins/alexandria/examples/usdc-interval-live-v0/plan.json --staging plugins/alexandria/examples/usdc-interval-live-v0/staging --registry <swapped> --created-at 2026-09-07T00:00:00Z --output <out>",
+      "mutation_recipe": "python3 -c \"import json,pathlib;r=json.loads(pathlib.Path('plugins/alexandria/examples/usdc-interval-live-v0/registry.json').read_text());r['entries'][0]['proxy']='0xdd7dd3b5076cf89440d05585ff56d246386207be';pathlib.Path('<swapped>').write_text(json.dumps(r))\"",
+      "mutation_note": "entries[0] is arbitrum/usdc, whose proxy at the pin is 0x9c4ec768c28520b50860ea7a15bd7213a9ff58bf; only its proxy field changes. The entry is chosen for being the first, not for being the interval's own market: mainnet/usdc sits at index 11 and carries the proxy the pattern release collected. Either index reaches the same byte-pin refusal.",
+      "exit_status": 1,
+      "stderr": "usdc-interval: Compound registry bytes do not match the pinned registry",
+      "refused_at": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py:216"
+    }
+  ],
+  "not_run": [
+    {
+      "what": "any live collection or reconciliation against a provider",
+      "why": "this record authorises no capture, endpoint or provider spending"
+    },
+    {
+      "what": "a refusal specimen for the EIP-1967 epoch model",
+      "why": "the Wildcat estate has no upgradeable proxy, so there is no input that would reach a refusal there; that cause is read from source at plugins/alexandria/scripts/alexandria_lib/interval.py:77-78"
+    }
+  ]
+}

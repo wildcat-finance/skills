@@ -7,8 +7,10 @@ import sys
 
 from alexandria_lib import (
     AlexandriaError,
+    StatementPastSingleBounds,
     derive,
     emit_statement,
+    emit_statement_parts,
     ingest,
     query_bytes,
     rebuild,
@@ -57,7 +59,9 @@ def make_parser():
         description=PLANNED_COMMANDS[2][1] + ".",
     )
     statement_parser.add_argument("release", type=Path)
-    statement_parser.add_argument("--output", required=True, type=Path)
+    statement_form = statement_parser.add_mutually_exclusive_group(required=True)
+    statement_form.add_argument("--output", type=Path, metavar="FILE")
+    statement_form.add_argument("--parts", type=Path, metavar="DIRECTORY")
     derive_parser = subcommands.add_parser(
         "derive",
         help=PLANNED_COMMANDS[3][1],
@@ -96,9 +100,11 @@ def main(argv=None):
             print(verify(args.release))
             return 0
         if args.command == "statement":
-            sys.stdout.buffer.write(
-                canonical_bytes(emit_statement(args.release, args.output))
-            )
+            if args.parts is not None:
+                receipt = emit_statement_parts(args.release, args.parts)
+            else:
+                receipt = emit_statement(args.release, args.output)
+            sys.stdout.buffer.write(canonical_bytes(receipt))
             return 0
         if args.command == "derive":
             print(derive(args.release, args.output))
@@ -112,6 +118,14 @@ def main(argv=None):
                 time_start=args.from_time, time_end=args.to_time,
             ))
             return 0
+    except StatementPastSingleBounds as exc:
+        print(f"alexandria: {exc}", file=sys.stderr)
+        print(
+            "alexandria: write this release as an index and parts with "
+            "--parts <directory>",
+            file=sys.stderr,
+        )
+        return 1
     except (AlexandriaError, OSError) as exc:
         print(f"alexandria: {exc}", file=sys.stderr)
         return 1

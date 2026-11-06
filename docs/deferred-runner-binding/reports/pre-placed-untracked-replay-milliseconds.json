@@ -1,0 +1,9 @@
+{
+  "candidate": "pre-placed-untracked",
+  "command": "python3 .hexaemeron/design/probe.py --candidate pre-placed-untracked --criterion replay-milliseconds --report .hexaemeron/reports/pre-placed-untracked-replay-milliseconds.json",
+  "criterion": "replay-milliseconds",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 3
+}

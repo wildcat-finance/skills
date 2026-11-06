@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "--dir",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+    "done",
+    "implement",
+    "--branch",
+    "fiat/1273-settle-declared-study-criteria-with-recorde-step-1-scaffold-the-declared-contract-a",
+    "--commit",
+    "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "--tests",
+    "Full Hex Exit: 3354 tests, 0 failures/errors, 5 existing skips, 1 expected failure; normal staged root gate: 2046 passed; exact checked runner at jobs 26: 13/13 passed. Restricted affected Hex fixtures: 333 tests, no failures/errors/skips, 1 existing expected failure; restricted affected root fixtures: 33 passed."
+  ],
+  "started_utc": "2026-09-16T10:47:31.646305+00:00",
+  "ended_utc": "2026-09-16T11:09:44.160359+00:00",
+  "exit": 0,
+  "outcome": "completed",
+  "wall_seconds": 1332.4906839999603,
+  "log_sha256": "407bcac8d3105d2d31e5425402265bdc8f609f5977668ef492006697594d3746",
+  "controller_sha256": "326817a508a2d0be382e8e44071ec1d5957411a9cb6091764d7a33e9e032ff30",
+  "candidate": "d230b3ac07158bd5786a5c58539e6999ed3dda54"
+}

@@ -353,15 +353,16 @@ class MarketplaceProseTests(unittest.TestCase):
             with self.subTest(upstream=upstream):
                 self.assertIn(upstream, roster)
 
-    def test_external_contributor_prose_keeps_the_human_identity(self):
+    def test_external_contributor_prose_keeps_signature_and_authority_separate(self):
         paths = (ROOT / "README.md", ROOT / "docs" / "how-to-help-shoggoth.md")
         for path in paths:
             with self.subTest(path=path):
                 text = " ".join(path.read_text(encoding="utf-8").split())
-                self.assertIn("not Shoggoth", text)
-                self.assertIn("own Git author", text)
-                self.assertIn("signing identity", text)
-                self.assertIn("GitHub account", text)
+                self.assertIn("Fiat admits", text)
+                self.assertIn("valid signature", text)
+                self.assertIn("Publication authority", text)
+                self.assertNotIn("not Shoggoth", text)
+                self.assertNotIn("own Git author", text)
                 self.assertNotIn("pull/479", text)
                 self.assertNotIn("PR #479", text)
 

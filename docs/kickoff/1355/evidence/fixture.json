@@ -1,0 +1,3263 @@
+{
+  "addresses": [
+    {
+      "address": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+        "code_sha256": "bdf24aad0a5c8fcea683fafa274f0721c5879e8232a6323718d2613790accf80",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b55bb578d1d5cf406ad2881458ef9766b4a8e24efcba0d047ea01eed16ccedf3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x00a84b8f40ee4285aed9104a39bdf0e2615bba49",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xd6c63a73df3850e27a5d7c6d295e4a10a60c227a8a53bb1a087c373d0e2adef4",
+        "code_sha256": "bd8d311cf63adb1d658d34948a782d63ae42f69f6042ea0c06b4ee35f9bf2773",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "48663c1398987c97d17fd60d103b2212c847dfafca939825e403c06287981b04",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd6c63a73df3850e27a5d7c6d295e4a10a60c227a8a53bb1a087c373d0e2adef4",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd6c63a73df3850e27a5d7c6d295e4a10a60c227a8a53bb1a087c373d0e2adef4",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x7ba7deeac75dd71940724cb588abbb4433079d77e33469616a55710e1976c57b",
+        "code_sha256": "d19cfe4d69e69a346776502996194bb6e13aef090383b740f62736cf5b8b9a3e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2e7546ee42abf8b0d7d8a8884e13c4cc10200a5b3438f9af31b3400bf66fc512",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x7ba7deeac75dd71940724cb588abbb4433079d77e33469616a55710e1976c57b",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x7ba7deeac75dd71940724cb588abbb4433079d77e33469616a55710e1976c57b",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x05bfbce741c85dfc6c5457da63732943dd4fe8f0",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xa748984ac0546054902b887373a9aa678f270cdcf4c74535b19f9a56673b944b",
+        "code_sha256": "cf419ba07c3c4271832a90299bbc33aae6fb142689b74b28ace822d46da80db6",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "76b33502fedee2335678321565265e71f3de29c2c928de6efa52e05fa995ae42",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa748984ac0546054902b887373a9aa678f270cdcf4c74535b19f9a56673b944b",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa748984ac0546054902b887373a9aa678f270cdcf4c74535b19f9a56673b944b",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x17ec8c7900c66e45194ea88c78681521fce9e236fa00c92507bae2d73509bee6",
+        "code_sha256": "25d1a0b256f448b44ddaed5dc0b3dc8ea50c00cdcef5bae277c5a43eb233b997",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "0916df0c92221a60ccbde55bcccae6038c5d02993d8fc09017fcb2c7865a23b7",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x17ec8c7900c66e45194ea88c78681521fce9e236fa00c92507bae2d73509bee6",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x17ec8c7900c66e45194ea88c78681521fce9e236fa00c92507bae2d73509bee6",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x07c9fcf40d032ed65b3e44cec16766327c4aab93",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x2fb8673ed1c82113488f6af35e3adfba3e091d0eeac9153bd01cfe24e4609c69",
+        "code_sha256": "46e4088ca106dafe2c54a028455e06e20b455a328d4688887b2a5f566ee718c3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "ca6f3bb051eb954aaa93d93bb890c1ad997b866f8f575676a826bde5d8b2725e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x2fb8673ed1c82113488f6af35e3adfba3e091d0eeac9153bd01cfe24e4609c69",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x2fb8673ed1c82113488f6af35e3adfba3e091d0eeac9153bd01cfe24e4609c69",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xeb26a1baef5a4c987131348b171f0e612971306e7d993eb5d3cafc6fe4182305",
+        "code_sha256": "99398c2ba07b2f41af59e35e4994a34eb0f06a01b7d2c9ed0d4e32a15c8bf4aa",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2dffb315ab973f2aa03e1630250f3903c19a55773a2829a1b46b01218c2a1d5d",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xeb26a1baef5a4c987131348b171f0e612971306e7d993eb5d3cafc6fe4182305",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xeb26a1baef5a4c987131348b171f0e612971306e7d993eb5d3cafc6fe4182305",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x0b6c6d557109f9e793297d54ee3fbde2e315b070",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xbb183afe804f1d2321038696b23723031049c9a3ef63d272e6a47b6e7f9cc57e",
+        "code_sha256": "2a9c7b1ff1e5adfc8accff1c390b3cbd70d539127159e9c37698058d4c999189",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "6239be94f700045ff86acf094f44aca4684908e4b9a53051983da2a107eaeb2a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xbb183afe804f1d2321038696b23723031049c9a3ef63d272e6a47b6e7f9cc57e",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xbb183afe804f1d2321038696b23723031049c9a3ef63d272e6a47b6e7f9cc57e",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x0d7a820f97714f879454790d8b3887b1c50b4dad",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xdf7388e8dd4634a4c6d09a7682f311dcd412eb72e919a6dc18267a43ed8b60bf",
+        "code_sha256": "341ebe84581438b1d2c821b949bcd032be9c16db10da7948b013c05120f37c1c",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "8558c27eac87680d4f7bb593fcbbb2415b050b6a72e4ee220bd093f95324a8b8",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xdf7388e8dd4634a4c6d09a7682f311dcd412eb72e919a6dc18267a43ed8b60bf",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xdf7388e8dd4634a4c6d09a7682f311dcd412eb72e919a6dc18267a43ed8b60bf",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x71effa5d1d0574c5a250dac8847765294bfa4a8e3a2050ab240d718c8fd8d3ff",
+        "code_sha256": "7a2a60ea372aa1b77b6e96cf7ce3eed68dbbe8cced724140f76f2685535d2c6e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "99b0493027a313616502a39afa04c6454e385ab1dd644a1d5d884642496cd7ab",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x71effa5d1d0574c5a250dac8847765294bfa4a8e3a2050ab240d718c8fd8d3ff",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x71effa5d1d0574c5a250dac8847765294bfa4a8e3a2050ab240d718c8fd8d3ff",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x0eaa734e23be6a5c216f18edce127e3f624a6303",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x0cb009cebc419cfe9fe91cb8404ddfa5f91e30b9d74ec3cc920a9f24c1ea8c7e",
+        "code_sha256": "a5a93657afce4c50e90bc56b729c18014d77bd4f704cff145f0a8dd4e948b63a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "e2f0710312af4c4f626d1ba2e292341438416ce4a934c7319e6b8f28f03cd4e9",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x0cb009cebc419cfe9fe91cb8404ddfa5f91e30b9d74ec3cc920a9f24c1ea8c7e",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x0cb009cebc419cfe9fe91cb8404ddfa5f91e30b9d74ec3cc920a9f24c1ea8c7e",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x1234df5b1d967f432547c8a22bd0573e3ffce5cd",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xe88db700551888ef7332fba817206251ccb6fa6235c24ee6e89569f6429109cd",
+        "code_sha256": "1a1aaa7a471f68d878376eb8c5079ed542cf3377e3ab2aba70e2e55f6f5cc3dd",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "16b90bc5df63308db13ca5d822ca933a548d35ecc4f7629ccc8c0611d467242b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xe88db700551888ef7332fba817206251ccb6fa6235c24ee6e89569f6429109cd",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xe88db700551888ef7332fba817206251ccb6fa6235c24ee6e89569f6429109cd",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xb7609f74aa5bf8a0ee08f314e7a8d1bb77baa86053339a707e3236fa0ded500f",
+        "code_sha256": "11d6dfb10a1752916d87467901ca0456bdbe9adfa787d9ad846e5c7afdd5a4a0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "58bf62ed4b634e174a38ea44ad68db022e13957a011323402850b3fd1df870ef",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xb7609f74aa5bf8a0ee08f314e7a8d1bb77baa86053339a707e3236fa0ded500f",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xb7609f74aa5bf8a0ee08f314e7a8d1bb77baa86053339a707e3236fa0ded500f",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x13df803310dcef45c85d2904eedad54b116d7c36",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xea6d970a0856cc83e609aad97c3211400089a2bd6cd1e2d2834cace0c9e44b9f",
+        "code_sha256": "1cc86c75849611d0f2c23add98aab336d3fdb55659632d5aef7914550410e30f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "a954a66a2d586eee31c9ceb72c13dada2e414595a526838ff93a64e21891a58b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xea6d970a0856cc83e609aad97c3211400089a2bd6cd1e2d2834cace0c9e44b9f",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xea6d970a0856cc83e609aad97c3211400089a2bd6cd1e2d2834cace0c9e44b9f",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xc696565eee88eb5996352c40622758fb2fb9dc072e6394f57c6e2f84f2befe33",
+        "code_sha256": "01212fc551770b8eebed1eee5cf426f19846780008b306e65b0ae755d06ef15e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b35a65a35967c237f07ecdc5581a5e69284fb657e3b635efdc0e7a93b83f7f2d",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc696565eee88eb5996352c40622758fb2fb9dc072e6394f57c6e2f84f2befe33",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc696565eee88eb5996352c40622758fb2fb9dc072e6394f57c6e2f84f2befe33",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x305f4c1e4368f803afeccbf18c099c4220264dd00df57a615d3bd566b7bc79cb",
+        "code_sha256": "7de61233a543399c085835a73c562900b60bd9a60a2e4b6ac38a581e60e4023b",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "5ba103bfe2a41c01ede3902a7d3a5d2e1c031bae14fb80bfac6d0ba06109e492",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x305f4c1e4368f803afeccbf18c099c4220264dd00df57a615d3bd566b7bc79cb",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x305f4c1e4368f803afeccbf18c099c4220264dd00df57a615d3bd566b7bc79cb",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x37b4579a45e0ed19c7c7efad080dbb722adaacb0cdedf7c7fb83ab6f18cc5791",
+        "code_sha256": "7d51ea6c0d6642491aa9ec0fd0e4b25ea89224f7937acec6c2963aea89a06f2b",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "62532d2517843bb984f31faa76d76ff595b63522231e14e9c499f06b6d46187b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x37b4579a45e0ed19c7c7efad080dbb722adaacb0cdedf7c7fb83ab6f18cc5791",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x37b4579a45e0ed19c7c7efad080dbb722adaacb0cdedf7c7fb83ab6f18cc5791",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x8c0a46d9dbc9f9da82ef3fd36f153e8a3bb3e8b23f1cf75ec81d0148b7abbd2f",
+        "code_sha256": "0aa06349ef2aa826e03bd1e84163cbf6d78b13d21411fbde3f6d660af1faa1e7",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2a385926cb233d7f613f166bbc5ceddf862c260f7fa610608a119e139ff92272",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8c0a46d9dbc9f9da82ef3fd36f153e8a3bb3e8b23f1cf75ec81d0148b7abbd2f",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8c0a46d9dbc9f9da82ef3fd36f153e8a3bb3e8b23f1cf75ec81d0148b7abbd2f",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x3cf292844cfd7c37d3c569c2e28106eeef9ce68c39c83c75fe116861c6e49184",
+        "code_sha256": "8d1dbac7ab3db7519d0e80d144e1feca1c2f13df4ca398ea8508260b2cbd4c1c",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "90241978f77d938931b8c12893f52cf65a2ccedcb07a681c9d40c342314ef0f0",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x3cf292844cfd7c37d3c569c2e28106eeef9ce68c39c83c75fe116861c6e49184",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x3cf292844cfd7c37d3c569c2e28106eeef9ce68c39c83c75fe116861c6e49184",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x1c1822e065ac62d0006f931ceff04a198484f445",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x79f8592371e498303adefb8ce60c649a6d35711be6ec69521c2e199c8d3828f3",
+        "code_sha256": "1d1b57ad76240594b547e246016397bfd86c73801bb0c670238a5e11dd3a1c60",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "249ea6a8102907f178be64a3b6f9c33816bd8b08ddc2e9c85d6e18c7e1bfba83",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x79f8592371e498303adefb8ce60c649a6d35711be6ec69521c2e199c8d3828f3",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x79f8592371e498303adefb8ce60c649a6d35711be6ec69521c2e199c8d3828f3",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xe29f6ecacb4755d69c82cf886770d009cd548d8039b3b27602484c9adba54fb1",
+        "code_sha256": "a39f46ceac0941a270fa138b519b9d493a40fd5d279f58f70130405f112d33a0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "7de6541eb47ed685ce451cd48953a1f2c80f2bfdec7082593ca2e562365b9436",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xe29f6ecacb4755d69c82cf886770d009cd548d8039b3b27602484c9adba54fb1",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xe29f6ecacb4755d69c82cf886770d009cd548d8039b3b27602484c9adba54fb1",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x50ce362d270c0a6b35b3977f0be1dea189efe2fc11d65ac645c53068f19b10f3",
+        "code_sha256": "256c88ad98893c9c5778192bc2510540b542d04909c08b7e6fb9b083f9b1c89d",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "51f57455ef38e0e2b90ab3a8a7a60b6ac71a1632e5036a074128fed96022f54f",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x50ce362d270c0a6b35b3977f0be1dea189efe2fc11d65ac645c53068f19b10f3",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x50ce362d270c0a6b35b3977f0be1dea189efe2fc11d65ac645c53068f19b10f3",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xd8c360c6dc3e91b0b28f0ae6ec2b854c7fae16cdcf29ceb4fd1a41ce3675bbcc",
+        "code_sha256": "d193fa9f7e491d1429900d0ad308e21eb0f07039110a6d80a663fdf03b9d9d73",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "9113674f43bfde5f891b5e15cf39138c464ce96497e27faf19ad7ad804c8c38a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd8c360c6dc3e91b0b28f0ae6ec2b854c7fae16cdcf29ceb4fd1a41ce3675bbcc",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd8c360c6dc3e91b0b28f0ae6ec2b854c7fae16cdcf29ceb4fd1a41ce3675bbcc",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x262dd546703760adda0c06279508e04bd1f60dee",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xd661f187de6d360c01de8707a6f0c668070ffbc7dd4be799bef2d90ebbc26b04",
+        "code_sha256": "3e44198a212929321ccef745ddd89eab0747dd515c4c8dd415ade839de9ba0f3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "648cc4bcf73e3b422f947f8ad97572bd5cefc4b9d68377cd205bb4b443f7a2a2",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd661f187de6d360c01de8707a6f0c668070ffbc7dd4be799bef2d90ebbc26b04",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd661f187de6d360c01de8707a6f0c668070ffbc7dd4be799bef2d90ebbc26b04",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xb57bf14a96ea975707c82f75f03707092a3ef9fdceb7818201e760f31cc87a42",
+        "code_sha256": "73316b531cb6e79182d99b2c540ce1ea2235bfbf6a07ea6782a5688771ebe2d3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "7c53536d73639908548437cd6444a983baddcdb8ebeadf6b4f6476f1a3dfa470",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xb57bf14a96ea975707c82f75f03707092a3ef9fdceb7818201e760f31cc87a42",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xb57bf14a96ea975707c82f75f03707092a3ef9fdceb7818201e760f31cc87a42",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x6d5fccb57d11b46c993bcac8d8021bca4cfc3c9f396567903bff827a0b7db2ab",
+        "code_sha256": "e9164c72cf7a6589a8af418526247c42ad42b709d6054b9a912514eb506db503",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "6d5fcfb5af92cd19ac464bdec013d52ae7cf72783fe2af0524c40fd21b6ff678",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x6d5fccb57d11b46c993bcac8d8021bca4cfc3c9f396567903bff827a0b7db2ab",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x6d5fccb57d11b46c993bcac8d8021bca4cfc3c9f396567903bff827a0b7db2ab",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2c3612ca197fd462d81a38e3590d193d6e8c7a21",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+        "code_sha256": "c47352313f7f14b95e640422c51dcdf68ea16e165e8780958429434ad30ed755",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "fcff8e8a28411cd591a292fd961077880285419b57973f1deca4a1d8a892c914",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x2d958e4b289b188a110367208689bb6b560586a3",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xa96990a804ea55b344597a6fdb1eafe1ce61e6519c1f1eae99b96443d020cd5a",
+        "code_sha256": "67df157319207418d8c5e361073be6859b068b237c379c2239a6a9d750ca68b9",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "8e544c982e212593b257ee7644a0d48f2de409e50ae2507218bd58582f35227a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa96990a804ea55b344597a6fdb1eafe1ce61e6519c1f1eae99b96443d020cd5a",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa96990a804ea55b344597a6fdb1eafe1ce61e6519c1f1eae99b96443d020cd5a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x17382dce919e2d2e9c29a49096631242a1bd79efec1f8fa8e03424d044f42576",
+        "code_sha256": "ef9356367c0c63a44081923bfa0259891e8056a8494bcd346224f79201151751",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "ebd0c94aefa5082a6d2cdce84a7741f69b2a628b4e3b87352a5ca780f11835f6",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x17382dce919e2d2e9c29a49096631242a1bd79efec1f8fa8e03424d044f42576",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x17382dce919e2d2e9c29a49096631242a1bd79efec1f8fa8e03424d044f42576",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x244687e07e3efcc9588c23a80b5a1b20c90a78400868cd9cf867203f36497b20",
+        "code_sha256": "526303629a95627c19732d241867ddba6d0995da8bc7161dea594a4f61c3f5bd",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d8bdbb2e6e40a280e9abbf0488c0059783625b139024cd7557ab786eeb57486e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x244687e07e3efcc9588c23a80b5a1b20c90a78400868cd9cf867203f36497b20",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x244687e07e3efcc9588c23a80b5a1b20c90a78400868cd9cf867203f36497b20",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+        "code_sha256": "0092834f2a87bfb4f658563f7856febf0efaeb6af3c9d5178b00ba60ad8dfd73",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2ec90b75991a4b14a16db62bcb72e6e4241a76994529c3fa22debb7b13ee2d83",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+      "proved": {
+        "code_bytes": 1649,
+        "code_hash": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+        "code_sha256": "6c8e5ded8f4e992665178a490a7ae1c5b3c69560789be0224ba87a0a5fafaca6",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "1b18e3a49115c43146c1fe93acf31ccf9c47f39b41912004249735bdfb7397c0",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+        "code_length": 1649,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fee-recipient"
+    },
+    {
+      "address": "0x3747a7d6c887348fe249fdff29145b25cf0311f9",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x01c7c38e8f0d976cb4c5e9f291c453384e76d8c11bb5862339e5a9a62fad1dfc",
+        "code_sha256": "b768b8ba838f876d14c71793b306472df3ad7e65d31b4d4185170e747f28f429",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "8c556380cd865bb77410b377ca3253c26551dc89de60c1fde04c2f86fa698ca3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x01c7c38e8f0d976cb4c5e9f291c453384e76d8c11bb5862339e5a9a62fad1dfc",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x01c7c38e8f0d976cb4c5e9f291c453384e76d8c11bb5862339e5a9a62fad1dfc",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x38fcd48cfa4be537ceeafb4b2badab7eba4d5efd",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x65418dab9ebd13a04a217fdb823c9239e083256fd9d25bc3defd29094434ce56",
+        "code_sha256": "56e4b6f64de882082e63fe03dd99ddab708960e6628809182d15d3b43c2a38b1",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "fb1d3dda9dea61c2a8a26f8b444e9203350fc66b02923ffc1ac1c63b3d9d81d7",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x65418dab9ebd13a04a217fdb823c9239e083256fd9d25bc3defd29094434ce56",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x65418dab9ebd13a04a217fdb823c9239e083256fd9d25bc3defd29094434ce56",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x2ff81f1befbb848d6e25d82e29b5801c667220c4926154c26852452569ddb66d",
+        "code_sha256": "2171acf00a7d4459d0d36cbb763b80baba6aedc6b1b98edd7d308509d74cae8b",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "23e78de6ad01283b1770fa452ecb3ba9253dccf74cbe362b78fe08541240a374",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x2ff81f1befbb848d6e25d82e29b5801c667220c4926154c26852452569ddb66d",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x2ff81f1befbb848d6e25d82e29b5801c667220c4926154c26852452569ddb66d",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x422489ba6bddd5954c379c41b6c97ab0e4494f90",
+      "proved": {
+        "code_bytes": 8287,
+        "code_hash": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8",
+        "code_sha256": "d1ea5596c54dfeb66db7fbd06f821923a655c96d5647b4565e888a1ad36025fd",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "24f0e429706185ae89a12aa4406a6da6ef58c4db233c02d5f5adf8e3c7cbd9d3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8",
+        "code_length": 8287,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "collateral-lens"
+    },
+    {
+      "address": "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x54e7241b59a021d1636d884d8348119e854dc6372cc782964befc541150a2e5c",
+        "code_sha256": "f20032251e83e5a580d93dc1f2da89b7b11b54ecd8ae595dec447a5d91f33634",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "45468fa0640f81f91419e2c03b323452707c366f6ea9c49578dc7630462e09ac",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x54e7241b59a021d1636d884d8348119e854dc6372cc782964befc541150a2e5c",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x54e7241b59a021d1636d884d8348119e854dc6372cc782964befc541150a2e5c",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "proved": {
+        "code_bytes": 3364,
+        "code_hash": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+        "code_sha256": "dcab26678694ed03bde18badf35ecf9e918392cb1c30646d6a7b6c7c961a4633",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "5a7baa31a5cf2ab0e11fc8966b2c72dcfd6c89c1609c396227f6d1ee66ee39c3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+        "code_length": 3364,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "sanctions-sentinel"
+    },
+    {
+      "address": "0x44239265e4c63573070048fecd83a6b1e324412c",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x091651b0461e76eebdb88c8b49b3d3329283ac14e4cd74bc89b75f82b70ce249",
+        "code_sha256": "108d2fc94d59c4a5a2d3bca07267d776ea2a88dbe4520e789aa7faa9cb9a4579",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d866e4754cdb5e4e980c4b09f58dca677bc94f26a75634d905f2c90c38a33fda",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x091651b0461e76eebdb88c8b49b3d3329283ac14e4cd74bc89b75f82b70ce249",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x091651b0461e76eebdb88c8b49b3d3329283ac14e4cd74bc89b75f82b70ce249",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xf0d248827326e271248b42e9c9b23761f2308c57b62ac5cb28b2b3ae30dafc55",
+        "code_sha256": "8bb33268d907e0282dbf7b7c31639dff858f66705f1837c6a4a7637fa740b528",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "5d8707d1533516ac0f563f4e678c160d036ec298ac00868c285a655a514f8ce0",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf0d248827326e271248b42e9c9b23761f2308c57b62ac5cb28b2b3ae30dafc55",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf0d248827326e271248b42e9c9b23761f2308c57b62ac5cb28b2b3ae30dafc55",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x676d7d4fc3b8018d2bb28a8bfc56623fa48dc9a99a29c507b6c801f5a2f0548e",
+        "code_sha256": "8bef29d8446e4b960155afcaded8b6bf8f3ddb1e7666e9960cf1191f3a933fdc",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "8a57fae517782e622c8ded2d9121064841c091cc770a4afb0d3785941e429363",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x676d7d4fc3b8018d2bb28a8bfc56623fa48dc9a99a29c507b6c801f5a2f0548e",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x676d7d4fc3b8018d2bb28a8bfc56623fa48dc9a99a29c507b6c801f5a2f0548e",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+      "proved": {
+        "code_bytes": 20255,
+        "code_hash": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+        "code_sha256": "cd690fe581e9f66083111a7e37854cd27fe3db8ddf6ce35cf7fd2586213aedfe",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "a03953b8b81afb0f087bf0d1feeb064bc1bccd1010aa25fa46c7742144ff6f1c",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+        "code_length": 20255,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x6aef3c3b4bc027e8cca4bb55990afec92daa9985d9fcd953ae15e7f2f5c3a2ba",
+        "code_sha256": "0ffd50cf05570785bb9d8b65141e60d804672d3d52565484fb33a22fb633d288",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "29672003334a6e9178d8fb8fc36099d01ed96774253ccdd4aa48b98889ee32d6",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x6aef3c3b4bc027e8cca4bb55990afec92daa9985d9fcd953ae15e7f2f5c3a2ba",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x6aef3c3b4bc027e8cca4bb55990afec92daa9985d9fcd953ae15e7f2f5c3a2ba",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xd377ebcd7cd28f38603a5b1d730f2625a4a9e7d4b5a5d42c76b16e6a7fd2dd47",
+        "code_sha256": "f1e36d49a1c056e9f836c8160a528df3d2f33d5fff774f32f8e1a6759280c7d0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "4d2d5ad586b302de1f1a9892bc2fc1a76ae64376c2762058c4226b4b54ca259d",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd377ebcd7cd28f38603a5b1d730f2625a4a9e7d4b5a5d42c76b16e6a7fd2dd47",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd377ebcd7cd28f38603a5b1d730f2625a4a9e7d4b5a5d42c76b16e6a7fd2dd47",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x55a365f3997b2f015001c53cf6a73335e593ad8a",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xc818a1f99aa21c120eb182c1ab4aedcfbf33cbf85b95cb54c47b557fe7759a64",
+        "code_sha256": "f2669350275c8956d603f4077b4f69d62702258ef4f607ab1f51b499d7c3be59",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "11978e1b4584d3742f3b74c2b6a508ac4d5824e0efc8edccd5958843180d0cc3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc818a1f99aa21c120eb182c1ab4aedcfbf33cbf85b95cb54c47b557fe7759a64",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc818a1f99aa21c120eb182c1ab4aedcfbf33cbf85b95cb54c47b557fe7759a64",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5620553d8881335f74ad19259daacd1d9b373101",
+      "proved": {
+        "code_bytes": 564,
+        "code_hash": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+        "code_sha256": "989c990e85389667c40fa16f5714b545a045ddad55d958e15261c5fcba9ab7e0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "c07215d5f49c32065697ff81ed7fafb838f1611ac000e94aa5913117c31db265",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+        "code_length": 564,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-access-role-provider"
+    },
+    {
+      "address": "0x59106481fefec5d523f9d8b5214ebe42182e6585",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "code_sha256": "22ceba396036e74858395f97d138c6d5691b1f8fea2229c7dc4a99e545b9b03a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "811d7a5c7f421152f7d7d3cdd2c032647d2b2ecc3c4eefa8163a4fc096ae5e7e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x06b20e94c5d6f0197b08050872464a36847da4234eaf0a6cd34816608b80f258",
+        "code_sha256": "da7170799f7ca103725baf3b1c360295814fe2e8709c2a05ef32ffefe221ba3f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "e5a27541eba93f8efaafbd2899b01aae24607b9da932d5bdba5a1dd4b3c48039",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x06b20e94c5d6f0197b08050872464a36847da4234eaf0a6cd34816608b80f258",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x06b20e94c5d6f0197b08050872464a36847da4234eaf0a6cd34816608b80f258",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5a516928be2005e9852e342f71bfcc52ca5bdace",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x74812ad0ac52bf7ed97591aa110ce838743b53d9b40240479eb87867821199ac",
+        "code_sha256": "86763e3c6d8d32c52d34bc6e038374051ec62dac3d16c74a0786e0b1ce8e9654",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "244a189cd8683dfa75898105412c1bd95966f9ae7e84d657c8c4fdbc9f2fcc4e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x74812ad0ac52bf7ed97591aa110ce838743b53d9b40240479eb87867821199ac",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x74812ad0ac52bf7ed97591aa110ce838743b53d9b40240479eb87867821199ac",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x75c5bd51b224a9de5498e68da4559afd2cb044babc26880eb88220a1e8d50fd1",
+        "code_sha256": "69f3fa739d7b68ff76aa735afeba0abbfcb63654ca327fb4316f3bc3a0cab465",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d11be57fcbaf73298ce189ee1ce7f77e7cd30d7402cf356b8cc91df5359b198b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x75c5bd51b224a9de5498e68da4559afd2cb044babc26880eb88220a1e8d50fd1",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x75c5bd51b224a9de5498e68da4559afd2cb044babc26880eb88220a1e8d50fd1",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x0f51c2526087fe6cc4de603c2cfceefec12e250b42e69350d53500c5f042a886",
+        "code_sha256": "905d83e9f76ae5cc668bc7a468906d10bafeb19e955dc2670c215e3153297da2",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "97cca45e4e4f32c11bbd756d2339430456accfd3f5a5171360177add7a6c57ec",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x0f51c2526087fe6cc4de603c2cfceefec12e250b42e69350d53500c5f042a886",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x0f51c2526087fe6cc4de603c2cfceefec12e250b42e69350d53500c5f042a886",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x7c75de40a4fe045b52ec0b461c2eb1f78484a21ff53f93c7b801700ec249be5d",
+        "code_sha256": "385d4910acb28b3e6a31aa27e10dd410d167724e4bb349c061a65f59acd5609b",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "81377e604351e9be4989e9309d9a0d24be0943870c6bd5be35a68b49c40d8026",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x7c75de40a4fe045b52ec0b461c2eb1f78484a21ff53f93c7b801700ec249be5d",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x7c75de40a4fe045b52ec0b461c2eb1f78484a21ff53f93c7b801700ec249be5d",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x603b29847659618813f039c73379746585b78875",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x5026746b82f622ae07599be6e062a3ae03efb21db088d8bc000b59c122cab9f3",
+        "code_sha256": "4a2225b4335997b8652812c78096486a3361a8d17b6ac8df31a887fb9a2fb041",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "6451aa3f2e9aea6dc0caec1a83d79bb79b49d9f3bf9db6950a311c1b835e71ce",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x5026746b82f622ae07599be6e062a3ae03efb21db088d8bc000b59c122cab9f3",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x5026746b82f622ae07599be6e062a3ae03efb21db088d8bc000b59c122cab9f3",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6053e88b1ac0dce4ccac47122cbecd6598365c70",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x4e3fb293dac49b06196a08e67e09ea06e7bcafe876df9a08ea750bc67347900c",
+        "code_sha256": "37f260a9e508166a507995130cb80ee39470681ad0973990c80757300580d583",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d642dfac7422ada408fb401494104a3b3931323c7014d7bfed91e4b4f60e0948",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x4e3fb293dac49b06196a08e67e09ea06e7bcafe876df9a08ea750bc67347900c",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x4e3fb293dac49b06196a08e67e09ea06e7bcafe876df9a08ea750bc67347900c",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x681ee925b0c83a5ef469a7806f7dc9ca5853bce3a883a490b42d8611601ffe19",
+        "code_sha256": "fd9f5d36b142aebf6917b681898b815c26f5c09f6ddf6d1c709fa918503c4bb3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "5c845aea19a08f3b9dedbd89930c5597dba0c8b87a6a6c9d4fdc58066b03460e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x681ee925b0c83a5ef469a7806f7dc9ca5853bce3a883a490b42d8611601ffe19",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x681ee925b0c83a5ef469a7806f7dc9ca5853bce3a883a490b42d8611601ffe19",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x67fb662a7ea704b811899ebe8eb4173b2ec555fb",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x23360672e474bea6a46db9e1b30d65d1ca20e3443e26cd1661ca27f9fb5c2a39",
+        "code_sha256": "e92af3038aee1c6f6f0cbaa3782c0df93dda90dd3929f246656590f2216cdbb7",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "1689b385e0e3c8238ef8c19709131bb133133585b3093a2cf14b9be858d27da1",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x23360672e474bea6a46db9e1b30d65d1ca20e3443e26cd1661ca27f9fb5c2a39",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x23360672e474bea6a46db9e1b30d65d1ca20e3443e26cd1661ca27f9fb5c2a39",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x05586c61a18a5610e707d1867fdaa4a1d4a4c0c065dc6f119a84749997c74758",
+        "code_sha256": "aa73cd04d30cbdfffa92622b183502603518d676370dd87ab3d81bc0c6612ed4",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "737f1b29c70add684436b086e773d2bf7e219e5c7dea5f2d8e3d04ced5bec0e0",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x05586c61a18a5610e707d1867fdaa4a1d4a4c0c065dc6f119a84749997c74758",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x05586c61a18a5610e707d1867fdaa4a1d4a4c0c065dc6f119a84749997c74758",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x69e56f526637b430561e8293f3307765a046d750",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xa73d42b5927dba50ce68c12e4b5556db5df0e6ef612958333468c6ca1a469ad6",
+        "code_sha256": "51d4989d3ba0ee3ca0735a4ffb5ca97e30d5e4e3c504090326e2e6155c14e49e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d210f4a583b3c9f897e17ff9800dddf98de4a92091f625010d64f55953c5be28",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa73d42b5927dba50ce68c12e4b5556db5df0e6ef612958333468c6ca1a469ad6",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa73d42b5927dba50ce68c12e4b5556db5df0e6ef612958333468c6ca1a469ad6",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x91e9887a435668711270861fd86a7b92503eba22d5c3e7dfd33f4f4f9bb90f64",
+        "code_sha256": "232b007c31698b0b534133a7e6ad076f44d06faf74d1d855a7134d834bb73cc3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2993efcbdac82c71deadaf9ea012cab3fc2d482bfef3785ccb1a409ec99a3183",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x91e9887a435668711270861fd86a7b92503eba22d5c3e7dfd33f4f4f9bb90f64",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x91e9887a435668711270861fd86a7b92503eba22d5c3e7dfd33f4f4f9bb90f64",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x7b82c227bd1fd20d05828efe3808bcef470c6669866320356bea98d0e201a0b1",
+        "code_sha256": "6019f2f7de93e9789f729569657e32709fb807e8a54472df87a0cd47f98a5073",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "f744112f10ce14aac875624c3e1e5b562ca5966e367b5b41a54059b01c7bcb4a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x7b82c227bd1fd20d05828efe3808bcef470c6669866320356bea98d0e201a0b1",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x7b82c227bd1fd20d05828efe3808bcef470c6669866320356bea98d0e201a0b1",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xfffb9ccfa0ae816d63cdb00b1d05ceb35bf768efe5ebb694d9d8c0dca3b266a8",
+        "code_sha256": "21dcde6351628fd42cd0163bdcf9422eccdb45c25bf7ea4ade752aff8869d8dd",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "805d4b4339d05d8327a4d2c2fc0873b9d4d947d4ea6e1d2f1b52aecc22a58efb",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xfffb9ccfa0ae816d63cdb00b1d05ceb35bf768efe5ebb694d9d8c0dca3b266a8",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xfffb9ccfa0ae816d63cdb00b1d05ceb35bf768efe5ebb694d9d8c0dca3b266a8",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xf5d6e0b9c7d0fb620ac72fc0f3488e0555d68efe0fad553da527898a441e4a45",
+        "code_sha256": "0653d650de9fdacfa01aca69996dfde0b879a6fb35ed2abfd3a448e0adea4309",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "3be71dbf361027546c1f2a1f09d3fc74768aa45844d2fdda2a7edf9639ca1c92",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf5d6e0b9c7d0fb620ac72fc0f3488e0555d68efe0fad553da527898a441e4a45",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf5d6e0b9c7d0fb620ac72fc0f3488e0555d68efe0fad553da527898a441e4a45",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x71cf8be0840bab347b45f946345e97fabfef4682",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xe85fd29af377bdcb97efe2803c965d3bfbe7335e4bfca811fc88530770f17bec",
+        "code_sha256": "960cd9f38064d5798581438a09e7f25b833bce40c696e9ad492929aff12a97d8",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "4890eada5d9f2c94b657cac58f644a541b44733050ff80b6b86f20eba02ccafc",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xe85fd29af377bdcb97efe2803c965d3bfbe7335e4bfca811fc88530770f17bec",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xe85fd29af377bdcb97efe2803c965d3bfbe7335e4bfca811fc88530770f17bec",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x7244b84918dbfb50e62320fc0e6031a449deea28",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x8460f431247d9cffd55012db7b18e309ea16647c1294f9fccf49ab01f05f0ebe",
+        "code_sha256": "098a1492057f1bf4861be6451e9de83eaaa24a145bbd05ea1cd8c66f65786e0a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "efe460d433a1198d9b1ec83ba6722541755722078e56112f5ed72ba68231e255",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8460f431247d9cffd55012db7b18e309ea16647c1294f9fccf49ab01f05f0ebe",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8460f431247d9cffd55012db7b18e309ea16647c1294f9fccf49ab01f05f0ebe",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+      "proved": {
+        "code_bytes": 22165,
+        "code_hash": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+        "code_sha256": "5d5eb28a4b45cd1e357f3866dcaa877beded27a6cfadc4c5597c346588c28f12",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2ee909a2befb689e88ad8ca7273ee2a48b2d4aea73da67338213a764a8115cf4",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+        "code_length": 22165,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+        "code_sha256": "0092834f2a87bfb4f658563f7856febf0efaeb6af3c9d5178b00ba60ad8dfd73",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "48747a49654ff85d213947b14342e7e3ca5b41276d22c503ac4466caca95c385",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x8bacf23202aced1bfbc208f75a8cce9453a7c6c82a281d38f6dcead5b7a63fe4",
+        "code_sha256": "b35dc187182df3a8b10b0b3213c036059952c36a9599fe0ace473af468b93ba5",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "c859711e0d0d2842bf9a5e13ec6a58dc4e22c14a0edd5c8e964c245211623cfa",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8bacf23202aced1bfbc208f75a8cce9453a7c6c82a281d38f6dcead5b7a63fe4",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8bacf23202aced1bfbc208f75a8cce9453a7c6c82a281d38f6dcead5b7a63fe4",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x7e496c5678b1722289d9c4a13c9aa53631ca7607",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x3e550b7a9061a187b7eb74993ee5a8ac980a36a82f387f3a8fce57889bc49275",
+        "code_sha256": "5cde136dda033fd178cbcb9d7cb2d8eb00e97eaa6d23834975d8610ee89990a8",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b0a877bfe3ff039d4534f56f3497277dcd0cded630d8ad91224a2f7383f529ef",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x3e550b7a9061a187b7eb74993ee5a8ac980a36a82f387f3a8fce57889bc49275",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x3e550b7a9061a187b7eb74993ee5a8ac980a36a82f387f3a8fce57889bc49275",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+      "proved": {
+        "code_bytes": 22165,
+        "code_hash": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+        "code_sha256": "ad34414140fe2cfef9f2fbd92b910dbc43fd214388f2454aa2a66d450d653f8e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "4d9b0c1ca50b2755d62eca5a39a18039f1f00decb6764b9bb50d87726b5badeb",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+        "code_length": 22165,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0x840146e12437e97374d1a12577c7f0b7cd1e0e87",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xbac5120f7189c8d55d1d1ad5de1045a499a59c52c22e99df86926aeca4b32d55",
+        "code_sha256": "b7a1eacc03454a66e987150f826de14305a2b6815b511ded482bd923dfd1501e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "bffff7ec77a4a1bf9949ccc899965d9055f354fbafc25a341031159d79e39a80",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xbac5120f7189c8d55d1d1ad5de1045a499a59c52c22e99df86926aeca4b32d55",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xbac5120f7189c8d55d1d1ad5de1045a499a59c52c22e99df86926aeca4b32d55",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x8c06d86596d671798a67e80dc44a281c8d822fd3",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xb28b68b19875dbfa5ed005ff40b3aafde2f466fc7e3477beb1e0c053a844cce5",
+        "code_sha256": "f18c07792db5a08018fa65d3a6cedc653f0f924f5b6326f2ecf56dad58eaf06b",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "8f543f331ee99d5c5d3bb865265049445d1542279bb7477b6c9208891a8bb9e4",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xb28b68b19875dbfa5ed005ff40b3aafde2f466fc7e3477beb1e0c053a844cce5",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xb28b68b19875dbfa5ed005ff40b3aafde2f466fc7e3477beb1e0c053a844cce5",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x8cb27994564ddeb7cba130f1c213bd6e809223ad",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xf781ee05bfab29e0d27a173375e5c4f8652b445dbf1fb5d1975ecb51f5149bd4",
+        "code_sha256": "f5a1658778228eff3336583b66f59474d4ea877b9238431252085b5d14fd81d6",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "c9741894aa3369104cd7b4ff98ed8d9a7939dacb95a541376857fd91d81db43d",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf781ee05bfab29e0d27a173375e5c4f8652b445dbf1fb5d1975ecb51f5149bd4",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf781ee05bfab29e0d27a173375e5c4f8652b445dbf1fb5d1975ecb51f5149bd4",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x8e3dec859aa3ab5716c5f9d9436ea452b2598be5",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xedaeb9665c454bd24bddd7317dc3c514898c2226c1098b5e6ff48f9eb73616c9",
+        "code_sha256": "6cf3cf89ff30eab18bdb234e7f0eeeb066d38cdbd56089e81eb263f31df79a00",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "14a503537f614576b74df6418f51bbe0dbe49c32fe4e711bfccff509e1ba554e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xedaeb9665c454bd24bddd7317dc3c514898c2226c1098b5e6ff48f9eb73616c9",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xedaeb9665c454bd24bddd7317dc3c514898c2226c1098b5e6ff48f9eb73616c9",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x7a290654e9640205304d7e94763d2d29ed3e2deae422099c553da7aa6cf46272",
+        "code_sha256": "002d61b1d37c5aaa3c361b580b762db7d5a9a3180a957639e242137f0e34319b",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "ae62db82f239645787c067e77c159edde99ffa05d50432c6dbcac0032f743e75",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x7a290654e9640205304d7e94763d2d29ed3e2deae422099c553da7aa6cf46272",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x7a290654e9640205304d7e94763d2d29ed3e2deae422099c553da7aa6cf46272",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xc58fdf4b90e42915f51ba5e9af72a54ccfd720bc8ed2395ba558242fb357ec03",
+        "code_sha256": "3648398a03949f2264f139c8a77729e6c1686341aec46e633c610ec005968cb4",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "cc41125b9c7b90a4770fd37111cd711a0f5c98877b4e8b3c8067355987df2431",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc58fdf4b90e42915f51ba5e9af72a54ccfd720bc8ed2395ba558242fb357ec03",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc58fdf4b90e42915f51ba5e9af72a54ccfd720bc8ed2395ba558242fb357ec03",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x923237220cc79c6301c59851af3574d0a487c966",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xfc4569b1b4011bd45381c29d374cd1530042a08d77eefb2ffc1bcd19091fd1ea",
+        "code_sha256": "7371ecdeb27f0b21fa844a9f907e53859d75e2a386e8073dc28ecd668345e611",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d0cde62028e96955aa47065878b5361eae8331ff6d87e5635b2e4296037a1cf7",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xfc4569b1b4011bd45381c29d374cd1530042a08d77eefb2ffc1bcd19091fd1ea",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xfc4569b1b4011bd45381c29d374cd1530042a08d77eefb2ffc1bcd19091fd1ea",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x92b272ba90722e32095edb7aecd4af3717d5d90b",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x4cb3849b7f29bf38c3ef869a83f0d9c22bbb83c3029102174f99ceb6090abd10",
+        "code_sha256": "1643c8887b84c6002ac9850e39313c3e9b617b5d6a69564c59dd89c689e25fd4",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "5644922ccbdecf840eed73b6a34dcec688098261948ecc32e5586cd7fe50cb31",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x4cb3849b7f29bf38c3ef869a83f0d9c22bbb83c3029102174f99ceb6090abd10",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x4cb3849b7f29bf38c3ef869a83f0d9c22bbb83c3029102174f99ceb6090abd10",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xf4de045ae82e999752e966f03f48d8e3e996ad16ae2f14d6293754df875859a7",
+        "code_sha256": "d73cb47326943e1f3ebfc7add647ad4ad86023c1d6b754ff23d991ab3e1ef766",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "35c4c327e173b16b2e90ea0d202079c8ee7ca78b92246b8799d972c43ca5b786",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf4de045ae82e999752e966f03f48d8e3e996ad16ae2f14d6293754df875859a7",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf4de045ae82e999752e966f03f48d8e3e996ad16ae2f14d6293754df875859a7",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x905ed68436297e79fa83a19bdedd4dc3fac206289b71d7b8618b7bb63d9bfe42",
+        "code_sha256": "f249f9e82a7bbe6213f44b27264a4869b2ecc504ea43738af4151030d57b0edb",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "40245da9a7fe98af426ded0ce4ee11d513fd5a2ccdcd12436d504b8eae3db2da",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x905ed68436297e79fa83a19bdedd4dc3fac206289b71d7b8618b7bb63d9bfe42",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x905ed68436297e79fa83a19bdedd4dc3fac206289b71d7b8618b7bb63d9bfe42",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9aa7f58561812f01f1221e9718011aca78c28c17",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xe855049956bd7e4829fff75a484285ac1991bb4b5fdcd1d01fdbbc7e90ce0334",
+        "code_sha256": "36f2d95426af98163e2a03edd0d15fc0306731119fbc3a7a7a98250ef667988f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "655f4fdd6d03a63a5f6217762d18fba8a3697dda31b104215aa4dc7297f8fc59",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xe855049956bd7e4829fff75a484285ac1991bb4b5fdcd1d01fdbbc7e90ce0334",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xe855049956bd7e4829fff75a484285ac1991bb4b5fdcd1d01fdbbc7e90ce0334",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9e047d2e8970300f0461314e1b72abf7ef7792e9",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x40f8cab51009922867fac1492c6964aacaad95b8fa900c1c75ea26336974d01f",
+        "code_sha256": "f58ac7a90724ef109f7474fea6ad572d304b95d8fa664106ec6350bdf9590c84",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "768b4e5f3c8609f9d2eb59058a1a2f59ba420963049d3db59d362b68adee564a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x40f8cab51009922867fac1492c6964aacaad95b8fa900c1c75ea26336974d01f",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x40f8cab51009922867fac1492c6964aacaad95b8fa900c1c75ea26336974d01f",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x15770f5993c9d779a80e8c6fad2e45f96c3e2731373878dae8ae7ab314fe8bab",
+        "code_sha256": "fc164e62181e691fa785c0e47abbf312f1ffd979ec5960ff76ac52fec3aae74f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "73a8af2c04027430c3b2dcfcda56331881a1e69c7701a6bea8a5275a3c2013e3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x15770f5993c9d779a80e8c6fad2e45f96c3e2731373878dae8ae7ab314fe8bab",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x15770f5993c9d779a80e8c6fad2e45f96c3e2731373878dae8ae7ab314fe8bab",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9f93483da03aa66254341a730e7867f0c12fd894",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xa6efc92699594cc391ca72551df5d3e1791752a740293e83d6b05353bc669896",
+        "code_sha256": "a2d7649f2f6410ff1cf9089c39986c8fc5e61a0fea556addcb35555f5e7eb258",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "132fcd25bbebdbca39bd5b1365c34ebd427f1febd354621f5728562cd6f39c61",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa6efc92699594cc391ca72551df5d3e1791752a740293e83d6b05353bc669896",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa6efc92699594cc391ca72551df5d3e1791752a740293e83d6b05353bc669896",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x803790c45e120855255a720c4eccadebf18d6252992651d85c2167bf81d46e20",
+        "code_sha256": "65aac133c5a3012841d0ff9f0cdb3eb2aa8f018a56cec73cdeda73d8ea247dd3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "59a3ad43cd5b8b6720219901fed873b2b5ca591342d2adb60d6be3f27f7a967a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x803790c45e120855255a720c4eccadebf18d6252992651d85c2167bf81d46e20",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x803790c45e120855255a720c4eccadebf18d6252992651d85c2167bf81d46e20",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xa4195278a9891bc2787625aace203c1d676ff714",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+        "code_sha256": "c47352313f7f14b95e640422c51dcdf68ea16e165e8780958429434ad30ed755",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "769e3ca46724173b13f45e768ff204419b4b49075a2b21a010895f3f4c84e922",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xa5eeb866981d1c46d0d5153872559d88e37c25ad",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xd3a7c1dec5bfcdc73dbb441663eedbd51af1b6e087c1dfcd9b3063b55925c1c5",
+        "code_sha256": "f31e74f8c0a0876afdb6020156e01236fd28a8381794c4beceb07f31942f9bba",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "93365570fdbe2e781234fa6011fc80303da319a65e8fb2f70f43fe373f1e1cb4",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd3a7c1dec5bfcdc73dbb441663eedbd51af1b6e087c1dfcd9b3063b55925c1c5",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd3a7c1dec5bfcdc73dbb441663eedbd51af1b6e087c1dfcd9b3063b55925c1c5",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xa8139699360b255c5c02d0616e75f20b92adf1c3",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xf39b3b989db88dbd34f8e09571fbcc57046357117f781a8b7b01158ea1f9155c",
+        "code_sha256": "c210527f50531e90fe5e526a9879c7c829fa9adb95dadbb5e730a59363c70e59",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "341ad844107608b3a9c9ce30468f7a1b0e45a4647dceef7ef2cee3fffc6520df",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf39b3b989db88dbd34f8e09571fbcc57046357117f781a8b7b01158ea1f9155c",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf39b3b989db88dbd34f8e09571fbcc57046357117f781a8b7b01158ea1f9155c",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xaa4677627d05775dafc410d7e3aff5702aae27f8",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x787f632356abfc97357de2419da1b39d248c3cf905833b212c27cd7bea360da0",
+        "code_sha256": "000aa9da640ecc690265c5d769e71f8fbe8a8bd558cd591b562406f7d3925cd9",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "ce3352ef166c14797dd3167ec1718a5743fb3d0c519bb97aebfc6d0fcec14d85",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x787f632356abfc97357de2419da1b39d248c3cf905833b212c27cd7bea360da0",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x787f632356abfc97357de2419da1b39d248c3cf905833b212c27cd7bea360da0",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+      "proved": {
+        "code_bytes": 23115,
+        "code_hash": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+        "code_sha256": "9eff5389be7a8eb91707699b155afa1a34fdb06fffa59e6216908ec724e700a1",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "416df6be4239752471262ba746a93152a98137111e07e051734f9bc3ddb9d2a1",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+        "code_length": 23115,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xadee85002320ef1093f090067873544376f09ff5",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x029ee3fb3fa7349d6d0758dda84443c36d1a2e496ae133e54336ec42ca543095",
+        "code_sha256": "480d35cd220fdfbd03fb418f7913f48edbfac6fe9748a642112b0392f404eac5",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "62bc2d2d85309fc709355ba114ad99e83fb8cf2832dafe2165a372b9c621a9de",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x029ee3fb3fa7349d6d0758dda84443c36d1a2e496ae133e54336ec42ca543095",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x029ee3fb3fa7349d6d0758dda84443c36d1a2e496ae133e54336ec42ca543095",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xb3b823ec39f3edeb4354f76997031b3826b615c2",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xa275e11915c41d2e5841b3bc2454007bfd3394adbc9ae13b62ab63b98f8dc9f9",
+        "code_sha256": "14b350a8fb28c73e01ca5f3fda6d846be0246c3ad7dbcbc97bca8d6b43f58415",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "92ee72cb185e2f9b2558f93b99393e637c0db1d63ac2c39a086e908e93903486",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa275e11915c41d2e5841b3bc2454007bfd3394adbc9ae13b62ab63b98f8dc9f9",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa275e11915c41d2e5841b3bc2454007bfd3394adbc9ae13b62ab63b98f8dc9f9",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xb3beb373d241378f5f1fd68ed865349257602476",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x86416099433ae213a265765cf2b8b0fdc53baa6a0471e08124ee1be6a5605813",
+        "code_sha256": "1f3b08be6794ff29057fb1e044fab2a88fde6324c825f839cc57dcc2a6a19efe",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "58961f3aa02a8917f0aa194e3d3471bc7b81c83ef55036b2ba29d6cf078bcb84",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x86416099433ae213a265765cf2b8b0fdc53baa6a0471e08124ee1be6a5605813",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x86416099433ae213a265765cf2b8b0fdc53baa6a0471e08124ee1be6a5605813",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xb428c5239be400e74f32c46cfa6c7e8b481aca0d",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xbb1f0d13278be09c06876c59736a2b112f3b41e6cad74a82b0895a950ec6a797",
+        "code_sha256": "997fcf382618c3a20e5152c7c91e572b4765c3b86523f171f08bedd86562fd1e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b15463e00821210f2549eeeb1cc4a3dc434aafdaf9ba1ba817d436c9ad481c4e",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xbb1f0d13278be09c06876c59736a2b112f3b41e6cad74a82b0895a950ec6a797",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xbb1f0d13278be09c06876c59736a2b112f3b41e6cad74a82b0895a950ec6a797",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xb7ce16d0a1250e261c3dfa6299a96a17dd1741dc",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+        "code_sha256": "9a4ebd390c7a73f1abf63ba12717a55df10f1b6c6a8eda91427e6107c55e675f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "24cc855c0ae417310c1fc77d2151578726bb9b6d437771a699ba33b6d6cb2337",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xb92ad23d6b84c9ca8b687128e45ebbcd49b4c091",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+        "code_sha256": "d0de207e74f189bd2114417c6dfaf4b8e7c2445425d6e0bb3bebccb46d6b2b45",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "9abac60f8e474e75944910959bbb5fb40d661954ef5f29ddf7f35e744a17bdf1",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xb9f4e923cc42fca0d35a5d176c90d0caaae99849",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x88940075fc3cc9e7f91f4e6a53a03114a764696827b84b625f3bdc4feeb4f40a",
+        "code_sha256": "7cdd0624bbe68ff739eb7338ca91e8294fb40bee0de685d23e62fdf855931b82",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "dff0914ba6aa55b4df6cba98df32d763cd7d4b2d97ecae514012914ca7bb3b03",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x88940075fc3cc9e7f91f4e6a53a03114a764696827b84b625f3bdc4feeb4f40a",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x88940075fc3cc9e7f91f4e6a53a03114a764696827b84b625f3bdc4feeb4f40a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xbad1b632e90ce02af868f07c572adb067eb98353",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x70f66d66dab6518fba0b2851969392a1611844fbbdf574785f1fc807c2d00873",
+        "code_sha256": "e6d35f796b0382f3607839a1768f384e7f28d54a0d4978d71a16fc077782a3d1",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "823252c80a2d71c418376f5b62240a2410decd4f9379bf176cbee50a674a396b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x70f66d66dab6518fba0b2851969392a1611844fbbdf574785f1fc807c2d00873",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x70f66d66dab6518fba0b2851969392a1611844fbbdf574785f1fc807c2d00873",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+      "proved": {
+        "code_bytes": 9581,
+        "code_hash": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+        "code_sha256": "889358e00c68874a82c68c5fedba8442af7595afa8769c9f800d227a76f95700",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "00cf8448e48211267d07ff867ca7392e87f047c30b09d25562676dd1c4e9c9d5",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+        "code_length": 9581,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "collateral-multi-party"
+    },
+    {
+      "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+      "proved": {
+        "code_bytes": 7615,
+        "code_hash": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+        "code_sha256": "908ca4c47be8d86b9cf4dae2e725f518bafd5aaff5a54f17ffa156f69ddcfd29",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d08d916f938268d80863d73ceb4bd7d7a29a755206a975c0a436c780376759a4",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+        "code_length": 7615,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "collateral-factory"
+    },
+    {
+      "address": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+        "code_sha256": "9a4ebd390c7a73f1abf63ba12717a55df10f1b6c6a8eda91427e6107c55e675f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "f2925ae87e4989a5725b14ed3bae34e0c1823eb6ea5a82116d7386f0e09135e5",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xc17c6c6fdda8e1283f865e8b5330f63653a74ff7090bbcfe637e335e6f81cfff",
+        "code_sha256": "085643025ebc849b9c2dd184e7206640794ef014067ef675676f8086a064532f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "c1e8047b1f3de37f0b9e889128635bbafee6e42748f92ad51e3fcf04f1941b9b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc17c6c6fdda8e1283f865e8b5330f63653a74ff7090bbcfe637e335e6f81cfff",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc17c6c6fdda8e1283f865e8b5330f63653a74ff7090bbcfe637e335e6f81cfff",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc02efc345fadd4b1261889524557ed541d87546a",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "code_sha256": "22ceba396036e74858395f97d138c6d5691b1f8fea2229c7dc4a99e545b9b03a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "0070c4553b29773c33bbdef543e58cafc41c5d9ed289f4edff0d84afd1b035f6",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xc2e71d157cab47a3c76ebbedb29352ae9c157072",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "code_sha256": "22ceba396036e74858395f97d138c6d5691b1f8fea2229c7dc4a99e545b9b03a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b79a74d4e716e8da0c06ec2f326b8684923b2ebf076aae1dfa3917d60bd706ee",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xe041259ea3327bc4ae36140ec7b48937affed18cfb1215e1288d65b579de2993",
+        "code_sha256": "0b13ab04d32bbd7a0c9fea203014395d42e05bb4a8fb683f1bdc40afce0b34d0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "82e3842032a9cc4968318951491209ce49312575efc85c473ca3015dec294974",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xe041259ea3327bc4ae36140ec7b48937affed18cfb1215e1288d65b579de2993",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xe041259ea3327bc4ae36140ec7b48937affed18cfb1215e1288d65b579de2993",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+      "proved": {
+        "code_bytes": 24385,
+        "code_hash": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a",
+        "code_sha256": "083307c9e870160b4c6e9d78fb6bc9408bf7b32f51fab927bf5be71f9730c8e3",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "2c63e7780240054664da6a7c106fbc59e31544f6311f7708968dcde3595f6a00",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a",
+        "code_length": 24385,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "market-lens-core"
+    },
+    {
+      "address": "0xc6eb4b199c1a56aa099fd1ede3e4c1fe702c11fb",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x24ab271d2a81d680e98c326f222c4a708888cc22eb1ca4a85567c8cc5670767b",
+        "code_sha256": "efdbe345463e4301f585fd9d4df9d192c89c961fe62184d39c0dacd11868ce0a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "27ad8d4ab97684ca117ec259bb41cda16b658299f96fbcab3dacb804748c3a57",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x24ab271d2a81d680e98c326f222c4a708888cc22eb1ca4a85567c8cc5670767b",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x24ab271d2a81d680e98c326f222c4a708888cc22eb1ca4a85567c8cc5670767b",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xe14987152bba4684ebbb095d6265aa349344fda4230d123fd17f6fc7a196bd3a",
+        "code_sha256": "274120a5caf00d9fa23b0712802e1d83d9c2658439809f7b3db243fff9d1b3a9",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "f156c1aee4b4030435ea97dce079d19db2a81c0252b425a0b8f68011e069276c",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xe14987152bba4684ebbb095d6265aa349344fda4230d123fd17f6fc7a196bd3a",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xe14987152bba4684ebbb095d6265aa349344fda4230d123fd17f6fc7a196bd3a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x2625a3730824958bfbd2f3aef50e1aa2f8cb94ed0791daf7c41aa477309bc820",
+        "code_sha256": "395e7a676cb2060a0393ee6863141e90d9ec18875f0efbb260b0befc48f944cb",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "550be74aa9e1ac87069fd957814ef195721ba7ef5b381a2cd149942d2c608f7b",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x2625a3730824958bfbd2f3aef50e1aa2f8cb94ed0791daf7c41aa477309bc820",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x2625a3730824958bfbd2f3aef50e1aa2f8cb94ed0791daf7c41aa477309bc820",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x5316c748cde515f6d457db3e9b8742628c69bdfd9ea68ccfbeb9265eff6c2478",
+        "code_sha256": "7b06734b1fd67ee0078df5620978de7304b0b3e29403fd8c877f0ae459702769",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d4017ae1472e92df07cc24426bc30b32bc91b53633309e4a6428076095b07f7a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x5316c748cde515f6d457db3e9b8742628c69bdfd9ea68ccfbeb9265eff6c2478",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x5316c748cde515f6d457db3e9b8742628c69bdfd9ea68ccfbeb9265eff6c2478",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xc5fcaa9ce6b867e2678c9aaf110c2912b7a4b1aa7656ff8b2e243819f625aa87",
+        "code_sha256": "d03f3ade0af5d7adeae1e16dcffae712bac810b2037672bbeee0b420ffce9951",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "706dd870a952f2c3275f1b943a7ff15f400cd848d8398ed2bb8643466a90dd22",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc5fcaa9ce6b867e2678c9aaf110c2912b7a4b1aa7656ff8b2e243819f625aa87",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc5fcaa9ce6b867e2678c9aaf110c2912b7a4b1aa7656ff8b2e243819f625aa87",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x79ad8059d4d8cec4bf7a95cac63e84fe0ed086e7c84d10994fe6d3496df6219f",
+        "code_sha256": "1f07ca9129fd42cf84f581e16b349e339f61f810eaa108c22944afa33e08fe64",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "24077444ea739da7d63d99aa52572c5b68051561a4584a3c0f4b423fcbe0d5cd",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x79ad8059d4d8cec4bf7a95cac63e84fe0ed086e7c84d10994fe6d3496df6219f",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x79ad8059d4d8cec4bf7a95cac63e84fe0ed086e7c84d10994fe6d3496df6219f",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xa5f8f4f88a82b26826b756552ff89e1b5fc11a1c61636f613d460a9491e84efd",
+        "code_sha256": "248008938741b53c3960c7e0ce5e5f880f534a613d5aa09070f9324febbb367e",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "94bf49de3d747c2bdb22a254b3aadbea2b140d8c9e0d1a03f0e786104001659d",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa5f8f4f88a82b26826b756552ff89e1b5fc11a1c61636f613d460a9491e84efd",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa5f8f4f88a82b26826b756552ff89e1b5fc11a1c61636f613d460a9491e84efd",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xa3a863d47c68ddf54c431a94d6051737296f9c33d89ed4166cc8f91639f31ab0",
+        "code_sha256": "4f115eb21026d9b302dd38d085d4d86d83aa7fd381ba25c2c823e0c7c4fccdfd",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "3539f610243d15ff2a9f6541ea7cdb5bbf7d226415704d9112c9a127dcdd7fc2",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xa3a863d47c68ddf54c431a94d6051737296f9c33d89ed4166cc8f91639f31ab0",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xa3a863d47c68ddf54c431a94d6051737296f9c33d89ed4166cc8f91639f31ab0",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+      "proved": {
+        "code_bytes": 16798,
+        "code_hash": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0",
+        "code_sha256": "a686b8fa06d49cb3b4397254004ac5aec4a188a04ad5a64844bd6a1a1a96ea9a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "ebca607a8d9a1652b918fce1fb753379f516de371278784376ef932ac0709aa3",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0",
+        "code_length": 16798,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "hooks-factory"
+    },
+    {
+      "address": "0xdd87c59d295b0b4c1acf1ac29358d435e4d85459",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+        "code_sha256": "a50a268370ccd38843f10623decfc86958b95211da51d384ed2d2387eb718a76",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "46c5f35fa9f57c28e1aab96274f7362251d345d582c0f8543cc2ff9b3c22e3be",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xe0c3f69317b86654bf42e9c99534f5ad0a97a2e6",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x8930aecad55e4dc8fc6cd908a25984f54a949af80bee5e22d9aa2b200207678d",
+        "code_sha256": "a80339a4edf22f7966b8c0882d7855d2d95b3752915c5b46f727bc3db348e876",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "763bc0168cef2f07dae41ab833252591588b50a7686804b0a4a95f3458ae5e8c",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8930aecad55e4dc8fc6cd908a25984f54a949af80bee5e22d9aa2b200207678d",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8930aecad55e4dc8fc6cd908a25984f54a949af80bee5e22d9aa2b200207678d",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xe46e615a3632aa5dc28dec2a0fedb898332077ef",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0x1e50d68f0c0a642539c488e3700f6d3fc4188a3c3af7ad2d220247745a42604b",
+        "code_sha256": "184bc39ae3aa12d831b614a8f8d4fdb11fcf86a56896b340cf6aa54e3c01d6d0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "1371e6c2213e764be87059719853814d0e7df418dcc9f533b77e535d2372f039",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x1e50d68f0c0a642539c488e3700f6d3fc4188a3c3af7ad2d220247745a42604b",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x1e50d68f0c0a642539c488e3700f6d3fc4188a3c3af7ad2d220247745a42604b",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xe79ca848ae0182fce1db61a968b89627c9a0c948",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x56e2e5db51b715593960fb55d9ade5054378e3e5d81a03de78fa9f0f4c0f239a",
+        "code_sha256": "a05c7f73dc0f65d304e3c005339c598121df8d263beb27ee6682e10cb680f394",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "7829a69ec3cc5603cfa5ed0b8b0fa513a2150f05ee536e47037b1ee4cfd52be8",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x56e2e5db51b715593960fb55d9ade5054378e3e5d81a03de78fa9f0f4c0f239a",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x56e2e5db51b715593960fb55d9ade5054378e3e5d81a03de78fa9f0f4c0f239a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x2b79d3272b5425fb0535e5637a7d230ed8c1c331183bd2e378c5b7afb6c780ac",
+        "code_sha256": "1604887f9385b851141f9fcca29f06b2b82865ff4faff884ab0e6d9fef34c278",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "3e8a279238df4f6757d661b93e2a5ca4d2a521e16ff740df4a7d8248b82149a1",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x2b79d3272b5425fb0535e5637a7d230ed8c1c331183bd2e378c5b7afb6c780ac",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x2b79d3272b5425fb0535e5637a7d230ed8c1c331183bd2e378c5b7afb6c780ac",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xbedb50a16c7098ee7cf8bf1e38c6c24b8e3b7b3d0b70f251d183b15836ac98f1",
+        "code_sha256": "b25d934bd7102fcf5b8ddfa7a12695d9fe7b2aa6672d1c37251222ecc6922557",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "42d10f0fb9117a863cab44d9cf0233dfdd564a18556c8f8d2f12493f558ecf28",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xbedb50a16c7098ee7cf8bf1e38c6c24b8e3b7b3d0b70f251d183b15836ac98f1",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xbedb50a16c7098ee7cf8bf1e38c6c24b8e3b7b3d0b70f251d183b15836ac98f1",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a",
+      "proved": {
+        "code_bytes": 19188,
+        "code_hash": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e",
+        "code_sha256": "8dee6df295ef388587c469ab27e234b0253fe254b721fbec6234b19a52165e1c",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "a98773e087e51529782d6dd6d9c16729860480125f87d3d8b8d496f9e4589526",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e",
+        "code_length": 19188,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wrapper-factory"
+    },
+    {
+      "address": "0xeafa12cc0905baabed8618584f0796f5d19da3c4",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x2d4897e946020409e3b4ce7c06689a33b0153a1bad44f25fc54a26520b77a126",
+        "code_sha256": "1d8a92552c94e00e9c15bdab8edca18b225eb3fb916139ee7002f642ccc3f5a7",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "ccda64947e5227de2691d772c87dc007836e927bb6576ab27daf488ae99732ea",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x2d4897e946020409e3b4ce7c06689a33b0153a1bad44f25fc54a26520b77a126",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x2d4897e946020409e3b4ce7c06689a33b0153a1bad44f25fc54a26520b77a126",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xec6f30250269069b62d7b969a6af731214d20af9",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x987b8e1b1eecaeb1c655a892949410ab843754304e42054300efca85cc4a428e",
+        "code_sha256": "a907f14cda6a3ac728c41d345ca13dc9bf346337f6fd62e302e1d991f521533f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "84cb2566267b8f07efeae46bc3eb77ee77146eb2d0abd6c568ed43f6b7373841",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x987b8e1b1eecaeb1c655a892949410ab843754304e42054300efca85cc4a428e",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x987b8e1b1eecaeb1c655a892949410ab843754304e42054300efca85cc4a428e",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xee2fd06d9380f407b33506bbcd559843e6ac84b7",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xf2d2c33c77b286f909164b3392297fd1518640fcce6944a047af4b83d1991a18",
+        "code_sha256": "d1340380a712b8e5ad4a07b40efbd32d589311851f477587516998a7117792f8",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "9e74eb50f2295048ef1e432a39da0148cc937c970e97cb9ac831d9847ac73af7",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf2d2c33c77b286f909164b3392297fd1518640fcce6944a047af4b83d1991a18",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf2d2c33c77b286f909164b3392297fd1518640fcce6944a047af4b83d1991a18",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xf575a007f58c89fa5df56bf3cdd1c0316cec013c3f8979c42a281c943708f99c",
+        "code_sha256": "a964e8d768786036b589ef192fae8b61e6e8d6c70e0a0ebced688f58e33a501f",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "e21c1506ad1655d92ba59adffc44b2f077bfeef26fa89705e05172dd65e92a5a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf575a007f58c89fa5df56bf3cdd1c0316cec013c3f8979c42a281c943708f99c",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf575a007f58c89fa5df56bf3cdd1c0316cec013c3f8979c42a281c943708f99c",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xc9a4fd9a115502f4650499d99cd9784fc92a84791e4d32f953a5ee4eef2c9d1a",
+        "code_sha256": "171bc025dbffc702355abeb768916d58f41b5c324aeabb111fe4f074c7108698",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "fd5b8f47918fe19ae16db476dc64153b8b8dfa132f345cc1a79cd83ea19bc951",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xc9a4fd9a115502f4650499d99cd9784fc92a84791e4d32f953a5ee4eef2c9d1a",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xc9a4fd9a115502f4650499d99cd9784fc92a84791e4d32f953a5ee4eef2c9d1a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf459164eb4a386d0cbea4deb0709cb9821d97ca3",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+        "code_sha256": "d0de207e74f189bd2114417c6dfaf4b8e7c2445425d6e0bb3bebccb46d6b2b45",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "94f49bc7a30c8c8ae38ca0a9f72b71aa6a23a2cbdb2c8504f441cf3658855e70",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xf54967b93d777932e707972052bf07e1e51c1121",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+        "code_sha256": "a50a268370ccd38843f10623decfc86958b95211da51d384ed2d2387eb718a76",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "5ae64f7b9055de2680c61864002591df29ac689fe20459ebb1ba8c4609cba445",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xd267604a4279b01d5226fef93ccb846501f57be86167d91b6b20446796b0163a",
+        "code_sha256": "70aeabe4bfde4c28d0b777ec420e3a24cfedd8571e3b592d4ec698039dcc705d",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "9e76fcd67dc59ccb4705c5bd3ab2844a35de4e5772a45305fe62f9dc86a30e4a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xd267604a4279b01d5226fef93ccb846501f57be86167d91b6b20446796b0163a",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xd267604a4279b01d5226fef93ccb846501f57be86167d91b6b20446796b0163a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x4ee78af4d0506ffdf96c2edc9747dcbc17cad8661927e7a112e2f59f75a4fe11",
+        "code_sha256": "cf60c80b70056c10e47b3c190000944c874a3f90e76e6da398333af4d1f9c905",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b0c5eff4f047ce4fd103a7a57a3f9333421a47b02b48e1c2b0fd9dfb22004ca8",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x4ee78af4d0506ffdf96c2edc9747dcbc17cad8661927e7a112e2f59f75a4fe11",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x4ee78af4d0506ffdf96c2edc9747dcbc17cad8661927e7a112e2f59f75a4fe11",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x8cd1346343df93a26a9e5833e5d292ae1aa202e2c165ca5314e2eac814e8fb2a",
+        "code_sha256": "e685b169f865f7dbf366847f6e61be0c96916d274bbfec8cdfd30bbe021dd7f0",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "a18d2175f3d4012dd7c6cb2d40686a0504bf99e442b75cd6fcf22affc4632684",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x8cd1346343df93a26a9e5833e5d292ae1aa202e2c165ca5314e2eac814e8fb2a",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x8cd1346343df93a26a9e5833e5d292ae1aa202e2c165ca5314e2eac814e8fb2a",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf76a7887521a91b47c62060ba57549dec1dc88c7",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0x9a147257d1a230491263a477389d11f489ff55140083e72babcee8a71da0920f",
+        "code_sha256": "64f56265a3bc4d2a8457f60c5cf598e495c02cf2d838fc2ee1ad33d4c8750e4a",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "634c312e3cefd42d891e2a32765f173af5d9d5270a8b6cb586bd761b6bb9b6bb",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x9a147257d1a230491263a477389d11f489ff55140083e72babcee8a71da0920f",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x9a147257d1a230491263a477389d11f489ff55140083e72babcee8a71da0920f",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+      "proved": {
+        "code_bytes": 17849,
+        "code_hash": "0x25e91b1eb3dfbc0cbf806f15fc211b500894839726a0627c107c6ce3da2c2ab7",
+        "code_sha256": "27267429d88691e0fe7df2ff8f273bcf29d96b725548372d66e4169f5e6bd576",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b4989e62efaf5d25ce35d08cf200409d01727757a494997e8599c337f97aa04a",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x25e91b1eb3dfbc0cbf806f15fc211b500894839726a0627c107c6ce3da2c2ab7",
+        "code_length": 17849,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x25e91b1eb3dfbc0cbf806f15fc211b500894839726a0627c107c6ce3da2c2ab7",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7",
+      "proved": {
+        "code_bytes": 20104,
+        "code_hash": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5",
+        "code_sha256": "08c2074f24be461b5cb30d41b8bd3c567be4e48b41b18e5b04b3a84d05b65ac6",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "b90398e70624c72f106225bda0f4b170b73d612bae10cee928497ff7d4d01e58",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5",
+        "code_length": 20104,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "market-lens-app"
+    },
+    {
+      "address": "0xfe5156595795a282b7a5aab6ae94a9c273111a32",
+      "proved": {
+        "code_bytes": 19751,
+        "code_hash": "0xf853094ce9f3deb8ea07641f65625945b3c4750416dd9c6bbff5b8713f94d185",
+        "code_sha256": "dab13706cdccf309846e1e26fdf713b395c03402c326296a4c8dc30201c7df23",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "fe5502475bedca8af0dcc3b45b7686e11492d07ec7c1ddfe319572fd4011a02d",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xf853094ce9f3deb8ea07641f65625945b3c4750416dd9c6bbff5b8713f94d185",
+        "code_length": 19751,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xf853094ce9f3deb8ea07641f65625945b3c4750416dd9c6bbff5b8713f94d185",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0xfe7cf5680d2e59500f3938c2539fda4754876f94",
+      "proved": {
+        "code_bytes": 21999,
+        "code_hash": "0xcb844e708468f13686c586a2a9188974e0859df356c88a0ec32f8569eb545e50",
+        "code_sha256": "b86c9dd47d65b75eced2ab9104038fadd28b56ec5f37ee78c4631151ef8a6683",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "d1ef6fb4156de2e62761cdeab626838e58b028fbfc808d8af0d856a2799a2ba4",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0xcb844e708468f13686c586a2a9188974e0859df356c88a0ec32f8569eb545e50",
+        "code_length": 21999,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0xcb844e708468f13686c586a2a9188974e0859df356c88a0ec32f8569eb545e50",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "proved": {
+        "code_bytes": 8724,
+        "code_hash": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+        "code_sha256": "4988e6580cf924ab09008b1772c42267bb2fae0ac531ac003a0acda277239d09",
+        "evidence": "proof-backed",
+        "proof_record_sha256": "4fa8cd8e71e143950ce92067ccde23a764f88e73eb01c82d242d87b11b73fb47",
+        "source": ".hexaemeron/restricted/fixture-26006289/proofs.jsonl"
+      },
+      "recorded_observation": {
+        "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+        "code_length": 8724,
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+      },
+      "recorded_registry": {
+        "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+        "evidence": "recorded",
+        "source": "docs/kickoff/1359/targets.json"
+      },
+      "type": "arch-controller"
+    }
+  ],
+  "block_hash": "0x3d069f254a10d98ad19eff0f397cf28db3613fd98bff1df48c798920552f4ec5",
+  "block_hash_source": {
+    "path": "docs/kickoff/1359/targets.json",
+    "row": "wildcat-v2-ethereum-mainnet",
+    "sha256": "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
+  },
+  "block_number": 26006289,
+  "capture": {
+    "attempts": [
+      "1: refused by Lazarus's secret scan because hash_source prose shared a word with a provider URL component; no fixture written",
+      "2: captured through a loopback relay that hid the URL from Lazarus's scan; discarded unused",
+      "3: account proofs and code only, verified; superseded because replay had no recorded request to serve",
+      "4: this fixture; account proofs, code and one recorded eth_getCode per address; verified"
+    ],
+    "credential": "RPC URL and bearer read from environment variables inside the capture process; neither entered argv, output or the fixture, and Lazarus's secret scan passed over the staged bytes",
+    "elapsed_seconds": 51.4,
+    "entry": "lazarus_lib.capture.capture_fixture, the function lazarus.py capture calls, run in-process by the retained capture script",
+    "observed_at": "2026-09-23T03:12:17Z",
+    "requests": 414,
+    "response_bytes": 12106815,
+    "script_sha256": "93ff40c51bc2fdd119a899d818ac0a8519e6a113ea38de35170f8e9d5a764996"
+  },
+  "chain_id": 1,
+  "issue": 1355,
+  "lazarus": {
+    "command": "plugins/lazarus/scripts/lazarus.py",
+    "manifest_tool_version": "0.2.0"
+  },
+  "not_applicable_findings": [
+    {
+      "id": "fiat-383 S1-R1-01",
+      "reason": "concerns receipt-witness transaction hashes; this fixture declares no receipt witness"
+    },
+    {
+      "id": "fiat-383 S2-R1-03",
+      "reason": "concerns replay of eth_getBlockReceipts; this fixture records only account proofs and eth_getCode"
+    }
+  ],
+  "owner": "lazarus",
+  "payload": {
+    "components": [
+      {
+        "bytes": 12677,
+        "path": "header.json",
+        "sha256": "13e05106c85e3dff9732421e709abe1113aba3da8b27551a16c3292c7514ca05"
+      },
+      {
+        "bytes": 36124,
+        "path": "plan.json",
+        "sha256": "0c3d6f9e7200ad35ac6dacc0a400bb7b3343c55ffc782b78298f22e2f34568b1"
+      },
+      {
+        "bytes": 6597407,
+        "path": "proofs.jsonl",
+        "sha256": "985e5c2d0ef832084773012ed553941dbe02cc85eeb029c98ad855e4c5c34a0b"
+      },
+      {
+        "bytes": 5531896,
+        "path": "rpc.jsonl",
+        "sha256": "c331aede3ce357c96da55662965c50001e1b7d360a1ba19368edda0aaeb67320"
+      }
+    ],
+    "fixture_digest": "460b8f56f11dc1f2dc5e89fa4215b465a75ec411c94a56b50c6cc9985140d4e4",
+    "manifest_sha256": "3e5b68f9b53bd6358f926207d5528a74840e2ec98cdfc02539798e451bfd952a",
+    "retained_at": ".hexaemeron/restricted/fixture-26006289"
+  },
+  "plan": {
+    "limits": {
+      "max_component_bytes": 33554432,
+      "max_elapsed_seconds": 1800,
+      "max_requests": 600,
+      "max_total_bytes": 67108864
+    },
+    "proof_targets": 137,
+    "request_evidence": "recorded-rpc",
+    "request_method": "eth_getCode",
+    "requests": 137,
+    "sha256": "0c3d6f9e7200ad35ac6dacc0a400bb7b3343c55ffc782b78298f22e2f34568b1",
+    "storage_slots": 0
+  },
+  "replay": {
+    "code_equal_to_proof_record": 137,
+    "command": "python3 plugins/lazarus/scripts/lazarus.py replay .hexaemeron/restricted/fixture-26006289 --port <ephemeral loopback port>",
+    "miss_probe_error_code": -32070,
+    "requests": 137,
+    "served": 137
+  },
+  "schema": "kickoff-hermes-1355-fixture/v1",
+  "totals": {
+    "addresses": 137,
+    "proved": 137,
+    "recorded_observation_equal_to_proved": 137,
+    "recorded_registry_equal_to_proved": 137
+  },
+  "verification": {
+    "accounts_absent": 0,
+    "accounts_included": 137,
+    "canonical_chain_claim": false,
+    "command": "python3 plugins/lazarus/scripts/lazarus.py verify .hexaemeron/restricted/fixture-26006289",
+    "evidence_counts": {
+      "header_bound": 1,
+      "proof_backed": 137,
+      "recorded_rpc": 137
+    },
+    "exit": 0,
+    "fixture_digest": "460b8f56f11dc1f2dc5e89fa4215b465a75ec411c94a56b50c6cc9985140d4e4",
+    "state_root": "0xb0ece9067104b2204b78d0b66abeb2e86a37165e163d1709364cf2977c41bbe8"
+  }
+}

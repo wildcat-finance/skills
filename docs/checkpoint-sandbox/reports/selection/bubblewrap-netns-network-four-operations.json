@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bubblewrap-netns",
+  "criterion": "network-four-operations",
+  "value": false,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion network-four-operations --report .hexaemeron/reports/selection/bubblewrap-netns-network-four-operations.json",
+  "exit": 0
+}

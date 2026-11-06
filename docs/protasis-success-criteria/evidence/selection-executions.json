@@ -1,0 +1,290 @@
+[
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "controller-capture",
+      "--criterion",
+      "unexecuted-result-refused",
+      "--report",
+      "reports/controller-capture-unexecuted-result-refused.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"controller-capture\", \"command\": \"python3 selection_probe.py --candidate controller-capture --criterion unexecuted-result-refused --report reports/controller-capture-unexecuted-result-refused.json\", \"criterion\": \"unexecuted-result-refused\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "controller-capture",
+      "--criterion",
+      "descriptor-mismatch-refused",
+      "--report",
+      "reports/controller-capture-descriptor-mismatch-refused.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"controller-capture\", \"command\": \"python3 selection_probe.py --candidate controller-capture --criterion descriptor-mismatch-refused --report reports/controller-capture-descriptor-mismatch-refused.json\", \"criterion\": \"descriptor-mismatch-refused\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "controller-capture",
+      "--criterion",
+      "settlement-invocations",
+      "--report",
+      "reports/controller-capture-settlement-invocations.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"controller-capture\", \"command\": \"python3 selection_probe.py --candidate controller-capture --criterion settlement-invocations --report reports/controller-capture-settlement-invocations.json\", \"criterion\": \"settlement-invocations\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"count\", \"value\": 1}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "controller-capture",
+      "--criterion",
+      "sample-record-bytes",
+      "--report",
+      "reports/controller-capture-sample-record-bytes.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"controller-capture\", \"command\": \"python3 selection_probe.py --candidate controller-capture --criterion sample-record-bytes --report reports/controller-capture-sample-record-bytes.json\", \"criterion\": \"sample-record-bytes\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"bytes\", \"value\": 345}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "controller-capture",
+      "--criterion",
+      "legacy-no-backfill",
+      "--report",
+      "reports/controller-capture-legacy-no-backfill.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"controller-capture\", \"command\": \"python3 selection_probe.py --candidate controller-capture --criterion legacy-no-backfill --report reports/controller-capture-legacy-no-backfill.json\", \"criterion\": \"legacy-no-backfill\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "controller-capture",
+      "--criterion",
+      "failed-result-unmet",
+      "--report",
+      "reports/controller-capture-failed-result-unmet.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"controller-capture\", \"command\": \"python3 selection_probe.py --candidate controller-capture --criterion failed-result-unmet --report reports/controller-capture-failed-result-unmet.json\", \"criterion\": \"failed-result-unmet\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "producer-report",
+      "--criterion",
+      "unexecuted-result-refused",
+      "--report",
+      "reports/producer-report-unexecuted-result-refused.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"producer-report\", \"command\": \"python3 selection_probe.py --candidate producer-report --criterion unexecuted-result-refused --report reports/producer-report-unexecuted-result-refused.json\", \"criterion\": \"unexecuted-result-refused\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": false}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "producer-report",
+      "--criterion",
+      "descriptor-mismatch-refused",
+      "--report",
+      "reports/producer-report-descriptor-mismatch-refused.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"producer-report\", \"command\": \"python3 selection_probe.py --candidate producer-report --criterion descriptor-mismatch-refused --report reports/producer-report-descriptor-mismatch-refused.json\", \"criterion\": \"descriptor-mismatch-refused\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "producer-report",
+      "--criterion",
+      "settlement-invocations",
+      "--report",
+      "reports/producer-report-settlement-invocations.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"producer-report\", \"command\": \"python3 selection_probe.py --candidate producer-report --criterion settlement-invocations --report reports/producer-report-settlement-invocations.json\", \"criterion\": \"settlement-invocations\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"count\", \"value\": 1}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "producer-report",
+      "--criterion",
+      "sample-record-bytes",
+      "--report",
+      "reports/producer-report-sample-record-bytes.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"producer-report\", \"command\": \"python3 selection_probe.py --candidate producer-report --criterion sample-record-bytes --report reports/producer-report-sample-record-bytes.json\", \"criterion\": \"sample-record-bytes\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"bytes\", \"value\": 345}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "producer-report",
+      "--criterion",
+      "legacy-no-backfill",
+      "--report",
+      "reports/producer-report-legacy-no-backfill.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"producer-report\", \"command\": \"python3 selection_probe.py --candidate producer-report --criterion legacy-no-backfill --report reports/producer-report-legacy-no-backfill.json\", \"criterion\": \"legacy-no-backfill\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "producer-report",
+      "--criterion",
+      "failed-result-unmet",
+      "--report",
+      "reports/producer-report-failed-result-unmet.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"producer-report\", \"command\": \"python3 selection_probe.py --candidate producer-report --criterion failed-result-unmet --report reports/producer-report-failed-result-unmet.json\", \"criterion\": \"failed-result-unmet\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "terminal-replay",
+      "--criterion",
+      "unexecuted-result-refused",
+      "--report",
+      "reports/terminal-replay-unexecuted-result-refused.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"terminal-replay\", \"command\": \"python3 selection_probe.py --candidate terminal-replay --criterion unexecuted-result-refused --report reports/terminal-replay-unexecuted-result-refused.json\", \"criterion\": \"unexecuted-result-refused\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "terminal-replay",
+      "--criterion",
+      "descriptor-mismatch-refused",
+      "--report",
+      "reports/terminal-replay-descriptor-mismatch-refused.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"terminal-replay\", \"command\": \"python3 selection_probe.py --candidate terminal-replay --criterion descriptor-mismatch-refused --report reports/terminal-replay-descriptor-mismatch-refused.json\", \"criterion\": \"descriptor-mismatch-refused\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "terminal-replay",
+      "--criterion",
+      "settlement-invocations",
+      "--report",
+      "reports/terminal-replay-settlement-invocations.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"terminal-replay\", \"command\": \"python3 selection_probe.py --candidate terminal-replay --criterion settlement-invocations --report reports/terminal-replay-settlement-invocations.json\", \"criterion\": \"settlement-invocations\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"count\", \"value\": 3}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "terminal-replay",
+      "--criterion",
+      "sample-record-bytes",
+      "--report",
+      "reports/terminal-replay-sample-record-bytes.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"terminal-replay\", \"command\": \"python3 selection_probe.py --candidate terminal-replay --criterion sample-record-bytes --report reports/terminal-replay-sample-record-bytes.json\", \"criterion\": \"sample-record-bytes\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"bytes\", \"value\": 345}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "terminal-replay",
+      "--criterion",
+      "legacy-no-backfill",
+      "--report",
+      "reports/terminal-replay-legacy-no-backfill.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"terminal-replay\", \"command\": \"python3 selection_probe.py --candidate terminal-replay --criterion legacy-no-backfill --report reports/terminal-replay-legacy-no-backfill.json\", \"criterion\": \"legacy-no-backfill\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "python3",
+      "selection_probe.py",
+      "--candidate",
+      "terminal-replay",
+      "--criterion",
+      "failed-result-unmet",
+      "--report",
+      "reports/terminal-replay-failed-result-unmet.json"
+    ],
+    "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron",
+    "exit": 0,
+    "stdout": "{\"candidate\": \"terminal-replay\", \"command\": \"python3 selection_probe.py --candidate terminal-replay --criterion failed-result-unmet --report reports/terminal-replay-failed-result-unmet.json\", \"criterion\": \"failed-result-unmet\", \"exit\": 0, \"schema\": \"protasis-design-report/v1\", \"unit\": \"boolean\", \"value\": true}\n",
+    "stderr": ""
+  }
+]

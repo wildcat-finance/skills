@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_replacement_admission": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-replacement-admission without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-replacement-admission",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-replacement-admission",
+            "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_signed_archive_admission_keeps_audit_and_recovery"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-replacement-admission",
+        "scope": "structural binding for fiat-replacement-admission",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_signed_archive_admission_keeps_audit_and_recovery",
+        "transition": {
+          "action": "structurally bind fiat-replacement-admission without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_replacement_admission": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-replacement-admission without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-replacement-admission",
+          "source": {
+            "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+          },
+          "target": {
+            "scope": "structural binding for fiat-replacement-admission",
+            "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_signed_archive_admission_keeps_audit_and_recovery"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-replacement-admission",
+        "scope": "structural binding for fiat-replacement-admission",
+        "source_digest": "7dcbba0d8768cf77adac0fb3a8490b7fedb8589ec4c1174f7b237c45acc0ad6b",
+        "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_signed_archive_admission_keeps_audit_and_recovery",
+        "transition": {
+          "action": "structurally bind fiat-replacement-admission without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

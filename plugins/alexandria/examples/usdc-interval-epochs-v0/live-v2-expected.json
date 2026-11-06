@@ -1,0 +1,35 @@
+{
+  "attributions": {
+    "proxy-log": {
+      "0": 72,
+      "1": 20
+    },
+    "upgrade-boundary": {
+      "1": 1
+    }
+  },
+  "boundaries": [
+    {
+      "block_number": "25904935",
+      "log_index": 524,
+      "transaction_index": 193
+    }
+  ],
+  "epochs": 2,
+  "historical_release_id": "sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32",
+  "implementations": {
+    "0x63e749153baf1838f63ca22c275370bd2b1ceb15": "b942614560ef7218a52173cc501ce9198f74a558348edf957cda62a218aa20fe",
+    "0x83d491269720ce925f92c6bf9f66b7a0779a293a": "93ac04f8ffb0962157af92ee7cf7c1583937d013bde1b6d592ec2a726d624b79"
+  },
+  "interval": {
+    "end": "25905934",
+    "start": "25903935"
+  },
+  "receipt_semantics": "v2-positional",
+  "reconciliation": "agreed",
+  "release_id": "sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a",
+  "shard_statuses": {
+    "complete": 4
+  },
+  "staging_sha256": "6b64c215bc5d60d352a76279d7c93b1d8b6d394d53b44997e2a44d39599141ab"
+}

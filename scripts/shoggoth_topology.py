@@ -61,6 +61,13 @@ MAX_SKILL_DEPTH = 8
 MAX_JSON_DEPTH = 32
 IDENTIFIER_RE = re.compile(r"^[a-z][a-z0-9-]{0,127}$")
 
+# Names a Python interpreter writes into a package directory as a side effect
+# of importing it, never authored content. A bundled lint run from the tree
+# leaves one of these under every package it imports, so the walk skips a
+# name in this set entirely: not counted against the entry cap, and never
+# descended into.
+IGNORED_ENTRY_NAMES = frozenset({"__pycache__"})
+
 
 class TopologyError(Exception):
     """A refusal with a stable code, so a caller can assert on the reason."""
@@ -431,11 +438,19 @@ def _sorted_names(
     limit: int,
     already_seen: int = 0,
 ) -> list[str]:
-    """Consume at most ``limit`` names, then sort the bounded collection."""
+    """Consume at most ``limit`` names, then sort the bounded collection.
+
+    A name in `IGNORED_ENTRY_NAMES` is dropped before it is counted, so a
+    bytecode cache a lint run writes while walking the tree cannot push a
+    plugin's real entries over the cap, and `walk` never sees it to descend
+    into it.
+    """
     names: list[str] = []
     try:
         with os.scandir(directory_fd) as entries:
             for entry in entries:
+                if entry.name in IGNORED_ENTRY_NAMES:
+                    continue
                 names.append(entry.name)
                 if already_seen + len(names) > limit:
                     raise TopologyError(

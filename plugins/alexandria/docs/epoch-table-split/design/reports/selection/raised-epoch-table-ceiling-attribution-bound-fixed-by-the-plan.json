@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-epoch-table-ceiling",
+  "command": "python3 .hexaemeron/design/resolve.py attribution-bound-fixed-by-the-plan --candidate raised-epoch-table-ceiling",
+  "criterion": "attribution-bound-fixed-by-the-plan",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

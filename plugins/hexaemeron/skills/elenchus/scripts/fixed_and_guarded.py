@@ -82,7 +82,7 @@ DRAFT_KEYS = frozenset({
     "fixed_tree", "suites",
 })
 RESULT_REQUIRED = frozenset({"ref", "status", "tests", "detail"})
-RESULT_OPTIONAL = frozenset({"report", "exit_code", "output"})
+RESULT_OPTIONAL = frozenset({"report", "exit_code", "output", "digest_rebinds"})
 
 REPRODUCTION_KEYS = frozenset({"command", "output_sha256", "output_bytes"})
 MECHANISM_KEYS = frozenset({"account", "site"})
@@ -504,6 +504,33 @@ def draft_findings(draft) -> list[Finding]:
     return findings
 
 
+def _digest_rebind_findings(rows, tests) -> list[Finding]:
+    keys = {"register", "path", "parent_sha256", "rebound_sha256", "target_overlaid"}
+    invalid = [Finding("F006", "result.digest_rebinds", "must hold bounded, closed digest rebind rows")]
+    if type(rows) is not list or len(rows) > MAX_LIST_ITEMS:
+        return invalid
+    seen = set()
+    for row in rows:
+        if type(row) is not dict or set(row) != keys:
+            return invalid
+        if not all(_relative_path(row[key]) for key in ("register", "path")):
+            return invalid
+        if not all(type(row[key]) is str and re.fullmatch(r"[0-9a-f]{64}", row[key])
+                   for key in ("parent_sha256", "rebound_sha256")):
+            return invalid
+        if (type(row["target_overlaid"]) is not bool
+                or type(tests) is not list
+                or row["register"] not in tests
+                or row["target_overlaid"] != (row["path"] in tests)
+                or row["parent_sha256"] == row["rebound_sha256"]):
+            return invalid
+        identity = (row["register"], row["path"])
+        if identity in seen:
+            return invalid
+        seen.add(identity)
+    return []
+
+
 def result_findings(result) -> list[Finding]:
     """The `elenchus.py --format json` half, read for five values only."""
     if (
@@ -528,6 +555,8 @@ def result_findings(result) -> list[Finding]:
         for finding in _text_findings(result["detail"], "result.detail")
     )
     tests = result["tests"]
+    if "digest_rebinds" in result:
+        findings.extend(_digest_rebind_findings(result["digest_rebinds"], tests))
     if not isinstance(tests, list) or not 1 <= len(tests) <= MAX_LIST_ITEMS:
         findings.append(Finding(
             "F006", "result.tests", "must list the changed test files the comparison used",

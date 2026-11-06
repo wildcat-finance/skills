@@ -1,0 +1,9 @@
+{
+  "candidate": "pre-placed-untracked",
+  "command": "python3 .hexaemeron/design/probe.py --candidate pre-placed-untracked --criterion legacy-results-unchanged --report .hexaemeron/reports/pre-placed-untracked-legacy-results-unchanged.json",
+  "criterion": "legacy-results-unchanged",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

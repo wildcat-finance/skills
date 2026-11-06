@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "base_token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "bulker": null,
+      "chain_id": 1,
+      "files": [],
+      "market": "hooksfactory",
+      "network": "mainnet",
+      "proxy": "0xdd7dd3b5076cf89440d05585ff56d246386207be"
+    }
+  ],
+  "format": "alexandria-wildcat-v2-registry/v1",
+  "source": {
+    "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+    "deployments_tree": "0000000000000000000000000000000000000000",
+    "repository": "https://github.com/wildcat-finance/v2-protocol",
+    "tree": "0000000000000000000000000000000000000000"
+  }
+}

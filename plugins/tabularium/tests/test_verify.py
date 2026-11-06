@@ -126,9 +126,11 @@ class OfflineVerificationTests(unittest.TestCase):
 
     def test_unsupported_event_schema_version_fails(self):
         rows = self.rows()
-        rows[0]["schema_version"] = 3
+        rows[0]["schema_version"] = 4
         self.write_rows(rows)
-        with self.assertRaisesRegex(TabulariumError, "canonical event schema v2"):
+        with self.assertRaisesRegex(
+            TabulariumError, "canonical row 1 field schema_version is 4"
+        ):
             verify(self.manifest_path)
 
     def test_unsupported_row_mapping_version_fails(self):
@@ -140,7 +142,7 @@ class OfflineVerificationTests(unittest.TestCase):
 
     def test_unsupported_manifest_event_version_fails(self):
         manifest = self.manifest()
-        manifest["versions"]["event_schema"] = 3
+        manifest["versions"]["event_schema"] = 4
         self.write_manifest(manifest)
         with self.assertRaisesRegex(TabulariumError, "unsupported event schema"):
             verify(self.manifest_path)

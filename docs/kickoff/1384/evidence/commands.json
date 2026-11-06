@@ -1,0 +1,164 @@
+{
+  "schema": "wildcat-credit-mapping-checks/v1",
+  "python": "3.14.6",
+  "checks": [
+    {
+      "name": "verify-preserved-population-v1",
+      "command": [
+        "python3",
+        "docs/kickoff/1384/verify_population.py",
+        "v1",
+        "--staging",
+        "<unpacked verified staging>",
+        "--archive",
+        "<pinned staging archive>",
+        "--repository",
+        "<Skills checkout at source_revision>"
+      ],
+      "executed_at": "2026-09-24",
+      "exit_code": 0,
+      "result": {
+        "result": "pass",
+        "generation": "v1",
+        "files": 107,
+        "market_logs": 1830,
+        "repayment_logs": 72,
+        "population_equal": true,
+        "specimen_equal": true,
+        "release_rebuilt": false
+      }
+    },
+    {
+      "name": "verify-preserved-population-v2",
+      "command": [
+        "python3",
+        "docs/kickoff/1384/verify_population.py",
+        "v2",
+        "--staging",
+        "<unpacked verified staging>",
+        "--archive",
+        "<pinned staging archive>",
+        "--repository",
+        "<Skills checkout at source_revision>"
+      ],
+      "executed_at": "2026-09-24",
+      "exit_code": 0,
+      "result": {
+        "result": "pass",
+        "generation": "v2",
+        "files": 125,
+        "market_logs": 68931,
+        "repayment_logs": 925,
+        "population_equal": true,
+        "specimen_equal": true,
+        "release_rebuilt": false
+      }
+    },
+    {
+      "name": "source-and-selector-check",
+      "command": "Rehash each of the 20 downloaded sources in sources.json; run cast sig for each of the 30 selectors.json signatures.",
+      "exit_code": 0,
+      "result": {
+        "sources": 20,
+        "selectors": 30
+      }
+    },
+    {
+      "name": "lazarus-request-shape-v1",
+      "command": [
+        "python3",
+        "plugins/lazarus/scripts/lazarus.py",
+        "validate",
+        "plan",
+        "/tmp/1493-request-shape-v1.json"
+      ],
+      "exit_code": 0,
+      "result": "valid plan",
+      "boundary": "Temporary plan v2 checks request shape only; not the required plan v3, a capture or a proof result."
+    },
+    {
+      "name": "lazarus-request-shape-v2",
+      "command": [
+        "python3",
+        "plugins/lazarus/scripts/lazarus.py",
+        "validate",
+        "plan",
+        "/tmp/1493-request-shape-v2.json"
+      ],
+      "exit_code": 0,
+      "result": "valid plan",
+      "boundary": "Temporary plan v2 checks request shape only; not the required plan v3, a capture or a proof result."
+    },
+    {
+      "name": "consumer-source-tree",
+      "command": "gh api repos/wildcat-finance/miskatonic/git/trees/<each revision in consumer-tree-check.json>?recursive=1",
+      "exit_code": 0,
+      "result": "Accepted pin contains README.md only; later pin contains README.md, capture-plans, evidence and storage. Consumer CLI absent."
+    },
+    {
+      "name": "prose-review",
+      "command": "Sapheneia durable record shape; Imprimatur; Vulgate content parity; Imprimatur on values.md",
+      "exit_code": 0,
+      "result": "Protected inventory preserved; Imprimatur score 100 and zero defects. Brevitas completeness-oriented specification exclusion applies to values.md; PR prose is checked separately."
+    },
+    {
+      "name": "negative-inventory-controls",
+      "command": "In three temporary copies, remove credit.totalDebt, inject value=0 on that unsupported field, or alter V1 anchor number; regenerate output hashes and run verify.py.",
+      "result": [
+        {
+          "case": "missing-credit-field",
+          "exit_code": 1,
+          "reason": "ValueError: field denominator differs",
+          "manifest_rehashed_before_check": true
+        },
+        {
+          "case": "invented-zero",
+          "exit_code": 1,
+          "reason": "ValueError: inventory must not manufacture values",
+          "manifest_rehashed_before_check": true
+        },
+        {
+          "case": "changed-anchor",
+          "exit_code": 1,
+          "reason": "ValueError: anchor differs",
+          "manifest_rehashed_before_check": true
+        }
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "getter-error-policy",
+      "command": "Read Lazarus _capture_requests at the pinned revision; require eth_call probes to use required=false; revalidate both request inventories in temporary plan v2 wrappers.",
+      "exit_code": 0,
+      "result": "Error records preserved; proof/code/header requests remain required. Dependent fields require successful reads."
+    },
+    {
+      "name": "capture-evidence-labels",
+      "command": "Wrap each expanded inventory in a temporary plan v2 with max_elapsed_seconds=3600; call lazarus_lib.capture._validate_capture_plan and run lazarus.py validate plan.",
+      "unfixed_result": "FormatError: declared request r00000 must be recorded-rpc evidence",
+      "fixed_result": "Both inventories pass schema and capture-plan acceptance. All RPC entries stay recorded; proof and header components are separate.",
+      "exit_code": 0,
+      "rpc_requests_executed": 0
+    },
+    {
+      "name": "event-record-lint",
+      "command": "python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py docs/kickoff/1384/verify_population.py",
+      "unfixed_result": "E005 misclassified the native-event variable log as a telemetry index.",
+      "fixed_result": "Renamed the variable event_record; the existing lint reports clean.",
+      "exit_code": 0
+    },
+    {
+      "name": "capture-regression",
+      "command": "python3 -m unittest discover -s docs/kickoff/1384 -p 'test_*.py' -v",
+      "exit_code": 0,
+      "fixed_tests": 3,
+      "unfixed_source_sha256": "34a2e20b774a982141973aa12759ad337cb96fe7939c31e6b00a13dea8e840cb",
+      "unfixed_guard": "test_capture_accepts_both_inventories failed for both generations with FormatError: declared request r00000 must be recorded-rpc evidence",
+      "unfixed_execution": "Loaded the exact prior staged capture_requests.py in an isolated Python module; data and guard stayed fixed.",
+      "boundary": "Offline plan acceptance only; no RPC executed.",
+      "unfixed_assertion_failures": 2,
+      "unfixed_infrastructure_errors": 0
+    }
+  ],
+  "boundary": "No RPC capture, full release rebuild, projection or campaign ran."
+}

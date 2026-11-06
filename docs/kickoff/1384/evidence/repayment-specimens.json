@@ -1,0 +1,58 @@
+[
+  {
+    "generation": "v1",
+    "journal": "journals/logs.0.jsonl",
+    "line": 16,
+    "response_index": 27,
+    "response_sha256": "845979bf0644135b64b0e7edad2fe0e5d35d5d468386f8957968218c928d7144",
+    "log": {
+      "address": "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a",
+      "topics": [
+        "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+        "0x000000000000000000000000569e7cb1a1c839133012de4adee8361389b0113b"
+      ],
+      "data": "0x0000000000000000000000000000000000000000000000000000000000989680",
+      "blockHash": "0xbaebdb208c7ddc3ac9e4ecf1dad7db2c5f7e17b1634a509f4561ca961f93e6eb",
+      "blockNumber": "0x11f3847",
+      "blockTimestamp": "0x65822627",
+      "transactionHash": "0x102d0300976dc4db7b6b393ff8f7d27c7f219681f56105430b192ebf2cdbb33e",
+      "transactionIndex": "0x47",
+      "logIndex": "0x106",
+      "removed": false
+    },
+    "amount_raw": "10000000",
+    "pre_block_number": 18823238,
+    "post_block_number": 18823239,
+    "pre_block_hash": null,
+    "oracle_status": "unsupported-until-state-acquired",
+    "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1393"
+  },
+  {
+    "generation": "v2",
+    "journal": "journals/logs.1.jsonl",
+    "line": 16,
+    "response_index": 50,
+    "response_sha256": "1e447483305d92e2da1c995e5b461a212480330a220d2eeba47626f388587539",
+    "log": {
+      "address": "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+      "topics": [
+        "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+        "0x0000000000000000000000005b15f94efc3a6e2c82d7db8efd8d5ba55da11feb"
+      ],
+      "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00",
+      "blockHash": "0xd459e90ba08d20f5d475db9427ffb873a3d84da638d2e80fdd17bdf6e946422a",
+      "blockNumber": "0x14f8a44",
+      "blockTimestamp": "0x67c9f85f",
+      "transactionHash": "0x2bbc8def3a451f33a3bac912d00aaf8780c40702e82ce4335d93aaaa7c853dca",
+      "transactionIndex": "0x97",
+      "logIndex": "0x215",
+      "removed": false
+    },
+    "amount_raw": "1000000000",
+    "pre_block_number": 21989955,
+    "post_block_number": 21989956,
+    "pre_block_hash": null,
+    "oracle_status": "unsupported-until-state-acquired",
+    "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1393"
+  }
+]

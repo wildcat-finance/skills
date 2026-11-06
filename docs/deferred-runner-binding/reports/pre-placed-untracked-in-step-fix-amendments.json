@@ -1,0 +1,9 @@
+{
+  "candidate": "pre-placed-untracked",
+  "command": "python3 .hexaemeron/design/probe.py --candidate pre-placed-untracked --criterion in-step-fix-amendments --report .hexaemeron/reports/pre-placed-untracked-in-step-fix-amendments.json",
+  "criterion": "in-step-fix-amendments",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

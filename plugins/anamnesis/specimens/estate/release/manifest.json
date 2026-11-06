@@ -76,19 +76,23 @@
     },
     "version": "estate-2026-09-06"
   },
-  "release_id": "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3",
+  "release_id": "b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2",
   "schema": "anamnesis-release/v1",
   "sources": [
     {
+      "basis": "permission",
       "bytes": 5641,
       "disclosure": "public",
       "id": "archive-verification-2026-08-31",
+      "rights_sha256": "ba2ef06078509f87a01c8562ba1316bc56fe477b50b4352ae61dd44f5dc3a59a",
       "sha256": "64124ce28d1123123ebbf2c0330ecfa9833aa67738dd6e7d1b37ceb0bf54f2f1"
     },
     {
+      "basis": "permission",
       "bytes": 1838,
       "disclosure": "public",
       "id": "counterparty-history-2026-09-05",
+      "rights_sha256": "ba2ef06078509f87a01c8562ba1316bc56fe477b50b4352ae61dd44f5dc3a59a",
       "sha256": "11cae8637d2f6c8bf6078e22b9b17325b1f181aedab3c87e833949714e18c4c8"
     }
   ],

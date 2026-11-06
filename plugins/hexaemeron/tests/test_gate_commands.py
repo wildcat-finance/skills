@@ -1,0 +1,1020 @@
+"""Inert interface and exact receipt regression specimens."""
+import copy
+import importlib.util
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[3]
+SOURCE = ROOT / 'plugins/hexaemeron/skills/protasis/scripts/gate_commands.py'
+spec = importlib.util.spec_from_file_location('gate_commands_tests', SOURCE)
+gates = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(gates)
+BREVITAS = 'plugins/brevitas/skills/brevitas/scripts/brevitas.py'
+COMMAND = 'python3 ' + BREVITAS + ' one.md'
+
+
+class GateCommandTests(unittest.TestCase):
+    def test_released_adapters_replay_only_identical_commands(self):
+        data = ('**Exit.** `' + COMMAND + '`\n').encode()
+        for adapter in ('d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
+                        '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c'):
+            with self.subTest(adapter=adapter):
+                receipt = gates.validate(ROOT, data)
+                receipt['adapter_sha256'] = adapter
+                before = copy.deepcopy(receipt)
+                try:
+                    gates.replay(ROOT, data, receipt)
+                except gates.Refusal as exc:
+                    self.fail('Unchanged released command evidence must replay: ' + str(exc))
+                self.assertEqual(receipt, before)
+                for field in ('adapter_sha256', 'command'):
+                    forged = copy.deepcopy(receipt)
+                    if field == 'adapter_sha256':
+                        forged[field] = '0' * 64
+                    else:
+                        forged['commands'][0]['command'] += ' changed.md'
+                    with self.assertRaisesRegex(gates.Refusal, 'gate-receipt-drift'):
+                        gates.replay(ROOT, data, forged)
+
+    def test_superseded_exit_and_tests_do_not_exhaust_command_budget(self):
+        report = ('Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py'
+                  ' --elenchus-report {report}`; format: `unittest-json-v1`; '
+                  'report file: `.hexaemeron/reports/result.json`.')
+        source = ('## Step 1: Check caf\u00e9\n\n**Exit.** `' + COMMAND + '`\n\n'
+                  '**Tests.** ' + report + '\n')
+        for _ in range(32):
+            source += ('\n### Amendment -- 2026-09-21\n\n'
+                       '**Steps touched.** Step 1.\n\n'
+                       '**What changed.** Complete replacement Exit: `' + COMMAND + '`\n'
+                       'Complete replacement Tests: ' + report + '\n')
+        data = source.encode()
+        try:
+            receipt = gates.validate(ROOT, data)
+        except gates.Refusal as exc:
+            self.fail('Two effective commands must remain amendable: ' + str(exc))
+        records = gates.commands(data)
+        self.assertEqual(len(records), 66)
+        self.assertEqual(sum(record['effective'] for record in records), 2)
+        self.assertEqual([record['result'] for record in receipt['commands'][:-2]],
+                         ['superseded-source'] * 64)
+        for record in receipt['commands'][-2:]:
+            self.assertEqual(record['invocations'][0]['result'], 'interface-valid')
+        for record in receipt['commands']:
+            command = record['command'].encode()
+            self.assertEqual(data[record['offset']:record['offset'] + len(command)], command)
+            self.assertEqual(record['sha256'], gates.digest(command))
+        before = copy.deepcopy(receipt)
+        gates.replay(ROOT, data, receipt)
+        self.assertEqual(receipt, before)
+        self.assertFalse(receipt['operation_ran'])
+
+    def test_command_bound_counts_untouched_and_standalone(self):
+        baseline = ('## Step 1: Replace\n\n**Exit.** `' + COMMAND + '`\n\n'
+                    '## Step 2: Retain\n\n**Exit.** '
+                    + ' '.join('`' + COMMAND + '`' for _ in range(30))
+                    + '\n\n**Files.** none\n\n')
+        amendment = ('\n### Amendment -- 2026-09-21\n\n'
+                     '**Steps touched.** Step 1.\n\n'
+                     '**What changed.** Complete replacement Exit: `' + COMMAND + '`\n')
+        for standalone_count in (33, 34):
+            data = (baseline + '```sh\n' + (COMMAND + '\n') * standalone_count
+                    + '```\n' + amendment).encode()
+            with self.subTest(effective_commands=31 + standalone_count):
+                if standalone_count == 34:
+                    with self.assertRaisesRegex(gates.Refusal, '^command-count-bound$'):
+                        gates.validate(ROOT, data)
+                else:
+                    try:
+                        receipt = gates.validate(ROOT, data)
+                    except gates.Refusal as exc:
+                        self.fail('Exactly 64 effective commands must pass: ' + str(exc))
+                    self.assertEqual(len(receipt['commands']), 65)
+                    self.assertEqual(sum('invocations' in record
+                                         for record in receipt['commands']), 64)
+                    self.assertEqual(receipt['commands'][0]['result'], 'superseded-source')
+
+    def test_empty_capture_and_oversized_document_still_refuse(self):
+        for data, reason in ((b'No commands.\n', 'command-count-bound'),
+                             (b'x' * (gates.MAX_DOCUMENT + 1), 'document-bound')):
+            with self.subTest(reason=reason), self.assertRaisesRegex(gates.Refusal, '^' + reason + '$'):
+                gates.commands(data)
+
+    def test_success_criteria_joins_runbook_without_execution(self):
+        result = gates.validate_with_criteria(
+            ROOT,
+            (ROOT / 'docs/protasis-success-criteria/study.md').read_bytes(),
+            (ROOT / 'docs/protasis-success-criteria/runbook.md').read_bytes(),
+        )
+        self.assertEqual(result['schema'], 'protasis-success-criteria-admission/v1')
+        self.assertEqual(len(result['join']['criteria']), 8)
+        self.assertFalse(result['operation_ran'])
+
+    def test_report_receipt_relocation_preserves_original_derivation(self):
+        runner = 'plugins/hexaemeron/tests/run_tests.py'
+        data = ('**Tests.** Elenchus command: `python3 ' + runner +
+                ' --jobs 12 --elenchus-report {report}`; format: `unittest-json-v1`; '
+                'report file: `.hexaemeron/reports/result.json`.\n').encode()
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            roots = [Path(first), Path(second)]
+            for root in roots:
+                path = root / runner
+                path.parent.mkdir(parents=True)
+                path.write_bytes((ROOT / runner).read_bytes())
+            receipt = gates.validate(roots[0], data)
+            before = copy.deepcopy(receipt)
+            gates.replay(roots[1], data, receipt)
+            self.assertEqual(receipt, before)
+            self.assertEqual(receipt['source_root'], str(roots[0].resolve()))
+            for field in ('source_root', 'execution_argv'):
+                forged = copy.deepcopy(receipt)
+                if field == 'source_root':
+                    forged[field] = str(roots[1].resolve())
+                else:
+                    forged['commands'][0]['invocations'][0][field][-1] = str(roots[1] / '.hexaemeron/reports/result.json')
+                with self.subTest(field=field), self.assertRaises(gates.Refusal):
+                    gates.replay(roots[1], data, forged)
+            (roots[1] / '.hexaemeron').symlink_to(roots[0], target_is_directory=True)
+            with self.assertRaises(gates.Refusal):
+                gates.replay(roots[1], data, receipt)
+
+    def test_nargs_bound_precedes_argparse_allocation(self):
+        from unittest import mock
+        original = (ROOT / BREVITAS).read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / BREVITAS
+            path.parent.mkdir(parents=True)
+            for value in ('1000000000', '-1', 'True', '1.5'):
+                source = original
+                marker = '    return parser'
+                self.assertIn(marker, source)
+                path.write_text(source.replace(marker, '    parser.add_argument("--arity-probe", nargs=' + value + ')\n' + marker, 1))
+                def observed(parser, *args, **kwargs):
+                    if args == ('--arity-probe',):
+                        self.fail('unsupported nargs reached argparse')
+                    return actual(parser, *args, **kwargs)
+                actual = gates.InertParser.add_argument
+                with self.subTest(nargs=value), mock.patch.object(gates.InertParser, 'add_argument', observed):
+                    with self.assertRaises(gates.Refusal):
+                        gates.interface(root, BREVITAS)
+
+    def test_bounded_nargs_preserves_argparse_action_semantics(self):
+        original = (ROOT / BREVITAS).read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / BREVITAS
+            path.parent.mkdir(parents=True)
+            for value in ('1', '128', 'None', '"?"', '"*"', '"+"'):
+                path.write_text(original.replace('    return parser', '    parser.add_argument("--arity-probe", nargs=' + value + ')\n    return parser', 1))
+                with self.subTest(nargs=value):
+                    parser, _ = gates.interface(root, BREVITAS)
+                    parser.parse_args(['draft.md'])
+            path.write_text(original.replace('    return parser', '    parser.add_argument("--arity-probe", nargs=0)\n    return parser', 1))
+            with self.assertRaisesRegex(gates.Refusal, 'unsupported-cli-argument-declaration'):
+                gates.interface(root, BREVITAS)
+            # Ordinary flag actions retain their own zero-operand behavior.
+            path.write_text(original.replace('    return parser', '    parser.add_argument("--arity-probe", action="store_true")\n    return parser', 1))
+            parser, _ = gates.interface(root, BREVITAS)
+            self.assertTrue(parser.parse_args(['draft.md', '--arity-probe']).arity_probe)
+
+    def test_actual_brevitas_arity_and_choices(self):
+        gates.validate_command(ROOT, COMMAND)
+        for suffix in (' two.md three.md four.md', ' --mode unknown', ' --s one.md'):
+            with self.subTest(suffix=suffix), self.assertRaises(gates.Refusal):
+                gates.validate_command(ROOT, COMMAND + suffix)
+
+    def test_named_mode_choice_runner_epilog_load_no_execution(self):
+        import ast
+        parser, _ = gates.interface(ROOT, BREVITAS)
+        self.assertEqual(parser.parse_args(['--mode', 'fiat-audit-record']).mode,
+                         'fiat-audit-record')
+        runner = 'scripts/run_checks.py'
+        parser, _ = gates.interface(ROOT, runner)
+        self.assertEqual(parser.parse_args(['--jobs', '12', '--plan']).jobs, 12)
+        original = (ROOT / runner).read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / runner
+            path.parent.mkdir(parents=True)
+            marker = root / 'executed'
+            for value in ('None', 'True', '12', '["help"]',
+                          '__import__("pathlib").Path(' + repr(str(marker)) + ').touch()'):
+                tree = ast.parse(original)
+                builder = next(node for node in tree.body
+                               if isinstance(node, ast.FunctionDef) and node.name == 'build_parser')
+                epilog = next(kw for kw in builder.body[0].value.keywords if kw.arg == 'epilog')
+                epilog.value = ast.parse(value, mode='eval').body
+                path.write_text(ast.unparse(tree))
+                with self.subTest(epilog=value), self.assertRaisesRegex(
+                        gates.Refusal, 'unsupported-cli-constructor-option'):
+                    gates.interface(root, runner)
+                self.assertFalse(marker.exists())
+
+    def test_named_declaration_accepts_only_unique_module_literals(self):
+        import ast
+        for value in ('MODE', 'call()', '"prefix" + "suffix"'):
+            with self.subTest(value=value), self.assertRaises(gates.Refusal):
+                gates.literal(ast.parse('MODE', mode='eval').body,
+                              ast.parse('MODE = ' + value))
+        with self.assertRaises(gates.Refusal):
+            gates.literal(ast.parse('MODE', mode='eval').body,
+                          ast.parse('MODE = "one"\nMODE = "two"'))
+
+    def test_shell_comment_tilde_and_argv_substitution_refuse(self):
+        for suffix in (' # ignored', ' ~/draft.md', ' "#literal"', ' "~literal"'):
+            with self.subTest(suffix=suffix), self.assertRaises(gates.Refusal):
+                gates.validate_command(ROOT, COMMAND + suffix)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / 'plugins/hexaemeron/skills/protasis/scripts/protasis.py'
+            path.parent.mkdir(parents=True)
+            original = (ROOT / path.relative_to(root)).read_text()
+            for operand in ('["fake.md"]', 'unknown()', 'argv, namespace=unknown()'):
+                path.write_text(original.replace('parser.parse_args(argv)', 'parser.parse_args(' + operand + ')'))
+                with self.subTest(operand=operand), self.assertRaises(gates.Refusal):
+                    gates.validate_command(root, 'python3 ' + str(path.relative_to(root)) + ' real.md')
+
+    def test_public_gate_reader_refuses_fifo_and_incompatible_mode(self):
+        import os
+        import subprocess
+        import sys
+        command = [sys.executable, str(ROOT / 'plugins/hexaemeron/skills/protasis/scripts/protasis.py')]
+        with tempfile.TemporaryDirectory() as directory:
+            fifo = Path(directory) / 'runbook.md'
+            os.mkfifo(fifo)
+            result = subprocess.run(command + ['--gate-root', str(ROOT), str(fifo)], capture_output=True, timeout=3)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(b'P008', result.stdout)
+            result = subprocess.run(command + ['--study', '--gate-root', str(ROOT), str(fifo)], capture_output=True, timeout=3)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn(b'applies only to runbooks', result.stderr)
+
+    def test_registered_cli_interfaces_all_have_supported_source(self):
+        for path in gates.REGISTRY:
+            with self.subTest(path=path):
+                gates.interface(ROOT, path)
+
+    def test_registered_runbook_runners(self):
+        gates.validate_command(ROOT, 'python3 scripts/run_checks.py --scope hexaemeron')
+        result = gates.validate_command(ROOT, 'python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}', {'format': 'unittest-json-v1', 'file': '.hexaemeron/reports/result.json'})
+        invocation = result['invocations'][0]
+        self.assertEqual(invocation['argv'][-1], '{report}')
+        self.assertEqual(invocation['execution_argv'][-1], str(ROOT / '.hexaemeron/reports/result.json'))
+        for jobs in ('0', '257', 'no'):
+            with self.subTest(jobs=jobs), self.assertRaises(gates.Refusal):
+                gates.validate_command(ROOT, 'python3 plugins/hexaemeron/tests/run_tests.py --jobs ' + jobs)
+
+    def test_standalone_injection_fences_remain_executable(self):
+        for position in ('before', 'after'):
+            bad = b'```sh\npython3 nowhere.py $(touch marker)\n```\n'
+            step = ('## Step 1: Run\n\n**Exit.** `' + COMMAND + '`\n').encode()
+            source = bad + step if position == 'before' else step + '\n**Files.** none\n'.encode() + bad
+            with self.subTest(position=position), self.assertRaises(gates.Refusal):
+                gates.validate(ROOT, source)
+
+    def test_finite_loop_quote_binding_and_multiline(self):
+        for loop in ('for file in one.md "two drafts.md"; do ' + COMMAND.replace('one.md', '"$file"') + '; done', 'for file in one.md "two drafts.md"\ndo\n' + COMMAND.replace('one.md', '"$file"') + '\ndone'):
+            result = gates.validate_command(ROOT, loop)
+            self.assertEqual([r['argv'][-1] for r in result['invocations']], ['one.md', 'two drafts.md'])
+        with self.assertRaises(gates.Refusal):
+            gates.validate_command(ROOT, 'for file in one.md; do ' + COMMAND.replace('one.md', "'\"$file\"'") + '; done')
+
+    def test_no_import_and_exact_cli_source_replay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / BREVITAS
+            path.parent.mkdir(parents=True)
+            path.write_bytes((ROOT / BREVITAS).read_bytes())
+            source = ('```sh\n' + COMMAND + '\n```\n').encode()
+            receipt = gates.validate(root, source)
+            gates.replay(root, source, receipt)
+            marker = root / 'executed'
+            path.write_text(path.read_text() + '\nraise RuntimeError("must not import")\n')
+            self.assertFalse(marker.exists())
+            with self.assertRaises(gates.Refusal):
+                gates.replay(root, source, receipt)
+
+    def test_malformed_fences_and_shells_refuse(self):
+        for source in ('```sh\n' + COMMAND, '```unknown\n' + COMMAND + '\n```', '```sh\n' + COMMAND + '\n~~~', '```sh\n' + COMMAND + ' && touch marker\n```'):
+            with self.subTest(source=source), self.assertRaises(gates.Refusal):
+                gates.validate(ROOT, source.encode())
+
+    def test_report_escape_and_receipt_mutation_refuse(self):
+        command = 'python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}'
+        with self.assertRaises(gates.Refusal):
+            gates.validate_command(ROOT, command, {'format': 'unittest-json-v1', 'file': '../out.json'})
+        source = ('```sh\n' + COMMAND + '\n```\n').encode()
+        receipt = gates.validate(ROOT, source)
+        for key in ('adapter_sha256', 'artifact_sha256'):
+            wrong = copy.deepcopy(receipt)
+            wrong[key] = '0' * 64
+            with self.subTest(key=key), self.assertRaises(gates.Refusal):
+                gates.replay(ROOT, source, wrong)
+
+    def test_parser_binding_mutations_refuse_initial_capture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / BREVITAS
+            path.parent.mkdir(parents=True)
+            original = (ROOT / BREVITAS).read_text()
+            changes = [original + '\nargparse.ArgumentParser = lambda *args, **kwargs: None\n',
+                       original + '\nbuild_parser = lambda: None\n',
+                       original.replace('    parser.add_argument("draft",', '    if True:\n        parser.add_argument("draft",'),
+                       original.replace('    return parser', '    parser = None\n    return parser')]
+            for candidate in changes:
+                path.write_text(candidate)
+                with self.subTest(candidate=candidate[-60:]), self.assertRaises(gates.Refusal):
+                    gates.validate_command(root, COMMAND)
+
+    def test_special_cli_and_indented_byte_custody(self):
+        import os
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / BREVITAS
+            path.parent.mkdir(parents=True)
+            os.mkfifo(path)
+            with self.assertRaises(gates.Refusal):
+                gates.validate_command(root, COMMAND)
+        for command in ('  ' + COMMAND, '\nfor file in one.md\ndo\n' + COMMAND.replace('one.md', '\"$file\"') + '\ndone'):
+            source = ('```sh\n' + command + '\n```\n').encode()
+            receipt = gates.validate(ROOT, source)
+            for record in receipt['commands']:
+                raw = record['command'].encode()
+                self.assertEqual(source[record['offset']:record['offset'] + len(raw)], raw)
+            gates.replay(ROOT, source, receipt)
+
+
+try:
+    from .hexctl_harness import HexctlCase, hexctl_module
+except ImportError:
+    from hexctl_harness import HexctlCase, hexctl_module
+
+
+class GateReceiptTests(HexctlCase):
+    def test_plain_status_reports_current_and_stale_without_mutation(self):
+        import json
+        self.current_run()
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        for stale in (False, True):
+            if stale:
+                path = Path(self.target, BREVITAS)
+                path.write_text(path.read_text() + '\n# fixture source drift\n')
+            with self.subTest(stale=stale):
+                paths = [Path(self.target, '.hexaemeron', name) for name in ('state.json', 'ledger.jsonl')]
+                before = [path.read_bytes() for path in paths]
+                expected = json.loads(self.run_ctl('status', '--field', 'gate_command_status').stdout)
+                result = self.run_ctl('status')
+                self.assertEqual([path.read_bytes() for path in paths], before)
+                lines = [line.removeprefix('gate commands: ') for line in result.stdout.splitlines() if line.startswith('gate commands: ')]
+                self.assertEqual(len(lines), 1, result.stdout)
+                self.assertEqual(json.loads(lines[0]), expected)
+                self.assertEqual(expected['status'], 'stale-or-invalid' if stale else 'current')
+
+    def test_current_report_receipt_survives_checkpoint_move(self):
+        import json
+        try:
+            from plugins.hexaemeron.tests.test_hexctl_checkpoint import HexctlCheckpointTests as helpers
+        except ModuleNotFoundError:
+            from test_hexctl_checkpoint import HexctlCheckpointTests as helpers
+        runner = 'plugins/hexaemeron/tests/run_tests.py'
+        for name in (BREVITAS, runner):
+            self.write(name, (ROOT / name).read_text())
+        self.git('add', BREVITAS, runner)
+        self.git('commit', '-m', 'Fixture registered CLI sources')
+        self.run_ctl('init', '--topic', 'Current gate checkpoint fixture')
+        self.write_design_evidence()
+        study = self.write('.hexaemeron/study.md', '# Study\n\n```risk-register\nsource | drift | replay\n```\n')
+        self.run_ctl('done', 'study', '--artifact', study, '--skills', 'hexaemeron:protasis')
+        text = '# Runbook\n\n'
+        for number, title in ((1, 'First'), (2, 'Second')):
+            tests = 'Interface.' if number == 1 else ('Elenchus command: `python3 ' + runner + ' --jobs 12 --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/reports/second.json`.')
+            text += ('## Step ' + str(number) + ': ' + title + '\n\n**Goal.** Interface.\n**Entry.** Source.\n**Exit.** `' + COMMAND + '`\n**Files.** file.py\n**Tests.** ' + tests + '\n**Disciplines.** phylax: inert.\n\n')
+        runbook = self.write('.hexaemeron/runbook.md', text)
+        steps = self.write('.hexaemeron/steps.json', json.dumps(['First', 'Second']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        state = self.state()
+        receipt = copy.deepcopy(state['receipts']['runbook']['gate_commands'])
+        for step in state['steps']:
+            self.git('branch', self.step_branch(step['n'], state))
+        self.run_ctl('record', 'security_suite', '"waived: fixture"')
+        self.finish_step(1)
+        capsule = Path(self.dir).resolve() / 'current-gate-capsule'
+        payload = json.loads(self.run_ctl('checkpoint', 'export', '--out', str(capsule)).stdout)
+        origin, _ = helpers.fresh_origin_for(self, capsule)
+        helpers.restore_into(self, origin, capsule, payload['manifest_sha256'], environment=helpers.direct_environment(self))
+        restored = helpers.restored_worktree(origin)
+        restored_state = json.loads((restored / '.hexaemeron/state.json').read_bytes())
+        self.assertNotEqual(str(restored), receipt['source_root'])
+        self.assertEqual(restored_state['receipts']['runbook']['gate_commands'], receipt)
+        gates.replay(restored, (restored / '.hexaemeron/runbook.md').read_bytes(), receipt)
+
+    def current_run(self, *, with_criteria=False):
+        self.run_ctl('init', '--topic', 'Current gate fixture')
+        self.write_design_evidence()
+        self.write(BREVITAS, (ROOT / BREVITAS).read_text())
+        text = '# Study\n\n```risk-register\ncommand-drift | gate | compare source\n```\n'
+        if with_criteria:
+            text = (ROOT / 'plugins/hexaemeron/tests/fixtures/protasis/complete-study.md').read_text()
+            text += '\n```success-criteria\n' + json.dumps({
+                'schema': 'protasis-success-criteria/v1',
+                'criteria': [{
+                    'id': 'checked', 'claim': 'The command succeeds.',
+                    'step': 1, 'command': COMMAND,
+                }],
+            }) + '\n```\n'
+        study = self.write('study.md', text)
+        self.run_ctl('done', 'study', '--artifact', study, '--skills', 'hexaemeron:protasis')
+        return self.state()
+
+    def runbook(self, command=COMMAND):
+        return self.write('runbook.md', '# Runbook\n\n## Step 1: Gate\n\n**Goal.** Validate.\n**Entry.** Source.\n**Exit.** `' + command + '`\n**Files.** file.py\n**Tests.** Test interface.\n**Disciplines.** phylax: no execution.\n')
+
+    def test_current_init_and_refusal_precede_runbook_mutation(self):
+        import json
+        state = self.current_run()
+        self.assertEqual(state['contracts']['gate_commands'], gates.SCHEMA)
+        before = Path(self.target, '.hexaemeron/state.json').read_bytes()
+        runbook = self.runbook(COMMAND + ' two.md three.md four.md')
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps, expect=1)
+        self.assertEqual(Path(self.target, '.hexaemeron/state.json').read_bytes(), before)
+        runbook = self.runbook()
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        self.run_ctl('verify')
+        receipt = self.state()['receipts']['runbook']['gate_commands']
+        self.assertFalse(receipt['operation_ran'])
+        self.assertEqual(receipt['commands'][0]['invocations'][0]['argv'][-1], 'one.md')
+
+    def test_current_init_marker_cannot_be_downgraded(self):
+        self.current_run()
+        module = hexctl_module()
+        state = self.state()
+        del state['contracts']['gate_commands']
+        module.commit(self.target, state, 'fixture:attempt-downgrade', {})
+        result = self.run_ctl('verify', expect=1)
+        self.assertIn('immutable init', result.stderr)
+        status = self.run_ctl('status', '--field', 'gate_command_status')
+        self.assertIn('stale-or-invalid', status.stdout)
+
+    def committed_run(self):
+        """A current run whose registered module is committed at the starting commit."""
+        self.write(BREVITAS, (ROOT / BREVITAS).read_text())
+        self.git('add', BREVITAS)
+        self.git('commit', '-m', 'Fixture registered CLI source')
+        self.run_ctl('init', '--topic', 'Pinned controller fixture')
+        self.write_design_evidence()
+        study = self.write('study.md', '# Study\n\n```risk-register\ncontroller-skew | gate | name the recorded controller\n```\n')
+        self.run_ctl('done', 'study', '--artifact', study, '--skills', 'hexaemeron:protasis')
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        return self.state()
+
+    def skewed_controller(self, pin, version):
+        """A copy of this controller whose brevitas pin was taken at another commit."""
+        skills = Path(self.dir, 'skewed-controller', 'plugins', 'hexaemeron', 'skills')
+        for skill in ('fiat', 'protasis'):
+            shutil.copytree(ROOT / 'plugins/hexaemeron/skills' / skill / 'scripts', skills / skill / 'scripts')
+        ledger = ROOT / 'plugins/hexaemeron/skills/fiat/EVOLUTION.md'
+        lines = [line for line in ledger.read_text().splitlines(keepends=True) if line.startswith('- Current version:')]
+        self.assertEqual(len(lines), 1)
+        (skills / 'fiat/EVOLUTION.md').write_text(ledger.read_text().replace(lines[0], '- Current version: `' + version + '`\n'))
+        adapter = skills / 'protasis/scripts/gate_commands.py'
+        text = adapter.read_text()
+        self.assertIn(gates.MODULE_BINDINGS[BREVITAS], text)
+        adapter.write_text(text.replace(gates.MODULE_BINDINGS[BREVITAS], pin))
+        return skills / 'fiat/scripts/hexctl.py'
+
+    def run_controller(self, controller, *args, expect):
+        env = dict(self.env)
+        env['FAKE_GIT_REFS'] = json.dumps(self.fake_refs)
+        env['FAKE_GIT_PARENTS'] = json.dumps(self.fake_parents)
+        env['FAKE_GH_PRS'] = json.dumps(self.fake_prs)
+        proc = subprocess.run([sys.executable, str(controller), *args], cwd=self.target, capture_output=True, text=True, env=env)
+        self.assertEqual(proc.returncode, expect, proc.stdout + proc.stderr)
+        return proc
+
+    def test_controller_pin_skew_names_the_recorded_controller(self):
+        state = self.committed_run()
+        recorded = state['receipts']['controller_currency']['ledger_version']
+        self.run_ctl('verify')
+        controller = self.skewed_controller('0' * 64, 'fiat-v9.99.9')
+        paths = [Path(self.target, '.hexaemeron', name) for name in ('state.json', 'ledger.jsonl')]
+        before = [path.read_bytes() for path in paths]
+        result = self.run_controller(controller, 'verify', expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        for expected in ('unregistered-cli-module-bindings', BREVITAS, 'is unchanged since the run\'s starting commit ' + state['base'],
+                         'pinned at different commits', 'fiat-v9.99.9 at ', recorded + ' at init', 'rather than amending the runbook'):
+            self.assertIn(expected, result.stderr)
+        self.assertNotIn('submit a freshly validated runbook amendment', result.stderr)
+        self.assertNotIn('delegated briefs', result.stderr)
+        status = json.loads(self.run_controller(controller, 'status', '--field', 'gate_command_status', expect=0).stdout)
+        self.assertEqual(status['status'], 'stale-or-invalid')
+        self.assertEqual(status['cause'], 'controller-pin-skew')
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'unchanged', 'named_by_runbook': True}])
+        self.assertIn('inspect verify output; registered module ' + BREVITAS, status['recovery'])
+        brief = Path(self.target, '.hexaemeron', 'briefs', 'step-1-implement.json')
+        brief.parent.mkdir()
+        brief.write_text(json.dumps({'plugin_root': str(ROOT / 'plugins/hexaemeron'), 'topic': 'fixture'}))
+        result = self.run_controller(controller, 'verify', expect=1)
+        self.assertIn('(plugin_root ' + str(ROOT / 'plugins/hexaemeron') + ' in its delegated briefs)', result.stderr)
+        self.run_ctl('verify')
+
+    def test_module_edited_in_run_keeps_the_amendment_recovery(self):
+        state = self.committed_run()
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\nbuild_parser_alias = build_parser\n')
+        result = self.run_ctl('verify', expect=1)
+        self.assertIn('unregistered-cli-module-bindings', result.stderr)
+        self.assertIn(BREVITAS + ' changed inside the run since its starting commit ' + state['base'], result.stderr)
+        self.assertIn('submit a freshly validated runbook amendment', result.stderr)
+        self.assertNotIn('pinned at different commits', result.stderr)
+        status = json.loads(self.run_ctl('status', '--field', 'gate_command_status').stdout)
+        self.assertEqual(status['cause'], 'module-edited-in-run')
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed', 'named_by_runbook': True}])
+
+    def test_full_cli_source_drift_blocks_mutation_then_amend(self):
+        import json
+        self.current_run()
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\n# changed source, same parser\n')
+        self.run_ctl('verify', expect=1)
+        self.run_ctl('config', 'set', 'audit.max_rounds', '7', expect=1)
+        candidate = self.write('candidate.md', Path(self.target, runbook).read_text() + self.runbook_amendment(verdicts='Step 1: entry holds; exit holds.', what='Complete replacement Exit: Run `' + COMMAND + '`.', touched='Step 1.'))
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('verify')
+
+    def criteria_amendment_fixture(self):
+        self.current_run(with_criteria=True)
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        candidate = self.write(
+            'candidate.md', Path(self.target, runbook).read_text()
+            + self.runbook_amendment(
+                verdicts='Step 1: entry holds; exit holds.',
+                what='Complete replacement Files: file.py and notes.md.',
+                touched='Step 1.',
+            ),
+        )
+        return runbook, candidate
+
+    def test_criteria_replay_uses_the_baseline_runbook_gate(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        before = self.state()['receipts']['runbook']
+        ledger = Path(self.target, '.hexaemeron/ledger.jsonl')
+        previous_events = ledger.read_bytes()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('verify')
+        after = self.state()['receipts']['runbook']
+        self.assertEqual(after['gate_commands'], before['gate_commands'])
+        self.assertEqual(after['success_criteria']['history']['versions'][0],
+                         before['success_criteria']['history']['versions'][0])
+        self.assertEqual(after['success_criteria']['attempts'], [])
+        self.assertNotEqual(after['success_criteria']['gate_commands']['artifact_sha256'],
+                            before['success_criteria']['gate_commands']['artifact_sha256'])
+        self.assertTrue(ledger.read_bytes().startswith(previous_events))
+
+    def study_criteria_candidate(self, name='study-candidate.md', reason='Record the reviewed controller.'):
+        return self.write(name, Path(self.target, 'study.md').read_text() + (
+            '\n### Amendment -- 2026-09-21\n\n'
+            '**What changed.** ' + reason + '\n\n'
+            '**Why.** Keep the source receipt current.\n\n'
+            '**Steps touched.** Step 1.\n\n'
+            '**Still holding.** Step 1: entry holds; exit holds.\n'
+        ))
+
+    def test_study_amendment_replays_keeping_original_admission(self):
+        self.criteria_amendment_fixture()
+        original = copy.deepcopy(self.state()['receipts']['runbook']['success_criteria'])
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate())
+        self.run_ctl('verify')
+        state = self.state()
+        active = hexctl_module().success_criteria_admission(state)
+        self.assertEqual(active['study_sha256'], state['receipts']['study']['sha256'])
+        self.assertEqual(active['history']['versions'][0], original['history']['versions'][0])
+        self.assertEqual(active['attempts'], original.get('attempts', []))
+        self.assertNotIn('success_criteria', state['receipts']['study'])
+        self.assertEqual(len(active['history']['amendments']), 1)
+        self.assertFalse(active['operation_ran'])
+        self.run_ctl('status')
+        self.run_ctl('next')
+
+    def test_released_criteria_replays_consecutive_amendments(self):
+        import hashlib
+        from unittest.mock import patch
+        self.current_run(with_criteria=True)
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        directory = Path(self.dir, 'released-controller/plugins/hexaemeron/skills')
+        for skill in ('fiat', 'protasis', 'hypomnema'):
+            shutil.copytree(ROOT / 'plugins/hexaemeron/skills' / skill / 'scripts',
+                            directory / skill / 'scripts')
+        adapter = directory / 'protasis/scripts/gate_commands.py'
+        # Read the released Hexaemeron 1.6.69 adapter from the commit that
+        # shipped it; rewriting the current source stops reproducing it once
+        # the adapter moves on.
+        source = subprocess.run(
+            ['git', '-C', str(ROOT), 'cat-file', 'blob',
+             'a06cd696cbfade69eeb42a49e91d876550ccdb36:plugins/hexaemeron/skills/protasis/scripts/gate_commands.py'],
+            stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=60).stdout
+        self.assertEqual(hashlib.sha256(source).hexdigest(),
+                         'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4')
+        adapter.write_bytes(source)
+        controller = directory / 'fiat/scripts/hexctl.py'
+        with patch.object(sys.modules[HexctlCase.__module__], 'HEXCTL', str(controller)):
+            self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        paths = [Path(self.target, '.hexaemeron', name)
+                 for name in ('state.json', 'ledger.jsonl')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('verify')
+        self.run_ctl('status')
+        self.run_ctl('next')
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate())
+        self.run_ctl('verify')
+
+        state = self.state()
+        original_gate = copy.deepcopy(state['receipts']['runbook']['gate_commands'])
+        active = hexctl_module().success_criteria_admission(state)
+        self.assertNotEqual(original_gate['adapter_sha256'],
+                            active['gate_commands']['adapter_sha256'])
+        module = hexctl_module()
+        study_bytes = Path(self.target, 'study.md').read_bytes()
+        runbook_bytes = Path(self.target, runbook).read_bytes()
+        for field in ('adapter_sha256', 'source_root', 'artifact_sha256', 'commands',
+                      'operation_ran'):
+            with self.subTest(corrupted_gate_field=field):
+                forged = copy.deepcopy(active)
+                value = forged['gate_commands'][field]
+                forged['gate_commands'][field] = (
+                    [] if isinstance(value, list) else True if isinstance(value, bool)
+                    else '0' * 64)
+                with self.assertRaisesRegex(ValueError, '^recovery-admission-drift$'):
+                    module._criteria_recovery_admission(
+                        self.target, study_bytes, runbook_bytes, forged, original_gate)
+        for unknown in ('0' * 64, [], {}):
+            with self.subTest(unknown_prior=unknown):
+                unknown_prior = {**original_gate, 'adapter_sha256': unknown}
+                with self.assertRaisesRegex(ValueError, '^recovery-admission-drift$'):
+                    module._criteria_recovery_admission(
+                        self.target, study_bytes, runbook_bytes, active, unknown_prior)
+        candidate = self.write('runbook-after-adapter-refresh.md',
+                               Path(self.target, runbook).read_text()
+                               + self.runbook_amendment(
+                                   verdicts='Step 1: entry holds; exit holds.',
+                                   what='Complete replacement Files: file.py and evidence.md.',
+                                   touched='Step 1.'))
+        previous_events = paths[1].read_bytes()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate(
+            'second-study.md', 'Retain the reviewed command.'))
+        self.run_ctl('verify')
+        self.run_ctl('status')
+        self.run_ctl('next')
+        self.assertEqual(self.state()['receipts']['runbook']['gate_commands'], original_gate)
+        self.assertTrue(paths[1].read_bytes().startswith(previous_events))
+        active = hexctl_module().success_criteria_admission(self.state())
+        self.assertEqual([row['kind'] for row in active['history']['amendments']],
+                         ['study', 'runbook', 'study'])
+
+    def legacy_study_criteria_pending(self):
+        import argparse
+        import os
+        from unittest.mock import patch
+        self.criteria_amendment_fixture()
+        candidate = self.study_criteria_candidate()
+        module = hexctl_module()
+        previous = copy.deepcopy(self.state()['receipts']['runbook']['success_criteria'])
+        commit = module.commit
+
+        def legacy_commit(base_dir, state, event, data):
+            receipts = state['receipts']
+            admission = receipts['runbook']['success_criteria']
+            if admission['study_sha256'] == receipts['study']['sha256']:
+                receipts['study']['success_criteria'] = admission
+                receipts['runbook']['success_criteria'] = previous
+            return commit(base_dir, state, event, data)
+
+        with patch.dict(os.environ, self.env), patch.object(module, 'commit', legacy_commit), patch.object(
+                module, 'verify_run', side_effect=RuntimeError('fixture interruption after study commit')):
+            with self.assertRaisesRegex(RuntimeError, 'after study commit'):
+                module.cmd_amend_study(argparse.Namespace(
+                    dir=self.target, artifact=str(Path(self.target, candidate))))
+        return module
+
+    def test_legacy_study_amendment_recovers_no_history_rewrite(self):
+        module = self.legacy_study_criteria_pending()
+        paths = [Path(self.target, name) for name in (
+            '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'study.md', 'runbook.md')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('amend', 'study', '--artifact', 'study.md')
+        self.assertFalse(module.pending_amendments(self.target))
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.run_ctl('verify')
+        state = self.state()
+        self.assertEqual(module.success_criteria_admission(state),
+                         state['receipts']['study']['success_criteria'])
+        candidate = self.write('runbook-after-study.md', Path(self.target, 'runbook.md').read_text()
+                               + self.runbook_amendment(
+                                   verdicts='Step 1: entry holds; exit holds.',
+                                   what='Complete replacement Files: file.py and evidence.md.',
+                                   touched='Step 1.'))
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate(
+            'second-study.md', 'Retain the reviewed command.'))
+        self.run_ctl('verify')
+        state = self.state()
+        active = module.success_criteria_admission(state)
+        self.assertEqual(active, state['receipts']['runbook']['success_criteria'])
+        self.assertEqual([row['kind'] for row in active['history']['amendments']],
+                         ['study', 'runbook', 'study'])
+        self.assertEqual(active['study_sha256'], state['receipts']['study']['sha256'])
+        self.assertEqual(active['runbook_sha256'], state['receipts']['runbook']['sha256'])
+
+    def test_study_recovery_refuses_conflicting_missing_custody(self):
+        module = self.legacy_study_criteria_pending()
+        original = self.state()
+        paths = [Path(self.target, '.hexaemeron', name)
+                 for name in ('state.json', 'ledger.jsonl', 'study-amendment-pending.json')]
+        before = [path.read_bytes() for path in paths]
+        for corruption in ('missing-runbook', 'malformed-study-history', 'forked-history', 'lost-attempt', 'stale-study'):
+            state = copy.deepcopy(original)
+            receipts = state['receipts']
+            with self.subTest(corruption=corruption):
+                if corruption == 'missing-runbook':
+                    del receipts['runbook']['success_criteria']
+                elif corruption == 'malformed-study-history':
+                    receipts['study']['amendments'] = 1
+                elif corruption == 'forked-history':
+                    receipts['study']['success_criteria']['history']['versions'][0]['study_sha256'] = '0' * 64
+                elif corruption == 'lost-attempt':
+                    receipts['runbook']['success_criteria']['attempts'] = [{'lost': True}]
+                else:
+                    receipts['study']['sha256'] = '0' * 64
+                with self.assertRaises(SystemExit) as refused:
+                    module.success_criteria_admission(state)
+                self.assertEqual(refused.exception.code, 1)
+                self.assertEqual([path.read_bytes() for path in paths], before)
+
+    def test_study_criteria_recovers_source_replace_pre_receipt(self):
+        import argparse
+        import os
+        from unittest.mock import patch
+        self.criteria_amendment_fixture()
+        candidate = self.study_criteria_candidate()
+        module = hexctl_module()
+        replace = module._replace_study_bytes
+
+        def interrupted(path, data):
+            replace(path, data)
+            raise RuntimeError('fixture interruption after source replace')
+
+        with patch.dict(os.environ, self.env), patch.object(module, '_replace_study_bytes', interrupted):
+            with self.assertRaisesRegex(RuntimeError, 'after source replace'):
+                module.cmd_amend_study(argparse.Namespace(
+                    dir=self.target, artifact=str(Path(self.target, candidate))))
+        self.run_ctl('amend', 'study', '--artifact', 'study.md')
+        self.assertFalse(module.pending_amendments(self.target))
+        self.run_ctl('verify')
+        self.assertNotIn('success_criteria', self.state()['receipts']['study'])
+
+    def test_criteria_replay_keeps_prior_cli_id_after_amendment(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        before = self.state()['receipts']['runbook']['success_criteria']['gate_commands']
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\n# changed source, same parser\n')
+        self.run_ctl('verify', expect=1)
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('verify')
+        after = self.state()['receipts']['runbook']['success_criteria']['gate_commands']
+        self.assertNotEqual(before['commands'][0]['invocations'][0]['cli']['sha256'],
+                            after['commands'][0]['invocations'][0]['cli']['sha256'])
+
+    def test_criteria_amendment_recovers_after_receipt_commit(self):
+        import argparse
+        import os
+        from unittest.mock import patch
+        runbook, candidate = self.criteria_amendment_fixture()
+        module = hexctl_module()
+        with patch.dict(os.environ, self.env), patch.object(
+                module, 'clear_amendment_pending',
+                side_effect=RuntimeError('fixture interruption after receipt')):
+            with self.assertRaisesRegex(RuntimeError, 'after receipt'):
+                module.cmd_amend_runbook(argparse.Namespace(
+                    dir=self.target, artifact=str(Path(self.target, candidate))))
+        ledger = Path(self.target, '.hexaemeron/ledger.jsonl')
+        before = ledger.read_bytes()
+        self.assertTrue(module.pending_amendments(self.target))
+        self.run_ctl('amend', 'runbook', '--artifact', runbook)
+        self.assertFalse(module.pending_amendments(self.target))
+        self.assertEqual(ledger.read_bytes(), before)
+        self.run_ctl('verify')
+
+    def test_criteria_baseline_gate_forgery_still_refuses(self):
+        self.criteria_amendment_fixture()
+        module = hexctl_module()
+        entries = [json.loads(line) for line in Path(
+            self.target, '.hexaemeron/ledger.jsonl').read_text().splitlines()]
+        event = copy.deepcopy(next(row['data'] for row in entries
+                                   if row['event'] == 'done:runbook'))
+        event['success_criteria']['gate_commands']['artifact_sha256'] = '0' * 64
+        with self.assertRaises(SystemExit) as refused:
+            module.verify_success_criteria(
+                self.target, self.state(), entries[0], event, [], [])
+        self.assertEqual(refused.exception.code, 1)
+
+    def test_criteria_active_gate_forgery_still_refuses(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        module = hexctl_module()
+        state = self.state()
+        state['receipts']['runbook']['success_criteria']['gate_commands']['artifact_sha256'] = '0' * 64
+        module.commit(self.target, state, 'fixture:criteria-gate-forgery', {})
+        paths = [Path(self.target, '.hexaemeron', name)
+                 for name in ('state.json', 'ledger.jsonl')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('verify', expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+
+    def test_criteria_amendment_checks_new_cli_before_writing(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\nbuild_parser_alias = build_parser\n')
+        paths = [Path(self.target, name) for name in (
+            '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'runbook.md')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('amend', 'runbook', '--artifact', candidate, expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(hexctl_module().pending_amendments(self.target))
+
+    def test_criteria_amendment_refuses_changed_join_before_writing(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        module = hexctl_module()
+        state = self.state()
+        state['receipts']['runbook']['success_criteria']['join']['criteria'][0]['claim'] = 'forged'
+        module.commit(self.target, state, 'fixture:criteria-join-forgery', {})
+        paths = [Path(self.target, name) for name in (
+            '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'runbook.md')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('amend', 'runbook', '--artifact', candidate, expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(module.pending_amendments(self.target))
+
+    def test_pending_amendment_recovers_after_source_replace(self):
+        import argparse
+        import json
+        from unittest.mock import patch
+        import os
+        self.current_run()
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        candidate = self.write('candidate.md', Path(self.target, runbook).read_text() + self.runbook_amendment(verdicts='Step 1: entry holds; exit holds.', what='Complete replacement Exit: Run `' + COMMAND + '`.', touched='Step 1.'))
+        module = hexctl_module()
+        replace = module._replace_runbook_bytes
+        def interrupted(path, data):
+            replace(path, data)
+            raise RuntimeError('fixture interruption after actual replacement')
+        before = self.state()
+        with patch.dict(os.environ, self.env), patch.object(module, '_replace_runbook_bytes', interrupted):
+            with self.assertRaisesRegex(RuntimeError, 'actual replacement'):
+                module.cmd_amend_runbook(argparse.Namespace(dir=self.target, artifact=str(Path(self.target, candidate))))
+        self.assertEqual(self.state(), before)
+        self.assertIn('Complete replacement Exit:', Path(self.target, runbook).read_text())
+        self.assertTrue(module.pending_amendments(self.target))
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.assertFalse(module.pending_amendments(self.target))
+        self.run_ctl('verify')
+
+    def test_historical_fixture_remains_legacy_without_backfill(self):
+        self.to_steps(titles=('Legacy',))
+        self.assertNotIn('gate_commands', self.state()['contracts'])
+        self.assertNotIn('gate_commands', self.state()['receipts']['runbook'])
+        self.run_ctl('verify')
+
+
+class GateReportTests(unittest.TestCase):
+    def test_source_owned_report_bytes_and_relative_declaration(self):
+        import json
+        import os
+        import sys
+        import time
+        try:
+            from plugins.hexaemeron.tests import run_tests as producer
+        except ModuleNotFoundError:
+            import run_tests as producer
+        elenchus_path = ROOT / 'plugins/hexaemeron/skills/elenchus/scripts/elenchus.py'
+        specification = importlib.util.spec_from_file_location('gate_elenchus_owner', elenchus_path)
+        owner = importlib.util.module_from_spec(specification)
+        sys.modules[specification.name] = owner
+        specification.loader.exec_module(owner)
+        source_command = 'python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}'
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            script = root / 'plugins/hexaemeron/tests/run_tests.py'
+            script.parent.mkdir(parents=True)
+            script.write_bytes(Path(producer.__file__).read_bytes())
+            declaration = {'format': 'unittest-json-v1', 'file': '.hexaemeron/reports/specimen.json'}
+            binding = gates.validate_command(root, source_command, declaration)
+            absolute = binding['invocations'][0]['execution_argv'][-1]
+            prior = Path.cwd()
+            try:
+                os.chdir(root)
+                target = producer.bind_report_target(absolute, producer.argument_parser())
+                started = time.time_ns()
+                result = unittest.TestResult()
+                unittest.FunctionTestCase(lambda: self.assertEqual(2 + 2, 4)).run(result)
+                payload = producer.result_payload(result)
+                producer.write_report(target, payload)
+                raw = Path(absolute).read_bytes()
+                normal = owner.read_report(Path(absolute), declaration['format'], started, root)
+                self.assertEqual(normal.executed, 1)
+                self.assertEqual(Path(absolute).read_bytes(), raw)
+                self.assertEqual(json.loads(raw)['schema'], 'elenchus.unittest.v1')
+                self.assertEqual(binding['report']['file'], '.hexaemeron/reports/specimen.json')
+                self.assertEqual(binding['command'], source_command)
+                self.observations = {'relative-source-declaration-preserved': binding['report'],
+                    'absolute-execution-destination': absolute,
+                    'report-bytes-preserved': {'sha256': gates.digest(raw), 'bytes': len(raw), 'producer_schema': payload['schema'], 'format': declaration['format'], 'actual_testsRun': result.testsRun, 'raw_utf8': raw.decode('utf-8')}}
+                for bad in ('../outside.json', '.git/report.json'):
+                    with self.assertRaises(gates.Refusal):
+                        gates.validate_command(root, source_command, {'format': declaration['format'], 'file': bad})
+                self.observations['report-escape-refused'] = ['../outside.json', '.git/report.json']
+            finally:
+                os.chdir(prior)
+
+
+class GateConformanceTests(unittest.TestCase):
+    def test_inert_parser_specimens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / BREVITAS
+            target.parent.mkdir(parents=True)
+            target.write_bytes((ROOT / BREVITAS).read_bytes())
+            marker = root / 'unexpected-effect'
+            commands = {
+                'malformed-fence': '```sh\n' + COMMAND + '\n~~~\n',
+                'four-draft-brevitas': '```sh\n' + COMMAND + ' two.md three.md four.md\n```\n',
+                'unsupported-substitution': '```sh\n' + COMMAND + ' $(echo injected)\n```\n',
+                'injected-command-no-side-effect': '```sh\n' + COMMAND + '; touch ' + str(marker) + '\n```\n',
+            }
+            self.observations = {}
+            for name, source in commands.items():
+                with self.subTest(name=name), self.assertRaises(gates.Refusal) as caught:
+                    gates.validate(root, source.encode())
+                self.assertFalse(marker.exists())
+                self.observations[name] = {'source': source, 'refusal': str(caught.exception), 'marker_exists': False, 'operation_ran': False}
+
+    def test_exact_replay_specimens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / BREVITAS
+            path.parent.mkdir(parents=True)
+            original = (ROOT / BREVITAS).read_bytes()
+            path.write_bytes(original)
+            command = 'for file in one.md "two drafts.md"; do ' + COMMAND.replace('one.md', '"$file"') + '; done'
+            source = ('```sh\n' + command + '\n```\n').encode()
+            receipt = gates.validate(root, source)
+            gates.replay(root, source, receipt)
+            self.observations = {'finite-per-file-command': receipt}
+            changed = source.replace(b'one.md', b'changed.md')
+            with self.assertRaises(gates.Refusal) as caught:
+                gates.replay(root, changed, receipt)
+            self.observations['command-drift'] = {'refusal': str(caught.exception), 'changed_sha256': gates.digest(changed)}
+            path.write_bytes(original + b'\n# independently changed CLI source\n')
+            with self.assertRaises(gates.Refusal) as caught:
+                gates.replay(root, source, receipt)
+            self.observations['cli-source-drift'] = {'refusal': str(caught.exception), 'changed_sha256': gates.digest(path.read_bytes())}
+            path.write_bytes(original)
+            adapter = root / 'changed_adapter.py'
+            adapter.write_bytes(SOURCE.read_bytes() + b'\n# independently changed adapter source\n')
+            specification = importlib.util.spec_from_file_location('changed_gate_adapter_fixture', adapter)
+            changed_module = importlib.util.module_from_spec(specification)
+            specification.loader.exec_module(changed_module)
+            with self.assertRaises(changed_module.Refusal) as caught:
+                changed_module.replay(root, source, receipt)
+            self.observations['adapter-drift'] = {'refusal': str(caught.exception), 'changed_sha256': gates.digest(adapter.read_bytes())}
+            runner = root / 'plugins/hexaemeron/tests/run_tests.py'
+            runner.parent.mkdir(parents=True, exist_ok=True)
+            runner.write_bytes((ROOT / 'plugins/hexaemeron/tests/run_tests.py').read_bytes())
+            source = b'## Step 1: Reports\n**Tests.** Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/reports/one.json`.\n'
+            receipt = gates.validate(root, source)
+            changed = source.replace(b'one.json', b'two.json')
+            with self.assertRaises(gates.Refusal) as caught:
+                gates.replay(root, changed, receipt)
+            self.observations['report-source-drift'] = {'refusal': str(caught.exception), 'original': '.hexaemeron/reports/one.json', 'changed': '.hexaemeron/reports/two.json'}
+
+
+if __name__ == '__main__':
+    unittest.main()

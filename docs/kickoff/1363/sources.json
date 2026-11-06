@@ -1,0 +1,1438 @@
+{
+  "schema": "issue-1363-sources/v1",
+  "repository": "wildcat-finance/v2-protocol",
+  "snapshots": {
+    "deployed": {
+      "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+      "files": [
+        {
+          "path": "src/HooksFactory.sol",
+          "sha256": "f3a2ca3b4f9f239a07eb924ea1e4db73eeb44867a782ca48e4d59c157b8eada9",
+          "bytes": 24468,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/HooksFactory.sol"
+        },
+        {
+          "path": "src/IHooksFactory.sol",
+          "sha256": "deb205c5968ee7ae139623b7ffb50d454d4c3f34362cc92ee21ef6802ac047f8",
+          "bytes": 9790,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/IHooksFactory.sol"
+        },
+        {
+          "path": "src/ReentrancyGuard.sol",
+          "sha256": "f2098aacf8a3e6e4cf676664af8df623d8bf8364ea71f13eed7ce6f4dde64f96",
+          "bytes": 3102,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/ReentrancyGuard.sol"
+        },
+        {
+          "path": "src/WildcatArchController.sol",
+          "sha256": "28cbc8201d75bb7eb63aafcc06bece69acf353ce74bf9a491f2796cb61f1d7b9",
+          "bytes": 12740,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/WildcatArchController.sol"
+        },
+        {
+          "path": "src/WildcatSanctionsEscrow.sol",
+          "sha256": "4b99b2334124067b45624f2632c6273a9162d7050c17d8b508b95a953b077e33",
+          "bytes": 1362,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/WildcatSanctionsEscrow.sol"
+        },
+        {
+          "path": "src/WildcatSanctionsSentinel.sol",
+          "sha256": "41e34f67e71218445a88055d1c5ca8744e20c84787e629b943d2d9dc86dca0b1",
+          "bytes": 6702,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/WildcatSanctionsSentinel.sol"
+        },
+        {
+          "path": "src/access/BaseAccessControls.sol",
+          "sha256": "9850505ebbc026be35e45a3426c52298be2c5a823f4bc6e27ed8fc581e240fa4",
+          "bytes": 30742,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/BaseAccessControls.sol"
+        },
+        {
+          "path": "src/access/FixedTermHooks.sol",
+          "sha256": "03436e22b1585d82ade2e418ea25e72d717d4f64e247130edc7c1d02db0e1502",
+          "bytes": 17366,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/FixedTermHooks.sol"
+        },
+        {
+          "path": "src/access/IHooks.sol",
+          "sha256": "b7c2028d5670c62fbbe43805f36576b638e6cced3507e773b8d158e66dcc193c",
+          "bytes": 3169,
+          "disposition": "included; implemented IHooks.onCreateMarket is retained",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/IHooks.sol"
+        },
+        {
+          "path": "src/access/IRoleProvider.sol",
+          "sha256": "b9db5bedf9e21d487767e1b786444f5366f5473baac3b71e9f34020789142950",
+          "bytes": 652,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/IRoleProvider.sol"
+        },
+        {
+          "path": "src/access/IRoleProviderFactory.sol",
+          "sha256": "4ea3f2fdf1943df3b7a6d9ba64981fd4393f1e13f4c881134ad10ed2ab92c082",
+          "bytes": 172,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/IRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/access/MarketConstraintHooks.sol",
+          "sha256": "02e4c9b0e4c52c126691643d682dd01c32c88a5b48745ebf6dc3c526cd6eb46c",
+          "bytes": 11007,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/MarketConstraintHooks.sol"
+        },
+        {
+          "path": "src/access/OpenTermHooks.sol",
+          "sha256": "abe128fa4fddc24a44eb05e93b404fe1d18f973b0f1f4587313b13592d057b89",
+          "bytes": 14212,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/OpenTermHooks.sol"
+        },
+        {
+          "path": "src/access/ProviderStructs.sol",
+          "sha256": "49816d230642f580ca2544afc780ff6be33299ce9e1dcfa48c7b5b4540099dde",
+          "bytes": 1405,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/access/ProviderStructs.sol"
+        },
+        {
+          "path": "src/interfaces/IChainalysisSanctionsList.sol",
+          "sha256": "ebd33a4e47c71e14837bec78ffebec82c32faf72b4efeb0a1453bfe94ca6c3f5",
+          "bytes": 167,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/IChainalysisSanctionsList.sol"
+        },
+        {
+          "path": "src/interfaces/IERC20.sol",
+          "sha256": "f55382c591dcf77a6b324455a4c714a9469a212da25a178f63a56e7616df455e",
+          "bytes": 1075,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/IERC20.sol"
+        },
+        {
+          "path": "src/interfaces/IMarketEventsAndErrors.sol",
+          "sha256": "b70cdb05567a8e64a3e41f3f5658af93de8d7bc9b869be18b94d144fad9298b5",
+          "bytes": 4271,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/IMarketEventsAndErrors.sol"
+        },
+        {
+          "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+          "sha256": "9b543f7d14aaee5812c201383f68f05ba6655fccfeef270bd0e1052be688a3fa",
+          "bytes": 505,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/ISphereXProtectedRegisteredBase.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatArchController.sol",
+          "sha256": "f87a7b647177b0993f5920599423df8b6a4494c8ae262743ef0cc333f412cd36",
+          "bytes": 5503,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/IWildcatArchController.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatSanctionsEscrow.sol",
+          "sha256": "109ed484bf5914a3513a790f31a0c5286a71d630d32c076c87a26e22cb0130af",
+          "bytes": 621,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/IWildcatSanctionsEscrow.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatSanctionsSentinel.sol",
+          "sha256": "c1dbda0ffc1b14b3e8c5941f6355ba2f980a3871cf5de9275e9942d5371ee13a",
+          "bytes": 2506,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/IWildcatSanctionsSentinel.sol"
+        },
+        {
+          "path": "src/interfaces/WildcatStructsAndEnums.sol",
+          "sha256": "2294014bc8f3b2dda6f84d95c010edd367cc92441fba1095f0939cf7ebd12c00",
+          "bytes": 2112,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/interfaces/WildcatStructsAndEnums.sol"
+        },
+        {
+          "path": "src/lens/HooksConfigData.sol",
+          "sha256": "ff146246ff0f7cae0024ce8126374eb03324894c059266da59c1426b065ec966",
+          "bytes": 4319,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/HooksConfigData.sol"
+        },
+        {
+          "path": "src/lens/HooksDataForBorrower.sol",
+          "sha256": "4d1f00cccd7fdac85bf048432e1b7b8c0deeaf15d96216b03930db79006abefd",
+          "bytes": 1252,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/HooksDataForBorrower.sol"
+        },
+        {
+          "path": "src/lens/HooksInstanceData.sol",
+          "sha256": "3d40886ad23cbdbc89e1bd769977d4bf4786dfb9e413393fb7d91f079f7bc546",
+          "bytes": 2144,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/HooksInstanceData.sol"
+        },
+        {
+          "path": "src/lens/HooksTemplateData.sol",
+          "sha256": "51db529b2e3b50e5ed4d0613ab1a5180b1bcf0f17d2ebb202cdda286013d09fc",
+          "bytes": 2348,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/HooksTemplateData.sol"
+        },
+        {
+          "path": "src/lens/LenderAccountData.sol",
+          "sha256": "71af773813fb3b618edf6289a8e37e6667dbc48497bc12dbd781f7d2fce296fc",
+          "bytes": 2511,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/LenderAccountData.sol"
+        },
+        {
+          "path": "src/lens/MarketData.sol",
+          "sha256": "14a85a4d2c68ca55e3a391d5209297befb602e12c9c275c977e71fe47c32e388",
+          "bytes": 7444,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/MarketData.sol"
+        },
+        {
+          "path": "src/lens/MarketLens.sol",
+          "sha256": "22284bfb5277a9dc1198f0849e9a7080a14634653a878afd7f7f2acf7b13307f",
+          "bytes": 9076,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/MarketLens.sol"
+        },
+        {
+          "path": "src/lens/RoleProviderData.sol",
+          "sha256": "8b97b93b415610e8f0747755f7dca68e9334c21d869a74397ac30c23f97cf97c",
+          "bytes": 837,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/RoleProviderData.sol"
+        },
+        {
+          "path": "src/lens/TokenData.sol",
+          "sha256": "68a50aeec81b2f3172666b227d64b699147b6f572a9babb6b6d9fe5b189a6f4e",
+          "bytes": 898,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/TokenData.sol"
+        },
+        {
+          "path": "src/lens/WithdrawalBatchData.sol",
+          "sha256": "87e25dea080ddbe1225ddc4ba3914de74f0123cd00aedbd42eca1a1d50f93c4e",
+          "bytes": 3336,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/lens/WithdrawalBatchData.sol"
+        },
+        {
+          "path": "src/libraries/BoolUtils.sol",
+          "sha256": "b8e5c7e4a38ff68bded5e234b6966cdf9d6e94da9976015f1bcda69e74e18336",
+          "bytes": 411,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/BoolUtils.sol"
+        },
+        {
+          "path": "src/libraries/Errors.sol",
+          "sha256": "16f5464fc6d5eda8b1ab693866f35e25d0917e1145f791b9bbb255facad87e9a",
+          "bytes": 1938,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/Errors.sol"
+        },
+        {
+          "path": "src/libraries/FIFOQueue.sol",
+          "sha256": "7805eaa4c77f475ac11d6e055cd5b90c08219fce0d39fdd395a3fa12cb1505a0",
+          "bytes": 2298,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/FIFOQueue.sol"
+        },
+        {
+          "path": "src/libraries/FeeMath.sol",
+          "sha256": "4c81fce68038e7ee049540b71e69682b765fc692a6b27820d5b6e64df9aa060c",
+          "bytes": 6537,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/FeeMath.sol"
+        },
+        {
+          "path": "src/libraries/FunctionTypeCasts.sol",
+          "sha256": "489ebcef5ea5700013c4a24897adddbced1fc1679f9d0d59028198d85b3f7f7c",
+          "bytes": 1774,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/FunctionTypeCasts.sol"
+        },
+        {
+          "path": "src/libraries/LibERC20.sol",
+          "sha256": "1ee751f665bc41b99e9c04ed41ba692c70d8cd84eb90355bf44b12aa725b40b8",
+          "bytes": 8250,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/LibERC20.sol"
+        },
+        {
+          "path": "src/libraries/LibStoredInitCode.sol",
+          "sha256": "cb26fdfe045cfd08ac082fef7ab47371f5b1f0a7e821a2f6dd5ee7be374885b8",
+          "bytes": 6616,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/LibStoredInitCode.sol"
+        },
+        {
+          "path": "src/libraries/MarketErrors.sol",
+          "sha256": "02ae442a9323b350330a88af1774937aed7543e2c8a3711aebc4be74a476c6d1",
+          "bytes": 8026,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/MarketErrors.sol"
+        },
+        {
+          "path": "src/libraries/MarketEvents.sol",
+          "sha256": "bffeeebe2e4847a1beebdb40285e94f2838691320cc4f5958e5314d95bc83b57",
+          "bytes": 6728,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/MarketEvents.sol"
+        },
+        {
+          "path": "src/libraries/MarketState.sol",
+          "sha256": "1aa122075f0c45098599aff3df10fe86744d168a8bbe61a12570116739a67b8c",
+          "bytes": 4938,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/MarketState.sol"
+        },
+        {
+          "path": "src/libraries/MathUtils.sol",
+          "sha256": "6d75952ae99e472d73706d2f9277ead1fb77b8c6adc374c47491ccba1ad9c843",
+          "bytes": 6984,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/MathUtils.sol"
+        },
+        {
+          "path": "src/libraries/SafeCastLib.sol",
+          "sha256": "844e319a8e2494fa03a74696ffa8b4507205229aa68bf1fb253edc5d6f86645d",
+          "bytes": 4074,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/SafeCastLib.sol"
+        },
+        {
+          "path": "src/libraries/StringQuery.sol",
+          "sha256": "3f6e72a74c8b3abaf353fd49408aaf56de3a067135a4a5cdd52e6bf98cedf7cb",
+          "bytes": 2793,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/StringQuery.sol"
+        },
+        {
+          "path": "src/libraries/Withdrawal.sol",
+          "sha256": "a116c5d96e2bdd5739c460410356ced92bc1b3ea07e15ab4e85b525231c1cb5c",
+          "bytes": 1938,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/libraries/Withdrawal.sol"
+        },
+        {
+          "path": "src/market/WildcatMarket.sol",
+          "sha256": "e208fce7c2d9126df9a400f4d4aee7e47f0a767a710826a3b679f924c923d39f",
+          "bytes": 11010,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/deployed-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/market/WildcatMarket.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketBase.sol",
+          "sha256": "f84d6137bccb554b25e9563362d5a0155579f89e4f9073d95df80b14a318353a",
+          "bytes": 29065,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/deployed-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/market/WildcatMarketBase.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketConfig.sol",
+          "sha256": "4249e124541a9abbb8e6d0dac3342c0b68f3c8a9530ce944ebece84335f858d0",
+          "bytes": 7126,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/deployed-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/market/WildcatMarketConfig.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketToken.sol",
+          "sha256": "db26f7b46e6800afc7c441ea3a39e53337aae272e03fe49d0890ea256c52d098",
+          "bytes": 3095,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/deployed-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/market/WildcatMarketToken.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketWithdrawals.sol",
+          "sha256": "f1428b3eb479bba19b6b332c75953ed8d236ef72abb2d17f4c0bc933b73c22d4",
+          "bytes": 12472,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/deployed-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/market/WildcatMarketWithdrawals.sol"
+        },
+        {
+          "path": "src/spherex/ISphereXEngine.sol",
+          "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92",
+          "bytes": 1743,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/spherex/ISphereXEngine.sol"
+        },
+        {
+          "path": "src/spherex/SphereXConfig.sol",
+          "sha256": "35bb7a0506954ebdd456a1c031019b6cf663d91fc3930d072d406f505753f324",
+          "bytes": 7681,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/spherex/SphereXConfig.sol"
+        },
+        {
+          "path": "src/spherex/SphereXProtectedErrors.sol",
+          "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884",
+          "bytes": 643,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/spherex/SphereXProtectedErrors.sol"
+        },
+        {
+          "path": "src/spherex/SphereXProtectedEvents.sol",
+          "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63",
+          "bytes": 1262,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/spherex/SphereXProtectedEvents.sol"
+        },
+        {
+          "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+          "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2",
+          "bytes": 13725,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/spherex/SphereXProtectedRegisteredBase.sol"
+        },
+        {
+          "path": "src/types/HooksConfig.sol",
+          "sha256": "ed5734a684ca96f502294930de30885c2fa9d924948a4a1a75aa628b5b3512e2",
+          "bytes": 36475,
+          "disposition": "included",
+          "source_analysis": "evidence/deployed-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/types/HooksConfig.sol"
+        },
+        {
+          "path": "src/types/LenderStatus.sol",
+          "sha256": "ef09bcf403273d4f7c3e7088d8e07169b28e7f7a8e9811a1c797ad51f14915fb",
+          "bytes": 2464,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/types/LenderStatus.sol"
+        },
+        {
+          "path": "src/types/RoleProvider.sol",
+          "sha256": "f562a23fd737795428b5dcd190993505b51f4abf4ebaf2dc499ca5ea9133715f",
+          "bytes": 5628,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/types/RoleProvider.sol"
+        },
+        {
+          "path": "src/types/TransientBytesArray.sol",
+          "sha256": "385b76f7fa3a051cd128cf68033c730930111e0621191163dd8d34a18d0b90fe",
+          "bytes": 3987,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/deployed-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/types/TransientBytesArray.sol"
+        },
+        {
+          "path": "src/vault/Wildcat4626Wrapper.sol",
+          "sha256": "9dc65f4e614cce819b5c6ec57344dc50447304c146bc1297952ebdaeba6dfb00",
+          "bytes": 17456,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/vault/Wildcat4626Wrapper.sol"
+        },
+        {
+          "path": "src/vault/Wildcat4626WrapperFactory.sol",
+          "sha256": "29aaccff079597cb02a03124ad343ae75aaedff1e82853e458585df2db5d777e",
+          "bytes": 1428,
+          "disposition": "included-source",
+          "source_analysis": "evidence/deployed-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/f5a26146987926f4811b72a795d662813dedfe85/src/vault/Wildcat4626WrapperFactory.sol"
+        }
+      ],
+      "action_inventory": "evidence/deployed-action-denominator.json",
+      "inherited_dependencies": [
+        {
+          "path": "lib/solady/src/auth/Ownable.sol",
+          "sha256": "649af487a76855045b4750a69bf4c35ac8930f0c99f485e24992ad95a0e913b9",
+          "bytes": 10870,
+          "disposition": "inherited runtime and event declarations reviewed; same bytes independently hashed in both source trees",
+          "repository": "Vectorized/solady",
+          "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "source_url": "https://github.com/Vectorized/solady/blob/2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c/src/auth/Ownable.sol"
+        },
+        {
+          "path": "lib/solady/src/tokens/ERC20.sol",
+          "sha256": "89f14f39a5a29f3996711e547d9f08f97c8c278f00bd45ce79ea7e52b5b6ea40",
+          "bytes": 24883,
+          "disposition": "inherited runtime and event declarations reviewed; same bytes independently hashed in both source trees",
+          "repository": "Vectorized/solady",
+          "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "source_url": "https://github.com/Vectorized/solady/blob/2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c/src/tokens/ERC20.sol"
+        },
+        {
+          "path": "lib/solady/src/tokens/ERC4626.sol",
+          "sha256": "3284a655370e565fd019638426ea3f124db834dbf610e4a77acd51bc5262e168",
+          "bytes": 24939,
+          "disposition": "inherited runtime and event declarations reviewed; same bytes independently hashed in both source trees",
+          "repository": "Vectorized/solady",
+          "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "source_url": "https://github.com/Vectorized/solady/blob/2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c/src/tokens/ERC4626.sol"
+        }
+      ],
+      "source_scope": "Every src/**/*.sol file, including interface-only declarations and read-only/internal support. Runtime action denominator excludes libraries, interfaces, pure/view functions and constructors; includes concrete inheritance contexts."
+    },
+    "candidate": {
+      "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+      "files": [
+        {
+          "path": "src/HooksFactory.sol",
+          "sha256": "729000bee293564b1abdb13230749468fc85cc5571addcf6f5af2f7a77cecfc7",
+          "bytes": 32863,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/HooksFactory.sol"
+        },
+        {
+          "path": "src/HooksFactoryRevolving.sol",
+          "sha256": "2424992e07db8f33efa3e2eebb48392afb0fcda2ffce5fed13b4d82c92636150",
+          "bytes": 35281,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/HooksFactoryRevolving.sol"
+        },
+        {
+          "path": "src/IHooksFactory.sol",
+          "sha256": "b185f5f92ecfeb71d639cba98f1f8912a8c0903fe95bfe817c7fb203ca041652",
+          "bytes": 19508,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/IHooksFactory.sol"
+        },
+        {
+          "path": "src/IHooksFactoryRevolving.sol",
+          "sha256": "e0402521b8dddeedd0ad4818e515236169997f38a6620d124ee948757af27a10",
+          "bytes": 10855,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/IHooksFactoryRevolving.sol"
+        },
+        {
+          "path": "src/ReentrancyGuard.sol",
+          "sha256": "44fae0b880e343221647272e20e303ed71da7c42dee71a2c8cadef05f46459b8",
+          "bytes": 2420,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/ReentrancyGuard.sol"
+        },
+        {
+          "path": "src/WildcatArchController.sol",
+          "sha256": "eb3dfb1914b3e2bf04f4946489b8e4f5c70ee711a99e2fd6bf82b3ff2a5e7f75",
+          "bytes": 17841,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/WildcatArchController.sol"
+        },
+        {
+          "path": "src/WildcatBorrowerIdentityRegistry.sol",
+          "sha256": "da135c31c2c0b7b98023d234864aaa69d640ee0e2a0ff8c1512c2daccf2b3e59",
+          "bytes": 11824,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/WildcatBorrowerIdentityRegistry.sol"
+        },
+        {
+          "path": "src/WildcatSanctionsEscrow.sol",
+          "sha256": "e05ca5c014a42a86b2a84f54c862afda2357cede1ac82081adff10d75a993b19",
+          "bytes": 1838,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/WildcatSanctionsEscrow.sol"
+        },
+        {
+          "path": "src/WildcatSanctionsSentinel.sol",
+          "sha256": "13a21d967c9deb0cc97e8026b6c687351cbcb42ba7d8fecb84fff7e784edc72f",
+          "bytes": 7405,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/WildcatSanctionsSentinel.sol"
+        },
+        {
+          "path": "src/access/BaseAccessControls.sol",
+          "sha256": "9cf87be39e4fb4a96e85296b9a67e67a89fc703558a18cf3a5b0e2ffa3242083",
+          "bytes": 43062,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/BaseAccessControls.sol"
+        },
+        {
+          "path": "src/access/FixedTermHooks.sol",
+          "sha256": "9a64a14d6fd7b225ec80fbd39f8408bab98af3dec13c9bf8189801df13336558",
+          "bytes": 22452,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/FixedTermHooks.sol"
+        },
+        {
+          "path": "src/access/IHooks.sol",
+          "sha256": "e0c9b7cdc97f04b20f34d6783aeecd19891bcd59b77af1f691626d83a67a9c0d",
+          "bytes": 6063,
+          "disposition": "included; implemented IHooks.onCreateMarket is retained",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/IHooks.sol"
+        },
+        {
+          "path": "src/access/IHooksAdministrator.sol",
+          "sha256": "0e88d1b3647437a53e154aaeafd0d1a6c79b0cb3a05a5121c67adbfe96e20ad1",
+          "bytes": 1521,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/IHooksAdministrator.sol"
+        },
+        {
+          "path": "src/access/IManagedRoleProvider.sol",
+          "sha256": "0ed3c1a401da9bf8dd037d1c50b6869195ea4b4b2d93441fd6e1de6f86d805c5",
+          "bytes": 2098,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/IManagedRoleProvider.sol"
+        },
+        {
+          "path": "src/access/IMarketTransferPolicy.sol",
+          "sha256": "821c5d9c225d7fab6326c2fcbaa4650a706f905e0da1afc480ac84030a6697c4",
+          "bytes": 917,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/IMarketTransferPolicy.sol"
+        },
+        {
+          "path": "src/access/IRoleProvider.sol",
+          "sha256": "746a230f6b7ab335cdedd6250dabba5958c6b16937330df902946676e40fb6e4",
+          "bytes": 1455,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/IRoleProvider.sol"
+        },
+        {
+          "path": "src/access/IRoleProviderFactory.sol",
+          "sha256": "e73c8499ae6714018a6bc74c14fc868bd66fd768428082fc9313fa1ba7050097",
+          "bytes": 396,
+          "disposition": "declarations only; excluded from action denominator",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/IRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/access/MarketConstraintHooks.sol",
+          "sha256": "b50454d6075ea6c586548766e08a03e30fa7722db8fef05df05c8b537b5a1af0",
+          "bytes": 11737,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/MarketConstraintHooks.sol"
+        },
+        {
+          "path": "src/access/OpenTermHooks.sol",
+          "sha256": "d405a923910575d5ace7fae1ae3b98a9eb8ad83c4138e5c076462c37ffc3b21b",
+          "bytes": 17890,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/OpenTermHooks.sol"
+        },
+        {
+          "path": "src/access/PeriodicTermHooks.sol",
+          "sha256": "00c1789ca29afe818ee2d80c36946043ffd02b20c6a406f2c8ea4e8ee31390a4",
+          "bytes": 34796,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/PeriodicTermHooks.sol"
+        },
+        {
+          "path": "src/access/ProviderStructs.sol",
+          "sha256": "2faea0d52a54a72b88c778251ff77e75004c90adc6c2a9f2dbb33a2c4b9eefb6",
+          "bytes": 1369,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/access/ProviderStructs.sol"
+        },
+        {
+          "path": "src/interfaces/IBorrowerIdentityRegistry.sol",
+          "sha256": "c063aebff9ddaf42e83ea5f9880488370c0b12c040b7c1ca078e65725a3d4004",
+          "bytes": 8150,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IBorrowerIdentityRegistry.sol"
+        },
+        {
+          "path": "src/interfaces/IChainalysisSanctionsList.sol",
+          "sha256": "11188764ca9f096010483919c7b1ec67bebe8fb9b65ea36f72f45d66d6153d7e",
+          "bytes": 309,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IChainalysisSanctionsList.sol"
+        },
+        {
+          "path": "src/interfaces/IERC20.sol",
+          "sha256": "3b33cb10e8ef7833cbb9c7c73dc8832f1e40545dfdbfd72c636bc0a2a69166d4",
+          "bytes": 1166,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IERC20.sol"
+        },
+        {
+          "path": "src/interfaces/IMarketEventsAndErrors.sol",
+          "sha256": "1e46d2f30f9460c979fc1b124a62fe3a14b0ec30e0eb0f95875eb83245a0688a",
+          "bytes": 15648,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IMarketEventsAndErrors.sol"
+        },
+        {
+          "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+          "sha256": "bc96388cecfc52a68d653b8d762c098c573c1550601d99b91e3a8bb210e94822",
+          "bytes": 1123,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/ISphereXProtectedRegisteredBase.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatArchController.sol",
+          "sha256": "13c1fe5fae4d2d458f4665a24f1532ff72971d6e97c9671fd318315be4b838e4",
+          "bytes": 11070,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IWildcatArchController.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatMarketRevolving.sol",
+          "sha256": "30c04aef41304381dc24f90cae3312ef280a2a439ab7c98781f61991874e1c5b",
+          "bytes": 851,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IWildcatMarketRevolving.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatSanctionsEscrow.sol",
+          "sha256": "73b1e155d16addb54e0b44299805b5bd1f036c21b544e091aba2de6e8a3249f0",
+          "bytes": 1335,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IWildcatSanctionsEscrow.sol"
+        },
+        {
+          "path": "src/interfaces/IWildcatSanctionsSentinel.sol",
+          "sha256": "7b5b7b3801f922fdc53969b904c01f5b859e9443ffe4f313a31b02fb17c6b378",
+          "bytes": 2791,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/IWildcatSanctionsSentinel.sol"
+        },
+        {
+          "path": "src/interfaces/WildcatStructsAndEnums.sol",
+          "sha256": "37ae1aebe5a09ed6282741d35ea5193cb8b351791de0c9b3d6f2bc10c7f50f92",
+          "bytes": 7632,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/interfaces/WildcatStructsAndEnums.sol"
+        },
+        {
+          "path": "src/lens/FactoryScopedHooksTemplateData.sol",
+          "sha256": "1bc4082c02bc857c1b0a23fafa9217c7bf734a45a56ea805fb51aa385addc5a0",
+          "bytes": 431,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/FactoryScopedHooksTemplateData.sol"
+        },
+        {
+          "path": "src/lens/HooksConfigData.sol",
+          "sha256": "56ab392bd92d92739a23bd7cf1f5d244aa0f24315328a69b89a0780e01b58bc3",
+          "bytes": 9404,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/HooksConfigData.sol"
+        },
+        {
+          "path": "src/lens/HooksDataForBorrower.sol",
+          "sha256": "0956a4244768030bda2f9bb434b42b04f2a8fd32e608664f9893ad578ce6bbd1",
+          "bytes": 1772,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/HooksDataForBorrower.sol"
+        },
+        {
+          "path": "src/lens/HooksInstanceData.sol",
+          "sha256": "2c9e862dadb795e31440a801fd07ed17dde8c585150f1b7605e74025b0123e7f",
+          "bytes": 3748,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/HooksInstanceData.sol"
+        },
+        {
+          "path": "src/lens/HooksTemplateData.sol",
+          "sha256": "89cf60a51b64aca65eabe3fd363f65668513f5d0d79e4eb74a8192e8b9b2e5a9",
+          "bytes": 2792,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/HooksTemplateData.sol"
+        },
+        {
+          "path": "src/lens/LenderAccountData.sol",
+          "sha256": "c5554e150b2cb15ab1a9537121761d766e55518a7d80c4b82103f950ecc3f17a",
+          "bytes": 2898,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/LenderAccountData.sol"
+        },
+        {
+          "path": "src/lens/MarketData.sol",
+          "sha256": "495f1f2750cb5adaa86bc7000e2633a1832127af759e1b727efe9a7b03a95315",
+          "bytes": 15439,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/MarketData.sol"
+        },
+        {
+          "path": "src/lens/MarketLens.sol",
+          "sha256": "9e04b1c22e8089c32bd19ad689957e6dba2c2d12f7f46d0c53b254d4282d2949",
+          "bytes": 14377,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/MarketLens.sol"
+        },
+        {
+          "path": "src/lens/MarketLensAggregator.sol",
+          "sha256": "5d71171139f446f793bcbceb613682bb4fa43c51103a90eff04c8423061018a9",
+          "bytes": 19771,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/MarketLensAggregator.sol"
+        },
+        {
+          "path": "src/lens/MarketLensCore.sol",
+          "sha256": "021ad4ae27e9b98dbfd87ed1431e6cbcadfa7dbc3fb01be103c4847ab771e639",
+          "bytes": 5508,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/MarketLensCore.sol"
+        },
+        {
+          "path": "src/lens/MarketLensLive.sol",
+          "sha256": "296b087fe0eb2385a32576ef0c3573059cb436b7266c6a166db23694c2dbb677",
+          "bytes": 1455,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/MarketLensLive.sol"
+        },
+        {
+          "path": "src/lens/MarketLiveData.sol",
+          "sha256": "c7627d7a087f1fe6f32b0ec0e0534d868fcd0b2440ed82e103ed85e05ac08997",
+          "bytes": 3631,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/MarketLiveData.sol"
+        },
+        {
+          "path": "src/lens/RoleProviderData.sol",
+          "sha256": "b8947f3406f630f8cc06ff86d5de36183d3140c1986f932c614fa47fe0f1c52a",
+          "bytes": 2480,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/RoleProviderData.sol"
+        },
+        {
+          "path": "src/lens/TokenData.sol",
+          "sha256": "64b80b87b16db0e3216dfd16b095343aaa2862e44bb52d724c50e158332ae7ad",
+          "bytes": 1317,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/TokenData.sol"
+        },
+        {
+          "path": "src/lens/WithdrawalBatchData.sol",
+          "sha256": "8a2c98a388b5ae14f83a3e4cc51109f4b6fe52417c6795f7163f23bf0dc44e1a",
+          "bytes": 4205,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/WithdrawalBatchData.sol"
+        },
+        {
+          "path": "src/lens/interfaces/IMarketLensAggregator.sol",
+          "sha256": "a5ddd1f0931fd4dde5766180910c8a80796031dfcf8cd1f4e95c4f247b140df8",
+          "bytes": 7106,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/interfaces/IMarketLensAggregator.sol"
+        },
+        {
+          "path": "src/lens/interfaces/IMarketLensCore.sol",
+          "sha256": "0485f4c0db9ff54b425f2c39c8fc7e574377415128ef50db5a53a9ad63b059a5",
+          "bytes": 4582,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/interfaces/IMarketLensCore.sol"
+        },
+        {
+          "path": "src/lens/interfaces/IMarketLensLive.sol",
+          "sha256": "1cee85c4fbffafdda22eac256fb3786f03ca5b116efe8e8e26aa80b043fbc7a6",
+          "bytes": 722,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/lens/interfaces/IMarketLensLive.sol"
+        },
+        {
+          "path": "src/libraries/BoolUtils.sol",
+          "sha256": "ffabe82868c74c9b703bc0bf5a9d19688fa38d3d0e9ea4b131e890d3cc85e700",
+          "bytes": 409,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/BoolUtils.sol"
+        },
+        {
+          "path": "src/libraries/Errors.sol",
+          "sha256": "d3214f5893791ca873b6ec11cda0b6a528519a11aefdca4303e8a33b30c34ded",
+          "bytes": 1936,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/Errors.sol"
+        },
+        {
+          "path": "src/libraries/FIFOQueue.sol",
+          "sha256": "e62ed8a2e27fe41914db3a1a34b3284ce6c95e48e5aef97e0ef88f4819407409",
+          "bytes": 4222,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/FIFOQueue.sol"
+        },
+        {
+          "path": "src/libraries/FeeMath.sol",
+          "sha256": "c734c10bb9278c41d5aabb1c07894ec32476d0df8ba7034cf6cad212a4969be9",
+          "bytes": 7088,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/FeeMath.sol"
+        },
+        {
+          "path": "src/libraries/FunctionTypeCasts.sol",
+          "sha256": "8182f9c35c530bf0dd2f6fd42b5811e18ea1aa680e6594c580a0f70d9d8ab7e1",
+          "bytes": 1772,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/FunctionTypeCasts.sol"
+        },
+        {
+          "path": "src/libraries/LibERC20.sol",
+          "sha256": "ab19a984048079033065c65b46e94942e9082c504d95314acca292f8ea2845cc",
+          "bytes": 8250,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/LibERC20.sol"
+        },
+        {
+          "path": "src/libraries/LibStoredInitCode.sol",
+          "sha256": "2c2b08c39c0b104b71270cffe0137275fe0d7c45d507117cf6fad21a2089f5b3",
+          "bytes": 8364,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/LibStoredInitCode.sol"
+        },
+        {
+          "path": "src/libraries/MarketErrors.sol",
+          "sha256": "ad3db97213348d40e18c3c6f93e8f5c6d35d0e07319aa5f6b0b78bcf6fd71bd0",
+          "bytes": 10652,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/MarketErrors.sol"
+        },
+        {
+          "path": "src/libraries/MarketEvents.sol",
+          "sha256": "5d82cdf3cb7495f64dc40b23059eba1c3930ecaaa71f8cfc562b6fb3cf3d8d21",
+          "bytes": 9920,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/MarketEvents.sol"
+        },
+        {
+          "path": "src/libraries/MarketState.sol",
+          "sha256": "f2732c6a02ce42628c835f90329c5f28c0c949af9350aafda91a7dfdbfebd610",
+          "bytes": 9447,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/MarketState.sol"
+        },
+        {
+          "path": "src/libraries/MathUtils.sol",
+          "sha256": "69939bff1d3a970b6ac428774b661a6dea7a93e913a50ef3a3f16e08786549f2",
+          "bytes": 6992,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/MathUtils.sol"
+        },
+        {
+          "path": "src/libraries/SafeCastLib.sol",
+          "sha256": "9959eaf5447427af2064f66c294618b15fac06736aefce741192b089de4b2e65",
+          "bytes": 4072,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/SafeCastLib.sol"
+        },
+        {
+          "path": "src/libraries/StringQuery.sol",
+          "sha256": "7afab44235a265edf5dc3a7b2599b2ccda898bd2f4900b855ead023e4b55647d",
+          "bytes": 4094,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/StringQuery.sol"
+        },
+        {
+          "path": "src/libraries/Withdrawal.sol",
+          "sha256": "b5112dacd3ef89d3028ca9f1979b7eb2767d2cbba496b1ca6a78c501bc7db1f3",
+          "bytes": 2555,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/libraries/Withdrawal.sol"
+        },
+        {
+          "path": "src/market/WildcatMarket.sol",
+          "sha256": "93bec245b58776c2d5e2a91523ac61ff0df9ae01730ef468d41ccd8660e845b8",
+          "bytes": 12202,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/candidate-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/market/WildcatMarket.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketBase.sol",
+          "sha256": "1008026e854b54f4984d50e2dabf4e5b9264eaa2d8fde75b94ecad84bce1e296",
+          "bytes": 46958,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/candidate-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/market/WildcatMarketBase.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketConfig.sol",
+          "sha256": "fdd6a907fc34459cf2df130606b3f05ded8ff9e2592f2766bfbf3f5b875819a4",
+          "bytes": 11456,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/candidate-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/market/WildcatMarketConfig.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketRevolving.sol",
+          "sha256": "5948dcdb0b1cb63b1ada26e164f1fbc7270773e0041cf53cce69ff2eebc0427b",
+          "bytes": 8433,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/candidate-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/market/WildcatMarketRevolving.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketToken.sol",
+          "sha256": "f712a9ee13e393bd3bb1c3647ac5f58f5f1b8ba61f950ba5aaa50e2b50c8febb",
+          "bytes": 4490,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/candidate-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/market/WildcatMarketToken.sol"
+        },
+        {
+          "path": "src/market/WildcatMarketWithdrawals.sol",
+          "sha256": "d4c145c2eafc25442c3057e23338e2c942356697604291305f2ffc4cc04338a6",
+          "bytes": 16551,
+          "disposition": "fresh full semantic read; all declarations classified below",
+          "source_analysis": "evidence/candidate-market-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/market/WildcatMarketWithdrawals.sol"
+        },
+        {
+          "path": "src/providers/AccessListRoleProvider.sol",
+          "sha256": "96f79ac3ce82f1e3c8808601c9d4a7af92d24a22b6d2d34a9acdaf31ce94a14d",
+          "bytes": 4485,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/AccessListRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/AccessListRoleProviderFactory.sol",
+          "sha256": "b3ad82e6e552026a0380267275251f1b49d3ef17fe3ab61f02299e7a4d3ea04d",
+          "bytes": 3097,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/AccessListRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/ERC1155RoleProvider.sol",
+          "sha256": "a6a28c7e1dec9540006bd5a723a433bf4d39063e9c7d6ff9027c1124add7b489",
+          "bytes": 2593,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC1155RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/ERC1155RoleProviderFactory.sol",
+          "sha256": "99623320f77188efa98c79ec5ed7948c6c3f8de994ef93e15022bddbbd8603fc",
+          "bytes": 3112,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC1155RoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/ERC20RoleProvider.sol",
+          "sha256": "4988615a20d555da8c85dd1867f2e30dcb779e9271d222e58478ffb801170191",
+          "bytes": 1705,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC20RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/ERC20RoleProviderFactory.sol",
+          "sha256": "b31c510d16a6d9c302e4d210e8550c0e39edf5dc23d9626c0073da64c5d1ef80",
+          "bytes": 2956,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC20RoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/ERC4626AssetsRoleProvider.sol",
+          "sha256": "3a47a19eceef4b250564177a20e9b899d4dd90720614090faa1b72035f3a5eb4",
+          "bytes": 1918,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC4626AssetsRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+          "sha256": "2b02451315eff654d22a45f7db0e22f6ece874e758b46c7873bebba7542b8e9f",
+          "bytes": 3093,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC4626AssetsRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/ERC5192RoleProvider.sol",
+          "sha256": "aa184972aa6eeadf4eeb7abe342a8ae67375ec963c698e33ac5954efd20d690c",
+          "bytes": 3774,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC5192RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/ERC5484RoleProvider.sol",
+          "sha256": "3420d21f2901226c704a287bdfcc1389ae973bbb52ee6779bad2f2b14031375c",
+          "bytes": 4140,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC5484RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/ERC721RoleProvider.sol",
+          "sha256": "32def650fba2954f823a53a44bc5ad48026d1d4f2f2cf4ddd8e30ac50555836d",
+          "bytes": 2477,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC721RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/ERC721RoleProviderFactory.sol",
+          "sha256": "e2b65aa3d5589ffd6bf0bc4318b430b28127af5ed9a8bc5b621d04549b2031e2",
+          "bytes": 3009,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ERC721RoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/IAccessListRoleProvider.sol",
+          "sha256": "c8e1a393adb019f24f58751e6beab54466fb9e62a3459c9b4ecbd0ad6bdf5a44",
+          "bytes": 2365,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IAccessListRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/IAccessListRoleProviderFactory.sol",
+          "sha256": "c4be3c981770c5a333daa364de8d4ea82ce5fe164e20c0b42ea22992dd5910d3",
+          "bytes": 1731,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IAccessListRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/IERC1155RoleProvider.sol",
+          "sha256": "0a6775dd54d5430cdb8218ebefce96716fa21cb8184cf46b7b6d980d8f5d4e6c",
+          "bytes": 616,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC1155RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/IERC1155RoleProviderFactory.sol",
+          "sha256": "f274603379b3f2b9d5f3e1aea72201d8a6653b0c76b865a5e0f3dbf36e2a2469",
+          "bytes": 1725,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC1155RoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/IERC20RoleProvider.sol",
+          "sha256": "42e5a19cfa690ff319cced796b674c16e9c4eaa1c501e9cf6b4027ef205a63be",
+          "bytes": 598,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC20RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/IERC20RoleProviderFactory.sol",
+          "sha256": "a472c5a286eadf00f6b26f3f56545f418b7379c432d3487ea8423390284389bb",
+          "bytes": 1572,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC20RoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/IERC4626AssetsRoleProvider.sol",
+          "sha256": "16f0b049c6e5d8ada3f8f8284e2c1a70b553d8d765b29c297829404087e6ef30",
+          "bytes": 653,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC4626AssetsRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/IERC4626AssetsRoleProviderFactory.sol",
+          "sha256": "ab28439635ad39f5cc3320488dc3ffbe339229f410b48be3447eecb5555abdb5",
+          "bytes": 1673,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC4626AssetsRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/IERC721RoleProvider.sol",
+          "sha256": "7dc4826e580c7c2a4fb799e1a55c063bea4c745f1e8865ba1efb951fd4a39a92",
+          "bytes": 511,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC721RoleProvider.sol"
+        },
+        {
+          "path": "src/providers/IERC721RoleProviderFactory.sol",
+          "sha256": "0b25aac912a2492e53c0d3298d49e73d4cd7d19c3d0c23213bb567b466584dc0",
+          "bytes": 1626,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IERC721RoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/IMerkleRoleProvider.sol",
+          "sha256": "4cced9ad1d380febf20b8a8a864e6b3f51f2276d83d6247a1a3397ebb7203ca2",
+          "bytes": 1067,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IMerkleRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/IMerkleRoleProviderFactory.sol",
+          "sha256": "e30e1108d3e284e0dd90854c5417d594c1860667d51d883a02a870b667f8e3c4",
+          "bytes": 1599,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/IMerkleRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/ManagedRoleProvider.sol",
+          "sha256": "783c4f2c349b21cfd8e92db076a741bfdda3d7e0e196af7ec09f7a0ea52b365f",
+          "bytes": 2639,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/ManagedRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/MerkleRoleProvider.sol",
+          "sha256": "c6fd5e048e82777b72f08bf30746ba68b0fd599ccc3d029094c46ee37aa48e03",
+          "bytes": 2852,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/MerkleRoleProvider.sol"
+        },
+        {
+          "path": "src/providers/MerkleRoleProviderFactory.sol",
+          "sha256": "bda6423e898ac48c5b082c2cd7bb79a9478a19af4107524d7cde4e6a90ec2035",
+          "bytes": 3000,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/MerkleRoleProviderFactory.sol"
+        },
+        {
+          "path": "src/providers/TokenInterfaces.sol",
+          "sha256": "bfce7ee72762b24205334eb765d5ab5d0bacd9077375e5a4bdd49631249438f6",
+          "bytes": 2183,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/providers/TokenInterfaces.sol"
+        },
+        {
+          "path": "src/spherex/ISphereXEngine.sol",
+          "sha256": "b1245ee615d22ce988a735f30dfc2fe96b2ecbeb0b37a590cd455acf83fc8787",
+          "bytes": 2006,
+          "disposition": "interface-or-data-declarations-no-runtime-action",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/spherex/ISphereXEngine.sol"
+        },
+        {
+          "path": "src/spherex/SphereXConfig.sol",
+          "sha256": "e84cbadccf56ae8fbe3c902ac25bc9cbc358f10d1215cbdcbf3df09348f647b9",
+          "bytes": 8704,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/spherex/SphereXConfig.sol"
+        },
+        {
+          "path": "src/spherex/SphereXProtectedErrors.sol",
+          "sha256": "ebe93d8791d6cf6a93dffc3aac12800cafa9cbfd56bc56e27b4326af8c1d6eab",
+          "bytes": 642,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/spherex/SphereXProtectedErrors.sol"
+        },
+        {
+          "path": "src/spherex/SphereXProtectedEvents.sol",
+          "sha256": "3853334c3e77e8c86bdfa3e9ea3ebcf0fd58145f4631c1c1a82bbd70f3201852",
+          "bytes": 1261,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/spherex/SphereXProtectedEvents.sol"
+        },
+        {
+          "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+          "sha256": "9e7c30df68ef57e8780252ee814572e4c7860d4c135b21d45e263ac1881ee8a7",
+          "bytes": 13843,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/spherex/SphereXProtectedRegisteredBase.sol"
+        },
+        {
+          "path": "src/types/HooksConfig.sol",
+          "sha256": "ed3f5e0a63bb92448cdc296efff9b71c7b277185eeef0977e96205243b759eba",
+          "bytes": 40668,
+          "disposition": "included",
+          "source_analysis": "evidence/candidate-hooks-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/types/HooksConfig.sol"
+        },
+        {
+          "path": "src/types/LenderStatus.sol",
+          "sha256": "beaac9ca3578a06cf0c3196fe1f3587571105b50d54c7ccd3c1b1fc5e4922797",
+          "bytes": 2852,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/types/LenderStatus.sol"
+        },
+        {
+          "path": "src/types/RoleProvider.sol",
+          "sha256": "003eaf87444dcd6fa5a21b42fc0a33843f7dd277eabedb7fde5c0db8f134a19a",
+          "bytes": 6480,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/types/RoleProvider.sol"
+        },
+        {
+          "path": "src/types/TransientBytesArray.sol",
+          "sha256": "e5047f33abcf468b296f59b6168fed945ce5ee54da3ef334c8d18b1d1ed7aaa9",
+          "bytes": 4294,
+          "disposition": "read-internal-support-no-runtime-entrypoint",
+          "source_analysis": "evidence/candidate-library-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/types/TransientBytesArray.sol"
+        },
+        {
+          "path": "src/vault/Wildcat4626Wrapper.sol",
+          "sha256": "a12122d91a267fe3a38ecbeccaa47a3a4c5c73be26b299ab88e71c7b06bb71c6",
+          "bytes": 43655,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/vault/Wildcat4626Wrapper.sol"
+        },
+        {
+          "path": "src/vault/Wildcat4626WrapperFactory.sol",
+          "sha256": "07c64e7b81804157be4ce351a9f9a241ad850f256fcf001cbf7282f9103cb890",
+          "bytes": 8615,
+          "disposition": "included-source",
+          "source_analysis": "evidence/candidate-support-facts.json",
+          "source_url": "https://github.com/wildcat-finance/v2-protocol/blob/bea503c2736d47de7fd34130c64f10783dc35b39/src/vault/Wildcat4626WrapperFactory.sol"
+        }
+      ],
+      "action_inventory": "evidence/candidate-action-denominator.json",
+      "inherited_dependencies": [
+        {
+          "path": "lib/solady/src/auth/Ownable.sol",
+          "sha256": "649af487a76855045b4750a69bf4c35ac8930f0c99f485e24992ad95a0e913b9",
+          "bytes": 10870,
+          "disposition": "inherited runtime and event declarations reviewed; same bytes independently hashed in both source trees",
+          "repository": "Vectorized/solady",
+          "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "source_url": "https://github.com/Vectorized/solady/blob/2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c/src/auth/Ownable.sol"
+        },
+        {
+          "path": "lib/solady/src/tokens/ERC20.sol",
+          "sha256": "89f14f39a5a29f3996711e547d9f08f97c8c278f00bd45ce79ea7e52b5b6ea40",
+          "bytes": 24883,
+          "disposition": "inherited runtime and event declarations reviewed; same bytes independently hashed in both source trees",
+          "repository": "Vectorized/solady",
+          "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "source_url": "https://github.com/Vectorized/solady/blob/2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c/src/tokens/ERC20.sol"
+        },
+        {
+          "path": "lib/solady/src/tokens/ERC4626.sol",
+          "sha256": "3284a655370e565fd019638426ea3f124db834dbf610e4a77acd51bc5262e168",
+          "bytes": 24939,
+          "disposition": "inherited runtime and event declarations reviewed; same bytes independently hashed in both source trees",
+          "repository": "Vectorized/solady",
+          "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "source_url": "https://github.com/Vectorized/solady/blob/2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c/src/tokens/ERC4626.sol"
+        }
+      ],
+      "source_scope": "Every src/**/*.sol file, including interface-only declarations and read-only/internal support. Runtime action denominator excludes libraries, interfaces, pure/view functions and constructors; includes concrete inheritance contexts."
+    }
+  }
+}

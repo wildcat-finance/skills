@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bounded-material",
+  "criterion": "material-refusals",
+  "value": 0,
+  "unit": "count",
+  "command": "python3 .hexaemeron/measure_design.py --candidate bounded-material --criterion material-refusals --report .hexaemeron/reports/bounded-material-material-refusals.json",
+  "exit": 0
+}

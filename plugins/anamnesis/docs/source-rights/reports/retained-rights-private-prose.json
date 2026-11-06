@@ -1,0 +1,9 @@
+{
+  "candidate": "retained-rights",
+  "command": "python3 .hexaemeron/reports/resolve.py retained-rights private-prose --out .hexaemeron/reports/retained-rights-private-prose.json",
+  "criterion": "private-prose",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 0
+}

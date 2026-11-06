@@ -1,0 +1,270 @@
+..FF...........F.FF.F.F.FFF......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................../opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 403: 'rate limit exceeded'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+./opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 429: 'too many requests'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+../opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 404: 'Not Found'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+......................................................................................................................................................................................................................................................................................................................................................................................................................................................F..................................................................................................s.........probe_harnesses: IsADirectoryError writing the output
+probe_harnesses: destination directory /private/tmp/tmpafb6xxr3/absent does not exist
+......................s.......................................................................F..................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+======================================================================
+FAIL: test_removing_the_base_comparison_revives_the_stale_report (test_adr_assignment_workflow.StaleBaseRegressionTests.test_removing_the_base_comparison_revives_the_stale_report)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 414, in test_removing_the_base_comparison_revives_the_stale_report
+    self.repo.plan("beta-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-0f2k9_0a/source', '--base', '51cde2103ed649c7faf5d8ceaa8f98f545abf8b2', '--base-ref', 'refs/heads/main', '--product', '477e78ac989b965271364528bfacde1f8198c1d9', '--report', '.hexaemeron/beta-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_two_candidates_recompute_after_one_advances_main (test_adr_assignment_workflow.StaleBaseRegressionTests.test_two_candidates_recompute_after_one_advances_main)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 396, in test_two_candidates_recompute_after_one_advances_main
+    alpha = self.repo.plan("alpha-choice")
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-ogf7h5zt/source', '--base', '4009bf157c6dc02eddc4da737a7412b34ca82a71', '--base-ref', 'refs/heads/main', '--product', 'd75790728cdae5bd9d43fb323ec85f14af0cb169', '--report', '.hexaemeron/alpha-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_active_two_parent_assignment_sync_is_accepted (test_adr_assignment_workflow.WorkflowExecutionTests.test_active_two_parent_assignment_sync_is_accepted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 621, in test_active_two_parent_assignment_sync_is_accepted
+    self.repo.plan("sync-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-9vqwpx5l/source', '--base', 'e58a65f65dec0a634d634f23639b3ec982d78a88', '--base-ref', 'refs/heads/main', '--product', 'a7c6b1093e4e7c28ca0df0f459d1f933d25c63a4', '--report', '.hexaemeron/sync-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_assignment_trailers_must_be_the_terminal_block (test_adr_assignment_workflow.WorkflowExecutionTests.test_assignment_trailers_must_be_the_terminal_block)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 751, in test_assignment_trailers_must_be_the_terminal_block
+    report = self.repo.plan("alpha-choice")
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-bvvgy1ry/source', '--base', '0a76421c07540d9ecfa54cf6de0b7e15a78679fe', '--base-ref', 'refs/heads/main', '--product', '40ad7714624580a4dd26fa6e414132080c824dcd', '--report', '.hexaemeron/alpha-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_malformed_assignment_trailers_refuse (test_adr_assignment_workflow.WorkflowExecutionTests.test_malformed_assignment_trailers_refuse)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 669, in test_malformed_assignment_trailers_refuse
+    self.repo.plan("alpha-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-0_n0_bx1/source', '--base', 'c769d4d7ed2a972ce5d50b9fe10eae174a6834f1', '--base-ref', 'refs/heads/main', '--product', '51507776603a0704528685eba83e02c9ff670129', '--report', '.hexaemeron/alpha-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_moved_head_is_a_fixed_refusal (test_adr_assignment_workflow.WorkflowExecutionTests.test_moved_head_is_a_fixed_refusal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 649, in test_moved_head_is_a_fixed_refusal
+    self.repo.plan("alpha-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-3otvx_98/source', '--base', 'b187286e5a10cbb9e4287e40fdfbd5c45e465294', '--base-ref', 'refs/heads/main', '--product', '74f030ea35bab6e40a3375351e6985bb5511853a', '--report', '.hexaemeron/alpha-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_object_ceiling_admits_a_candidate_whose_base_history_exceeds_it (test_adr_assignment_workflow.WorkflowExecutionTests.test_object_ceiling_admits_a_candidate_whose_base_history_exceeds_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 594, in test_object_ceiling_admits_a_candidate_whose_base_history_exceeds_it
+    self.repo.plan("alpha-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-gltvlk4d/source', '--base', '13d630c5a094ff1dbb5024711b3d6d5777aa7ad8', '--base-ref', 'refs/heads/main', '--product', '01650fe695d782c81cf64dfc34e00a627f7b5632', '--report', '.hexaemeron/alpha-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_runner_global_hooks_stay_inert_and_the_isolation_is_causal (test_adr_assignment_workflow.WorkflowExecutionTests.test_runner_global_hooks_stay_inert_and_the_isolation_is_causal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 573, in test_runner_global_hooks_stay_inert_and_the_isolation_is_causal
+    self.repo.plan("safe-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-gt7dsz58/source', '--base', '866525c0edd36aee15888a94f21daa879656c647', '--base-ref', 'refs/heads/main', '--product', '4f4e0b48b9fdfb07ee322bc844a8f883dab5d1da', '--report', '.hexaemeron/safe-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_safe_assignment_accepts_while_candidate_script_and_filter_stay_inert (test_adr_assignment_workflow.WorkflowExecutionTests.test_safe_assignment_accepts_while_candidate_script_and_filter_stay_inert)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 552, in test_safe_assignment_accepts_while_candidate_script_and_filter_stay_inert
+    self.repo.plan("safe-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-nszdblin/source', '--base', '8ddbfce63842cad896fad07d75e7923a84a04eb5', '--base-ref', 'refs/heads/main', '--product', 'a5081e798a1c419db311733e8f5af3644dd09b50', '--report', '.hexaemeron/safe-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_stale_base_is_a_fixed_refusal (test_adr_assignment_workflow.WorkflowExecutionTests.test_stale_base_is_a_fixed_refusal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 635, in test_stale_base_is_a_fixed_refusal
+    self.repo.plan("alpha-choice")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 164, in plan
+    result = run(
+        "python3",
+    ...<12 lines>...
+        cwd=ROOT,
+    )
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_adr_assignment_workflow.py", line 55, in run
+    raise AssertionError(
+    ...<2 lines>...
+    )
+AssertionError: ('python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tmp/adr-assignment-workflow-3dz4bv72/source', '--base', 'dbb1dc6355c8d5242f1891953dd367eb1d297915', '--base-ref', 'refs/heads/main', '--product', 'a3863f5dbfd7ae5fb6b60b4e719383dd61a8167f', '--report', '.hexaemeron/alpha-choice.json') failed with 1: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+
+======================================================================
+FAIL: test_the_public_set_runs_and_is_asserted_against_its_ledgers (test_demonstrations.RunnerReportTests.test_the_public_set_runs_and_is_asserted_against_its_ledgers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_demonstrations.py", line 1576, in test_the_public_set_runs_and_is_asserted_against_its_ledgers
+    self.assertEqual(code, 0, payload["refusals"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : [{'claim_id': 'lazarus-goldfinch-replay', 'code': 'D075', 'message': 'plugins/lazarus/skills/lazarus/DEMONSTRATION.md commands[run] exited 1, expected 0'}]
+
+======================================================================
+FAIL: test_every_card_binds_a_record_the_public_set_reproduces (test_joined_front_door.PublicSetAgainstItsCardsTests.test_every_card_binds_a_record_the_public_set_reproduces)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/tests/test_joined_front_door.py", line 598, in test_every_card_binds_a_record_the_public_set_reproduces
+    self.assertEqual(code, 0, payload["refusals"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : [{'claim_id': 'lazarus-goldfinch-replay', 'code': 'D075', 'message': 'plugins/lazarus/skills/lazarus/DEMONSTRATION.md commands[run] exited 1, expected 0'}]
+
+----------------------------------------------------------------------
+Ran 2042 tests in 424.371s
+
+FAILED (failures=12, skipped=2)
+baseline written for d730ec2f4fab2ebb33ea7ebdcc2ec41f5b1bd28e: 0 candidate(s), report-only
+dead-code 1 baseline check  schema dead-code-baseline/v1
+source    d730ec2f4fab2ebb33ea7ebdcc2ec41f5b1bd28e
+published 471f69f24ab8d2f49ffaf3c6b86d83ad037b6163
+tree      cebb35353106a28cf635e3bdb2b292a8f4d3ee52
+universe  sha256:263cdc54ab797c59b65ae2bc489539d82623cf1c9284a004970d74468a95408f
+analysers python=ran@1, repository=ran@repository-graph/2
+findings  0 candidate(s), 0 active, 0 suppressed; report-only
+changes   added=0 resolved=0 stale_suppressions=0
+currency  current; no tracked path changed after publication
+status    matched; candidate count did not gate this command
+baseline written for ea0ba635ef1e4d1af5ef270449baea6d9472a24d: 0 candidate(s), report-only
+dead-code 1 baseline check  schema dead-code-baseline/v1
+source    ea0ba635ef1e4d1af5ef270449baea6d9472a24d
+published bbacf2e770d4a02d510df30e223cf0760435d0f9
+tree      cebb35353106a28cf635e3bdb2b292a8f4d3ee52
+universe  sha256:263cdc54ab797c59b65ae2bc489539d82623cf1c9284a004970d74468a95408f
+analysers python=ran@1, repository=ran@repository-graph/2
+findings  0 candidate(s), 0 active, 0 suppressed; report-only
+changes   added=0 resolved=0 stale_suppressions=0
+currency  current; no tracked path changed after publication
+status    matched; candidate count did not gate this command
+baseline written for cf9b0125a1d9bd7ee28223355651b078c5d9b4d2: 0 candidate(s), report-only
+baseline written for b3ddeffbdd0a990c2b2e4341000ae9127a6ed387: 0 candidate(s), report-only
+baseline written for 0529054ab5aa29b8bf0eff2f0bf5a1cb7880926d: 0 candidate(s), report-only
+baseline written for f18a7d792950fa29e633cf81861493defff43802: 0 candidate(s), report-only
+baseline written for f18a7d792950fa29e633cf81861493defff43802: 0 candidate(s), report-only
+baseline written for 8c1be6ce1d9d297b754b9f538e00e7a3cce714c4: 0 candidate(s), report-only
+baseline written for 242ab99356e38c0a55c9881caeb27a9792ea953f: 0 candidate(s), report-only
+baseline written for 228f299651b24a309659f357b22a59df293679d0: 0 candidate(s), report-only
+dead-code 1 baseline check  schema dead-code-baseline/v1
+source    228f299651b24a309659f357b22a59df293679d0
+published 2f438c47d87c7b9897c360ab62d66fd037791de6
+tree      cebb35353106a28cf635e3bdb2b292a8f4d3ee52
+universe  sha256:263cdc54ab797c59b65ae2bc489539d82623cf1c9284a004970d74468a95408f
+analysers python=ran@1, repository=ran@repository-graph/2
+findings  0 candidate(s), 0 active, 0 suppressed; report-only
+changes   added=0 resolved=0 stale_suppressions=0
+currency  current; no tracked path changed after publication
+status    matched; candidate count did not gate this command
+INOCULATION {"cases": {"aggregate-manifest": 61, "audit-round-1-map": 3, "audit-round-2-map": 4, "audit-round-3-map": 2, "audit-round-4-map": 3, "audit-round-5-map": 4, "audit-round-6-map": 2, "audit-round-7-map": 1, "audit-round-8-map": 1, "carryover-map": 36, "current-repair-map": 3, "file-replacement": 8, "fixed-round-1-map": 4, "lifecycle-reference": 9, "normalized-field-name": 384, "path-representation": 33, "recursive-wrong-kind": 365, "report-parity-no-echo": 8, "reporter-lead-map": 1, "schema-runtime": 309, "work-repository-context": 17}, "crashes": 0, "families": ["file-replacement", "lifecycle-reference", "normalized-field-name", "path-representation", "recursive-wrong-kind", "report-parity-no-echo", "schema-runtime", "work-repository-context"], "schema": "run-observation-inoculation-summary/v1", "total_cases": 1258, "unexpected_clean": 0}

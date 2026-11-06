@@ -1,0 +1,9 @@
+{
+  "candidate": "adjacent-burn",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate adjacent-burn --criterion missing-or-ambiguous-stays-gap --report .hexaemeron/design-reports/adjacent-burn-missing-or-ambiguous-stays-gap.json",
+  "criterion": "missing-or-ambiguous-stays-gap",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

@@ -1,8 +1,10 @@
 # Alexandria schemas
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
+
+## Raw releases
 
 Step 2 defines three raw-release contracts:
 
@@ -16,11 +18,16 @@ Step 2 defines three raw-release contracts:
 - `archive-manifest-v1.schema.json` binds copied objects and captures to one
   release identity.
 
+A plan or manifest lists at most 16,384 components and 16,384 captures, the
+caps `validate_plan` and `validate_manifest` enforce.
+
 The standard-library verifier enforces the cross-field rules that JSON Schema
 cannot express: canonical bytes, safe paths, exact digests, sorted entries,
 component access and redistribution classes, capture-source references,
 scope, finality and block-identifier semantics, JSON-pointer counts, gap
 semantics and correction self-reference.
+
+## Release statements
 
 `release-statement-v1.schema.json` closes the unsigned in-toto Statement v1
 shape emitted after offline verification. It binds the logical release and
@@ -28,6 +35,24 @@ component subjects to the Alexandria predicate's component metadata, capture
 scope, coverage and gaps. The schema does not describe a DSSE envelope,
 signature verification, publisher identity, provider completeness, consensus
 finality or canonical-chain membership.
+
+`release-statement-part-v1.schema.json` and
+`release-statement-parts-v1.schema.json` close the part form. A release takes
+it when its single statement would exceed 8,388,608 bytes or 262,144 key
+characters. Each part, predicate type
+`https://ariadne.wildcat.finance/alexandria-release-part/v1`, has the release
+and a contiguous run of components in manifest order as subjects. Its
+predicate carries those components, every capture that names one of them, and
+`part`: `index`, `first_component`, `components` and `captures`. The index,
+predicate type `https://ariadne.wildcat.finance/alexandria-release-parts/v1`,
+has the release and each `part/part-<k>.json` file by SHA-256 as subjects. Its
+`parts` object gives `count` and the release's total `components` and
+`captures`. Each file stays within 6,225,920 bytes and 262,144 key characters,
+so Ariadne reads it with its default bounds, bare or inside an unsigned DSSE
+envelope. Both schemas reuse the component, capture and claim definitions of
+`release-statement-v1.schema.json`, and neither describes a signature.
+
+## Credit view and address index
 
 Step 3 adds `credit-event-v1.schema.json` and
 `position-observation-v1.schema.json` for the narrow Tabularium view. The
@@ -43,11 +68,15 @@ Runtime checks also cover the database application ID, schema version, logical
 digest, exact release-backed contents, cumulative-row overlap and
 coverage-to-empty rules.
 
+## Demonstration
+
 `demo-plan-v1.schema.json` covers the repository-source pins and fixed query
 used by the offline example. `demo-summary-v1.schema.json` covers its release
 identities, logical index digest and artifact receipts. These are demonstration
 contracts; production captures still enter through the ordinary capture-plan
 schema.
+
+## Compound v3 Phase 0
 
 Compound v3 Phase 0 adds `compound-v3-registry-v1.schema.json` for the pinned
 28-market deployment catalogue and
@@ -55,7 +84,9 @@ Compound v3 Phase 0 adds `compound-v3-registry-v1.schema.json` for the pinned
 call, ordered-storage and provider-reported finality gate outcomes. Runtime
 checks bind these contracts to the exact upstream commit and raw RPC objects.
 
-The resumable interval collector adds three more.
+## Interval collector
+
+The resumable interval collector has plan, checkpoint and receipt contracts.
 `interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
 interval, shard width, the evidence classes the plan collects and the named
 finality policy that fixed the interval's end. The evidence classes are a
@@ -66,7 +97,38 @@ finality boundary is a block number and the hash it carried: the collector
 reads that block by number and refuses a different hash, then under
 `finalized` or `safe` requires the tag's number to be at or above it, so the
 plan survives the tag advancing and fails only when its boundary block leaves
-the chain. `interval-checkpoint-v1.schema.json` covers the
+the chain.
+
+A second plan format, `interval-plan-v2.schema.json` (format
+`alexandria-interval-plan/v2`), replaces the single `proxy` address with a
+non-empty, duplicate-free `subjects` array of up to 4096 declared addresses.
+Every other field is unchanged. The collector filters `eth_getLogs` and
+`trace_filter` by the whole declared array rather than one address, accepts a
+log from any declared subject and refuses one from outside the set, and
+attributes each preserved log to the epoch of its own subject. The epoch
+table then carries one list per subject rather than one list for the whole
+interval. Each tiles from that subject's own first in-interval position
+through the interval's end. `MAX_EPOCHS` bounds each subject's own list
+rather than their sum, and a subject whose extent starts after the interval
+end carries no list at all. A v1 plan validates exactly as before and still
+means one subject.
+
+Either plan format may carry one optional field, `shards_per_component`, an
+integer from 1 to 4096. It splits each shard-class journal (`boundary-blocks`,
+`logs`, `traces`) into release components of at most that many shards each.
+The component count is derived from the shard count and this field alone. Each
+component holds a contiguous shard range, and their concatenation in shard
+order is the journal. The boundaries therefore move only when the plan changes
+and never because a re-collection returned one more record. The components are
+named `<class>.<k>` in shard order. A plan without the field declares no
+split. It yields one component per class under the class's own name, which is
+how every release before this field was built. The `epoch-evidence` journal is
+never split. `check` re-derives the ranges from the plan. It refuses a
+component the plan does not derive, one missing, one holding a shard outside
+its range and one holding a shard twice. It also refuses any component above
+the release ceiling by name.
+
+`interval-checkpoint-v1.schema.json` covers the
 working state a killed collection resumes from: the next shard, the last
 accepted block and hash, and each journal's committed byte offset. The
 offsets cover the declared classes and a fourth journal, `epoch-evidence`,
@@ -77,8 +139,15 @@ each implementation's runtime code. Those reads are staged under the virtual
 shard index one past the plan's last, so a checkpoint whose next shard is one
 past the plan says the shards are done and its `epoch-evidence` offset says
 how many opening reads are committed. It is not
-release truth and no release names it. `interval-receipt-v1.schema.json`
-covers what a collected interval turns out to hold: its code-hash-bound
+release truth and no release names it. A plan that declares
+`shards_per_component` stages one file per class and component. Its checkpoint
+is the one `interval-checkpoint-v2.schema.json` covers (format
+`alexandria-interval-checkpoint/v2`) instead: the same fields, with `offsets`
+and each history entry's offsets keyed by physical journal, `<class>.<k>` and
+`epoch-evidence`, up to 12,289 of them: three classes of 4,096 components and
+the opening journal. A v1 checkpoint is refused for a split plan and a v2 one
+for an unsplit plan. An unsplit plan keeps writing v1 byte for byte. The immutable
+`interval-receipt-v1.schema.json` covers the original block-only receipt: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. A dispute names one of six kinds: the
 three shard kinds, `boundary-hash`, `log-identity` and `transaction-order`,
@@ -86,10 +155,89 @@ and the three opening-read kinds, `first-block-hash`, `slot-word` and
 `code-digest`, filed under the virtual shard index. Runtime checks bind a
 checkpoint to its own plan's digest and refuse a shard outside it.
 
+New builds use `interval-receipt-v2.schema.json`, format
+`alexandria-interval-receipt/v2`. Each epoch adds `start_position` and exclusive
+`end_position`, each containing a decimal-string `block_number` and integer or
+null `transaction_index` and `log_index`. Both indexes are null together only
+at a block edge. The first start is before all logs at interval start; the
+last end is before all logs at interval end plus one. Interior boundaries carry
+the upgrade's indexes, and non-null `upgrade` objects add `transaction_index`.
+Block envelopes and their hashes remain, with the upgrade block shared by
+adjacent envelopes.
+
+V2 also requires ordered `log_attributions` rows containing `block_number`,
+`block_hash`, `transaction_hash`, `transaction_index`, `log_index`, zero-based
+`epoch_index` and `kind` (`proxy-log` or `upgrade-boundary`). Runtime checks
+validate typed coordinates, strict log order, consistent transaction and block
+hashes, exact positional tiling and agreement with freshly derived ownership.
+They refuse first-block upgrades without prior implementation evidence,
+multiple upgrades in a block and ordinary logs in an upgrade transaction.
+An omitted logs class keeps its coverage gap and an empty attribution array.
+The [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision)
+records why these limits remain. V1 verification preserves its original bytes,
+identifiers and block-only meaning; it gains no v2 attribution guarantee.
+[`examples/usdc-interval-epochs-v0`](../examples/usdc-interval-epochs-v0/README.md)
+builds v2 releases and pins each log's owner.
+
+A subject-set plan's release carries `interval-receipt-v3.schema.json`, format
+`alexandria-interval-receipt/v3`, instead.
+Its `epochs` is one list of subject rows, `{"epochs": [...], "subject": "<address>"}`, in strictly ascending subject order.
+`check` refuses a repeated subject, rows out of order, a row with any other field and a subject the plan did not declare.
+Each row's `epochs` is that subject's own epoch list under the v2 epoch and position rules, unedited, and the 256-epoch limit bounds each subject's list, never their sum.
+A subject's first epoch opens at a block sentinel, as the single-proxy table's does at the interval start.
+A subject with no extent inside the interval carries no row.
+`first_code` holds one row per declared subject with no recorded creation block, in ascending subject order.
+A row's `opening` is `interval-start`, with a null `empty_block`, or `observed-block`: empty code read at `empty_block`, runtime code at `code_block`, the next block.
+`code_block` is the `start_block` of that subject's first epoch, and `check` re-derives every row from the preserved `epoch-evidence` reads.
+Every `log_attributions` row adds the required `subject` that emitted the log, and `epoch_index` counts within that subject's own list.
+`check` refuses a v3 receipt under a single-proxy plan and a v2 receipt under a subject-set plan, by name.
+A single-proxy plan keeps writing v2 byte for byte.
+The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt; under v3 its `record_count` is the number of subject rows, the length of that list.
+The collection list does not grow with the subject set, so the plan's 4096-subject limit bounds a release's subjects.
+
+A v2 plan that declares `shards_per_component` may also declare
+`log_attribution_parts`, whose one admitted value is `journal-ranges`.
+`interval-plan-v2.schema.json` requires the split beside it. `validate_plan`
+refuses the field by name on a v1 plan, without the split, and with any other
+value. Such a plan's release carries `interval-receipt-v4.schema.json`, format
+`alexandria-interval-receipt/v4`. The v4 receipt is the v3 receipt with
+`log_attributions` replaced by `log_attribution_parts`, one
+`{component, first_shard, last_shard, rows}` entry per journal range in shard
+order. The rows move into one component per range, `log-attributions.<k>`
+beside `logs.<k>`. Each is an `interval-log-attributions-v1.schema.json`
+document, format `alexandria-interval-log-attributions/v1`. It holds `part`,
+`first_shard`, `last_shard` and the v3 subject rows of every preserved log in
+that range's shards, in `attribute_logs` order. A range with no preserved log
+gives an empty part. A part's capture is header-bound, counts `/rows` and names
+its shards and blocks in one gap sentence. Each part is written and read under
+the 67,108,864-byte component ceiling and 2,000,000 nodes. `check` requires
+receipt v4 exactly when the plan declares the field. It derives the part list
+from the plan and compares each part with the rows `attribute_logs` derives
+from its own shards. A plan without the field keeps writing v3 byte for byte.
+
+A v2 plan for venue `wildcat-v2` may also declare `wildcat_v2_wrappers`,
+`{"rule": "wrapper-deployed/v1", "subjects": [...]}`. Its list is non-empty,
+lowercase and strictly ascending, disjoint from `subjects` and from every
+registry entry, and at most 4096 together with `subjects`. `validate_plan`
+refuses the field by name on a v1 plan, for another venue, without the `logs`
+class and in any other shape. The venue also refuses it unless the registry's
+wrapper factory is a declared subject.
+`wildcat-v2-wrapper-subjects-v1.schema.json`, format
+`alexandria-wildcat-v2-wrapper-subjects/v1`, describes the `wrapper-subjects`
+component such a plan derives. It names the wrapper factory, the
+`WrapperDeployed` topic, the discovery window and each wrapper that a
+preserved `WrapperDeployed` log from that factory names, with its market, its
+log's block, transaction hash, transaction index and log index, and whether
+the plan declared it. `build` writes that component for such a plan, and
+`check` requires it exactly then and re-derives it from the release's own
+logs and registry.
+
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one
-record per preserved exchange under `/records`; the `epoch-evidence` journal of
+record per preserved exchange under `/records`, or one such journal document
+per plan-derived component, `<class>.<k>`, when the plan declares
+`shards_per_component`; the `epoch-evidence` journal of
 opening reads, in the same format; and six more -- the interval receipt, the
 `implementation-code` component carrying each implementation's runtime bytecode
 under `/records`, the reconciliation record, the error receipts, the plan and

@@ -1,0 +1,9 @@
+{
+ "candidate": "full-map-in-tree",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate full-map-in-tree --criterion capture-route-serves-boundary --report .hexaemeron/design/reports/full-map-in-tree-capture-route-serves-boundary.json",
+ "criterion": "capture-route-serves-boundary",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "boolean",
+ "value": true
+}

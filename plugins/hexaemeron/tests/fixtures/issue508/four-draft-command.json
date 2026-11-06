@@ -1,0 +1,19 @@
+{
+  "schema": "issue508-parser-specimen/v1",
+  "argv": [
+    "python3",
+    "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+    "one.md",
+    "two.md",
+    "three.md",
+    "four.md"
+  ],
+  "observed_exit": 2,
+  "rejected_operands": [
+    "two.md",
+    "three.md",
+    "four.md"
+  ],
+  "presence_only_result": true,
+  "observation_scope": "Existing parser observation, not a guard for the future command validator."
+}

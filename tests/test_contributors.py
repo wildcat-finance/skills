@@ -1,14 +1,16 @@
 """Hold the contributor generator's host-identity set equal to Fiat's.
 
-ADR-016 names one mechanical set of runtime host identities and Fiat's
-controller owns it. scripts/contributors.py keeps a copy so it stays a
-standalone root script with no cross-plugin import. A copy that nothing checks
-stops agreeing, so these tests read the frozensets straight out of hexctl.py's
-syntax tree and compare them. Either side edited alone fails here.
+hexctl.py still declares the runtime host identities, though Fiat refuses no
+commit on them, because the contributor-ranking promise names this parity check
+as evidence. scripts/contributors.py keeps a copy so it stays a standalone root
+script with no cross-plugin import. A copy that nothing checks stops agreeing,
+so these tests read the frozensets straight out of hexctl.py's syntax tree and
+compare them. Either side edited alone fails here.
 """
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 from pathlib import Path
@@ -87,6 +89,33 @@ class HostSetParity(unittest.TestCase):
         self.assertFalse(contributors.is_host_identity("Dave Coleman", "dave@example.com"))
         self.assertFalse(contributors.is_host_identity("Radu P", "radu@example.com"))
         self.assertFalse(contributors.is_host_identity("", ""))
+
+    def test_contributor_classification_does_not_reach_fiat_admission(self):
+        """hexctl.py declares the sets for this parity check and nothing in it reads them.
+
+        Fiat refuses no commit on runtime-host identity. A reader of any of the
+        three sets, or the return of a withdrawn host or trailer rule, would make
+        this classification a Fiat admission gate again.
+        """
+        tree = ast.parse(HEXCTL.read_text(encoding="utf-8"), filename=str(HEXCTL))
+        readers = sorted(
+            f"{node.id}:{node.lineno}"
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name)
+            and node.id in SET_NAMES
+            and not isinstance(node.ctx, ast.Store)
+        )
+        self.assertEqual(readers, [], "hexctl.py reads a runtime-host set")
+        withdrawn = {"is_host_identity", "HOST_BYLINE_RE", "COAUTHOR_TRAILER", "ORIGIN_TRAILER"}
+        names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+        names.update(
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        )
+        self.assertEqual(
+            sorted(names & withdrawn), [], "hexctl.py names a withdrawn host or trailer rule"
+        )
 
 
 class LoginGrammar(unittest.TestCase):
@@ -327,6 +356,17 @@ class RecordedDecisions(unittest.TestCase):
         for field in ("- Promise:", "- Evidence:", "- Boundary:", "- Refuses:", "- Recovery:"):
             self.assertIn(field, block.split("## ", 1)[0])
 
+    def test_the_contributor_promise_keeps_its_hexctl_parity_check(self):
+        text = (REPOSITORY_ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        block = text.split("promise-machine-contributor-ranking", 1)[1].split("## ", 1)[0]
+        self.assertIn("the host-set parity check against `hexctl.py`'s declaration", block)
+        self.assertIn("a host set diverged from `hexctl.py` in either direction", block)
+
+    def test_the_guide_does_not_make_account_matching_an_admission_rule(self):
+        text = self.GUIDE.read_text(encoding="utf-8")
+        self.assertNotIn("author address must be one GitHub can match", text)
+        self.assertNotRegex(text, r"under your human\s+identity")
+
     def test_the_guide_says_what_the_list_does_not_establish(self):
         text = self.GUIDE.read_text(encoding="utf-8")
         self.assertIn("CONTRIBUTORS.md", text)
@@ -559,6 +599,43 @@ class Ranking(unittest.TestCase):
         self.assertEqual(excluded.count("claude[bot]"), 1)
         self.assertEqual(excluded.count("shoggoth-wildcat"), 1)
 
+    DELIVERY_APP = "shoggoth-wildcat-labs[bot]"
+
+    def test_the_delivery_app_is_excluded_as_a_shoggoth_account(self):
+        """GitHub returns the delivery App as a Bot row; it is excluded, not refused."""
+        rows = fixture("contributors.json") + [
+            {"login": self.DELIVERY_APP, "type": "Bot", "contributions": 66}
+        ]
+        payload = self.compute(contributors_rows=rows, merged=self.MERGED)
+        without = self.compute(merged=self.MERGED)
+        self.assertEqual(payload["contributors"], without["contributors"])
+        reasons = {e["login"]: e["reason"] for e in payload["excluded"]}
+        self.assertIn("Shoggoth", reasons[self.DELIVERY_APP])
+
+    def test_a_delivery_app_atlas_pull_request_is_excluded_once(self):
+        pulls = {
+            contributors.WAVE_ATLAS_REPOSITORY: [
+                {
+                    "number": number,
+                    "merged_at": "2026-09-14T00:00:00Z",
+                    "user": {"login": self.DELIVERY_APP, "type": "Bot"},
+                }
+                for number in (1, 2)
+            ]
+        }
+        payload = self.compute(merged=self.MERGED, pulls=pulls)
+        excluded = [entry["login"] for entry in payload["excluded"]]
+        self.assertEqual(excluded.count(self.DELIVERY_APP), 1)
+        self.assertNotIn(
+            self.DELIVERY_APP, [entry["login"] for entry in payload["contributors"]]
+        )
+
+    def test_the_delivery_app_is_not_a_runtime_host(self):
+        """AGENTS.md keeps the App out of HOST_PR_LOGINS; it is an agent login instead."""
+        self.assertIn(self.DELIVERY_APP, contributors.AGENT_LOGINS)
+        self.assertNotIn(self.DELIVERY_APP, contributors.HOST_PR_LOGINS)
+        self.assertFalse(contributors.is_host_login(self.DELIVERY_APP))
+
     def test_payload_names_every_repository_behind_the_pr_total(self):
         payload = self.compute(merged=self.MERGED)
         self.assertEqual(
@@ -576,6 +653,32 @@ class FailClosed(unittest.TestCase):
             contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
         self.assertIn("future-agent[bot]", str(caught.exception))
         self.assertIn("unknown identity", str(caught.exception))
+
+    def test_stops_on_a_bot_that_resembles_the_delivery_app(self):
+        rows = [{"login": "shoggoth-wildcat-labs-2[bot]", "type": "Bot", "contributions": 4}]
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+        self.assertIn("shoggoth-wildcat-labs-2[bot]", str(caught.exception))
+        self.assertIn("unknown identity", str(caught.exception))
+
+    def test_stops_on_an_agent_login_of_an_unknown_account_type(self):
+        """A declared agent login is excluded as a User or a Bot, and as nothing else."""
+        for login in sorted(contributors.AGENT_LOGINS):
+            with self.subTest(login=login):
+                rows = [{"login": login, "type": "Organization", "contributions": 4}]
+                with self.assertRaises(contributors.Stop) as caught:
+                    contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+                self.assertIn("Organization", str(caught.exception))
+                self.assertIn("not User or Bot", str(caught.exception))
+
+    def test_stops_on_an_agent_login_with_no_account_type(self):
+        for login in sorted(contributors.AGENT_LOGINS):
+            with self.subTest(login=login):
+                rows = [{"login": login, "contributions": 4}]
+                with self.assertRaises(contributors.Stop) as caught:
+                    contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+                self.assertIn("None", str(caught.exception))
+                self.assertIn("not User or Bot", str(caught.exception))
 
     def test_stops_on_an_unknown_account_type(self):
         rows = [{"login": "mystery", "type": "Organization", "contributions": 4}]
@@ -719,6 +822,97 @@ class RequiresSymbol:
             )
         else:
             self.fail(f"expected a Stop naming {contains!r}; nothing was raised")
+
+
+class HostSetParityDirections(RequiresSymbol, unittest.TestCase):
+    """The parity check stops on drift in either direction, and says which.
+
+    The contributor-ranking promise refuses a host set diverged from hexctl.py
+    in either direction. Each case writes a stand-in hexctl.py that differs
+    from this module's copy in one way and requires the Stop to name that
+    difference and its side. Every symbol is required rather than dereferenced,
+    so a tree without the parity check fails these cases instead of erroring.
+    """
+
+    SETS = ("HOST_IDENTITY_NAMES", "HOST_IDENTITY_EMAILS", "HOST_PR_LOGINS")
+    EXTRA = {
+        "HOST_IDENTITY_NAMES": "newhost",
+        "HOST_IDENTITY_EMAILS": "noreply@newhost.example",
+        "HOST_PR_LOGINS": "newhost[bot]",
+    }
+
+    def ours(self):
+        return {
+            name: self.require(name, "the ranking has no host set to hold in parity")
+            for name in self.SETS
+        }
+
+    def parity_against(self, sets):
+        """A call running the parity check on a stand-in declaring exactly `sets`."""
+        check = self.require(
+            "verify_host_set_parity",
+            "the contributor-ranking promise names a parity check that is gone",
+        )
+        work = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(work, ignore_errors=True))
+        declaration = work / "hexctl.py"
+        declaration.write_text(
+            "".join(
+                f"{name} = frozenset({{{', '.join(map(repr, sorted(members)))}}})\n"
+                for name, members in sets.items()
+            ),
+            encoding="utf-8",
+        )
+        return lambda: check(declaration)
+
+    def test_a_stand_in_equal_to_this_module_passes(self):
+        """The control: each stop below comes from the one drift it introduces."""
+        call = self.parity_against(self.ours())
+        try:
+            call()
+        except contributors.Stop as stop:
+            self.fail(f"a declaration equal to this module's copy stopped: {stop}")
+
+    def test_stops_on_a_member_in_hexctl_that_is_absent_here(self):
+        for name in self.SETS:
+            with self.subTest(set=name):
+                sets = self.ours()
+                extra = self.EXTRA[name]
+                sets[name] = sets[name] | {extra}
+                self.assert_stops(
+                    self.parity_against(sets),
+                    f"{name} differs from hexctl.py (only here: none; only there: {[extra]!r})",
+                )
+
+    def test_stops_on_a_member_here_that_is_absent_from_hexctl(self):
+        for name in self.SETS:
+            with self.subTest(set=name):
+                sets = self.ours()
+                removed = sorted(sets[name])[0]
+                sets[name] = sets[name] - {removed}
+                self.assert_stops(
+                    self.parity_against(sets),
+                    f"{name} differs from hexctl.py (only here: {[removed]!r}; only there: none)",
+                )
+
+    def test_stops_on_a_set_in_hexctl_with_no_counterpart_here(self):
+        sets = self.ours()
+        sets["HOST_FUTURE_LOGINS"] = frozenset({"future[bot]"})
+        self.assert_stops(
+            self.parity_against(sets),
+            "(missing there: none; present there and unaccounted for here: "
+            "['HOST_FUTURE_LOGINS'])",
+        )
+
+    def test_stops_on_a_set_here_with_no_counterpart_in_hexctl(self):
+        for name in self.SETS:
+            with self.subTest(set=name):
+                sets = self.ours()
+                del sets[name]
+                self.assert_stops(
+                    self.parity_against(sets),
+                    f"(missing there: {[name]!r}; present there and unaccounted for here: none)",
+                )
 
 
 class NetworkBoundary(RequiresSymbol, unittest.TestCase):
@@ -1080,6 +1274,12 @@ class Rendering(RequiresSymbol, unittest.TestCase):
         root = self.root()
         stale = contributors.check_artefacts(root, self.PAYLOAD)
         self.assertTrue(any("is absent" in item for item in stale))
+
+    def test_the_rendered_file_cites_no_superseded_decision(self):
+        text = contributors.render_contributors(self.PAYLOAD)
+        self.assertNotIn("ADR-016", text)
+        self.assertIn("ADR-019", text)
+        self.assertIn("the Shoggoth's own accounts", text)
 
     def test_no_excluded_login_reaches_either_artefact(self):
         root = self.root()

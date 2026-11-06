@@ -134,5 +134,146 @@ class EulerReleaseTests(unittest.TestCase):
             verify(manifest_path)
 
 
+V1_RELEASES = {
+    "euler-v1-v1": {
+        "predecessor": "euler-v1-v0",
+        "release": "euler-v1-borrow-block-14531589-v1",
+        "superseded": "euler-v1-borrow-block-14531589-v0",
+        "rows": 1,
+        "digests": {
+            "source.json":
+                "1241cbed85189e79f9b0f8418e6838b297b4b661ad3e9f2d8a86903e22a6e790",
+            "capture.json":
+                "63d63a29d7d29c0f7be2f62fb4408ea7c5732b79bc0fe76b48a61527d7359aba",
+            "events.jsonl":
+                "5b1016a9bc143f42e9bea46de71b3d1917bf6731d93b4c49f974df3660bc8595",
+            "coverage.json":
+                "825c7b7ad59ed5fedd4e4f403a2f2b3bac9c60fc06fd9b49612f2f7a771b2e18",
+        },
+    },
+    "euler-v2-v1": {
+        "predecessor": "euler-v2-v0",
+        "release": "euler-v2-owner-activity-1786933919-v1",
+        "superseded": "euler-v2-owner-activity-1786933919-v0",
+        "rows": 2,
+        "digests": {
+            "source.json":
+                "10f5c8e8242ef3745fbd69c4d8aed458f31b165fc4526f638e76df59a69a18cc",
+            "capture.json":
+                "46b623f4c2c832f1529bb9b4fa4b992229890240db04efaaa2c8f0c40a045b9a",
+            "events.jsonl":
+                "f2b227058f53cd644c11359e911c8494924d6fef7da7072e8a33a4baf952d02a",
+            "coverage.json":
+                "cd23d3b89d949ccd9afad7ef7284b2172303af2bf8c1fb8151cd9c82c9fc22c7",
+        },
+    },
+}
+
+
+class EulerSupersedingReleaseTests(unittest.TestCase):
+    """The two Euler v1 releases restate their v0 releases under schema 3."""
+
+    def test_all_eight_v1_release_artifact_hashes_are_fixed(self):
+        for release, declared in V1_RELEASES.items():
+            for name, digest in declared["digests"].items():
+                self.assertEqual(
+                    hashlib.sha256((EXAMPLES / release / name).read_bytes()).hexdigest(),
+                    digest,
+                    "%s/%s" % (release, name),
+                )
+
+    def test_each_v1_source_is_its_v0_source_byte_for_byte(self):
+        for release, declared in V1_RELEASES.items():
+            predecessor = declared["predecessor"]
+            self.assertEqual(
+                (EXAMPLES / release / "source.json").read_bytes(),
+                (EXAMPLES / predecessor / "source.json").read_bytes(),
+                release,
+            )
+            self.assertEqual(
+                declared["digests"]["source.json"],
+                RELEASES[predecessor]["source.json"],
+                release,
+            )
+
+    def test_each_v1_capture_differs_from_its_v0_capture_in_release_alone(self):
+        for release, declared in V1_RELEASES.items():
+            v0 = json.loads(
+                (EXAMPLES / declared["predecessor"] / "capture.json").read_text()
+            )
+            v1 = json.loads((EXAMPLES / release / "capture.json").read_text())
+            differing = sorted(
+                key for key in set(v0) | set(v1) if v0.get(key) != v1.get(key)
+            )
+            self.assertEqual(differing, ["release"], release)
+            self.assertEqual(v0["release"], declared["superseded"], release)
+            self.assertEqual(v1["release"], declared["release"], release)
+            self.assertEqual(v1["request"], v0["request"], release)
+
+    def test_the_euler_v1_capture_keeps_the_request_id_the_response_is_bound_to(self):
+        """The identifier the preserved RPC response answers.
+
+        `verify` reconciles the capture's request with the preserved response,
+        and the v1 capture was derived from the v0 bytes rather than rewritten,
+        so this is what proves the derivation kept the whole request object and
+        not only the fields a JSON round trip happens to preserve.
+        """
+        capture = json.loads((EXAMPLES / "euler-v1-v1" / "capture.json").read_text())
+        self.assertEqual(capture["request"]["id"], 1)
+        source = json.loads((EXAMPLES / "euler-v1-v1" / "source.json").read_text())
+        self.assertEqual(source["id"], capture["request"]["id"])
+
+    def test_both_v1_releases_verify_offline_as_schema_three(self):
+        for release, declared in V1_RELEASES.items():
+            root = EXAMPLES / release
+            paths = tuple(root / name for name in declared["digests"])
+            before = {path: path.read_bytes() for path in paths}
+            with mock.patch.object(
+                socket.socket, "connect", side_effect=AssertionError("network used")
+            ):
+                report = verify(root / "coverage.json")
+            self.assertEqual(report.schema_version, 3, release)
+            self.assertEqual(report.release, declared["release"], release)
+            self.assertEqual(report.rows, declared["rows"], release)
+            self.assertEqual({path: path.read_bytes() for path in paths}, before)
+
+    def test_both_v1_manifests_and_rows_state_schema_three(self):
+        for release, declared in V1_RELEASES.items():
+            manifest = json.loads((EXAMPLES / release / "coverage.json").read_text())
+            self.assertEqual(manifest["schema_version"], 3, release)
+            self.assertEqual(manifest["versions"]["event_schema"], 3, release)
+            self.assertEqual(manifest["release"], declared["release"], release)
+            rows = [
+                json.loads(line)
+                for line in (EXAMPLES / release / "events.jsonl").read_text().splitlines()
+                if line
+            ]
+            self.assertEqual(len(rows), declared["rows"], release)
+            self.assertEqual({row["schema_version"] for row in rows}, {3}, release)
+
+    def test_both_documented_v1_rebuilds_match_committed_bytes(self):
+        for release in V1_RELEASES:
+            result = subprocess.run(
+                [sys.executable, str(EXAMPLES / release / "rebuild.py")],
+                cwd=support.REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("rebuild matches", result.stdout)
+
+    def test_each_release_readme_names_the_other(self):
+        """On-call question 4 of the study, checked in both directions."""
+        for release, declared in V1_RELEASES.items():
+            predecessor = declared["predecessor"]
+            v0_readme = (EXAMPLES / predecessor / "README.md").read_text()
+            v1_readme = (EXAMPLES / release / "README.md").read_text()
+            self.assertIn(declared["release"], v0_readme, predecessor)
+            self.assertIn("../%s/README.md" % release, v0_readme, predecessor)
+            self.assertIn(declared["superseded"], v1_readme, release)
+            self.assertIn("../%s/README.md" % predecessor, v1_readme, release)
+
+
 if __name__ == "__main__":
     unittest.main()

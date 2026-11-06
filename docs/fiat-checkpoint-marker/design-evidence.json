@@ -1,0 +1,398 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "footer-proximity",
+      "summary": "Keep the released body-or-footer predicate."
+    },
+    {
+      "id": "whole-lines-only",
+      "summary": "Remove the footer witness and keep existing body lines."
+    },
+    {
+      "id": "bounded-material",
+      "summary": "Keep existing body lines and require bounded material after a header."
+    },
+    {
+      "id": "complete-decoder",
+      "summary": "Require a complete footer-bounded decodable base64 block."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "material-refusals",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "benign-acceptance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "scan-time",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "peak-allocation",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "token-parity",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "input-preservation",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "implementation-regression",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "native-archive-roundtrip",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "footer-proximity",
+      "criterion": "material-refusals",
+      "state": "fail",
+      "report": {
+        "path": "reports/footer-proximity-material-refusals.json",
+        "sha256": "ad655d0b580da2b968113be4476854067de61d3c7e6823c3b54342d5137c5a81"
+      }
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "benign-acceptance",
+      "state": "fail",
+      "report": {
+        "path": "reports/footer-proximity-benign-acceptance.json",
+        "sha256": "354fe088f6d77af54904239d4b38db6c12d2ea0f64b07c04daddde5e75af33c1"
+      }
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "scan-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/footer-proximity-scan-time.json",
+        "sha256": "57d39198cabc45e05917a5dd20767530d5ad4d2cdd7d987ecd2983487c247765"
+      }
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "peak-allocation",
+      "state": "pass",
+      "report": {
+        "path": "reports/footer-proximity-peak-allocation.json",
+        "sha256": "d1c7507480ef0261d4b3b29ca8657db709b704d6d2bbba56e61f3be46b3d6f1e"
+      }
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "token-parity",
+      "state": "pass",
+      "report": {
+        "path": "reports/footer-proximity-token-parity.json",
+        "sha256": "13a6f0e20d22c958b6cac3c3bb5c071c39e724c36338f01b89f2893ae16b726a"
+      }
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "input-preservation",
+      "state": "pass",
+      "report": {
+        "path": "reports/footer-proximity-input-preservation.json",
+        "sha256": "48c9bab71a2f9ef9b70775fb6bb4e7b21cff203034eea7804477df90c3176561"
+      }
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "implementation-regression",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate footer-proximity --criterion implementation-regression --report .hexaemeron/reports/footer-proximity-implementation-regression.json",
+      "report": "reports/footer-proximity-implementation-regression.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "footer-proximity",
+      "criterion": "native-archive-roundtrip",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate footer-proximity --criterion native-archive-roundtrip --report .hexaemeron/reports/footer-proximity-native-archive-roundtrip.json",
+      "report": "reports/footer-proximity-native-archive-roundtrip.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "material-refusals",
+      "state": "fail",
+      "report": {
+        "path": "reports/whole-lines-only-material-refusals.json",
+        "sha256": "6355ab9b678877f4e10f9cf12777fdf0a10ca08f63283ac426e6b8e3d9cca116"
+      }
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "benign-acceptance",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-lines-only-benign-acceptance.json",
+        "sha256": "14ab8797cde02db6761fe36b736389cb3ae4b22cdd3a2ca534299d6b9852d3e7"
+      }
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "scan-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-lines-only-scan-time.json",
+        "sha256": "9d39cc1ad5492e7289529cc2ae87e2c28ee707d6ae23267f58f835fed0111408"
+      }
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "peak-allocation",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-lines-only-peak-allocation.json",
+        "sha256": "ccac4dffc7784feb160a7db2a4107fda7c104d549113d4538b212d0f3bd0009a"
+      }
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "token-parity",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-lines-only-token-parity.json",
+        "sha256": "34356a88b3396875b30a6eb8d9b2de5580718e05bb755324708c92befed39630"
+      }
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "input-preservation",
+      "state": "pass",
+      "report": {
+        "path": "reports/whole-lines-only-input-preservation.json",
+        "sha256": "63371ecc23a2f11f3f709b9eec363d3cc52ea5466d2f351c3f7c7d04fc3f6e81"
+      }
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "implementation-regression",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate whole-lines-only --criterion implementation-regression --report .hexaemeron/reports/whole-lines-only-implementation-regression.json",
+      "report": "reports/whole-lines-only-implementation-regression.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "whole-lines-only",
+      "criterion": "native-archive-roundtrip",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate whole-lines-only --criterion native-archive-roundtrip --report .hexaemeron/reports/whole-lines-only-native-archive-roundtrip.json",
+      "report": "reports/whole-lines-only-native-archive-roundtrip.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "material-refusals",
+      "state": "pass",
+      "report": {
+        "path": "reports/bounded-material-material-refusals.json",
+        "sha256": "ea10c40117b9724e789ce0730d61f66e782730366e3b8c943a6cd5587f3cdd2d"
+      }
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "benign-acceptance",
+      "state": "pass",
+      "report": {
+        "path": "reports/bounded-material-benign-acceptance.json",
+        "sha256": "40fe577ae05bd009725b78f50211f36bb5e58a6aa941b74d032799e9dbb83015"
+      }
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "scan-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/bounded-material-scan-time.json",
+        "sha256": "b3a04531c8e7f96b6f8ebcd30b9873516fc0f6c50eb5bf6b9f219cfde711b68d"
+      }
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "peak-allocation",
+      "state": "pass",
+      "report": {
+        "path": "reports/bounded-material-peak-allocation.json",
+        "sha256": "85f6c66702d443df299f6c04a16ed8b5a52fa7b0ebea3650c2d35e7ff249bb7d"
+      }
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "token-parity",
+      "state": "pass",
+      "report": {
+        "path": "reports/bounded-material-token-parity.json",
+        "sha256": "a93861001323bdd787ac66594323845cd8c156c4e8482074c9db0bc5741f65b2"
+      }
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "input-preservation",
+      "state": "pass",
+      "report": {
+        "path": "reports/bounded-material-input-preservation.json",
+        "sha256": "c7c2e67793d21949fb7a56bfabc28c3a9a52f988675ff3d80552617422690ef5"
+      }
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "implementation-regression",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate bounded-material --criterion implementation-regression --report .hexaemeron/reports/bounded-material-implementation-regression.json",
+      "report": "reports/bounded-material-implementation-regression.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "bounded-material",
+      "criterion": "native-archive-roundtrip",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate bounded-material --criterion native-archive-roundtrip --report .hexaemeron/reports/bounded-material-native-archive-roundtrip.json",
+      "report": "reports/bounded-material-native-archive-roundtrip.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "material-refusals",
+      "state": "fail",
+      "report": {
+        "path": "reports/complete-decoder-material-refusals.json",
+        "sha256": "99fdb0e9dbbbff0900b402060a26baf8ecc4f141142db6d6d4cbcb43abd169c5"
+      }
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "benign-acceptance",
+      "state": "pass",
+      "report": {
+        "path": "reports/complete-decoder-benign-acceptance.json",
+        "sha256": "b760cd3fa954f126ef9b1bae2975ded03fd83aa9ecf282f46f3346f886ebedcb"
+      }
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "scan-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/complete-decoder-scan-time.json",
+        "sha256": "9bd5e1a1063e3040337e085b5cf730d068a6c2fff9e5fadaabdf8808798f4aa3"
+      }
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "peak-allocation",
+      "state": "pass",
+      "report": {
+        "path": "reports/complete-decoder-peak-allocation.json",
+        "sha256": "186b1ba077484d7d9e1de4f3377ede1481e085dd7c95e0068ae2fcde8838bf95"
+      }
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "token-parity",
+      "state": "pass",
+      "report": {
+        "path": "reports/complete-decoder-token-parity.json",
+        "sha256": "6efd73b10b035e4ab2b63346b6589c5c285b05ee2cfcd4e427e61cc7b25a5cbb"
+      }
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "input-preservation",
+      "state": "pass",
+      "report": {
+        "path": "reports/complete-decoder-input-preservation.json",
+        "sha256": "cf1da55b7f0f229438ca296bfc3c3913d7d30c4b839d626d2ef5fefb98a949e5"
+      }
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "implementation-regression",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate complete-decoder --criterion implementation-regression --report .hexaemeron/reports/complete-decoder-implementation-regression.json",
+      "report": "reports/complete-decoder-implementation-regression.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "complete-decoder",
+      "criterion": "native-archive-roundtrip",
+      "state": "pending",
+      "resolver": "python3 plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py --candidate complete-decoder --criterion native-archive-roundtrip --report .hexaemeron/reports/complete-decoder-native-archive-roundtrip.json",
+      "report": "reports/complete-decoder-native-archive-roundtrip.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "bounded-material",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

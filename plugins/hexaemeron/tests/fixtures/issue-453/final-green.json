@@ -1,0 +1,248 @@
+{
+  "admission": "final-green",
+  "counter_fields": [
+    "assertion_failures",
+    "complete",
+    "errors",
+    "executed",
+    "skipped"
+  ],
+  "green": {
+    "counters": {
+      "assertion_failures": 0,
+      "complete": true,
+      "errors": 0,
+      "executed": 2,
+      "skipped": 0
+    },
+    "report": {
+      "complete": true,
+      "errors": 0,
+      "expectedFailures": 0,
+      "failures": 0,
+      "schema": "elenchus.unittest.v1",
+      "skipped": 0,
+      "testsRun": 2,
+      "unexpectedSuccesses": 0
+    },
+    "runner_exit": 0
+  },
+  "manifest": {
+    "capture": {
+      "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "consuming_step": 4,
+    "controller_run_id": "fiat-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "final_commit": "5555555555555555555555555555555555555555",
+    "finding_id": "kf-453-07",
+    "green_argv": [
+      "python3",
+      "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+      "--case",
+      "kf-453-07",
+      "--report",
+      ".elenchus/issue-453-kf-453-07-green.json"
+    ],
+    "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-07 --report .elenchus/issue-453-kf-453-07-green.json",
+    "report_file": ".elenchus/issue-453-kf-453-07-green.json",
+    "report_format": "unittest-json-v1",
+    "retained_report_path": ".hexaemeron/steps/4/final-green/reports/kf-453-07.report",
+    "worktree_identity": {
+      "device": 17,
+      "inode": 45303
+    }
+  },
+  "manifest_fields": [
+    "schema",
+    "finding_id",
+    "consuming_step",
+    "controller_run_id",
+    "worktree_identity",
+    "capture",
+    "final_commit",
+    "green_command",
+    "green_argv",
+    "report_format",
+    "report_file",
+    "retained_report",
+    "runner_exit",
+    "counters",
+    "admission"
+  ],
+  "manifest_schema": "fiat-final-green-manifest/v1",
+  "rejected": [
+    {
+      "id": "assertion-failure",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 1,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 1,
+      "why": "a red case on the fixed tree is not final green"
+    },
+    {
+      "id": "infrastructure-error",
+      "report": {
+        "complete": true,
+        "errors": 1,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 1,
+      "why": "an import or setup error is not an answer"
+    },
+    {
+      "id": "skipped-case",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 1,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "a skipped guard did not run"
+    },
+    {
+      "id": "expected-failure",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 1,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "a red guard hidden as an expected failure is still red"
+    },
+    {
+      "id": "unexpected-success",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 1
+      },
+      "runner_exit": 0,
+      "why": "an unexpected success means the runner disagreed with itself"
+    },
+    {
+      "id": "zero-executed",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 0,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "an empty successful run proves nothing"
+    },
+    {
+      "id": "incomplete-run",
+      "report": {
+        "complete": false,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "an interrupted run is not a complete one"
+    },
+    {
+      "id": "non-zero-runner-exit",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 1,
+      "why": "a clean report beside a failing process refuses"
+    },
+    {
+      "id": "foreign-report-schema",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.forge.v1",
+        "skipped": 0,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "another runner's schema is not this format"
+    },
+    {
+      "id": "boolean-in-an-integer-field",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": true,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "a boolean is not a JSON integer count"
+    },
+    {
+      "id": "negative-count",
+      "report": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": -1,
+        "testsRun": 2,
+        "unexpectedSuccesses": 0
+      },
+      "runner_exit": 0,
+      "why": "counts are non-negative"
+    }
+  ],
+  "report_format": "unittest-json-v1",
+  "schema": "issue-453-final-green-fixture/v1",
+  "suite_checks": [
+    "root-suite",
+    "hexaemeron-suite"
+  ]
+}

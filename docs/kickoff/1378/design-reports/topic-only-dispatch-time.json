@@ -1,0 +1,9 @@
+{
+  "candidate": "topic-only",
+  "command": "python3 .hexaemeron/design-probe.py --candidate topic-only --criterion dispatch-time --report .hexaemeron/design-reports/topic-only-dispatch-time.json",
+  "criterion": "dispatch-time",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 11
+}

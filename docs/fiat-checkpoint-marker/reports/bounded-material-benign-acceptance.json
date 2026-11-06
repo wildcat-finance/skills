@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bounded-material",
+  "criterion": "benign-acceptance",
+  "value": 0,
+  "unit": "count",
+  "command": "python3 .hexaemeron/measure_design.py --candidate bounded-material --criterion benign-acceptance --report .hexaemeron/reports/bounded-material-benign-acceptance.json",
+  "exit": 0
+}

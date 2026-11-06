@@ -2,13 +2,18 @@
 
 <!-- marketplace-context:start -->
 > **Marketplace context: Berean.** Berean pins the corpus, chain readings and evaluation record a protocol agent's answers rest on, so a release can be checked without the model that produced it. Use Lemma to produce source-linked chunks, Lazarus to preserve the chain evidence itself, and Ariadne to bind a released artefact digest to its evidence. **Current frontier:** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+
+Ariadne now ships a checked statement over the fixed Berean demonstration
+release, so the frontier's claim that no Ariadne statement binds a berean
+release is out of date. Berean's ledger keeps that sentence until its held
+Wildcat reference release job completes.
 <!-- marketplace-context:end -->
 
 Decisions expensive to reverse, each with the reason it went the way it did.
 The study behind them is [study.md](study.md); the specification is
 [spec.md](spec.md).
 
-## The Ariadne binding is deferred, not designed out
+## The Ariadne binding remains separate
 
 The specification's first open question asks whether the release manifest
 should extend Ariadne directly or stay a separate document referenced by an
@@ -19,17 +24,19 @@ age away:
    predicate, including `score`, `verdict` and `grade`. A berean release
    carries evaluation thresholds and results as structured fields, so those
    fields cannot live inside an Ariadne predicate at all.
-2. Ariadne's own ledger holds `grounded-agent-predicate` as its next job. An
-   ordinary berean delivery must not consume a sibling's held frontier.
+2. Ariadne owns the grounded-agent predicate and now ships a checked
+   statement over the fixed Berean release. Berean keeps its own release
+   format; an ordinary Berean delivery does not consume a sibling frontier.
 
 The precedent is Lazarus: the kit owns its artefact format and its own
 release document; Ariadne owns one predicate type describing that artefact;
 each side names the other by constant and is held to it by a drift test;
-neither imports the other. When the grounded-agent predicate exists, a berean
-release binds to a statement the same way. Until then, `release-v1` keeps
-every artefact digest such a statement would cover: the corpus digest, each
-component digest and the release digest, all lowercase sha256 hex over
-canonical JSON, so the binding needs no new fields when it arrives.
+neither imports the other. The grounded-agent predicate now binds a Berean
+release on that pattern, with one difference: Berean names nothing of Ariadne,
+and only Ariadne holds Berean's release constants under a drift test.
+`release-v1` already carries the corpus digest, each component digest and the
+release digest as lowercase sha256 hex, so the binding needs no new release
+fields.
 
 ## Aave v4 reads are copied bytes, not a cross-plugin reference
 

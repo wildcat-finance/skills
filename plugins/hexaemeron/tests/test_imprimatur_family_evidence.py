@@ -235,11 +235,18 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assert_refused(root, "unreadable JSON at families.jsonl:1", code=2)
 
     def test_refuses_path_outside_the_fixture(self):
-        root = self.build_fixture()
-        (root / "schemas").rename(root.parent / "escaped-schemas")
-        self.addCleanup(self.remove_tree, root.parent / "escaped-schemas")
-        (root / "schemas").symlink_to(root.parent / "escaped-schemas")
-        self.assert_refused(root, "symlink refused", code=2)
+        with tempfile.TemporaryDirectory(prefix="family-evidence-outside-") as directory:
+            parent = Path(directory)
+            occupied = parent / "escaped-schemas"
+            occupied.mkdir()
+            sentinel = occupied / "other-run"
+            sentinel.write_text("preserve\n", encoding="utf-8")
+            root = self.build_fixture(root=parent / "fixture")
+            escaped = parent / "owned-escape"
+            (root / "schemas").rename(escaped)
+            (root / "schemas").symlink_to(escaped)
+            self.assert_refused(root, "symlink refused", code=2)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "preserve\n")
 
     def test_refuses_row_failing_its_schema(self):
         broken = dict(FAMILY_ROW)
@@ -325,7 +332,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assertIn("schema missing keys", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_refuses_verify_sources_on_a_repository_outside_the_schema(self):
+    def test_refuses_verify_sources_on_repo_outside_the_schema(self):
         row = dict(SPECIMEN_ROW, repository="attacker-controlled/evil")
         root = self.build_fixture(specimens=[row])
         result = self.run_checker(
@@ -557,7 +564,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 self.assertIn(needle, result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
 
-    def test_refuses_a_schema_that_does_not_declare_what_this_checker_keys_on(self):
+    def test_refuses_schema_not_declaring_what_checker_keys_on(self):
         """A schema clause is what makes several of the checker's own reads safe.
 
         Gating the schema document made it readable. It did not make these
@@ -597,7 +604,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 self.assertIn(f"{schema_name}: {field} declares {keyword} None", result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
 
-    def test_a_row_an_untyped_schema_admits_reaches_no_unhashable_read(self):
+    def test_untyped_schema_row_reaches_no_unhashable_read(self):
         """The reproduction: one clause dropped and one row that exploits it."""
         def untyped(name):
             def edit(declared):
@@ -724,7 +731,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assertIn("cannot read a comment id", result.stderr)
         self.assertFalse(log.exists(), "the id-less comment URL still reached gh")
 
-    def test_a_comment_replays_its_own_comment_id_not_its_issue_number(self):
+    def test_comment_replays_own_comment_id_not_issue_number(self):
         row = dict(
             SPECIMEN_ROW,
             source_object="issue_comment",
@@ -833,7 +840,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 root = self.build_fixture(specimens=[dict(SPECIMEN_ROW, family=other)])
                 self.assert_refused(root, "is not its family_id")
 
-    def test_refuses_a_source_group_id_carrying_an_invisible_difference(self):
+    def test_refuses_source_group_id_with_invisible_difference(self):
         """Independence is decided by comparing this value, so it has to be visible."""
         for character in (" ", "\u00a0", "\u200b"):
             with self.subTest(character=f"U+{ord(character):04X}"):
@@ -1019,7 +1026,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assertIn("cites a review comment under 'issues/1298'", result.stderr)
         self.assertFalse(log.exists(), "the mislabelled review comment still reached gh")
 
-    def test_a_citation_carrying_a_query_string_still_replays_its_object(self):
+    def test_citation_with_query_string_still_replays_object(self):
         """A query is not part of the path, and `?plain=1` is GitHub's own permalink."""
         cases = {
             "markdown_paragraph": (
@@ -1094,7 +1101,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 self.assertIn(needle, result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
 
-    def test_refuses_a_gh_reply_that_is_not_the_shape_its_kind_expects(self):
+    def test_refuses_gh_reply_not_shaped_as_its_kind_expects(self):
         """A reply is outside data too; a KeyError here would exit 1, not 2."""
         for payload in ('{"body": "x"}', '{"commit": {}}', "not json at all", "[]"):
             with self.subTest(payload=payload):
@@ -1456,7 +1463,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
             if expected_reasons:
                 self.assertIn("five-gram Jaccard", rejections[0]["detail"])
 
-    def test_a_surplus_negative_is_kept_in_the_rejections_not_the_fixture(self):
+    def test_surplus_negative_kept_in_rejections_not_fixture(self):
         family = self.family(tier="signal")
         texts = [self.sentence(40).replace("w", f"t{n}") for n in range(3)]
         documents = [self.document(text, path=f"docs/{n}.md") for n, text in enumerate(texts)]
@@ -1472,7 +1479,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
         self.assertEqual(shortfalls[0]["negatives"], 1)
         self.assertEqual(shortfalls[0]["independent_positives"], 0)
 
-    def test_the_fixture_is_written_through_a_temporary_file_and_rename(self):
+    def test_fixture_is_written_through_temp_file_and_rename(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "specimens.jsonl"
             target.write_text('{"previous": true}\n', encoding="utf-8")
@@ -1630,7 +1637,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
         path = Path(env["FAMILY_EVIDENCE_COUNT"])
         return len(path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
 
-    def test_a_transient_gh_answer_is_retried_rather_than_ending_the_pass(self):
+    def test_transient_gh_answer_retried_not_ending_the_pass(self):
         """One HTTP 504 at document 900 of 1370 discarded the whole pass.
 
         The universe is fetched in a single pass of a few thousand calls and
@@ -1704,7 +1711,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
                 collector.gh_fetch(["api", "repos/a/b/issues/1"])
         self.assertEqual(self.gh_attempts(env), 2)
 
-    def test_a_tree_path_cannot_reach_the_contents_endpoint_unchecked(self):
+    def test_tree_path_cannot_reach_contents_endpoint_unchecked(self):
         """S3-R1-01. The tree listing is outside data and its paths are gated.
 
         `fetch_tree` returns whatever paths the repository holds, and
@@ -1741,7 +1748,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
                  "?ref=" + "0" * 40])
         self.assertTrue(collector.endpoint_path_ok("docs/hooks/templates/access.md"))
 
-    def test_an_unfetchable_tree_path_is_recorded_rather_than_requested(self):
+    def test_unfetchable_tree_path_recorded_not_requested(self):
         """The document stays in the record; only the request is dropped.
 
         Skipping the fetch must not skip the document, or the rejection file
@@ -1764,7 +1771,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
         self.assertEqual([row["path"] for row in documents], tree)
         self.assertEqual([row["text"] for row in documents][1:], ["", ""])
 
-    def test_a_dot_prefixed_path_is_not_recorded_as_carrying_whitespace(self):
+    def test_dot_prefixed_path_is_not_recorded_as_whitespace(self):
         """S3-R1-02. Four of the six rows the first pass wrote were mislabelled.
 
         `.agents/...` and `.githooks/...` are refused because an endpoint
@@ -2023,7 +2030,7 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
                     collector.thread_ceiling(skills)
             probed.assert_not_called()
 
-    def test_a_shipped_row_from_a_v1_document_is_named_as_a_collision(self):
+    def test_shipped_row_from_v1_document_named_as_collision(self):
         """S3-R2-03. The holdout check compared ids from two namespaces.
 
         labelled-prose-v1 names its groups `H-TD-01` and `M-GH-02`; this

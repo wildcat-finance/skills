@@ -8,8 +8,8 @@
   "properties": {
     "format": {"const": "alexandria-capture-plan/v1"},
     "release": {"$ref": "#/$defs/release"},
-    "components": {"type": "array", "minItems": 1, "maxItems": 128, "items": {"$ref": "#/$defs/component"}},
-    "captures": {"type": "array", "minItems": 1, "maxItems": 1024, "items": {"$ref": "#/$defs/capture"}}
+    "components": {"type": "array", "minItems": 1, "maxItems": 16384, "items": {"$ref": "#/$defs/component"}},
+    "captures": {"type": "array", "minItems": 1, "maxItems": 16384, "items": {"$ref": "#/$defs/capture"}}
   },
   "$defs": {
     "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},

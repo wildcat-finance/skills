@@ -1,0 +1,40 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "record",
+      "digest": {
+        "sha256": "9948646a8fc07f4414d504df06c86e03d46c3dc240674dd19c6aebf71abf7e15"
+      }
+    }
+  ],
+  "predicateType": "https://wildcat.finance/attestations/checkpoint-authority/v1",
+  "predicate": {
+    "challenge": "example",
+    "decisions": {
+      "count": 0,
+      "tail": null
+    },
+    "environment": "test",
+    "expires_at": "2026-09-16T00:01:00Z",
+    "issued_at": "2026-09-16T00:00:00Z",
+    "issuer": "79edbc2d955a05b4f17db2973ff1d8ed350fb1a4702bfde346862f5778ff4aa8",
+    "policy": {
+      "sha256": "c6f8cde4f3ef4d3b1b974ec71b5c114ec58c50f9bae41a5a41b2eb005283e30b",
+      "type": "authority-policy"
+    },
+    "policy_history": {
+      "count": 0,
+      "tail": null
+    },
+    "previous": null,
+    "protocol": "checkpoint-authority/v1",
+    "scope": {
+      "repository_id": 23,
+      "run_id": "run-1"
+    },
+    "sequence": 1,
+    "service": "test-service",
+    "type": "authority-head"
+  }
+}

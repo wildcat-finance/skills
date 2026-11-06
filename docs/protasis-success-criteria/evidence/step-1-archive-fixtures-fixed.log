@@ -1,0 +1,21 @@
+test_cleanup_check_does_not_attribute_foreign_inspection_activity (test_hexctl_checkpoint_archive.CheckpointArchiveInspectTests.test_cleanup_check_does_not_attribute_foreign_inspection_activity) ... ok
+test_cleanup_check_still_detects_an_owned_inspection_leak (test_hexctl_checkpoint_archive.CheckpointArchiveInspectTests.test_cleanup_check_still_detects_an_owned_inspection_leak) ... ok
+test_inspect_writes_nothing_outside_scratch (test_hexctl_checkpoint_archive.CheckpointArchiveInspectTests.test_inspect_writes_nothing_outside_scratch) ... ok
+test_secret_scan_passes_a_member_that_carries_no_header (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_scan_passes_a_member_that_carries_no_header) ... ok
+test_secret_scan_passes_the_run_s_own_specification_documents (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_scan_passes_the_run_s_own_specification_documents)
+The scan does not read a document's own pattern list as a key. ... ok
+test_secret_shaped_member_refuses_across_a_chunk_boundary (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_shaped_member_refuses_across_a_chunk_boundary) ... ok
+test_secret_shaped_member_refuses_before_publish_on_a_body_the_witness_cannot_read (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_shaped_member_refuses_before_publish_on_a_body_the_witness_cannot_read)
+S2-R7-01: a body with no delimiter the witness can see still refuses. ... ok
+test_secret_shaped_member_refuses_before_publish_on_a_crlf_key_in_json (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_shaped_member_refuses_before_publish_on_a_crlf_key_in_json)
+S2-R4-02: a CRLF key held as a JSON string value used to publish. ... ok
+test_secret_shaped_member_refuses_before_publish_on_a_key_past_the_declared_largest (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_shaped_member_refuses_before_publish_on_a_key_past_the_declared_largest)
+The residue the third 2026-09-10 study amendment states, as the ... expected failure
+test_secret_shaped_member_refuses_before_publish_on_a_numeric_escaped_key_in_json (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_secret_shaped_member_refuses_before_publish_on_a_numeric_escaped_key_in_json)
+S2-R6-01: a key whose line feeds are written `\u000a` used to publish. ... ok
+test_unrelated_active_study_does_not_join_archive_specifications (test_hexctl_checkpoint_archive.CheckpointArchiveSecretScanTests.test_unrelated_active_study_does_not_join_archive_specifications) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 54.729s
+
+OK (expected failures=1)

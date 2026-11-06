@@ -1,0 +1,7 @@
+{"claim_ids":["lazarus-goldfinch-replay"],"correlation_id":"aed9a37fad033f9e","count":1,"event":"demonstration.selected","mode":"record"}
+{"claim_id":"lazarus-goldfinch-replay","command":"run","correlation_id":"aed9a37fad033f9e","event":"demonstration.started","repetition":1,"skill":"lazarus","timeout_ms":600000}
+{"claim_id":"lazarus-goldfinch-replay","correlation_id":"aed9a37fad033f9e","event":"demonstration.verified","repetitions":1,"skill":"lazarus","slowest_ms":5383}
+{"correlation_id":"aed9a37fad033f9e","event":"demonstration.report","path":"/private/tmp/issue-1273-lazarus-environment-probe/pinned-child-python-actual.json","sha256":"d7841825c216f80ec90b4e47845605d8d78422a8408625d1f7634e642f2f06af","status":"verified"}
+demonstrations verified: 1 record(s), 5383 ms aggregate over 1 repetition(s)
+  lazarus-goldfinch-replay             verified  slowest 5383 ms
+report    /private/tmp/issue-1273-lazarus-environment-probe/pinned-child-python-actual.json

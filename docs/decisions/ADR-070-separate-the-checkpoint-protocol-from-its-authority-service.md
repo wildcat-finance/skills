@@ -132,3 +132,31 @@ must wait for that landing rather than widen its own copy.
 
 Nothing executable changes. This record adds a file and governs a programme that
 has not been authorised to deploy anything.
+
+## Amendment, 2026-09-16: P-862 and service packet ownership
+
+The [adopted #862 specification](../checkpoint-authority/specimens/adopted-specification.md)
+and [P-862 runbook](../checkpoint-authority/runbook.md) govern the following
+additions and replace conflicting future-work clauses above. The preceding
+record remains an exact historical prefix.
+
+Skills #1676 owns P-862: closed authority records and schemas, exact-byte
+DSSE signatures, approved key history, complete native commit coverage,
+ordered policy and decision replay, finite publication evidence, minimal
+parent continuation, denial closure, freshness limits and Ariadne evidence
+gates. Native anchor, identity and archive v1 remain unchanged. Ariadne binds
+evidence; the separate authority verifier authenticates signatures.
+
+The service repository exists at `wildcat-finance/fiat-checkpoints`.
+Its issues #1, #2 and #3 own packets A, B and C after the immutable P-862
+release. They cover authenticated quarantine and isolated validation;
+conditional publication, independent authorization and finalization; then
+private exact retrieval and reconstruction. Skills #862 remains the aggregate
+until all ten service steps, AC01 through AC20 and the P-862 prerequisite pass.
+
+Skills #863 owns production signer custody, independent journal and fresh-head
+service, live R2 accounts and deployment evidence. Skills #864 owns controller
+fences; #865 owns full frontier and resolution; #866 owns disaster recovery and
+physical-removal procedures; #867 owns public Atlas discovery. The protocol's
+minimal private lookup and one-parent profile do not close those later packets.
+No amendment grants cloud resources, access changes, spending or deployment.

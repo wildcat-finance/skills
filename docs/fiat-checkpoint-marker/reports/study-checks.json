@@ -1,0 +1,60 @@
+{
+  "schema": "fiat-1755-study-checks/v1",
+  "study_sha256": "ac26a0b6a72ddf60fb2b196464526af478c1832d37d2d199d4eae9d26332c86f",
+  "design_sha256": "6df3280312489ce0c45a3281c776a782d59f3ec3bdb9324b11e009d9e6f4e6a8",
+  "checks": [
+    {
+      "name": "protasis-study",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "/home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/protasis/scripts/protasis.py",
+        "--study",
+        ".hexaemeron/study.md"
+      ],
+      "exit": 0,
+      "stdout": "clean\n",
+      "stderr": ""
+    },
+    {
+      "name": "design-lock",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "/home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/protasis/scripts/design_evidence.py",
+        ".hexaemeron/design-evidence.json",
+        "--transition",
+        "design-lock"
+      ],
+      "exit": 0,
+      "stdout": "clean\n",
+      "stderr": ""
+    },
+    {
+      "name": "hypomnema-bridge",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "/home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/hypomnema/scripts/hypomnema.py",
+        "--study",
+        ".hexaemeron/study.md",
+        "--design-evidence",
+        ".hexaemeron/design-evidence.json",
+        "--repo-root",
+        "."
+      ],
+      "exit": 0,
+      "stdout": "clean\n",
+      "stderr": ""
+    },
+    {
+      "name": "hypomnema-links",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "/home/kethcode/.codex/plugins/cache/wildcat-labs/hexaemeron/1.6.59/skills/hypomnema/scripts/hypomnema.py",
+        ".hexaemeron/study.md"
+      ],
+      "exit": 0,
+      "stdout": "clean\n",
+      "stderr": ""
+    }
+  ],
+  "known_failure_inventory": "pending exact controller-derived runbook; no inoculation or product edit authorized by this report"
+}

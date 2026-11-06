@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-limit-matched-reader",
+  "command": "python3 .hexaemeron/design/resolve.py cap-release-verifies --candidate raised-limit-matched-reader",
+  "criterion": "cap-release-verifies",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

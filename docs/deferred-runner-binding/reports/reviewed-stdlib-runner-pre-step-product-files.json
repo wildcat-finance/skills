@@ -1,0 +1,9 @@
+{
+  "candidate": "reviewed-stdlib-runner",
+  "command": "python3 .hexaemeron/design/probe.py --candidate reviewed-stdlib-runner --criterion pre-step-product-files --report .hexaemeron/reports/reviewed-stdlib-runner-pre-step-product-files.json",
+  "criterion": "pre-step-product-files",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

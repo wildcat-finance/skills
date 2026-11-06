@@ -13,7 +13,7 @@
             "id": "promise-owner:fiat-final-integration",
             "reference": {
               "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-              "sha256": "db00390b7280881ecacee3c6e4ea6c68dc3803e3ac4a483bdee65a4e7cfc48c3"
+              "sha256": "7bd401b9a7a0e1f2ad80ddddc8f24ef02b96eae351dcb18df1f0cc33f6bf70f5"
             }
           },
           "evidence": {
@@ -25,12 +25,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
               }
             ]
           },
@@ -40,7 +40,7 @@
           "independent_evidence": {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl.py",
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           },
           "open_unknowns": [
             {
@@ -54,7 +54,7 @@
           },
           "target": {
             "scope": "structural binding for fiat-final-integration",
-            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_one_failed_composition_without_reopening_product"
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_failed_composition_no_reopen"
           }
         }
       },
@@ -63,7 +63,7 @@
           "id": "promise-owner:fiat-final-integration",
           "reference": {
             "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-            "sha256": "db00390b7280881ecacee3c6e4ea6c68dc3803e3ac4a483bdee65a4e7cfc48c3"
+            "sha256": "7bd401b9a7a0e1f2ad80ddddc8f24ef02b96eae351dcb18df1f0cc33f6bf70f5"
           }
         },
         "evidence_classes": [
@@ -74,12 +74,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl.py",
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_hexctl.py",
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           }
         ],
         "exception": {
@@ -88,12 +88,12 @@
         "inspectable_evidence": {
           "evidence_class": "checked",
           "path": "plugins/hexaemeron/tests/test_hexctl.py",
-          "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
         },
         "promise_id": "fiat-final-integration",
         "scope": "structural binding for fiat-final-integration",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_one_failed_composition_without_reopening_product",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_failed_composition_no_reopen",
         "transition": {
           "action": "structurally bind fiat-final-integration without running its domain operation",
           "operation_ran": false,
@@ -120,7 +120,7 @@
             "id": "promise-owner:fiat-final-integration",
             "reference": {
               "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-              "sha256": "db00390b7280881ecacee3c6e4ea6c68dc3803e3ac4a483bdee65a4e7cfc48c3"
+              "sha256": "7bd401b9a7a0e1f2ad80ddddc8f24ef02b96eae351dcb18df1f0cc33f6bf70f5"
             }
           },
           "evidence": {
@@ -132,12 +132,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
               }
             ]
           },
@@ -147,7 +147,7 @@
           "independent_evidence": {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl.py",
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           },
           "open_unknowns": [
             {
@@ -157,11 +157,11 @@
           ],
           "promise": "fiat-final-integration",
           "source": {
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           },
           "target": {
             "scope": "structural binding for fiat-final-integration",
-            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_one_failed_composition_without_reopening_product"
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_failed_composition_no_reopen"
           }
         }
       },
@@ -170,7 +170,7 @@
           "id": "promise-owner:fiat-final-integration",
           "reference": {
             "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-            "sha256": "db00390b7280881ecacee3c6e4ea6c68dc3803e3ac4a483bdee65a4e7cfc48c3"
+            "sha256": "7bd401b9a7a0e1f2ad80ddddc8f24ef02b96eae351dcb18df1f0cc33f6bf70f5"
           }
         },
         "evidence_classes": [
@@ -181,12 +181,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl.py",
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_hexctl.py",
-            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+            "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
           }
         ],
         "exception": {
@@ -195,12 +195,12 @@
         "inspectable_evidence": {
           "evidence_class": "checked",
           "path": "plugins/hexaemeron/tests/test_hexctl.py",
-          "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          "sha256": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92"
         },
         "promise_id": "fiat-final-integration",
         "scope": "structural binding for fiat-final-integration",
-        "source_digest": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e",
-        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_one_failed_composition_without_reopening_product",
+        "source_digest": "2ff4d82edbec705751f0230f905641878e0f03c7f3d21f7b527bd9a7d10e8d92",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_sync_run_supersedes_failed_composition_no_reopen",
         "transition": {
           "action": "structurally bind fiat-final-integration without running its domain operation",
           "operation_ran": false,

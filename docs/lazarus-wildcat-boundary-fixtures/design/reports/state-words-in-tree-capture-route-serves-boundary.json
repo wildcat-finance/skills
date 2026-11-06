@@ -1,0 +1,9 @@
+{
+ "candidate": "state-words-in-tree",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate state-words-in-tree --criterion capture-route-serves-boundary --report .hexaemeron/design/reports/state-words-in-tree-capture-route-serves-boundary.json",
+ "criterion": "capture-route-serves-boundary",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "boolean",
+ "value": true
+}

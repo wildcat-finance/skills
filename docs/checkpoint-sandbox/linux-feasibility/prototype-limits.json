@@ -1,0 +1,18 @@
+{
+  "schema": "fiat-1794-prototype-limits/v1",
+  "prototype_sha256": "9be48f0201b95edda7983e2f412a8fa063c9db938fb783d8fcf0224e7049d221",
+  "rows": [
+    {
+      "name": "timeout",
+      "refusal": "tool-timeout",
+      "elapsed_ms": 317.571,
+      "descendant_lock_released": true
+    },
+    {
+      "name": "output-limit",
+      "refusal": "tool-output-limit",
+      "elapsed_ms": 23.54
+    }
+  ],
+  "scope": "Research wrapper using real Bubblewrap and unchanged bounded signatures._run; not product conformance."
+}

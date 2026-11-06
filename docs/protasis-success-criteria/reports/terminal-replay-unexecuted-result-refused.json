@@ -1,0 +1,9 @@
+{
+  "candidate": "terminal-replay",
+  "command": "python3 selection_probe.py --candidate terminal-replay --criterion unexecuted-result-refused --report reports/terminal-replay-unexecuted-result-refused.json",
+  "criterion": "unexecuted-result-refused",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

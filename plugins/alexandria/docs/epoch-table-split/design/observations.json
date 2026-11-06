@@ -1,0 +1,114 @@
+{
+  "format": "fiat-1888-base-observations/v1",
+  "base_commit": "17ea8d2ab5e52081370b13b92390b64849ed880d",
+  "observed_on": "2026-09-23",
+  "host": {
+    "cpu": "Apple M5 Max",
+    "logical_cpus": 18,
+    "hw_memsize_bytes": 137438953472,
+    "python": "3.14.6",
+    "measurement": "/usr/bin/time -l, maximum resident set size"
+  },
+  "inputs": {
+    "ALEXANDRIA_WILDCAT_V1_RELEASE": {
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "component_bytes": 19977545,
+      "manifest_bytes": 518501,
+      "components": 109
+    },
+    "ALEXANDRIA_WILDCAT_V2_RELEASE": {
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "component_bytes": 242499892,
+      "manifest_bytes": 222159,
+      "components": 127
+    }
+  },
+  "runs": [
+    {
+      "id": "check-v2",
+      "argv": ["python3", "plugins/alexandria/scripts/usdc_interval.py", "check", "$ALEXANDRIA_WILDCAT_V2_RELEASE"],
+      "environment": {"PYTHONDONTWRITEBYTECODE": "1", "NO_COLOR": "1"},
+      "exit": 0,
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "real_seconds": "4.36",
+      "maximum_resident_set_bytes": 1208811520,
+      "peak_memory_footprint_bytes": 1197312280
+    },
+    {
+      "id": "check-v1",
+      "argv": ["python3", "plugins/alexandria/scripts/usdc_interval.py", "check", "$ALEXANDRIA_WILDCAT_V1_RELEASE"],
+      "environment": {"PYTHONDONTWRITEBYTECODE": "1", "NO_COLOR": "1"},
+      "exit": 0,
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "real_seconds": "0.39",
+      "maximum_resident_set_bytes": 141230080,
+      "peak_memory_footprint_bytes": 129499712
+    },
+    {
+      "id": "build-v2",
+      "argv": ["python3", "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py", "build", "--output", "<fresh directory>"],
+      "environment": {"PYTHONDONTWRITEBYTECODE": "1", "NO_COLOR": "1", "ALEXANDRIA_WILDCAT_V2_STAGING": "<unpacked staging tree, 125 of 125 files matching staging-manifest.json>"},
+      "exit": 0,
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "real_seconds": "9.81",
+      "maximum_resident_set_bytes": 1191591936,
+      "peak_memory_footprint_bytes": 994347144
+    },
+    {
+      "id": "build-v1",
+      "argv": ["python3", "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py", "build", "--output", "<fresh directory>"],
+      "environment": {"PYTHONDONTWRITEBYTECODE": "1", "NO_COLOR": "1", "ALEXANDRIA_WILDCAT_V1_STAGING": "<unpacked staging tree, 107 of 107 files matching staging-manifest.json>"},
+      "exit": 0,
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "real_seconds": "0.75",
+      "maximum_resident_set_bytes": 155910144,
+      "peak_memory_footprint_bytes": 144278224
+    },
+    {
+      "id": "estates-build",
+      "argv": ["python3", "plugins/alexandria/examples/wildcat-estates-interval-v0/demo.py", "build", "--output", "<fresh directory>"],
+      "environment": {"PYTHONDONTWRITEBYTECODE": "1", "NO_COLOR": "1", "ALEXANDRIA_WILDCAT_V1_STAGING": "<as build-v1>", "ALEXANDRIA_WILDCAT_V2_STAGING": "<as build-v2>"},
+      "exit": 0,
+      "release_ids": [
+        "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+        "sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a",
+        "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+      ],
+      "real_seconds": "22.80",
+      "maximum_resident_set_bytes": 1267826688,
+      "peak_memory_footprint_bytes": 1082509640
+    },
+    {
+      "id": "estates-verify",
+      "argv": ["python3", "plugins/alexandria/examples/wildcat-estates-interval-v0/demo.py", "verify", "<estates-build output>"],
+      "environment": {"PYTHONDONTWRITEBYTECODE": "1", "NO_COLOR": "1", "ALEXANDRIA_WILDCAT_V1_STAGING": "<as build-v1>", "ALEXANDRIA_WILDCAT_V2_STAGING": "<as build-v2>"},
+      "exit": 0,
+      "real_seconds": "9.98",
+      "maximum_resident_set_bytes": 1263665152,
+      "peak_memory_footprint_bytes": 1225640288
+    },
+    {
+      "id": "demos-build-verify",
+      "argv": ["python3", "plugins/alexandria/examples/<demo>/demo.py", "build|verify", "<fresh directory>"],
+      "demos": ["usdc-interval-v0", "usdc-interval-epochs-v0", "usdc-interval-live-v0"],
+      "exit": 0,
+      "release_ids": [
+        "sha256:7cf794f07cb74c0383ae3fdd270758324b8036705c9845a7724043993dde40aa",
+        "sha256:b71996c8450d5f28c36d112fab7bafb636b2176d74e6f609646dbe5162983036",
+        "sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a",
+        "sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32"
+      ]
+    },
+    {
+      "id": "portable-package",
+      "argv": ["python3", "scripts/portable_promise_machine.py", "package", "--out", "<fresh directory>"],
+      "exit": 0,
+      "runtime_file_count": 1449,
+      "runtime_total_bytes": 17859404,
+      "file_tripwire": 1600,
+      "byte_cap": 26214400,
+      "reserve": 5242880,
+      "bytes_beyond_reserve": 3112116
+    }
+  ]
+}

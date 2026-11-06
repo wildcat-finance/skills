@@ -30,6 +30,11 @@ Berean pins the corpus, chain reads, recorded answers and evaluation needed to
 check a grounded protocol-agent release without rerunning its model.
 
 **Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+
+Ariadne now ships a checked statement over the fixed Berean demonstration
+release, so the frontier's claim that no Ariadne statement binds a berean
+release is out of date. Berean's ledger keeps that sentence until its held
+Wildcat reference release job completes.
 <!-- marketplace-context:end -->
 
 Lemma can prepare source-linked material for the pinned corpus, and Lazarus can

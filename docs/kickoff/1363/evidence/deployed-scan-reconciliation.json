@@ -1,0 +1,1983 @@
+{
+  "role": "deployed",
+  "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+  "definitions": [
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 112,
+      "function": "registerWithArchController",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 157,
+      "function": "addHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 213,
+      "function": "updateHooksTemplateFees",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 238,
+      "function": "disableHooksTemplate",
+      "scan_hits": [
+        "multiline",
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 247,
+      "function": "getHooksTemplateDetails",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 257,
+      "function": "getHooksTemplates",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 261,
+      "function": "getHooksTemplates",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 274,
+      "function": "getHooksTemplatesCount",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 278,
+      "function": "getMarketsForHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 284,
+      "function": "getMarketsForHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 299,
+      "function": "getMarketsForHooksTemplateCount",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 312,
+      "function": "deployHooksInstance",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 322,
+      "function": "getHooksInstancesForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 328,
+      "function": "getHooksInstancesCountForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 387,
+      "function": "getMarketsForHooksInstance",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 393,
+      "function": "getMarketsForHooksInstance",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 407,
+      "function": "getMarketsForHooksInstanceCount",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 571,
+      "function": "deployMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 598,
+      "function": "deployMarketAndHooks",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 633,
+      "function": "pushProtocolFeeBipsUpdates",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 673,
+      "function": "pushProtocolFeeBipsUpdates",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 90,
+      "function": "registerWithArchController",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 109,
+      "function": "addHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 128,
+      "function": "updateHooksTemplateFees",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 145,
+      "function": "disableHooksTemplate",
+      "scan_hits": [
+        "multiline",
+        "single"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 148,
+      "function": "getHooksTemplateDetails",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 158,
+      "function": "getHooksTemplates",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 165,
+      "function": "getMarketsForHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 169,
+      "function": "getMarketsForHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 193,
+      "function": "deployHooksInstance",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 211,
+      "function": "getMarketsForHooksInstance",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 215,
+      "function": "getMarketsForHooksInstance",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 243,
+      "function": "deployMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 254,
+      "function": "deployMarketAndHooks",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 266,
+      "function": "pushProtocolFeeBipsUpdates",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/IHooksFactory.sol",
+      "line": 272,
+      "function": "pushProtocolFeeBipsUpdates",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 73,
+      "function": "updateSphereXEngineOnRegisteredContracts",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 157,
+      "function": "registerBorrower",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 164,
+      "function": "removeBorrower",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 175,
+      "function": "getRegisteredBorrowers",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 179,
+      "function": "getRegisteredBorrowers",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 200,
+      "function": "addBlacklist",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 207,
+      "function": "removeBlacklist",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 218,
+      "function": "getBlacklistedAssets",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 222,
+      "function": "getBlacklistedAssets",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 243,
+      "function": "registerControllerFactory",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 251,
+      "function": "removeControllerFactory",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 262,
+      "function": "getRegisteredControllerFactories",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 266,
+      "function": "getRegisteredControllerFactories",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 294,
+      "function": "registerController",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 302,
+      "function": "removeController",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 313,
+      "function": "getRegisteredControllers",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 317,
+      "function": "getRegisteredControllers",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 345,
+      "function": "registerMarket",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 353,
+      "function": "removeMarket",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 364,
+      "function": "getRegisteredMarkets",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 368,
+      "function": "getRegisteredMarkets",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/WildcatSanctionsEscrow.sol",
+      "line": 34,
+      "function": "releaseEscrow",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 96,
+      "function": "overrideSanction",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 104,
+      "function": "removeSanctionOverride",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 121,
+      "function": "createEscrow",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 148,
+      "function": "getEscrowAddress",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 128,
+      "function": "setName",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 137,
+      "function": "createRoleProvider",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 161,
+      "function": "addRoleProvider",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 206,
+      "function": "removeRoleProvider",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 304,
+      "function": "getPreviousLenderStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 321,
+      "function": "getLenderStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 370,
+      "function": "grantRole",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 387,
+      "function": "grantRoles",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 429,
+      "function": "revokeRole",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 433,
+      "function": "revokeRoles",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 449,
+      "function": "blockFromDeposits",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 453,
+      "function": "blockFromDeposits",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 470,
+      "function": "unblockFromDeposits",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 220,
+      "function": "setMinimumDeposit",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 227,
+      "function": "setFixedTermEndTime",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 241,
+      "function": "getHookedMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 245,
+      "function": "getHookedMarkets",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 263,
+      "function": "onDeposit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 306,
+      "function": "onQueueWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 331,
+      "function": "onExecuteWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 351,
+      "function": "onTransfer",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 390,
+      "function": "onBorrow",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 399,
+      "function": "onRepay",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 405,
+      "function": "onCloseMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 420,
+      "function": "onNukeFromOrbit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 426,
+      "function": "onSetMaxTotalSupply",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 432,
+      "function": "onSetAnnualInterestAndReserveRatioBips",
+      "scan_hits": [],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 462,
+      "function": "onSetProtocolFeeBips",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 25,
+      "function": "onCreateMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 42,
+      "function": "onDeposit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 49,
+      "function": "onQueueWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 57,
+      "function": "onExecuteWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 64,
+      "function": "onTransfer",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 73,
+      "function": "onBorrow",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 79,
+      "function": "onRepay",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 85,
+      "function": "onCloseMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 90,
+      "function": "onNukeFromOrbit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 96,
+      "function": "onSetMaxTotalSupply",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 102,
+      "function": "onSetAnnualInterestAndReserveRatioBips",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 109,
+      "function": "onSetProtocolFeeBips",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IRoleProvider.sol",
+      "line": 15,
+      "function": "validateCredential",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/IRoleProviderFactory.sol",
+      "line": 5,
+      "function": "createRoleProvider",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/MarketConstraintHooks.sol",
+      "line": 204,
+      "function": "onSetAnnualInterestAndReserveRatioBips",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 175,
+      "function": "setMinimumDeposit",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 186,
+      "function": "getHookedMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 190,
+      "function": "getHookedMarkets",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 209,
+      "function": "onDeposit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 252,
+      "function": "onQueueWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 270,
+      "function": "onExecuteWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 290,
+      "function": "onTransfer",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 329,
+      "function": "onBorrow",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 338,
+      "function": "onRepay",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 344,
+      "function": "onCloseMarket",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 349,
+      "function": "onNukeFromOrbit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 355,
+      "function": "onSetMaxTotalSupply",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 361,
+      "function": "onSetAnnualInterestAndReserveRatioBips",
+      "scan_hits": [],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 381,
+      "function": "onSetProtocolFeeBips",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 22,
+      "function": "getHooksDataForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 32,
+      "function": "getHooksInstancesForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 46,
+      "function": "getHooksTemplateForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 53,
+      "function": "getHooksTemplatesForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 63,
+      "function": "getAllHooksTemplatesForBorrower",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 74,
+      "function": "getTokenInfo",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 78,
+      "function": "getTokensInfo",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 106,
+      "function": "getPaginatedMarketsDataForHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 115,
+      "function": "getAllMarketsDataForHooksTemplate",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 126,
+      "function": "getMarketDataWithLenderStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 133,
+      "function": "getMarketsDataWithLenderStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 147,
+      "function": "getLenderAccountData",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 154,
+      "function": "getLenderAccountData",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 164,
+      "function": "getLenderAccountsData",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 175,
+      "function": "queryLenderAccount",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 181,
+      "function": "queryLenderAccounts",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 194,
+      "function": "getWithdrawalBatchData",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 201,
+      "function": "getWithdrawalBatchesData",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "public",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 215,
+      "function": "getWithdrawalBatchesDataWithLenderStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 226,
+      "function": "getWithdrawalBatchDataWithLenderStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 27,
+      "function": "updateState",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 37,
+      "function": "rescueTokens",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 104,
+      "function": "depositUpTo",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 117,
+      "function": "deposit",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 125,
+      "function": "collectFees",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 146,
+      "function": "borrow",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 188,
+      "function": "repay",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 212,
+      "function": "closeMarket",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 82,
+      "function": "nukeFromOrbit",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 101,
+      "function": "setMaxTotalSupply",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 123,
+      "function": "setAnnualInterestAndReserveRatioBips",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 164,
+      "function": "setProtocolFeeBips",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "line": 33,
+      "function": "approve",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "line": 41,
+      "function": "transfer",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "line": 49,
+      "function": "transferFrom",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 22,
+      "function": "getUnpaidBatchExpiries",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 26,
+      "function": "getWithdrawalBatch",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 40,
+      "function": "getAccountWithdrawalStatus",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 51,
+      "function": "getAvailableWithdrawalAmount",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "view"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 134,
+      "function": "queueWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 152,
+      "function": "queueFullWithdrawal",
+      "scan_hits": [],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 193,
+      "function": "executeWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 211,
+      "function": "executeWithdrawals",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 230,
+      "function": "_executeWithdrawal",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "internal",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 279,
+      "function": "repayAndProcessUnpaidWithdrawalBatches",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/ISphereXEngine.sol",
+      "line": 18,
+      "function": "sphereXValidatePre",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/ISphereXEngine.sol",
+      "line": 24,
+      "function": "sphereXValidatePost",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/ISphereXEngine.sol",
+      "line": 31,
+      "function": "sphereXValidateInternalPre",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/ISphereXEngine.sol",
+      "line": 33,
+      "function": "sphereXValidateInternalPost",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/ISphereXEngine.sol",
+      "line": 40,
+      "function": "addAllowedSenderOnChain",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "excluded: interface declaration, view/pure, internal helper or initialization",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 114,
+      "function": "transferSphereXAdminRole",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 120,
+      "function": "acceptSphereXAdminRole",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 131,
+      "function": "changeSphereXOperator",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 143,
+      "function": "changeSphereXEngine",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "function": "changeSphereXEngine",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 216,
+      "function": "deposit",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 244,
+      "function": "mint",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 280,
+      "function": "withdraw",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 311,
+      "function": "redeem",
+      "scan_hits": [
+        "multiline"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "public",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 343,
+      "function": "sweep",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 28,
+      "function": "createWrapper",
+      "scan_hits": [
+        "single"
+      ],
+      "disposition": "implemented mutating definition; resolve concrete inheritance in action denominator",
+      "visibility": "external",
+      "mutability": "nonpayable"
+    }
+  ],
+  "boundary": "Both prescribed scans retain context and are incomplete for some split/long signatures. Parsed source closes that omission and includes inherited library dependency actions; each permissionless source body and access helper was read by root."
+}

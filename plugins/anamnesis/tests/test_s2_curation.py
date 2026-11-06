@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import pathlib
+import re
 import shutil
 import tempfile
 import unittest
@@ -457,26 +458,13 @@ class ByteCap(EdgeCases):
         self.assertLessEqual(total, anamnesis.MAX_RELEASE_BYTES)
         self.assertEqual(anamnesis.MAX_RELEASE_BYTES, 50_000_000)
 
-    def test_the_cap_is_the_number_the_design_record_declares(self):
-        record = json.loads(
-            (PLUGIN_ROOT.parents[1] / ".hexaemeron/design-evidence.json").read_text()
-        ) if (PLUGIN_ROOT.parents[1] / ".hexaemeron/design-evidence.json").is_file() else None
-        if record is None:
-            self.skipTest("the design record is controller state and is not always present")
-        threshold = next(
-            (
-                c["threshold"]
-                for c in record["criteria"]
-                if c["id"] == "seed-release-byte-cap"
-            ),
-            None,
-        )
-        if threshold is None:
-            self.skipTest(
-                "the design record in this worktree belongs to another Fiat run "
-                "and declares no seed-release-byte-cap criterion"
-            )
-        self.assertEqual(anamnesis.MAX_RELEASE_BYTES, threshold)
+    def test_the_cap_is_the_number_the_study_declares(self):
+        # The committed study, not the controller directory: another run's
+        # design record may stand there and declare its own threshold.
+        study = (PLUGIN_ROOT / "docs/study.md").read_text(encoding="utf-8")
+        declared = re.findall(r"at\s+most\s+([\d,]+)\s+bytes", study)
+        self.assertEqual(len(declared), 1, declared)
+        self.assertEqual(anamnesis.MAX_RELEASE_BYTES, int(declared[0].replace(",", "")))
 
 
 class SourceTampering(EdgeCases):

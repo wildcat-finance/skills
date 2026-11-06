@@ -1,0 +1,323 @@
+{
+  "boundary_observations": {
+    "contract_source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+    "end_v1": 22074622,
+    "end_v2": null,
+    "event_signature": "MarketClosed(uint256)",
+    "events": [
+      {
+        "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+        "blockHash": "0x5a0667056b8ceb82acfa5f39963730d69c2facfc9801a8f18e5ec28e3f3a64a2",
+        "blockNumber": "0x139dd83",
+        "blockTimestamp": "0x66c47b13",
+        "data": "0x0000000000000000000000000000000000000000000000000000000066c47b13",
+        "logIndex": "0xe9",
+        "removed": false,
+        "topics": [
+          "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155"
+        ],
+        "transactionHash": "0x566d6bcd6ab34f5dc121b309348363a1e397108f830d6a3e271c091074a58b7f",
+        "transactionIndex": "0x46"
+      },
+      {
+        "address": "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+        "blockHash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+        "blockNumber": "0x150d4fe",
+        "blockTimestamp": "0x67d98f67",
+        "data": "0x0000000000000000000000000000000000000000000000000000000067d98f67",
+        "logIndex": "0x128",
+        "removed": false,
+        "topics": [
+          "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155"
+        ],
+        "transactionHash": "0xb0cf59e6246f304b1ce723cd920791f50c1eb775bd6b9f091eaccec6fdc4c6de",
+        "transactionIndex": "0xe0"
+      },
+      {
+        "address": "0x5850afc80561932b0abb63dd13cdc129395323a3",
+        "blockHash": "0x5cfab716111373456454d4d9c4870f7e9e3650783cd7c563b10a4abb463263f5",
+        "blockNumber": "0x11f1a7a",
+        "blockTimestamp": "0x6580bc5f",
+        "data": "0x000000000000000000000000000000000000000000000000000000006580bc5f",
+        "logIndex": "0x36",
+        "removed": false,
+        "topics": [
+          "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155"
+        ],
+        "transactionHash": "0xdf34d43ced6603c8fcaa0470cc1a36cc57ab7db6d1cde7fc9c0e0dca97e61991",
+        "transactionIndex": "0x2e"
+      },
+      {
+        "address": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+        "blockHash": "0x46eb212fa7db619b3124994005cfac7271832bf1923e1d94c9801a3354b631f2",
+        "blockNumber": "0x150d47b",
+        "blockTimestamp": "0x67d98943",
+        "data": "0x0000000000000000000000000000000000000000000000000000000067d98943",
+        "logIndex": "0x128",
+        "removed": false,
+        "topics": [
+          "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155"
+        ],
+        "transactionHash": "0x87ce033367ccce51e68ab16a35d4e0ce5398d7b4d5aa239fd7e1afccc6d5c16e",
+        "transactionIndex": "0xa2"
+      },
+      {
+        "address": "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+        "blockHash": "0xd0f50c5c4c793d0adb30f907e0528c87e6514adf786602e13e18c99654482199",
+        "blockNumber": "0x150d169",
+        "blockTimestamp": "0x67d96453",
+        "data": "0x0000000000000000000000000000000000000000000000000000000067d96453",
+        "logIndex": "0x18c",
+        "removed": false,
+        "topics": [
+          "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155"
+        ],
+        "transactionHash": "0x5d7170cbb410631dad04d8de2583a40f9109fd673303963228c85d77373a20d2",
+        "transactionIndex": "0x69"
+      }
+    ],
+    "evidence_class": "recorded",
+    "limits": [
+      "Single transport lookup; second-transport validation remains due.",
+      "This selects capture boundaries and is not an Alexandria release.",
+      "V1 market names were read using name() at the local current head; actor identity is not proved."
+    ],
+    "source_main_commit": "e2307ed5966e18727434b3e49bec89db736f7b17",
+    "start_v1": 18743513,
+    "start_v2": 21866550,
+    "transport_class": "local Ethereum archive node"
+  },
+  "executions": {
+    "current_plan": [
+      {
+        "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+        "command": "collect",
+        "duration_seconds": "99.606",
+        "exit": -2,
+        "finished_at": "2026-09-21T20:16:56.755648+00:00",
+        "rpc_concurrency": 8,
+        "shard_concurrency": 4,
+        "started_at": "2026-09-21T20:15:17.150587+00:00",
+        "trace_concurrency": 8
+      },
+      {
+        "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+        "command": "collect",
+        "duration_seconds": "397.235",
+        "exit": 1,
+        "finished_at": "2026-09-21T20:23:57.164243+00:00",
+        "rpc_concurrency": 8,
+        "shard_concurrency": 8,
+        "started_at": "2026-09-21T20:17:19.931923+00:00",
+        "trace_concurrency": 8
+      },
+      {
+        "attempt": 3,
+        "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+        "command": "collect",
+        "duration_seconds": "849.428",
+        "exit": 0,
+        "finished_at": "2026-09-21T20:40:10.413957+00:00",
+        "rpc_concurrency": 8,
+        "shard_concurrency": 8,
+        "started_at": "2026-09-21T20:26:00.997946+00:00",
+        "trace_concurrency": 8
+      },
+      {
+        "attempt": 1,
+        "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+        "command": "reconcile",
+        "duration_seconds": "85.966",
+        "exit": 0,
+        "finished_at": "2026-09-21T20:41:36.380530+00:00",
+        "reconciliation": {
+          "compared": 4325,
+          "disputed": [],
+          "matched": 4325,
+          "provider_class": "hosted HTTPS RPC provider, archive + trace-enabled, bearer-authenticated",
+          "status": "agreed"
+        },
+        "rpc_concurrency": 8,
+        "shard_concurrency": 8,
+        "started_at": "2026-09-21T20:40:10.414777+00:00",
+        "trace_concurrency": 8
+      }
+    ],
+    "superseded_plan": [
+      {
+        "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+        "command": "collect",
+        "duration_seconds": "486.707",
+        "exit": 1,
+        "finished_at": "2026-09-21T20:10:19.288153+00:00",
+        "rpc_concurrency": 8,
+        "shard_concurrency": 4,
+        "started_at": "2026-09-21T20:02:12.638529+00:00",
+        "trace_concurrency": 8
+      },
+      {
+        "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+        "command": "collect",
+        "duration_seconds": "65.305",
+        "exit": 1,
+        "finished_at": "2026-09-21T20:13:10.885238+00:00",
+        "rpc_concurrency": 8,
+        "shard_concurrency": 4,
+        "started_at": "2026-09-21T20:12:05.580310+00:00",
+        "trace_concurrency": 8
+      }
+    ]
+  },
+  "format": "wildcat-v1-capture-evidence/v1",
+  "interval_authorization": {
+    "results": [
+      {
+        "record_type": "response_item",
+        "source_line": 189,
+        "timestamp": "2026-09-19T17:28:48.599Z",
+        "user_message": "<send_user_message_question_reply>\n[{\"questionItemId\":\"[\\\"request_user_input_async\\\",\\\"call_EmMsUmr8Uup2veUz7krGMtAD\\\",0]\",\"question\":\"For the later live captures, what start block, end block and shard width should V1 and V2 use? The saved runbook reserves those choices to you, and I haven\u2019t found a recorded selection. I\u2019m continuing the audit and collector work while awaiting those values.\",\"answer\":\"The block that the first market on V1 was deployed on is the start of V1. And then V2, the block that the first V2 market.\"}]\n</send_user_message_question_reply>"
+      },
+      {
+        "record_type": "response_item",
+        "source_line": 203,
+        "timestamp": "2026-09-19T17:29:33.485Z",
+        "user_message": "As for the end of V1, use the block where the last Wintermute market was terminated. V2, there is no end block as such, it is still active, so as far as you can reach. Shard width I defer to you, what are the ranges/expected values?\n"
+      }
+    ],
+    "source": "rollout-2026-09-19T18-22-12-01a0bab0-9e0b-7be3-8628-2af6e61e6503.jsonl",
+    "source_sha256": "3fe0a4ebcf2559130427abb708a6df555389a303e71cd69569ee122a3ce45e65"
+  },
+  "plan_replacement": {
+    "earlier_attempts_preserved": true,
+    "interval_unchanged": true,
+    "journal_components": 103,
+    "new_shard_count": 667,
+    "new_shard_width": 5000,
+    "observed_at": "2026-09-21T20:15:17.118669+00:00",
+    "old_shard_width": 25000,
+    "preserved_checkpoint_next_shard": 47,
+    "reason": "two primary eth_getLogs requests over25000-block ranges exceeded the60-second request deadline",
+    "replacement_plan_sha256": "cad23fb022e9c331793d207553de7aab6ae6e46379c757b35361932c1772dbd7",
+    "subjects_unchanged": true,
+    "superseded_plan_sha256": "d003639e6880e217699831e19b3ef73edcfb6440b4660fbf740fa2846fcc6797"
+  },
+  "plan_sha256": "cad23fb022e9c331793d207553de7aab6ae6e46379c757b35361932c1772dbd7",
+  "pre_plan_readiness": {
+    "format": "wildcat-v1-pre-plan-readiness/v1",
+    "observed_at": "2026-09-21T19:58:24.870952+00:00",
+    "results": [
+      {
+        "code_bytes": 20275,
+        "code_sha256": "a9f76fc065eec8bc10943179d99c259a8b15d05e4e2a5e7ad7245bf3cddc1e18",
+        "label": "opening-code",
+        "method": "eth_getCode",
+        "params": [
+          "0x5850afc80561932b0abb63dd13cdc129395323a3",
+          "0x11e00d9"
+        ],
+        "provider": "primary",
+        "response_sha256": "4a6878a51f54637a1587c009e2440f06a0cd33b4a7be4dfdb4b81be28ef37460",
+        "started_at": "2026-09-21T19:58:24.617840+00:00"
+      },
+      {
+        "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+        "block_number": 22074622,
+        "label": "end-header",
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x150d4fe",
+          false
+        ],
+        "provider": "primary",
+        "response_sha256": "a3396b13d37d7a85d4c66b0e21cbef3d244d8149be14f5313c6f3c92d76a58c5",
+        "started_at": "2026-09-21T19:58:24.618593+00:00"
+      },
+      {
+        "block_hash": "0x0a06dfa75231dcb708def8293418a169d7405aee77f1edf2cffff531cb61be88",
+        "block_number": 26028031,
+        "label": "finalized",
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "finalized",
+          false
+        ],
+        "provider": "primary",
+        "response_sha256": "7cb9a885c4255e71302f2c2286a4229da6faf9f9e934edfa8f695edbbce0eeb1",
+        "started_at": "2026-09-21T19:58:24.618887+00:00"
+      },
+      {
+        "code_bytes": 20275,
+        "code_sha256": "a9f76fc065eec8bc10943179d99c259a8b15d05e4e2a5e7ad7245bf3cddc1e18",
+        "label": "opening-code",
+        "method": "eth_getCode",
+        "params": [
+          "0x5850afc80561932b0abb63dd13cdc129395323a3",
+          "0x11e00d9"
+        ],
+        "provider": "secondary",
+        "response_sha256": "4a6878a51f54637a1587c009e2440f06a0cd33b4a7be4dfdb4b81be28ef37460",
+        "started_at": "2026-09-21T19:58:24.619162+00:00"
+      },
+      {
+        "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+        "block_number": 22074622,
+        "label": "end-header",
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "0x150d4fe",
+          false
+        ],
+        "provider": "secondary",
+        "response_sha256": "a3396b13d37d7a85d4c66b0e21cbef3d244d8149be14f5313c6f3c92d76a58c5",
+        "started_at": "2026-09-21T19:58:24.619520+00:00"
+      },
+      {
+        "block_hash": "0x0a06dfa75231dcb708def8293418a169d7405aee77f1edf2cffff531cb61be88",
+        "block_number": 26028031,
+        "label": "finalized",
+        "method": "eth_getBlockByNumber",
+        "params": [
+          "finalized",
+          false
+        ],
+        "provider": "secondary",
+        "response_sha256": "1e55e5b7aa6609e74ee7fe2a41d1560751d78c7aaf7f67f80e1d0f74af77ca52",
+        "started_at": "2026-09-21T19:58:24.619911+00:00"
+      }
+    ],
+    "source_commit": "a64ee61a7bd7eb1287ac871a669e7be3a12a7e43"
+  },
+  "recorded_at": "2026-09-21T20:42:21.915869+00:00",
+  "registry_sha256": "4d773fde78573e1ca47ed70e3e5025d8fce3c16b55eeb362c223ea2577280bd3",
+  "runtime": {
+    "authorization": "User requested production launch without trial delay; full checks run alongside; formal Step 10 delivery receipts remain pending.",
+    "base_signed_commit": "a64ee61a7bd7eb1287ac871a669e7be3a12a7e43",
+    "collector_sha256": "11b05610845142c814d13a21ea90802a0bbd7c2b6e90bdfdbd20eb03ce56aba9",
+    "format": "wildcat-v1-production-runtime/v1",
+    "observed_at": "2026-09-21T20:15:17.118373+00:00",
+    "patch_sha256": "836f5f9a8eafe6a8c677ba9e8dab0a93e73486367db3b696262069f9793dae89",
+    "plan_sha256": "cad23fb022e9c331793d207553de7aab6ae6e46379c757b35361932c1772dbd7",
+    "registry_sha256": "4d773fde78573e1ca47ed70e3e5025d8fce3c16b55eeb362c223ea2577280bd3",
+    "source_commit": "296a794d8bca1ad051d3b4d9cae1339f5e433571"
+  },
+  "start_observations": [
+    {
+      "evidence_class": "recorded",
+      "first_market": "0x5850afc80561932b0abb63dd13cdc129395323a3",
+      "first_market_code_bytes_at_start": 20275,
+      "limit": "Local archive node; only the markets in the pinned registry evidence were compared.",
+      "listed_markets_without_code_at_previous_block": 7,
+      "start": 18743513,
+      "venue": "v1"
+    },
+    {
+      "evidence_class": "recorded",
+      "first_market": "0xfe7cf5680d2e59500f3938c2539fda4754876f94",
+      "first_market_code_bytes_at_start": 21999,
+      "limit": "Local archive node; only the markets in the pinned registry evidence were compared.",
+      "listed_markets_without_code_at_previous_block": 80,
+      "start": 21866550,
+      "venue": "v2"
+    }
+  ]
+}

@@ -15,6 +15,17 @@ This lane is independent of the behaviour lane in
 decides a demonstration status. One Fiat run may advance both, but each ledger
 has to satisfy its own contract on its own evidence.
 
+## Controller-backed demonstrations
+
+When a demonstration crosses a stateful controller, its record names the exact
+controller source and the disposable Git or fixture boundary used to run it.
+Record the positive result beside the refusals that make the boundary visible,
+and retain the command, source, step and descriptor identities in the evidence.
+A passing command is an observation of that run; it does not prove that the
+declared criterion is sufficient or semantically correct. Read-only replay must
+state whether it launched an operation, with zero launches recorded when it
+only validated a stored receipt.
+
 ## The file
 
 `DEMONSTRATION.md` is human Markdown carrying one fenced JSON object tagged

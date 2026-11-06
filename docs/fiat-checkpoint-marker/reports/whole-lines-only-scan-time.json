@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "whole-lines-only",
+  "criterion": "scan-time",
+  "value": 77,
+  "unit": "milliseconds",
+  "command": "python3 .hexaemeron/measure_design.py --candidate whole-lines-only --criterion scan-time --report .hexaemeron/reports/whole-lines-only-scan-time.json",
+  "exit": 0
+}

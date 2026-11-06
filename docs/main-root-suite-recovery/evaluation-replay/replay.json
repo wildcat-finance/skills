@@ -1,0 +1,37 @@
+{
+  "all_11_prompts_byte_identical": true,
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "tests/promise_evaluation_driver.py",
+    "tally",
+    "--packet",
+    "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/evaluation-input-comparison/current-packet",
+    "--answers",
+    "docs/promise-machine/obligation-gates/evaluation-answers.json",
+    "--out",
+    "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/evaluation-input-comparison/replayed-run.json",
+    "--model",
+    "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
+    "--date",
+    "2026-08-31"
+  ],
+  "changed_run_fields": [
+    "tree_sha256"
+  ],
+  "counts": {
+    "answers": 11,
+    "cases": 11,
+    "failed": 0,
+    "outcomes": 55,
+    "passed": 55
+  },
+  "current_run_sha256": "de58b85acf3181d21592f666bcf5a98946d5a1c1248f83a8e38e9fa542a23fe9",
+  "date": "2026-08-31",
+  "exit_code": 0,
+  "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
+  "new_model_observation": false,
+  "operation": "historical-answer-tally-replay",
+  "original_run_sha256": "d3bc23c16bf4b62c09e2c9032251e4b165bdc0ffa2b8a9b115d1cf1e865055a5",
+  "owner": "tests/promise_evaluation_driver.py",
+  "raw_answers_sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855"
+}

@@ -1,0 +1,12 @@
+predicate type: https://ariadne.wildcat.finance/dataset/v1 (registered)
+signatures:     unsigned: a bare statement, with no envelope and no author
+gate 1 subject-naming: pass -- 128 claim(s), each naming a subject of this statement
+gate 2 environment: pass -- alexandria source:104f6f82c390003fb61039d3023d07c1abe05086;python:3.14.6, 38 input(s), 128 released file(s)
+gate 3 absence: pass -- 128 passed
+gate 4 no-conclusions: pass -- no verdict keys in the statement
+gate 5 deltas: pass -- wildcat-v2-full-release, no baseline: First Ariadne statement for this accepted Wildcat v2 estate. No previous statement is supplied; V1 and V2 are separate estates, not a baseline pair.
+gate 6 determinism: pass -- no commands recorded
+gate 7 authorship: pass -- the payload claims no author of its own
+check predicate-fields: pass -- no fields outside the shape
+check coverage: FAIL -- gap 1 is missing reason
+check inputs: pass -- 38 input(s), 38 digested, 0 recorded absent

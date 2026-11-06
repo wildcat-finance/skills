@@ -1,0 +1,33 @@
+{
+  "archive_attempts": {
+    "controller_package": "1.6.59",
+    "count": 2,
+    "exit": 1,
+    "published_archive": false,
+    "refusal": "secret-shaped-member"
+  },
+  "evidence_class": "attested",
+  "head": "f81f119b1984c9379b6a4405b1492ab4a5e007fa",
+  "ledger_entries": 19,
+  "ledger_sha256": "2257f80ba9b566caa933d34799f7280de2c29ca782bb6d30e37459dc9d00db39",
+  "ledger_tail_event": "done:push",
+  "ledger_tail_sha256": "cda18fe62c8ccde5bfc2f1fcf6cc2dbae6d67c42b851879abf65a9991fb7ade9",
+  "pending": [
+    "release publication",
+    "supported plugin installation",
+    "mandatory new chat",
+    "fresh original-file comparison",
+    "native service checkpoint retry"
+  ],
+  "retry_handoff_path": "/home/kethcode/scratch/fiat-checkpoints/.hexaemeron/recovery/step-1-f81f119b1984c9379b6a4405b1492ab4a5e007fa/archive-retry-1.6.59-20260919T170126Z/CONTINUE.md",
+  "retry_handoff_sha256": "459d405cf146d966f90a29fb14fa4675091bdf281ce44532b314a990080b2700",
+  "retry_manifest_sha256": "e34a3a26f20dfb9b00d712b9f085cfa31e371d977b86973dd7962ce615a9b355",
+  "schema": "checkpoint-marker-service-handoff/v1",
+  "service_admission": {
+    "issue": 1676,
+    "state": "open and unreleased; service Step 2 unadmitted"
+  },
+  "service_worktree": "/home/kethcode/scratch/fiat-checkpoints/tmp/fiat/fiat-1-authenticated-checkpoint-intake-and-isolated-v",
+  "source": "Coordinating agent observation, approximately 2026-09-19 21:12 UTC; Mason did not inspect the service tree.",
+  "state_sha256": "b0c2fa7878963c170afd44226bc474769db5909398b7dcd258cb07a087710939"
+}
