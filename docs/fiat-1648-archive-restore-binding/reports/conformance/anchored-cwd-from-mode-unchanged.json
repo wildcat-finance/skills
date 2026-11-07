@@ -1,0 +1,9 @@
+{
+  "candidate": "anchored-cwd",
+  "command": "python3 .hexaemeron/design/probe.py conform --candidate anchored-cwd --criterion from-mode-unchanged --root . --out .hexaemeron/design/reports/conformance/anchored-cwd-from-mode-unchanged.json",
+  "criterion": "from-mode-unchanged",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
