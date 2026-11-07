@@ -369,6 +369,24 @@ class DecisionDraftTests(unittest.TestCase):
             with self.subTest(claim=claim):
                 self.assertIn(claim, consequences)
 
+    def test_each_rejected_bullet_names_its_failed_gates(self):
+        """Each rejected candidate's bullet names every gate the table fails it on."""
+        text, _ = draft_text()
+        bullets = {line.split("`", 2)[1]: line
+                   for line in section(text, "Alternatives", "Consequences").splitlines()
+                   if line.startswith("- `")}
+        gates = [criterion for criterion, unit in SELECTION_UNITS.items() if unit == "boolean"]
+        for index, candidate in enumerate(CANDIDATES):
+            if candidate == SELECTED:
+                continue
+            failed = [gate for gate in gates if MEASURED[gate][index] is False]
+            with self.subTest(candidate=candidate):
+                self.assertTrue(failed)
+                for gate in failed:
+                    self.assertIn("`" + gate + "`", bullets[candidate])
+        self.assertIn("Its `concurrent-holders-after-crash` is 2: two resumers",
+                      bullets["exclusive-entry"])
+
 
 class TrackedContentTests(unittest.TestCase):
     def test_only_the_named_copies_are_tracked(self):
