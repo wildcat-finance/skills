@@ -1,0 +1,9 @@
+{
+  "candidate": "admitted-fd-flock",
+  "command": "python3 .hexaemeron/design/probe.py conform --candidate admitted-fd-flock --criterion killed-restore-recovers --root . --out .hexaemeron/design/reports/conformance/admitted-fd-flock-killed-restore-recovers.json",
+  "criterion": "killed-restore-recovers",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
