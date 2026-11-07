@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 69145725,
+    "bytes_blob": 69163855,
     "bytes_generated": 98
   },
   "entries": [
@@ -250,6 +250,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
+    },
+    {
+      "bytes": 18130,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1648-keep-archive-restore-bound-to-its-admitted.synopsis.md"
     },
     {
       "bytes": 40490,
