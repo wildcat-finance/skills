@@ -1,0 +1,9 @@
+{
+  "candidate": "identity-recheck",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate identity-recheck --criterion residue-follows-reference --out .hexaemeron/design/reports/selection/identity-recheck-residue-follows-reference.json",
+  "criterion": "residue-follows-reference",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

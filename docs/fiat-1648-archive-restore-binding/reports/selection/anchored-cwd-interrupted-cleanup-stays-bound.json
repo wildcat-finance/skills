@@ -1,0 +1,9 @@
+{
+  "candidate": "anchored-cwd",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate anchored-cwd --criterion interrupted-cleanup-stays-bound --out .hexaemeron/design/reports/selection/anchored-cwd-interrupted-cleanup-stays-bound.json",
+  "criterion": "interrupted-cleanup-stays-bound",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

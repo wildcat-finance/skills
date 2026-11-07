@@ -1,0 +1,9 @@
+{
+  "candidate": "private-build-adopt",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate private-build-adopt --criterion residue-follows-reference --out .hexaemeron/design/reports/selection/private-build-adopt-residue-follows-reference.json",
+  "criterion": "residue-follows-reference",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

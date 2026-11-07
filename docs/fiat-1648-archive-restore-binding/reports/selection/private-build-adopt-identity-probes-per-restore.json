@@ -1,0 +1,9 @@
+{
+  "candidate": "private-build-adopt",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate private-build-adopt --criterion identity-probes-per-restore --out .hexaemeron/design/reports/selection/private-build-adopt-identity-probes-per-restore.json",
+  "criterion": "identity-probes-per-restore",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 3
+}

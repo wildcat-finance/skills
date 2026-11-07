@@ -1,0 +1,9 @@
+{
+  "candidate": "anchored-cwd",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate anchored-cwd --criterion transaction-race-leaked-trials --out .hexaemeron/design/reports/selection/anchored-cwd-transaction-race-leaked-trials.json",
+  "criterion": "transaction-race-leaked-trials",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
