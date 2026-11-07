@@ -374,9 +374,40 @@ restoring account; a principal who can write inside the admitted directory;
 Git's own absolute paths, since a name swapped away and back within one `git
 init` or `git worktree add` can redirect that child's writes (measured on
 macOS; Linux Git is unmeasured); reused readers between checks, which may read
-a replacement; an empty directory put at the name between the last check and
-the `rmdir` of a created destination; and two concurrent restores.
-`restore --from` is unchanged.
+a replacement; and an empty directory put at the name between the last check
+and the `rmdir` of a created destination.
+
+Competing `hexctl` commands meet three locks, each an exclusive `flock` taken
+without waiting on a descriptor opened with close-on-exec. Admission locks the
+admitted directory before its `fstat`, `realpath` check and emptiness scan.
+`restore --from` locks its origin directory, opened without following a link,
+before its clean check. Each holds that lock to the end. The marker
+transaction holds the origin's run lock, `.hexaemeron/lock`, before it reads
+that directory's names. The private stage holds its own `lock` before the
+publishing rename, so the worktree's state directory never exists without a
+held run lock. A mutating command that finds no state directory refuses with
+the message it already printed, so none runs unlocked against state a restore
+publishes. `checkpoint restore` stays outside the commands that take the run
+lock at startup, and `status`, `next` and `verify` take none.
+
+Two restores into one directory therefore end with one restore and one
+refusal before any write. A resume through the marker, `init` on the origin
+and a mutating command on the restored worktree each refuse while a restore
+holds the lock they need, or win and leave the restore to refuse before it
+publishes. A refusal after publication leaves the marker and active state,
+which a retry finalizes. Contention at admission refuses `destination-occupied`.
+Any other contention, or a lock that cannot be taken, exits 1 with the fixed
+sentence `checkpoint restore destination is held by another hexctl command`,
+which carries no path. A restore that did not obtain the directory lock never
+removes the destination, even one it created. On every exit the restore
+removes each lock file it created while still holding it, so an uncontended
+restore leaves no lock file. A killed restore's locks are released by the
+kernel; the lock files it leaves keep a stale holder, and the retry rules
+accept them. The locks bind only `hexctl` processes. Not defended: a writer
+that takes no `hexctl` lock, including `checkpoint inspect --scratch` pointed
+at a restore destination, Git and editors; a process that deletes or replaces
+a lock file; and a filesystem without `flock`, where the restore refuses.
+Besides its origin lock, `restore --from` is unchanged.
 
 ## Budgets
 
