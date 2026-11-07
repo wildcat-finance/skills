@@ -354,6 +354,30 @@ through `bounded_tool` with fixed argv, output cap and timeout; the disposable
 `GNUPGHOME` is created with mode 0700 under the scratch root, seeded only from
 `proof/pubkey.asc`, started with `--no-autostart` and removed after use.
 
+The restore stays bound to the directory it admitted. Once the inspector
+returns, it checks that the destination name still names that directory and
+makes the directory its working directory. Every later controller write is
+relative to it or goes through a descriptor opened from it. Every `git` child
+starts there with relative arguments only, and the `.git` link Git writes for
+the derived worktree must name the destination's own `.git/worktrees` entry.
+The same check runs around each child and before the restore records state,
+publishes or retires its marker, removes a destination it created, and reports
+success. A failed check exits 1 with the fixed sentence `checkpoint restore
+destination no longer names the admitted directory`, which carries no path. A
+refused or killed restore leaves its bytes, marker and disposable root in the
+admitted directory, wherever its name now is, so look for it in the parent
+directory. Nothing is written into or removed from whatever holds the
+destination name, and the caller's working directory is restored. The defended
+actor can write the destination's parent and cannot write inside the admitted
+directory. Not defended: root, administrators and any process running as the
+restoring account; a principal who can write inside the admitted directory;
+Git's own absolute paths, since a name swapped away and back within one `git
+init` or `git worktree add` can redirect that child's writes (measured on
+macOS; Linux Git is unmeasured); reused readers between checks, which may read
+a replacement; an empty directory put at the name between the last check and
+the `rmdir` of a created destination; and two concurrent restores.
+`restore --from` is unchanged.
+
 ## Budgets
 
 [checkpoint-archive-budgets.json](../scripts/checkpoint-archive-budgets.json)

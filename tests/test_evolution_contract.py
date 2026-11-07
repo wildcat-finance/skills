@@ -415,26 +415,38 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.87.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.88.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v6.87.1")
+        self.assertEqual(latest["version"], "fiat-v6.88.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
             latest["digest"],
             "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
         )
+        self.assertIn("skills#1648", latest["evidence"])
+        self.assertIn("test_checkpoint_restore_binding.py", latest["evidence"])
+        self.assertIn("stays on the directory it admitted", latest["change"])
+        self.assertIn("no longer names the admitted directory", latest["change"])
+        self.assertIn("removed only while a seal passes", latest["change"])
+        self.assertIn("`--from`, the refusal classes", latest["change"])
+        readers = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.87.1"
+        )
+        self.assertEqual(readers["axis"], "generation")
+        self.assertEqual(readers["revision"], "delegated-task-identity")
+        self.assertEqual(readers["digest"], latest["digest"])
         for issue in ("skills#899", "skills#901", "skills#1647"):
-            self.assertIn(issue, latest["evidence"])
-        self.assertIn("test_hexctl_reader_boundaries.py", latest["evidence"])
-        self.assertIn("settles its boundary from the ledger tail", latest["change"])
-        self.assertIn("a rename is its old and new path to both", latest["change"])
-        self.assertIn("key-identifier shape", latest["change"])
-        self.assertIn("the refusal itself is unchanged", latest["change"])
+            self.assertIn(issue, readers["evidence"])
+        self.assertIn("test_hexctl_reader_boundaries.py", readers["evidence"])
+        self.assertIn("settles its boundary from the ledger tail", readers["change"])
+        self.assertIn("a rename is its old and new path to both", readers["change"])
+        self.assertIn("key-identifier shape", readers["change"])
+        self.assertIn("the refusal itself is unchanged", readers["change"])
         credentials = next(
             row for row in history_rows(ledger) if row["version"] == "fiat-v6.86.1"
         )
