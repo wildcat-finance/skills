@@ -83,6 +83,21 @@ REFUSAL = "checkpoint restore destination is held by another hexctl command"
 # the runbook publishes the same reports one directory shallower.
 RECORD_REPORTS = "design/reports/selection/"
 COMMITTED_REPORTS = "reports/selection/"
+RECORD_CONFORMANCE = "design/reports/conformance/"
+COMMITTED_CONFORMANCE = "reports/conformance/"
+DEMONSTRATION = PACKAGE + "/demonstration.md"
+# The bytes each Step 3 resolver wrote on 2026-11-07, as the demonstration
+# states them.
+CONFORMANCE_DIGESTS = {
+    "restore-contention-guarded":
+        "8707818b5ee0be41457f46c8cc54401e109c137bea79efba98012564e803c427",
+    "imported-state-guarded":
+        "7d5f30b67c698b2381b58853ba63f93c773321f848d8dacd7ffa2478afb7a67f",
+    "killed-restore-recovers":
+        "9b67ebe22e7fc44fe6becc40a48bbc5a1a4c13b10155c876d7421b434a8d2a6c",
+    "existing-restores-unchanged":
+        "2c22da30f5afb55bc9edd36f407ea1c7e46f443e9f7aec7df1a0fbcd8af7fe94",
+}
 LOCAL_PATH_MARKERS = (b"/Users/", b"/home/", b"/private/", b"/var/folders/")
 
 
@@ -388,13 +403,94 @@ class DecisionDraftTests(unittest.TestCase):
                       bullets["exclusive-entry"])
 
 
+def conformance_name(criterion):
+    return SELECTED + "-" + criterion + ".json"
+
+
+def resolver_command(criterion):
+    return ("python3 .hexaemeron/design/probe.py conform --candidate " + SELECTED
+            + " --criterion " + criterion + " --root . --out .hexaemeron/"
+            + RECORD_CONFORMANCE + conformance_name(criterion))
+
+
+class ConformanceEvidenceTests(unittest.TestCase):
+    def test_conformance_reports_hold_stated_digest_and_true(self):
+        demonstration = (ROOT / DEMONSTRATION).read_text(encoding="utf-8")
+        for criterion, expected in CONFORMANCE_DIGESTS.items():
+            with self.subTest(criterion=criterion):
+                path = ROOT / PACKAGE / COMMITTED_CONFORMANCE / conformance_name(criterion)
+                data = path.read_bytes()
+                self.assertEqual(hashlib.sha256(data).hexdigest(), expected)
+                report = json.loads(data)
+                self.assertIs(report["value"], True)
+                self.assertEqual(report, {
+                    "schema": "protasis-design-report/v1", "candidate": SELECTED,
+                    "criterion": criterion, "value": True, "unit": "boolean",
+                    "command": resolver_command(criterion), "exit": 0})
+                for marker in LOCAL_PATH_MARKERS:
+                    self.assertNotIn(marker, data)
+                self.assertIn("| `" + criterion + "` | 0 | `true` | `" + expected + "` |",
+                              demonstration)
+        committed = {path.name for path in (ROOT / PACKAGE / COMMITTED_CONFORMANCE).iterdir()}
+        self.assertEqual(committed, {conformance_name(item) for item in CONFORMANCE_UNITS})
+
+    def test_demonstration_names_each_resolver_command(self):
+        demonstration = (ROOT / DEMONSTRATION).read_text(encoding="utf-8")
+        rows = [row for row in record()["results"]
+                if row["candidate"] == SELECTED and row["state"] == "pending"]
+        self.assertEqual({row["criterion"] for row in rows}, set(CONFORMANCE_DIGESTS))
+        for row in rows:
+            with self.subTest(criterion=row["criterion"]):
+                self.assertEqual(row["resolver"], resolver_command(row["criterion"]))
+                self.assertIn("`" + row["resolver"] + "`", demonstration)
+                self.assertEqual(row["report"],
+                                 RECORD_CONFORMANCE + conformance_name(row["criterion"]))
+
+    def test_demonstration_states_what_it_leaves_open(self):
+        text = " ".join((ROOT / DEMONSTRATION).read_text(encoding="utf-8").split())
+        uncovered = text.split("## What this does not cover", 1)[1]
+        for phrase in ("A writer that takes no `hexctl` lock", "Network filesystems",
+                       "Real `hexctl` and Git on Linux", "root and administrators",
+                       "deletes or replaces a lock file"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, uncovered)
+
+    def test_committed_conformance_passes_integration(self):
+        base = rebuilt_layout(self)
+        conformance = base / RECORD_CONFORMANCE
+        conformance.mkdir(parents=True)
+        for criterion in CONFORMANCE_DIGESTS:
+            shutil.copyfile(ROOT / PACKAGE / COMMITTED_CONFORMANCE / conformance_name(criterion),
+                            conformance / conformance_name(criterion))
+        path = base / "design-evidence.json"
+        shutil.copyfile(ROOT / PACKAGE / "design-evidence.json", path)
+        findings, admitted, consumed = DESIGN.evaluate(path, "integration")
+        self.assertEqual([finding.as_dict() for finding in findings], [])
+        self.assertEqual(admitted["selection"]["candidate"], SELECTED)
+        self.assertEqual(
+            {(item["candidate"], item["criterion"], item["path"], item["sha256"])
+             for item in consumed},
+            {(SELECTED, criterion, RECORD_CONFORMANCE + conformance_name(criterion), expected)
+             for criterion, expected in CONFORMANCE_DIGESTS.items()})
+
+    def test_draft_records_the_conformance_results(self):
+        text, _ = draft_text()
+        consequences = " ".join(section(text, "Consequences").split())
+        self.assertIn("`" + DEMONSTRATION + "`", consequences)
+        for criterion in CONFORMANCE_DIGESTS:
+            with self.subTest(criterion=criterion):
+                self.assertIn("`" + criterion + "`", consequences)
+
+
 class TrackedContentTests(unittest.TestCase):
     def test_only_the_named_copies_are_tracked(self):
         reports = [COMMITTED_REPORTS + candidate + "-" + criterion + ".json"
                    for candidate in CANDIDATES for criterion in SELECTION_UNITS]
+        reports += [COMMITTED_CONFORMANCE + conformance_name(criterion)
+                    for criterion in CONFORMANCE_UNITS]
         expected = sorted(PACKAGE + "/" + name for name in
-                          ["build_record.py", "design-evidence.json", "probe.py",
-                           "runbook.md", "study.md", *reports])
+                          ["build_record.py", "demonstration.md", "design-evidence.json",
+                           "probe.py", "runbook.md", "study.md", *reports])
         self.assertEqual(tracked(PACKAGE), expected)
         self.assertEqual(tracked(".hexaemeron"), [])
         _, home = draft_text()

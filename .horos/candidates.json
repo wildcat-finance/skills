@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 69192131,
+    "bytes_blob": 69197787,
     "bytes_generated": 98
   },
   "entries": [
@@ -259,7 +259,7 @@
       "path": "audit/rounds/fiat-1648-keep-archive-restore-bound-to-its-admitted.synopsis.md"
     },
     {
-      "bytes": 18439,
+      "bytes": 24095,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

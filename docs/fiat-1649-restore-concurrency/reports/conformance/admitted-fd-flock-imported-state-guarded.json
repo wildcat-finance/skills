@@ -1,0 +1,9 @@
+{
+  "candidate": "admitted-fd-flock",
+  "command": "python3 .hexaemeron/design/probe.py conform --candidate admitted-fd-flock --criterion imported-state-guarded --root . --out .hexaemeron/design/reports/conformance/admitted-fd-flock-imported-state-guarded.json",
+  "criterion": "imported-state-guarded",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
