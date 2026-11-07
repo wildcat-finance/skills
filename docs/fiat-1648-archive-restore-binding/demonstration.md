@@ -89,8 +89,9 @@ SHA-256 stayed `815abd409e5d7031407d9c4104884e47814da7798e8891917625fa7a18ab9742
 - Four leads from the Step 2 audit, none of them fixed here:
   1. The pinned interpreter's `mkstemp` builds the path of verify's
      design-evidence copy from `getcwd()`, which names the admitted inode's
-     current location rather than the destination string. A parent writer racing a second rename inside
-     that call is not covered, the same class as Git's window.
+     current location rather than the destination string. A parent writer
+     racing a second rename inside that call is not covered, the same class
+     as Git's window.
   2. `leave()` suppresses a failed `fchdir` back to the saved directory, for
      example after search permission is removed from the caller's directory.
      The process then stays in the admitted directory with no signal.
