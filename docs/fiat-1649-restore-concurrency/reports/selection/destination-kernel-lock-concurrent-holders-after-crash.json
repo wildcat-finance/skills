@@ -1,0 +1,9 @@
+{
+  "candidate": "destination-kernel-lock",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate destination-kernel-lock --criterion concurrent-holders-after-crash --out .hexaemeron/design/reports/selection/destination-kernel-lock-concurrent-holders-after-crash.json",
+  "criterion": "concurrent-holders-after-crash",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

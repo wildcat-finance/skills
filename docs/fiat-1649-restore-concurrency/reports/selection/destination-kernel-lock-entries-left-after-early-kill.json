@@ -1,0 +1,9 @@
+{
+  "candidate": "destination-kernel-lock",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate destination-kernel-lock --criterion entries-left-after-early-kill --out .hexaemeron/design/reports/selection/destination-kernel-lock-entries-left-after-early-kill.json",
+  "criterion": "entries-left-after-early-kill",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 3
+}

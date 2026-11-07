@@ -1,0 +1,9 @@
+{
+  "candidate": "mutating-set",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate mutating-set --criterion lock-acquisitions-per-restore --out .hexaemeron/design/reports/selection/mutating-set-lock-acquisitions-per-restore.json",
+  "criterion": "lock-acquisitions-per-restore",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

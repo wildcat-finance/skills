@@ -1,0 +1,9 @@
+{
+  "candidate": "destination-kernel-lock",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate destination-kernel-lock --criterion killed-before-write-readmits --out .hexaemeron/design/reports/selection/destination-kernel-lock-killed-before-write-readmits.json",
+  "criterion": "killed-before-write-readmits",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

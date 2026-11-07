@@ -1,0 +1,9 @@
+{
+  "candidate": "exclusive-entry",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate exclusive-entry --criterion competing-restores-one-winner --out .hexaemeron/design/reports/selection/exclusive-entry-competing-restores-one-winner.json",
+  "criterion": "competing-restores-one-winner",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
