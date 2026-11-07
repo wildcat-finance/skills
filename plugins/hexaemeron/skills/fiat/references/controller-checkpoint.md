@@ -198,8 +198,9 @@ manifest digest, run branch and exact owned paths. An existing controller
 directory, occupied derived worktree, conflicting marker, symlink or changed
 ref refuses without replacing or deleting it. A controller directory holding
 only `.gitignore`, the marker, `worktree` and `lock` resumes. Before it reads
-those names the restore holds `lock`, the run lock `init` and every mutating
-command take: a regular single-link file opened without following a link. Creation pins the origin and new
+those names, the restore holds `lock`, the run lock that `init` and every
+mutating command take. It opens `lock` without following a link and checks
+that it is a regular single-link file. Creation pins the origin and new
 controller directory and writes both private files relative to those open
 directories, so moving the new directory cannot redirect either write. The
 derived worktree home is traversed component by component without following a
@@ -221,11 +222,11 @@ lock is held from the moment it exists. The closed inventory and every opaque
 file digest are rechecked from the active tree around finalization, excluding
 only that live root-level, regular, single-link `lock`, as export excludes it;
 the capsule and stage snapshots admit no `lock`. An interrupted-publication
-retry holds the active tree's `lock` before it reads anything there. Local refs are checked before publication, after the
-rename and again after the internal checks and breadcrumb write. The
-worktree's directory identity and symbolic `HEAD` must remain unchanged across
-the internal checks and the same finalization boundaries, including an
-interrupted-publication retry.
+retry holds the active tree's `lock` before it reads anything there. Local
+refs are checked before publication, after the rename and again after the
+internal checks and breadcrumb write. The worktree's directory identity and
+symbolic `HEAD` must remain unchanged across the internal checks and the same
+finalization boundaries, including an interrupted-publication retry.
 
 A retry after an interruption never guesses ownership. A marker with no owned
 path may resume. A marker whose private stage or incomplete worktree remains

@@ -379,9 +379,9 @@ and the `rmdir` of a created destination.
 
 Competing `hexctl` commands meet three locks, each an exclusive `flock` taken
 without waiting on a descriptor opened with close-on-exec. Admission locks the
-admitted directory before its `fstat`, `realpath` check and emptiness scan,
-and `restore --from` locks its origin directory, opened without following a
-link, before its clean check; each holds that lock to the end. The marker
+admitted directory before its `fstat`, `realpath` check and emptiness scan.
+`restore --from` locks its origin directory, opened without following a link,
+before its clean check. Each holds that lock to the end. The marker
 transaction holds the origin's run lock, `.hexaemeron/lock`, before it reads
 that directory's names. The private stage holds its own `lock` before the
 publishing rename, so the worktree's state directory never exists without a
