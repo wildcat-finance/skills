@@ -1,0 +1,9 @@
+{
+  "candidate": "private-build-adopt",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate private-build-adopt --criterion unswapped-restore-completes --out .hexaemeron/design/reports/selection/private-build-adopt-unswapped-restore-completes.json",
+  "criterion": "unswapped-restore-completes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

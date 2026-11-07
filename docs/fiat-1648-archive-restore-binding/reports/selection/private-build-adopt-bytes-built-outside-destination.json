@@ -1,0 +1,9 @@
+{
+  "candidate": "private-build-adopt",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate private-build-adopt --criterion bytes-built-outside-destination --out .hexaemeron/design/reports/selection/private-build-adopt-bytes-built-outside-destination.json",
+  "criterion": "bytes-built-outside-destination",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 39800
+}

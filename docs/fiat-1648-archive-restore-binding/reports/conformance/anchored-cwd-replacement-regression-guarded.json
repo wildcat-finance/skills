@@ -1,0 +1,9 @@
+{
+  "candidate": "anchored-cwd",
+  "command": "python3 .hexaemeron/design/probe.py conform --candidate anchored-cwd --criterion replacement-regression-guarded --root . --out .hexaemeron/design/reports/conformance/anchored-cwd-replacement-regression-guarded.json",
+  "criterion": "replacement-regression-guarded",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

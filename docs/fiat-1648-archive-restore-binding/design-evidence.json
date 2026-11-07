@@ -1,0 +1,625 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "path-unchanged",
+      "summary": "Today's restore: every operation after admission resolves the destination by its absolute path; the admission descriptor is held unused."
+    },
+    {
+      "id": "identity-recheck",
+      "summary": "Keep absolute paths and re-prove before and after every operation and Git child that the destination name still names the admitted inode."
+    },
+    {
+      "id": "anchored-cwd",
+      "summary": "fchdir to the admitted descriptor after the inspector; every controller operation is cwd- or dir_fd-relative, every Git child inherits that cwd, and identity seals bracket each Git child and each name-dependent step."
+    },
+    {
+      "id": "private-build-adopt",
+      "summary": "Build repository, capsule, marker and worktree in a private scratch directory, then adopt each entry into the admitted directory by descriptor-relative rename and repoint Git's worktree links."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "unswapped-restore-completes",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "directory-swap-writes-nothing",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "symlink-swap-writes-nothing",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "interrupted-cleanup-stays-bound",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "residue-follows-reference",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "transaction-race-leaked-trials",
+      "concern": "correctness",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "name-resolving-writes",
+      "concern": "correctness",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "identity-probes-per-restore",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "bytes-built-outside-destination",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "replacement-regression-guarded",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "nonempty-symlink-still-refuse",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "interrupted-restore-stays-bound",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "from-mode-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "path-unchanged",
+      "criterion": "unswapped-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-unswapped-restore-completes.json",
+        "sha256": "3dae9863ed441a73e93286a05180d403a38213660089c572a2d5ab0f6c9f5c25"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "directory-swap-writes-nothing",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-directory-swap-writes-nothing.json",
+        "sha256": "7cceb2dec5b6acac8947dac9b199eda561aeeda9f903e2c18ed256b31af4dd44"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "symlink-swap-writes-nothing",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-symlink-swap-writes-nothing.json",
+        "sha256": "238b2b4fb54d455fae9388e21fc37b268fd3d42439757e578fe28a18e74b1fed"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "interrupted-cleanup-stays-bound",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-interrupted-cleanup-stays-bound.json",
+        "sha256": "76a0ccfb96dbe6c31efc719d2df2142832d2dc20ad4cec64f55ecfdfb9be3b7b"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "residue-follows-reference",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-residue-follows-reference.json",
+        "sha256": "9707812300a339eefdbf5cffd5e79a86909a01a689df873963fe18d2c1add6ab"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "transaction-race-leaked-trials",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-transaction-race-leaked-trials.json",
+        "sha256": "be91f0c5e604fd12e20918c1c6c8fd50c04275a35766746059682a394a0c7ed5"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "name-resolving-writes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-name-resolving-writes.json",
+        "sha256": "15d02c26f77daa671a20871254866f0e989c9e0e3eb51999dbdb325cf0ddc2b5"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "identity-probes-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-identity-probes-per-restore.json",
+        "sha256": "c4448e0e29a018e322d6589866f90f2a5f4c81d7cc72cf2a8e959ca630eb2626"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "bytes-built-outside-destination",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/path-unchanged-bytes-built-outside-destination.json",
+        "sha256": "8a3aeabbc1690953bce87ef6511bbf468fa95117f72c1df73cbef3709160285b"
+      }
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "replacement-regression-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate path-unchanged --criterion replacement-regression-guarded --root . --out .hexaemeron/design/reports/conformance/path-unchanged-replacement-regression-guarded.json",
+      "report": "design/reports/conformance/path-unchanged-replacement-regression-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "nonempty-symlink-still-refuse",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate path-unchanged --criterion nonempty-symlink-still-refuse --root . --out .hexaemeron/design/reports/conformance/path-unchanged-nonempty-symlink-still-refuse.json",
+      "report": "design/reports/conformance/path-unchanged-nonempty-symlink-still-refuse.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "interrupted-restore-stays-bound",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate path-unchanged --criterion interrupted-restore-stays-bound --root . --out .hexaemeron/design/reports/conformance/path-unchanged-interrupted-restore-stays-bound.json",
+      "report": "design/reports/conformance/path-unchanged-interrupted-restore-stays-bound.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "path-unchanged",
+      "criterion": "from-mode-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate path-unchanged --criterion from-mode-unchanged --root . --out .hexaemeron/design/reports/conformance/path-unchanged-from-mode-unchanged.json",
+      "report": "design/reports/conformance/path-unchanged-from-mode-unchanged.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "unswapped-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-unswapped-restore-completes.json",
+        "sha256": "e8ba85ea5b11bf60d990d66d443e970c6b0bd33ce6d42d36119728455328fc1b"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "directory-swap-writes-nothing",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-directory-swap-writes-nothing.json",
+        "sha256": "01087b98962b7ab667d929cc87f9a214a05dbf36b7a57741075c43d271bc7c44"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "symlink-swap-writes-nothing",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-symlink-swap-writes-nothing.json",
+        "sha256": "9d9892cf547db593c43630686ab25498d96dcb99b8c4e92e0d6cee5c1efb2e00"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "interrupted-cleanup-stays-bound",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-interrupted-cleanup-stays-bound.json",
+        "sha256": "e9cd404ab6a409690c58ecb4e92dc69ad40d346f5cb451da8bb541881ec8b966"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "residue-follows-reference",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-residue-follows-reference.json",
+        "sha256": "fabb10de24e20e22b6179408689f55a0cfe7bd7726ce7d5b1e8c190182cf2e77"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "transaction-race-leaked-trials",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-transaction-race-leaked-trials.json",
+        "sha256": "88e8aef80b9911b8ee9da085c52dd24e0d883248019bf8bf915bbe3a3779928e"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "name-resolving-writes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-name-resolving-writes.json",
+        "sha256": "82d1c8e2142a7904f42224c371ea0392683a66ea442ec631b6862a93c19f3bb9"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "identity-probes-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-identity-probes-per-restore.json",
+        "sha256": "28b655f1fe33787319c4affa2865893ed13c72f446d67fc60ee8bc2282c2eb04"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "bytes-built-outside-destination",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/identity-recheck-bytes-built-outside-destination.json",
+        "sha256": "607b6330ded114473e894b43a4998d7e332f6317d434f908653b174d39e938be"
+      }
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "replacement-regression-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate identity-recheck --criterion replacement-regression-guarded --root . --out .hexaemeron/design/reports/conformance/identity-recheck-replacement-regression-guarded.json",
+      "report": "design/reports/conformance/identity-recheck-replacement-regression-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "nonempty-symlink-still-refuse",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate identity-recheck --criterion nonempty-symlink-still-refuse --root . --out .hexaemeron/design/reports/conformance/identity-recheck-nonempty-symlink-still-refuse.json",
+      "report": "design/reports/conformance/identity-recheck-nonempty-symlink-still-refuse.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "interrupted-restore-stays-bound",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate identity-recheck --criterion interrupted-restore-stays-bound --root . --out .hexaemeron/design/reports/conformance/identity-recheck-interrupted-restore-stays-bound.json",
+      "report": "design/reports/conformance/identity-recheck-interrupted-restore-stays-bound.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "identity-recheck",
+      "criterion": "from-mode-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate identity-recheck --criterion from-mode-unchanged --root . --out .hexaemeron/design/reports/conformance/identity-recheck-from-mode-unchanged.json",
+      "report": "design/reports/conformance/identity-recheck-from-mode-unchanged.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "unswapped-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-unswapped-restore-completes.json",
+        "sha256": "25a4de8f37cff0bf2aed5ad152abec84fd1a1de235265064080bce5624d73aa7"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "directory-swap-writes-nothing",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-directory-swap-writes-nothing.json",
+        "sha256": "1c6427a5d76e0f7a774ef48b54bc270229bb7991156011929012bff8fd278a2f"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "symlink-swap-writes-nothing",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-symlink-swap-writes-nothing.json",
+        "sha256": "0ace8b8835cfc789846f691600a459336214298c386e2c4918764dfe9b09c290"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "interrupted-cleanup-stays-bound",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-interrupted-cleanup-stays-bound.json",
+        "sha256": "15aae0caecc3b105443efbcf56c76b6ffc361d384f0ad6b7d743885cc28b2cbb"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "residue-follows-reference",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-residue-follows-reference.json",
+        "sha256": "de6f08f64570c1fdeffa1c72bbe67918b85fbeba5adf750ac29b19ff691dc729"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "transaction-race-leaked-trials",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-transaction-race-leaked-trials.json",
+        "sha256": "ba61de12a79b41564b6fbe525ecf043565575175fd38807c7b5e36526c1f928b"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "name-resolving-writes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-name-resolving-writes.json",
+        "sha256": "e2890753afe43056bc489502224f06b0e4b5f62bff8ec9779542cd8857204edf"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "identity-probes-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-identity-probes-per-restore.json",
+        "sha256": "0c7a68d0b7da961a6b862100df0a6f5ca74aeed4fd895155f47d32f48c363aab"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "bytes-built-outside-destination",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/anchored-cwd-bytes-built-outside-destination.json",
+        "sha256": "f69a824d2af8869879a7374ecd42c5a05cd808a4a44f5f38866b5aa13d465a35"
+      }
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "replacement-regression-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate anchored-cwd --criterion replacement-regression-guarded --root . --out .hexaemeron/design/reports/conformance/anchored-cwd-replacement-regression-guarded.json",
+      "report": "design/reports/conformance/anchored-cwd-replacement-regression-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "nonempty-symlink-still-refuse",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate anchored-cwd --criterion nonempty-symlink-still-refuse --root . --out .hexaemeron/design/reports/conformance/anchored-cwd-nonempty-symlink-still-refuse.json",
+      "report": "design/reports/conformance/anchored-cwd-nonempty-symlink-still-refuse.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "interrupted-restore-stays-bound",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate anchored-cwd --criterion interrupted-restore-stays-bound --root . --out .hexaemeron/design/reports/conformance/anchored-cwd-interrupted-restore-stays-bound.json",
+      "report": "design/reports/conformance/anchored-cwd-interrupted-restore-stays-bound.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "anchored-cwd",
+      "criterion": "from-mode-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate anchored-cwd --criterion from-mode-unchanged --root . --out .hexaemeron/design/reports/conformance/anchored-cwd-from-mode-unchanged.json",
+      "report": "design/reports/conformance/anchored-cwd-from-mode-unchanged.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "unswapped-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-unswapped-restore-completes.json",
+        "sha256": "256e5a21d0ed3dd5bcaa52d57f679eff7990aad69ef54794be28f956356c5f0a"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "directory-swap-writes-nothing",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-directory-swap-writes-nothing.json",
+        "sha256": "bbf777968019f003687cff7ccb5f3f8084749dbb33509d0cfccb529a9d482255"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "symlink-swap-writes-nothing",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-symlink-swap-writes-nothing.json",
+        "sha256": "8ae2be4993465a8be7c5ec89d0b8fd6772bef07c7be9f5894a90856ab0edc679"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "interrupted-cleanup-stays-bound",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-interrupted-cleanup-stays-bound.json",
+        "sha256": "0261f923670cb31c4d52a79f1a213247316da7e458579246196f50b6e2cea75e"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "residue-follows-reference",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-residue-follows-reference.json",
+        "sha256": "4121798d8f0bb44c4a5b2bde73d551dc99f237ad832a2a0cbb5f62f36690f4ca"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "transaction-race-leaked-trials",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-transaction-race-leaked-trials.json",
+        "sha256": "b916d6410a21a8e523fac1cf410d3263deb320111270f263a52922a179a116de"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "name-resolving-writes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-name-resolving-writes.json",
+        "sha256": "620db00ad6e11f07dfd9087031cbea321dc7437218fd4804558a2be25df5d6fa"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "identity-probes-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-identity-probes-per-restore.json",
+        "sha256": "d8a0b1f9fd4a8f48329c0e5732370e0a612cf6c4c111a7abd016447a35d782ee"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "bytes-built-outside-destination",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/private-build-adopt-bytes-built-outside-destination.json",
+        "sha256": "f4dbe78ef089df7c2f832bd43422d5dee160feb131fc45b92b9f419dc52bbb5c"
+      }
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "replacement-regression-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate private-build-adopt --criterion replacement-regression-guarded --root . --out .hexaemeron/design/reports/conformance/private-build-adopt-replacement-regression-guarded.json",
+      "report": "design/reports/conformance/private-build-adopt-replacement-regression-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "nonempty-symlink-still-refuse",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate private-build-adopt --criterion nonempty-symlink-still-refuse --root . --out .hexaemeron/design/reports/conformance/private-build-adopt-nonempty-symlink-still-refuse.json",
+      "report": "design/reports/conformance/private-build-adopt-nonempty-symlink-still-refuse.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "interrupted-restore-stays-bound",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate private-build-adopt --criterion interrupted-restore-stays-bound --root . --out .hexaemeron/design/reports/conformance/private-build-adopt-interrupted-restore-stays-bound.json",
+      "report": "design/reports/conformance/private-build-adopt-interrupted-restore-stays-bound.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "private-build-adopt",
+      "criterion": "from-mode-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate private-build-adopt --criterion from-mode-unchanged --root . --out .hexaemeron/design/reports/conformance/private-build-adopt-from-mode-unchanged.json",
+      "report": "design/reports/conformance/private-build-adopt-from-mode-unchanged.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "anchored-cwd",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

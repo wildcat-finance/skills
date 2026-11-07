@@ -1,0 +1,9 @@
+{
+  "candidate": "private-build-adopt",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate private-build-adopt --criterion interrupted-cleanup-stays-bound --out .hexaemeron/design/reports/selection/private-build-adopt-interrupted-cleanup-stays-bound.json",
+  "criterion": "interrupted-cleanup-stays-bound",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

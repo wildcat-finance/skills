@@ -1,0 +1,9 @@
+{
+  "candidate": "anchored-cwd",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate anchored-cwd --criterion name-resolving-writes --out .hexaemeron/design/reports/selection/anchored-cwd-name-resolving-writes.json",
+  "criterion": "name-resolving-writes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

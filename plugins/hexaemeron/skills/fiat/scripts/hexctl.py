@@ -541,6 +541,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.85.1",
         "fiat-v6.86.1",
         "fiat-v6.87.1",
+        "fiat-v6.88.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -22840,6 +22841,7 @@ def bounded_probe(
     output_max: int | None = None,
     timeout: float | None = None,
     stderr_sink: bytearray | None = None,
+    inherit_cwd: bool = False,
 ) -> tuple[int | None, bytes, str | None]:
     """Run one fixed-argv tool and report failure instead of refusing.
 
@@ -22858,6 +22860,12 @@ def bounded_probe(
     credential helpers: they share the child's error stream, so none of
     their bytes can become the answer, and a descendant holding that stream
     open cannot keep the read past the child.
+
+    With `inherit_cwd`, `base_dir` must be relative: the child starts in this
+    process's working directory, or in `base_dir` below it, and no name is
+    resolved to an absolute path first. An archive restore anchored to its
+    admitted directory (#1648) is the only caller; every other call starts its
+    child at `os.path.realpath(base_dir)` exactly as before.
     """
     if output_max is None:
         output_max = GIT_OUTPUT_MAX
@@ -22872,10 +22880,16 @@ def bounded_probe(
         env = {**os.environ, **extra_env}
     else:
         env = None
+    if inherit_cwd:
+        if os.path.isabs(base_dir):
+            return None, b"", "start"
+        cwd = None if os.path.normpath(base_dir) == os.curdir else base_dir
+    else:
+        cwd = os.path.realpath(base_dir)
     try:
         process = subprocess.Popen(
             [program, *argv],
-            cwd=os.path.realpath(base_dir),
+            cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT if stderr_sink is None else subprocess.PIPE,
             shell=False,
@@ -22959,6 +22973,15 @@ def bounded_run(
     # Only a split read names the sink, so every other call keeps the exact
     # keywords it passed before the sink existed.
     split = {} if stderr_sink is None else {"stderr_sink": stderr_sink}
+    # #1648: while an archive restore is anchored, every child is sealed on
+    # both sides, and one given a relative directory starts in the anchored
+    # working directory rather than at a resolved name. With no anchor this
+    # adds no keyword, so every other call is exactly what it was.
+    anchor = _CHECKPOINT_RESTORE_ANCHOR
+    if anchor is not None:
+        if not os.path.isabs(base_dir):
+            split["inherit_cwd"] = True
+        anchor.seal()
     returncode, output, failure = bounded_probe(
         base_dir,
         program,
@@ -22968,6 +22991,8 @@ def bounded_run(
         timeout=timeout,
         **split,
     )
+    if anchor is not None:
+        anchor.seal()
     if failure == "start":
         die(f"{operation} could not start")
     if failure == "timeout":
@@ -26591,6 +26616,20 @@ def cmd_checkpoint_identity(args) -> None:
     print(canonical(result))
 
 
+def _checkpoint_path_is_plain(path: str) -> bool:
+    """Whether `path` resolves to itself, crossing no symlink on the way.
+
+    An absolute path must equal its own `realpath`, as it always had to. A
+    relative one (#1648) is read from the working directory, which an anchored
+    archive restore has fixed to its admitted directory, so it must equal its
+    `realpath` taken below that directory's own resolved location.
+    """
+    if os.path.isabs(path):
+        return os.path.realpath(path) == path
+    here = os.path.realpath(os.curdir)
+    return os.path.realpath(path) == os.path.normpath(os.path.join(here, path))
+
+
 def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
     """Return whether one no-follow path still names the opened directory."""
     current = None
@@ -26601,7 +26640,7 @@ def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
         | getattr(os, "O_NOFOLLOW", 0)
     )
     try:
-        if os.path.realpath(path) != path:
+        if not _checkpoint_path_is_plain(path):
             return False
         current = os.open(path, flags)
         opened = os.fstat(current)
@@ -27407,6 +27446,165 @@ def _checkpoint_restore_capsule(
     return capsule, manifest, state, state_bytes, ledger_bytes, inventory
 
 
+CHECKPOINT_RESTORE_MOVED = (
+    "checkpoint restore destination no longer names the admitted directory"
+)
+"""The one refusal a moved archive-restore destination gets (#1648).
+
+A fixed sentence through `die(..., 1)`, the family the relocation transaction
+already uses for its own identity checks, so no path, member or child byte
+enters it and `CHECKPOINT_ARCHIVE_REFUSALS` keeps its classes.
+"""
+
+_CHECKPOINT_RESTORE_ANCHOR = None
+"""The archive-restore anchor active in this process, or None (#1648).
+
+While one is set, `bounded_run` seals before and after every child and starts
+a child given a relative directory in the anchored working directory. Only
+`_checkpoint_restore_from_archive` sets it, and it clears it before anything
+else on every exit.
+"""
+
+
+class _CheckpointRestoreAnchor:
+    """The admitted directory one archive restore is bound to (#1648).
+
+    Admission returns the destination string, an open no-follow descriptor on
+    the inode it checked, and whether it created that inode. The restore used
+    to resolve the string again for every later write, so a writer on the
+    parent could put another directory or a symlink at the name and receive
+    the restore. The anchor keeps the descriptor and its identity, fixes the
+    working directory to it once the inspector has consumed every
+    operator-relative path, and from then on the restore writes relative to
+    that directory or through `dir_fd` from the descriptor.
+
+    The string survives for two jobs: building the absolute values the restore
+    records, and sealing. A seal asks whether the string still names the
+    admitted inode, and whether the working directory still is that inode,
+    and refuses with `CHECKPOINT_RESTORE_MOVED` when either is false. Git is
+    another program: a child started here gets the anchored working directory
+    and relative arguments, and the seals around it bound the absolute paths
+    Git derives for itself without claiming to close that window.
+    """
+
+    def __init__(self, destination: str, descriptor: int, created: bool):
+        opened = os.fstat(descriptor)
+        self.destination = destination
+        self.descriptor = descriptor
+        self.identity = (opened.st_dev, opened.st_ino)
+        self.created = created
+        self.saved = None
+
+    def names_admitted(self) -> bool:
+        """Whether the string, and once entered the working directory, are it."""
+        if not _checkpoint_directory_still_at_path(self.destination, self.descriptor):
+            return False
+        if self.saved is None:
+            return True
+        try:
+            here = os.stat(os.curdir, follow_symlinks=False)
+        except OSError:
+            return False
+        return (here.st_dev, here.st_ino) == self.identity
+
+    def seal(self) -> None:
+        if not self.names_admitted():
+            die(CHECKPOINT_RESTORE_MOVED, 1)
+
+    def local(self, path: str) -> str:
+        """`path`, built from the admitted string, relative to the anchor."""
+        if path == self.destination:
+            return os.curdir
+        prefix = self.destination + os.sep
+        if not path.startswith(prefix) or not path[len(prefix):]:
+            die(CHECKPOINT_RESTORE_MOVED, 1)
+        return path[len(prefix):]
+
+    def enter(self) -> None:
+        """Seal, save the caller's working directory and move into the anchor."""
+        global _CHECKPOINT_RESTORE_ANCHOR
+        self.seal()
+        try:
+            self.saved = os.open(
+                os.curdir,
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_DIRECTORY", 0),
+            )
+        except OSError:
+            die("checkpoint restore could not save its working directory", 1)
+        try:
+            os.fchdir(self.descriptor)
+        except OSError:
+            die(CHECKPOINT_RESTORE_MOVED, 1)
+        _CHECKPOINT_RESTORE_ANCHOR = self
+        self.seal()
+
+    def leave(self) -> None:
+        """Put the caller's working directory back; safe to call more than once."""
+        global _CHECKPOINT_RESTORE_ANCHOR
+        _CHECKPOINT_RESTORE_ANCHOR = None
+        saved, self.saved = self.saved, None
+        if saved is None:
+            return
+        try:
+            with contextlib.suppress(OSError):
+                os.fchdir(saved)
+        finally:
+            with contextlib.suppress(OSError):
+                os.close(saved)
+
+
+def _checkpoint_restore_worktree_link(anchor, worktree: str) -> None:
+    """Require Git's worktree link to name the admitted repository (#1648).
+
+    `git worktree add` writes the new worktree's `.git` file from its own
+    view of the repository, which is the one path in the transaction the
+    controller does not build. It is read here relative to the anchor and
+    accepted only as `<destination>/.git/worktrees/<id>` -- or the relative
+    spelling `worktree.useRelativePaths` writes, which names no destination
+    at all -- with `<id>` one existing directory under `.git/worktrees`.
+    """
+    entries = os.path.join(".git", "worktrees", "")
+    accepted = (
+        "gitdir: " + os.path.join(anchor.destination, entries),
+        "gitdir: " + os.path.join(*([os.pardir] * (len(WORKTREE_HOME) + 1)), entries),
+    )
+    descriptor = None
+    try:
+        descriptor = os.open(
+            os.path.join(anchor.local(worktree), ".git"),
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        data = os.read(descriptor, CHECKPOINT_IO_CHUNK)
+    except OSError:
+        die(CHECKPOINT_RESTORE_MOVED, 1)
+    finally:
+        if descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        die(CHECKPOINT_RESTORE_MOVED, 1)
+    prefix = next((item for item in accepted if text.startswith(item)), None)
+    if prefix is None or len(data) >= CHECKPOINT_IO_CHUNK or not text.endswith("\n"):
+        die(CHECKPOINT_RESTORE_MOVED, 1)
+    name = text[len(prefix):-1]
+    if not name or name in (os.curdir, os.pardir) or any(
+        character in name for character in ("/", "\n", "\0")
+    ):
+        die(CHECKPOINT_RESTORE_MOVED, 1)
+    try:
+        entry = os.lstat(os.path.join(entries, name))
+    except OSError:
+        die(CHECKPOINT_RESTORE_MOVED, 1)
+    if not stat.S_ISDIR(entry.st_mode):
+        die(CHECKPOINT_RESTORE_MOVED, 1)
+
+
 def _checkpoint_restore_origin(base_dir: str) -> str:
     """Admit one clean, top-level Git worktree as the new origin."""
     origin = os.path.abspath(base_dir)
@@ -27417,11 +27615,21 @@ def _checkpoint_restore_origin(base_dir: str) -> str:
     return origin
 
 
-def _checkpoint_restore_marker_paths(origin: str, state: dict, digest: str):
+def _checkpoint_restore_marker_paths(
+    origin: str, state: dict, digest: str, anchor=None
+):
     run_branch = run_branch_of(state)
     if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
         die("checkpoint state has no relocatable run branch")
-    worktree = run_worktree_path(origin, run_branch)
+    if anchor is None:
+        worktree = run_worktree_path(origin, run_branch)
+    else:
+        # #1648: `run_worktree_path` asks Git for the top level of `origin` by
+        # name. An anchored `origin` is the admitted string, which `git init`
+        # or the clone has just made a top level, so the path is built from it.
+        worktree = os.path.join(
+            origin, *WORKTREE_HOME, flattened_run_branch(run_branch)
+        )
     stage = os.path.join(worktree, f".{STATE_DIR_NAME}.restore-stage-{digest[:16]}")
     marker = os.path.join(state_root(origin), CHECKPOINT_RESTORE_MARKER_FILE)
     return worktree, stage, marker
@@ -27440,11 +27648,22 @@ def _checkpoint_restore_marker_record(
 
 
 def _checkpoint_restore_marker(
-    origin: str, state: dict, digest: str
+    origin: str, state: dict, digest: str, anchor=None
 ) -> tuple[str, str, str, bool]:
-    """Publish or verify the transaction marker before a restore-owned path."""
-    worktree, stage, marker = _checkpoint_restore_marker_paths(origin, state, digest)
+    """Publish or verify the transaction marker before a restore-owned path.
+
+    With an anchor (#1648) the record keeps the absolute strings, the reads
+    are relative to the anchored working directory, and the marker is
+    published through a duplicate of the admitted descriptor after a seal.
+    """
+    worktree, stage, marker = _checkpoint_restore_marker_paths(
+        origin, state, digest, anchor
+    )
     root = state_root(origin)
+    marker_read = marker
+    if anchor is not None:
+        root = anchor.local(root)
+        marker_read = anchor.local(marker)
     expected = _checkpoint_restore_marker_record(state, digest, worktree, stage)
     if os.path.lexists(root):
         if os.path.islink(root) or not os.path.isdir(root):
@@ -27456,7 +27675,7 @@ def _checkpoint_restore_marker(
             die("checkpoint restore marker cannot be inspected")
         if not names.issubset(allowed) or CHECKPOINT_RESTORE_MARKER_FILE not in names:
             die("checkpoint restore requires an empty fresh origin")
-        raw = _checkpoint_read_staged(marker, CHECKPOINT_MANIFEST_BYTES_MAX)
+        raw = _checkpoint_read_staged(marker_read, CHECKPOINT_MANIFEST_BYTES_MAX)
         found = _checkpoint_json(raw, "restore marker")
         if found != expected or raw != canonical(found).encode("utf-8") + b"\n":
             die("checkpoint restore marker belongs to another transaction")
@@ -27478,9 +27697,13 @@ def _checkpoint_restore_marker(
         | getattr(os, "O_NOFOLLOW", 0)
     )
     try:
-        origin_descriptor = os.open(origin, directory_flags)
-        if not _checkpoint_directory_still_at_path(origin, origin_descriptor):
-            raise OSError("checkpoint restore origin changed")
+        if anchor is None:
+            origin_descriptor = os.open(origin, directory_flags)
+            if not _checkpoint_directory_still_at_path(origin, origin_descriptor):
+                raise OSError("checkpoint restore origin changed")
+        else:
+            anchor.seal()
+            origin_descriptor = os.dup(anchor.descriptor)
         os.mkdir(STATE_DIR_NAME, 0o700, dir_fd=origin_descriptor)
         root_descriptor = os.open(
             STATE_DIR_NAME, directory_flags, dir_fd=origin_descriptor
@@ -27529,13 +27752,19 @@ def _checkpoint_restore_marker(
 
 
 def _checkpoint_restore_prepare_worktree_home(
-    origin: str, worktree: str
+    origin: str, worktree: str, anchor=None
 ) -> None:
-    """Create the derived worktree home through pinned directory entries."""
+    """Create the derived worktree home through pinned directory entries.
+
+    With an anchor (#1648) the walk starts from a duplicate of the admitted
+    descriptor instead of opening `origin` by name.
+    """
     home = os.path.dirname(worktree)
     expected = os.path.join(origin, *WORKTREE_HOME)
     if home != expected:
         die("checkpoint restore derived worktree home changed")
+    if anchor is not None:
+        home = anchor.local(home)
 
     directory_descriptor = None
     gitignore_descriptor = None
@@ -27546,9 +27775,12 @@ def _checkpoint_restore_prepare_worktree_home(
         | getattr(os, "O_NOFOLLOW", 0)
     )
     try:
-        directory_descriptor = os.open(origin, directory_flags)
-        if not _checkpoint_directory_still_at_path(origin, directory_descriptor):
-            raise OSError("checkpoint restore origin changed")
+        if anchor is None:
+            directory_descriptor = os.open(origin, directory_flags)
+            if not _checkpoint_directory_still_at_path(origin, directory_descriptor):
+                raise OSError("checkpoint restore origin changed")
+        else:
+            directory_descriptor = os.dup(anchor.descriptor)
         for component in WORKTREE_HOME:
             try:
                 os.mkdir(component, 0o700, dir_fd=directory_descriptor)
@@ -27618,11 +27850,15 @@ def _checkpoint_restore_prepare_worktree_home(
 
 
 def _checkpoint_restore_retire_marker(
-    origin: str, state: dict, digest: str, marker: str
+    origin: str, state: dict, digest: str, marker: str, anchor=None
 ) -> None:
-    """Retire only the stable marker bytes owned by this transaction."""
+    """Retire only the stable marker bytes owned by this transaction.
+
+    With an anchor (#1648) the marker's directory is opened relative to the
+    anchored working directory; the bytes compared are the same.
+    """
     worktree, stage, expected_marker = _checkpoint_restore_marker_paths(
-        origin, state, digest
+        origin, state, digest, anchor
     )
     if marker != expected_marker:
         die("checkpoint restore marker changed before retirement", 1)
@@ -27630,6 +27866,8 @@ def _checkpoint_restore_retire_marker(
         _checkpoint_restore_marker_record(state, digest, worktree, stage)
     ).encode("utf-8") + b"\n"
     root = state_root(origin)
+    if anchor is not None:
+        root = anchor.local(root)
     name = os.path.basename(marker)
     root_descriptor = None
     marker_descriptor = None
@@ -27694,12 +27932,20 @@ def _checkpoint_restore_retire_marker(
                     os.close(descriptor)
 
 
-def _checkpoint_restore_breadcrumb(origin: str, worktree: str) -> None:
-    """Publish or verify the one no-follow breadcrumb owned by restore."""
+def _checkpoint_restore_breadcrumb(
+    origin: str, worktree: str, anchor=None
+) -> None:
+    """Publish or verify the one no-follow breadcrumb owned by restore.
+
+    With an anchor (#1648) the payload is still the absolute worktree string
+    and the directory it lands in is opened relative to the anchor.
+    """
     payload = f"{worktree}\n".encode("utf-8")
     if len(payload) > SOURCE_BYTES_MAX:
         die("checkpoint restore breadcrumb exceeds the output cap", 1)
     root = state_root(origin)
+    if anchor is not None:
+        root = anchor.local(root)
     root_descriptor = None
     breadcrumb_descriptor = None
     created = False
@@ -27976,9 +28222,15 @@ def _checkpoint_restore_active_state(
     manifest: dict,
     manifest_digest: str,
     ledger_prefix: bytes,
+    anchor=None,
 ) -> tuple[dict, bytes, str]:
-    """Accept only the exact relocated state and one owned restore append."""
-    state_bytes = _checkpoint_read_staged(state_path(worktree), SOURCE_BYTES_MAX)
+    """Accept only the exact relocated state and one owned restore append.
+
+    With an anchor (#1648) the files are read relative to it; the state they
+    must equal is still built from the absolute strings.
+    """
+    read_root = worktree if anchor is None else anchor.local(worktree)
+    state_bytes = _checkpoint_read_staged(state_path(read_root), SOURCE_BYTES_MAX)
     state = validate_state_shape(_checkpoint_json(state_bytes, "restored state"))
     expected_state, expected_receipt = _checkpoint_restore_state(
         imported, origin, worktree, manifest, manifest_digest
@@ -27987,7 +28239,7 @@ def _checkpoint_restore_active_state(
         json.dumps(expected_state, indent=2, sort_keys=False).encode("utf-8") + b"\n"
     )
     ledger = _checkpoint_read_staged(
-        ledger_path(worktree), CHECKPOINT_FILE_BYTES_MAX
+        ledger_path(read_root), CHECKPOINT_FILE_BYTES_MAX
     )
     if state != expected_state or state_bytes != expected_state_bytes:
         die("checkpoint restore found unowned active state")
@@ -28245,6 +28497,7 @@ def _checkpoint_restore_relocate(
     inventory: list[dict],
     manifest_sha256: str,
     deferred_marker: list[str] | None = None,
+    anchor=None,
 ) -> dict:
     """Relocate one verified capsule into a fresh, separately restored Git tree.
 
@@ -28268,42 +28521,66 @@ def _checkpoint_restore_relocate(
     destination holding the relocation marker, which the existing retry
     rules resume or refuse -- instead of active state with no marker beside
     it, which no rule describes.
+
+    #1648: `anchor` is `None` for `--from` too, and then `local` returns
+    every path unchanged, `seal` does nothing and `repository` is `origin`,
+    so each operation, record and refusal below is the one it always was.
+    `checkpoint restore --archive` passes the anchor its admitted destination
+    made, with the working directory already fixed to it and `origin` equal
+    to its string. The paths are still built from that string, because they
+    are the values the transaction records; `local` turns each into the path
+    relative to the anchor that the operation actually opens, and Git
+    children get `.` and relative arguments. Seals stand before the marker
+    is published, around `git worktree add`, before state is recorded,
+    before publication, around the internal checks, and before the
+    breadcrumb and the marker's retirement.
     """
-    refs = _checkpoint_refs(origin, imported)
+    if anchor is None:
+        def local(path: str) -> str:
+            return path
+
+        def seal() -> None:
+            return None
+
+        repository = origin
+    else:
+        local, seal, repository = anchor.local, anchor.seal, os.curdir
+    refs = _checkpoint_refs(repository, imported)
     if refs != manifest["boundary"]["refs"]:
         die("checkpoint restored Git refs do not match the manifest")
 
     worktree, stage, marker = _checkpoint_restore_marker_paths(
-        origin, imported, manifest_sha256
+        origin, imported, manifest_sha256, anchor
     )
-    if os.path.realpath(os.path.dirname(worktree)) != os.path.dirname(worktree):
+    if not _checkpoint_path_is_plain(local(os.path.dirname(worktree))):
         die("checkpoint restore derived worktree path crosses a symlink")
     root = state_root(origin)
-    marker_exists = os.path.isfile(marker)
+    marker_exists = os.path.isfile(local(marker))
     if not marker_exists:
-        check_worktree_path(origin, worktree)
-        refuse_checked_out_branch(origin, _checkpoint_restore_branch(imported))
+        check_worktree_path(repository, local(worktree))
+        refuse_checked_out_branch(repository, _checkpoint_restore_branch(imported))
     worktree, stage, marker, resumed = _checkpoint_restore_marker(
-        origin, imported, manifest_sha256
+        origin, imported, manifest_sha256, anchor
     )
     _checkpoint_retain_criteria_history(
-        origin, capsule, manifest, imported, ledger_prefix, inventory, manifest_sha256
+        repository, capsule, manifest, imported, ledger_prefix, inventory,
+        manifest_sha256,
     )
 
     final_root = state_root(worktree)
     final_safe = False
-    if os.path.lexists(final_root):
+    if os.path.lexists(local(final_root)):
         try:
-            final_stat = os.lstat(final_root)
+            final_stat = os.lstat(local(final_root))
             final_safe = (
                 stat.S_ISDIR(final_stat.st_mode)
                 and not stat.S_ISLNK(final_stat.st_mode)
-                and os.path.realpath(final_root) == final_root
+                and _checkpoint_path_is_plain(local(final_root))
             )
         except OSError:
             final_safe = False
-    if resumed and final_safe and os.path.isfile(state_path(worktree)):
-        worktree_identity = _checkpoint_restore_worktree_identity(worktree)
+    if resumed and final_safe and os.path.isfile(state_path(local(worktree))):
+        worktree_identity = _checkpoint_restore_worktree_identity(local(worktree))
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
             imported,
@@ -28311,14 +28588,19 @@ def _checkpoint_restore_relocate(
             manifest,
             manifest_sha256,
             ledger_prefix,
+            anchor,
         )
-        _checkpoint_restore_opaque_evidence(final_root, inventory)
-        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-        _checkpoint_restore_worktree_branch(worktree, imported)
+        _checkpoint_restore_opaque_evidence(local(final_root), inventory)
+        _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+        _checkpoint_restore_worktree_branch(local(worktree), imported)
+        seal()
+        # #1648 S2-R1-01: verify stages a design-evidence copy under the
+        # worktree's state directory, so it takes the relative worktree too.
         verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
-            worktree, manifest, ledger
+            local(worktree), manifest, ledger
         )
-        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        seal()
+        _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
             imported,
@@ -28326,14 +28608,16 @@ def _checkpoint_restore_relocate(
             manifest,
             manifest_sha256,
             ledger_prefix,
+            anchor,
         )
-        _checkpoint_restore_opaque_evidence(final_root, inventory)
-        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-        _checkpoint_restore_worktree_branch(worktree, imported)
-        if _checkpoint_refs(origin, imported) != refs:
+        _checkpoint_restore_opaque_evidence(local(final_root), inventory)
+        _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+        _checkpoint_restore_worktree_branch(local(worktree), imported)
+        if _checkpoint_refs(repository, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
-        _checkpoint_restore_breadcrumb(origin, worktree)
-        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        seal()
+        _checkpoint_restore_breadcrumb(origin, worktree, anchor)
+        _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
             imported,
@@ -28341,15 +28625,17 @@ def _checkpoint_restore_relocate(
             manifest,
             manifest_sha256,
             ledger_prefix,
+            anchor,
         )
-        _checkpoint_restore_opaque_evidence(final_root, inventory)
-        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-        _checkpoint_restore_worktree_branch(worktree, imported)
-        if _checkpoint_refs(origin, imported) != refs:
+        _checkpoint_restore_opaque_evidence(local(final_root), inventory)
+        _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+        _checkpoint_restore_worktree_branch(local(worktree), imported)
+        if _checkpoint_refs(repository, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
         if deferred_marker is None:
+            seal()
             _checkpoint_restore_retire_marker(
-                origin, imported, manifest_sha256, marker
+                origin, imported, manifest_sha256, marker, anchor
             )
         else:
             deferred_marker.append(marker)
@@ -28365,77 +28651,83 @@ def _checkpoint_restore_relocate(
             state_fingerprint_value=state_fingerprint(state),
             recovery="finalized-interrupted-publication",
         )
-    if resumed and (os.path.lexists(worktree) or os.path.lexists(stage)):
+    if resumed and (os.path.lexists(local(worktree)) or os.path.lexists(local(stage))):
         die(
             "checkpoint restore transaction was interrupted before active state; "
             "its marker-owned paths were preserved for inspection"
         )
 
-    _checkpoint_restore_prepare_worktree_home(origin, worktree)
+    _checkpoint_restore_prepare_worktree_home(origin, worktree, anchor)
+    seal()
     bounded_git(
-        origin,
-        ["worktree", "add", worktree, _checkpoint_restore_branch(imported)],
+        repository,
+        ["worktree", "add", local(worktree), _checkpoint_restore_branch(imported)],
         timeout=GIT_MATERIALIZE_TIMEOUT,
         refusal="checkpoint restore could not create its derived worktree",
     )
+    seal()
+    if anchor is not None:
+        _checkpoint_restore_worktree_link(anchor, worktree)
     try:
-        worktree_stat = os.lstat(worktree)
+        worktree_stat = os.lstat(local(worktree))
     except OSError:
         die("checkpoint restore derived worktree changed after Git created it")
     if (
         not stat.S_ISDIR(worktree_stat.st_mode)
         or stat.S_ISLNK(worktree_stat.st_mode)
-        or os.path.realpath(worktree) != worktree
-        or repository_root(worktree) != worktree
+        or not _checkpoint_path_is_plain(local(worktree))
+        or repository_root(local(worktree)) != worktree
     ):
         die("checkpoint restore derived worktree changed after Git created it")
-    worktree_identity = _checkpoint_restore_worktree_identity(worktree)
-    _checkpoint_restore_worktree_branch(worktree, imported)
-    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-    if _checkpoint_refs(origin, imported) != refs:
+    worktree_identity = _checkpoint_restore_worktree_identity(local(worktree))
+    _checkpoint_restore_worktree_branch(local(worktree), imported)
+    _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+    if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed during relocation")
-    if os.path.lexists(final_root) or os.path.lexists(stage):
+    if os.path.lexists(local(final_root)) or os.path.lexists(local(stage)):
         die("checkpoint restore derived worktree is occupied")
     try:
-        os.mkdir(stage, 0o700)
+        os.mkdir(local(stage), 0o700)
     except OSError:
         die("checkpoint restore private stage could not be created")
     staged_inventory = _checkpoint_snapshot(
         os.path.join(capsule, CHECKPOINT_CONTROLLER_DIR),
-        stage,
+        local(stage),
         exclude_live_lock=False,
     )
     if staged_inventory != inventory:
         die("checkpoint capsule changed during restore capture")
-    if _checkpoint_refs(origin, imported) != refs:
+    if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed during relocation")
     for name in ("study", "runbook"):
-        _checkpoint_restore_verify_source(worktree, stage, imported, name)
+        _checkpoint_restore_verify_source(local(worktree), local(stage), imported, name)
 
+    seal()
     relocated, receipt = _checkpoint_restore_state(
         imported, origin, worktree, manifest, manifest_sha256
     )
     ledger, ledger_tail = _checkpoint_restore_write_files(
-        stage, relocated, ledger_prefix, receipt
+        local(stage), relocated, ledger_prefix, receipt
     )
-    _checkpoint_restore_opaque_evidence(stage, inventory)
-    _checkpoint_restore_worktree_branch(worktree, imported)
-    if _checkpoint_refs(origin, imported) != refs:
+    _checkpoint_restore_opaque_evidence(local(stage), inventory)
+    _checkpoint_restore_worktree_branch(local(worktree), imported)
+    if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed before publication")
-    _checkpoint_fsync_directories(stage)
+    _checkpoint_fsync_directories(local(stage))
+    seal()
     worktree_descriptor = None
     stage_descriptor = None
     working_descriptor = None
     try:
         worktree_descriptor = os.open(
-            worktree,
+            local(worktree),
             os.O_RDONLY
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_DIRECTORY", 0)
             | getattr(os, "O_NOFOLLOW", 0),
         )
         stage_descriptor = os.open(
-            stage,
+            local(stage),
             os.O_RDONLY
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_DIRECTORY", 0)
@@ -28445,23 +28737,30 @@ def _checkpoint_restore_relocate(
             ".", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
         )
         if (
-            not _checkpoint_directory_still_at_path(worktree, worktree_descriptor)
+            not _checkpoint_directory_still_at_path(local(worktree), worktree_descriptor)
             or not _checkpoint_directory_still_in_parent(
                 worktree_descriptor, os.path.basename(stage), stage_descriptor
             )
         ):
             die("checkpoint restore marker-owned paths changed before publication")
         os.fchdir(worktree_descriptor)
-        _checkpoint_atomic_publish(os.path.basename(stage), STATE_DIR_NAME)
+        try:
+            _checkpoint_atomic_publish(os.path.basename(stage), STATE_DIR_NAME)
+        finally:
+            # An anchored restore reads every path below relative to the
+            # anchor, so it goes back there before the checks; `--from` keeps
+            # its absolute paths and the order it always had.
+            if anchor is not None:
+                os.fchdir(working_descriptor)
         if (
-            not _checkpoint_directory_still_at_path(worktree, worktree_descriptor)
+            not _checkpoint_directory_still_at_path(local(worktree), worktree_descriptor)
             or not _checkpoint_directory_still_in_parent(
                 worktree_descriptor, STATE_DIR_NAME, stage_descriptor
             )
         ):
             die("checkpoint restore active state changed during publication", 1)
-        _checkpoint_restore_worktree_branch(worktree, imported)
-        if _checkpoint_refs(origin, imported) != refs:
+        _checkpoint_restore_worktree_branch(local(worktree), imported)
+        if _checkpoint_refs(repository, imported) != refs:
             die("checkpoint restored Git refs changed during publication")
     except OSError:
         die("checkpoint restore marker-owned paths changed before publication")
@@ -28473,13 +28772,16 @@ def _checkpoint_restore_relocate(
             if descriptor is not None:
                 with contextlib.suppress(OSError):
                     os.close(descriptor)
-    _checkpoint_restore_opaque_evidence(final_root, inventory)
-    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-    _checkpoint_restore_worktree_branch(worktree, imported)
+    _checkpoint_restore_opaque_evidence(local(final_root), inventory)
+    _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+    _checkpoint_restore_worktree_branch(local(worktree), imported)
+    seal()
+    # S2-R1-01: relative, so verify's staged copy lands in the anchor.
     verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
-        worktree, manifest, ledger
+        local(worktree), manifest, ledger
     )
-    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    seal()
+    _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
     relocated, ledger, ledger_tail = _checkpoint_restore_active_state(
         worktree,
         imported,
@@ -28487,14 +28789,16 @@ def _checkpoint_restore_relocate(
         manifest,
         manifest_sha256,
         ledger_prefix,
+        anchor,
     )
-    _checkpoint_restore_opaque_evidence(final_root, inventory)
-    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-    _checkpoint_restore_worktree_branch(worktree, imported)
-    if _checkpoint_refs(origin, imported) != refs:
+    _checkpoint_restore_opaque_evidence(local(final_root), inventory)
+    _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+    _checkpoint_restore_worktree_branch(local(worktree), imported)
+    if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
-    _checkpoint_restore_breadcrumb(origin, worktree)
-    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    seal()
+    _checkpoint_restore_breadcrumb(origin, worktree, anchor)
+    _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
     relocated, ledger, ledger_tail = _checkpoint_restore_active_state(
         worktree,
         imported,
@@ -28502,15 +28806,17 @@ def _checkpoint_restore_relocate(
         manifest,
         manifest_sha256,
         ledger_prefix,
+        anchor,
     )
-    _checkpoint_restore_opaque_evidence(final_root, inventory)
-    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
-    _checkpoint_restore_worktree_branch(worktree, imported)
-    if _checkpoint_refs(origin, imported) != refs:
+    _checkpoint_restore_opaque_evidence(local(final_root), inventory)
+    _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
+    _checkpoint_restore_worktree_branch(local(worktree), imported)
+    if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
     if deferred_marker is None:
+        seal()
         _checkpoint_restore_retire_marker(
-            origin, imported, manifest_sha256, marker
+            origin, imported, manifest_sha256, marker, anchor
         )
     else:
         deferred_marker.append(marker)
@@ -28526,7 +28832,6 @@ def _checkpoint_restore_relocate(
         state_fingerprint_value=state_fingerprint(relocated),
         recovery="new",
     )
-
 
 def cmd_checkpoint_restore(args) -> None:
     """Restore one verified capsule, from a capsule directory or one archive."""
@@ -28583,14 +28888,14 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
     resolving once and admitting the resolved path is what it asks for.
 
     The returned descriptor pins the *inode* this function admitted, not the
-    name it was reached by. S4-R1-06: every later operation resolves
-    `destination` by path and no `dir_fd` is passed anywhere, so a writer on
-    the parent can still replace the name between this admission and
-    `git init`. What the descriptor establishes is that the `fstat` and
-    `scandir` below read the directory that the `O_NOFOLLOW` open reached, and
-    that the emptiness they found is that inode's rather than a later
-    replacement's. The third return value says whether this function created
-    the destination, so a refusal after this point can remove what it made.
+    name it was reached by. The `fstat` and `scandir` below read the directory
+    that the `O_NOFOLLOW` open reached, so the emptiness they found is that
+    inode's rather than a later replacement's. S4-R1-06 left every later
+    operation resolving `destination` by path; #1648 binds them to this
+    descriptor instead, through `_CheckpointRestoreAnchor`, which the caller
+    builds from these three values. The third says whether this function
+    created the destination, so a refusal after this point can remove what it
+    made.
 
     S4-R3-03: the refusals raised *below* the `os.mkdir` return nothing to the
     caller, so the caller's `finally` never runs and cannot remove that
@@ -28768,7 +29073,7 @@ def _checkpoint_restore_from_archive(
     re-verified by the existing capsule reader, and the base branch it names
     is checked out. The ancestry and ref join happen once that working
     commit exists, against the archive's own outer manifest. The existing
-    relocation transaction then runs entirely unchanged. Identity is
+    relocation transaction then runs with its rules unchanged. Identity is
     reminted from the relocated state last, because it is the one property
     the relocation transaction itself cannot corrupt but a hostile archive's
     claimed `unavailable` could still misstate. The transaction runs
@@ -28776,13 +29081,33 @@ def _checkpoint_restore_from_archive(
     thing this caller moves is *when* its marker is retired, which S4-R4-02
     defers past the identity check so a refusal there leaves the marker the
     reference's residue rule names. `--from` is untouched by that.
+
+    #1648 binds everything after the inspector to the admitted inode. Once
+    the inspector returns, a seal checks the destination string still names
+    that inode, and the working directory moves into it. From there every
+    write this function or the relocation transaction performs is relative
+    to that directory or uses `dir_fd` from the admitted descriptor, every
+    Git child starts there with relative arguments, and the values recorded
+    -- state, receipt, marker, breadcrumb, result -- are still built from
+    the admitted string, with a seal before each is recorded and before
+    success. A failed seal refuses with `CHECKPOINT_RESTORE_MOVED`. The
+    `finally` puts the caller's working directory back before anything else,
+    and removes a destination this call created only while a seal still
+    passes, so a replacement at the name is never removed.
     """
     destination, destination_descriptor, created_destination = (
         _checkpoint_restore_archive_destination(base_dir)
     )
+    anchor = None
     completed = False
     scratch = None
     try:
+        try:
+            anchor = _CheckpointRestoreAnchor(
+                destination, destination_descriptor, created_destination
+            )
+        except OSError:
+            die(CHECKPOINT_RESTORE_MOVED, 1)
         # S4-R1-07: this is the process's own scratch root, not the operator's
         # destination, so its failure is diagnosed as itself. The sibling
         # `_checkpoint_inspect_scratch` already separates the identical case.
@@ -28799,40 +29124,50 @@ def _checkpoint_restore_from_archive(
         physical = context["physical"]
         outer_sha256 = result["outer_sha256"]
 
+        # #1648: every operator-relative path has been consumed above, and
+        # the scratch root is absolute, so the working directory can move.
+        anchor.enter()
         if "directory_repository" in context:
             # The inspector has already reconstructed and checked this object
             # store. Local clone retains its objects without another bundle
             # transfer; ordinary hard links survive removal of private scratch.
-            bounded_tool(destination, "git", [
+            anchor.seal()
+            bounded_tool(os.curdir, "git", [
                 "clone", "--quiet", "--bare", "--local",
-                context["directory_repository"], os.path.join(destination, ".git"),
+                context["directory_repository"], ".git",
             ], refusal="checkpoint restore could not copy the verified repository",
                 timeout=CHECKPOINT_DIRECTORY_TOOL_TIMEOUT)
-            bounded_git(destination, ["config", "core.bare", "false"])
-            bounded_git(destination, ["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"])
+            anchor.seal()
+            bounded_git(os.curdir, ["config", "core.bare", "false"])
+            bounded_git(os.curdir, ["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"])
         else:
             bundle_path = os.path.join(scratch, "repository.bundle")
             if not os.path.isfile(bundle_path):
                 _checkpoint_archive_refuse("manifest-mismatch")
+            anchor.seal()
             bounded_git(
-                destination,
+                os.curdir,
                 ["init", "--quiet"],
                 refusal="checkpoint restore could not initialise the destination",
             )
+            anchor.seal()
             bounded_git(
-                destination,
+                os.curdir,
                 ["fetch", "--quiet", bundle_path, "+refs/heads/*:refs/heads/*", "--no-tags"],
                 refusal="checkpoint restore could not fetch the archived bundle",
             )
 
         restore_root = _checkpoint_restore_archive_extract_capsule(
-            local, physical, destination, outer_sha256
+            local, physical, os.curdir, outer_sha256
         )
         capsule, capsule_manifest, imported, _, ledger_prefix, inventory = (
             _checkpoint_restore_capsule(
                 restore_root, manifest["controller_capsule"]["manifest_sha256"]
             )
         )
+        # The reader returns the absolute spelling of the root it verified;
+        # every later read of the capsule keeps the anchored, relative one.
+        capsule = restore_root
 
         # The bundle's own heads are `refs/heads/<name>` for every *named* ref
         # the archive recorded -- the run branch and each step branch -- and
@@ -28849,7 +29184,7 @@ def _checkpoint_restore_from_archive(
         base_commit = imported.get("base")
         already_named = (
             bounded_run(
-                destination,
+                os.curdir,
                 "git",
                 ["rev-parse", "--verify", "--quiet", f"refs/heads/{base_branch}"],
             )[0]
@@ -28857,28 +29192,29 @@ def _checkpoint_restore_from_archive(
         )
         if already_named:
             bounded_git(
-                destination,
+                os.curdir,
                 ["checkout", "--quiet", base_branch],
                 timeout=GIT_MATERIALIZE_TIMEOUT,
                 refusal="checkpoint restore could not check out the run's base branch",
             )
         elif isinstance(base_commit, str) and COMMIT_RE.fullmatch(base_commit):
             bounded_git(
-                destination,
+                os.curdir,
                 ["checkout", "--quiet", "-b", base_branch, base_commit],
                 timeout=GIT_MATERIALIZE_TIMEOUT,
                 refusal="checkpoint restore could not check out the run's base branch",
             )
         else:
             die("checkpoint restore could not resolve the run's base branch")
+        anchor.seal()
 
         anchor_receipt = as_dict(imported.get("receipts")).get(RUN_ANCHOR_RECEIPT)
         if anchor_receipt is not None:
-            anchor = validate_run_anchor_shape(anchor_receipt)
-            repository = anchor["repository"]
+            run_anchor = validate_run_anchor_shape(anchor_receipt)
+            repository = run_anchor["repository"]
             if isinstance(repository, str):
                 bounded_git(
-                    destination,
+                    os.curdir,
                     [
                         "config",
                         "remote.origin.url",
@@ -28895,14 +29231,14 @@ def _checkpoint_restore_from_archive(
             _checkpoint_archive_refuse("ref-disagreement")
         working_commit = _checkpoint_archive_guarded(
             "ref-disagreement",
-            lambda: resolved_commit(destination, "HEAD", "checkpoint restore"),
+            lambda: resolved_commit(os.curdir, "HEAD", "checkpoint restore"),
         )
         if not commit_is_ancestor(
-            destination, initial_base_sha, working_commit, "checkpoint restore"
+            os.curdir, initial_base_sha, working_commit, "checkpoint restore"
         ):
             _checkpoint_archive_refuse("ref-disagreement")
         computed_refs = _checkpoint_archive_guarded(
-            "ref-disagreement", lambda: _checkpoint_refs(destination, imported)
+            "ref-disagreement", lambda: _checkpoint_refs(os.curdir, imported)
         )
         if computed_refs != manifest["refs"]:
             _checkpoint_archive_refuse("ref-disagreement")
@@ -28928,6 +29264,7 @@ def _checkpoint_restore_from_archive(
             inventory,
             manifest["controller_capsule"]["manifest_sha256"],
             deferred_marker=deferred_marker,
+            anchor=anchor,
         )
 
         worktree = relocated["worktree"]
@@ -28945,10 +29282,14 @@ def _checkpoint_restore_from_archive(
             os.chmod(identity_scratch, 0o700)
         except OSError:
             die("checkpoint restore scratch directory could not be created")
+        # The identity readers take the recorded absolute worktree, so they
+        # run between seals; their own Git children are sealed as well.
+        anchor.seal()
         relocated_state = load_state(worktree)
         recomputed_status, recomputed_snapshot = _checkpoint_archive_identity(
             worktree, relocated_state, identity_scratch
         )
+        anchor.seal()
         archived_identity = manifest["identity"]
         if archived_identity.get("status") == "bound":
             if (
@@ -28968,11 +29309,13 @@ def _checkpoint_restore_from_archive(
         # things it checked in place. A kill in the window this opens leaves
         # the marker, which is the residue the reference already describes.
         for pending_marker in deferred_marker:
+            anchor.seal()
             _checkpoint_restore_retire_marker(
                 destination,
                 imported,
                 manifest["controller_capsule"]["manifest_sha256"],
                 pending_marker,
+                anchor,
             )
 
         # S4-R1-03: the capsule has been relocated into active controller state
@@ -28995,10 +29338,13 @@ def _checkpoint_restore_from_archive(
         # The refusal still says only that the archive's identity claim was
         # wrong: it does not undo a transaction the existing code completed,
         # and this function tears no operator-named destination down.
+        # #1648: `restore_root` is relative to the anchor, so this removes
+        # what the restore extracted and nothing at the destination's name.
         shutil.rmtree(restore_root, ignore_errors=True)
         with contextlib.suppress(OSError):
             os.rmdir(os.path.dirname(restore_root))
 
+        anchor.seal()
         completed = True
         return {
             "schema": CHECKPOINT_ARCHIVE_RESTORE_SCHEMA,
@@ -29010,17 +29356,27 @@ def _checkpoint_restore_from_archive(
             "snapshot_id": recomputed_snapshot,
         }
     finally:
-        os.close(destination_descriptor)
+        # #1648: the caller's working directory comes back first, on success,
+        # refusal, `SystemExit` and any other exception alike.
+        if anchor is not None:
+            anchor.leave()
         if scratch is not None:
             shutil.rmtree(scratch, ignore_errors=True)
         # S4-R1-04: the destination is admitted before the inspector runs, so a
         # refusal can reach here having created a directory the operator did
         # not. `rmdir` removes only an empty one, so nothing this function did
         # not make, and nothing `git init` has since filled, is ever removed.
-        if created_destination and not completed:
+        # #1648: and only while a seal says the name still names the admitted
+        # inode, so an empty replacement put there is left where it is.
+        created = created_destination if anchor is None else anchor.created
+        if (
+            created
+            and not completed
+            and _checkpoint_directory_still_at_path(destination, destination_descriptor)
+        ):
             with contextlib.suppress(OSError):
                 os.rmdir(destination)
-
+        os.close(destination_descriptor)
 
 def _checkpoint_archive_refuse(refusal: str) -> None:
     """Exit on one bounded class name, with no path, member or tool output.
@@ -29057,6 +29413,11 @@ def _checkpoint_archive_guarded(refusal: str, operation):
     except SystemExit as stopped:
         if stopped.code in (0, None):
             raise
+        # #1648: a seal that failed inside the reader is a moved destination,
+        # not the reader's class. Asking again outside the silenced stream
+        # lets the fixed sentence reach the operator instead.
+        if _CHECKPOINT_RESTORE_ANCHOR is not None:
+            _CHECKPOINT_RESTORE_ANCHOR.seal()
         _checkpoint_archive_refuse(refusal)
     except Exception:
         _checkpoint_archive_refuse(refusal)
