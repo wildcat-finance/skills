@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 69172194,
+    "bytes_blob": 69197787,
     "bytes_generated": 98
   },
   "entries": [
@@ -257,6 +257,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1648-keep-archive-restore-bound-to-its-admitted.synopsis.md"
+    },
+    {
+      "bytes": 24095,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1649-establish-the-archive-restore-concurrency-b.synopsis.md"
     },
     {
       "bytes": 40490,
@@ -1491,9 +1498,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 100259,
+      "bytes": 101757,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 50129",
+      "evidence": "mean line length above 400 in a window at offset 50878",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

@@ -1,0 +1,9 @@
+{
+  "candidate": "exclusive-entry",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate exclusive-entry --criterion origin-init-excluded --out .hexaemeron/design/reports/selection/exclusive-entry-origin-init-excluded.json",
+  "criterion": "origin-init-excluded",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}
