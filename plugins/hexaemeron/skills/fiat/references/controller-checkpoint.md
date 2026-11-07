@@ -196,7 +196,10 @@ The new origin's `.hexaemeron/checkpoint-restore.json` is published before the
 derived worktree or its sibling private stage is created. It binds the
 manifest digest, run branch and exact owned paths. An existing controller
 directory, occupied derived worktree, conflicting marker, symlink or changed
-ref refuses without replacing or deleting it. Creation pins the origin and new
+ref refuses without replacing or deleting it. A controller directory holding
+only `.gitignore`, the marker, `worktree` and `lock` resumes. Before it reads
+those names the restore holds `lock`, the run lock `init` and every mutating
+command take: a regular single-link file opened without following a link. Creation pins the origin and new
 controller directory and writes both private files relative to those open
 directories, so moving the new directory cannot redirect either write. The
 derived worktree home is traversed component by component without following a
@@ -212,9 +215,13 @@ completed controller directory is
 published with an atomic no-replace rename. State and ledger replacements are
 written relative to the pinned private-stage directory and stop if its named
 identity changes. The relocated state remains under the controller-source cap
-and the appended ledger remains under the capsule file cap. The closed
-inventory and every opaque file digest are rechecked from the active tree
-around finalization. Local refs are checked before publication, after the
+and the appended ledger remains under the capsule file cap. The private stage
+holds its own `lock` before the rename publishes it, so the active tree's run
+lock is held from the moment it exists. The closed inventory and every opaque
+file digest are rechecked from the active tree around finalization, excluding
+only that live root-level, regular, single-link `lock`, as export excludes it;
+the capsule and stage snapshots admit no `lock`. An interrupted-publication
+retry holds the active tree's `lock` before it reads anything there. Local refs are checked before publication, after the
 rename and again after the internal checks and breadcrumb write. The
 worktree's directory identity and symbolic `HEAD` must remain unchanged across
 the internal checks and the same finalization boundaries, including an

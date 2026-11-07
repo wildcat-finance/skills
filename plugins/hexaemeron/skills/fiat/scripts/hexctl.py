@@ -542,6 +542,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.86.1",
         "fiat-v6.87.1",
         "fiat-v6.88.1",
+        "fiat-v6.89.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -2783,6 +2784,37 @@ def make_version_resolution_write_durable(
         die(f"version resolution {label} could not be made durable", 1)
 
 
+def refuse_missing_state(base_dir: str) -> None:
+    """Refuse with the missing-state message unless the state file exists now.
+
+    `load_state` and `held_lock` share this, so a command that finds no state
+    root refuses with the words it always printed (#1649).
+    """
+    path = state_path(base_dir)
+    if os.path.exists(path):
+        return
+    # A checkout that started a run has no state of its own: the run's state
+    # is in its worktree. Say which one and how to reach it, rather than
+    # reporting the absence and letting somebody start a second run over the
+    # top of the first.
+    live = read_breadcrumbs(base_dir)
+    if live:
+        named = "\n".join(f"  hexctl --dir {entry} next" for entry in live)
+        die(
+            f"no state here; this checkout's {'run works' if len(live) == 1 else 'runs work'} "
+            f"in {'its own worktree' if len(live) == 1 else 'their own worktrees'}:\n{named}"
+        )
+    recorded = raw_breadcrumbs(base_dir)
+    if recorded:
+        named = ", ".join(recorded)
+        die(
+            f"this checkout recorded a run worktree that is no longer "
+            f"there: {named}. Restore it or clear the breadcrumb at "
+            f"{breadcrumb_path(base_dir)}; a second run is not started for you"
+        )
+    die(f"no state at {path}; run `hexctl init --topic ...` first")
+
+
 def load_state(
     base_dir: str,
     *,
@@ -2793,27 +2825,7 @@ def load_state(
     allow_pending_supersession: bool = False,
 ) -> dict:
     path = state_path(base_dir)
-    if not os.path.exists(path):
-        # A checkout that started a run has no state of its own: the run's state
-        # is in its worktree. Say which one and how to reach it, rather than
-        # reporting the absence and letting somebody start a second run over the
-        # top of the first.
-        live = read_breadcrumbs(base_dir)
-        if live:
-            named = "\n".join(f"  hexctl --dir {entry} next" for entry in live)
-            die(
-                f"no state here; this checkout's {'run works' if len(live) == 1 else 'runs work'} "
-                f"in {'its own worktree' if len(live) == 1 else 'their own worktrees'}:\n{named}"
-            )
-        recorded = raw_breadcrumbs(base_dir)
-        if recorded:
-            named = ", ".join(recorded)
-            die(
-                f"this checkout recorded a run worktree that is no longer "
-                f"there: {named}. Restore it or clear the breadcrumb at "
-                f"{breadcrumb_path(base_dir)}; a second run is not started for you"
-            )
-        die(f"no state at {path}; run `hexctl init --topic ...` first")
+    refuse_missing_state(base_dir)
     try:
         with open(path, "r", encoding="utf-8") as fh:
             state = json.load(fh)
@@ -2938,23 +2950,28 @@ def held_lock(base_dir: str, command: str):
     place to publish holder details for a refused writer.
     """
     root = state_root(base_dir)
+    root_was_absent = False
     if not os.path.isdir(root):
         # Only `init` legitimately runs without a state directory, and it
-        # creates one. Anything else is about to fail with a better message
-        # than a lock could give, so do not litter the directory to say so.
+        # creates one. Anything else refuses here with the message
+        # `load_state` prints, and does not litter the directory with a lock
+        # to say so. #1649: it used to yield unlocked, so a restore that
+        # published this root before the command read state left the command
+        # writing imported state with no lock. A state file that exists by
+        # now means the root appeared after the check above, and the command
+        # takes the lock like any other.
         if command != "cmd_init":
-            yield
-            return
-        os.makedirs(root, exist_ok=True)
-        # This invocation found the root absent. It is not a claim to have
-        # created it: `makedirs(exist_ok=True)` is a no-op on a directory
-        # another process made a moment earlier, so two inits racing on a
-        # fresh checkout both set this. Exclusion does not depend on it. Only
-        # the flock winner reaches the teardown, and the teardown's own guard,
-        # no state file and nothing but the lock, is what makes removal safe.
-        root_was_absent = True
-    else:
-        root_was_absent = False
+            refuse_missing_state(base_dir)
+        else:
+            os.makedirs(root, exist_ok=True)
+            # This invocation found the root absent. It is not a claim to have
+            # created it: `makedirs(exist_ok=True)` is a no-op on a directory
+            # another process made a moment earlier, so two inits racing on a
+            # fresh checkout both set this. Exclusion does not depend on it.
+            # Only the flock winner reaches the teardown, and the teardown's
+            # own guard, no state file and nothing but the lock, is what makes
+            # removal safe.
+            root_was_absent = True
 
     path = lock_path(base_dir)
     try:
@@ -27456,6 +27473,175 @@ already uses for its own identity checks, so no path, member or child byte
 enters it and `CHECKPOINT_ARCHIVE_REFUSALS` keeps its classes.
 """
 
+CHECKPOINT_RESTORE_HELD = (
+    "checkpoint restore destination is held by another hexctl command"
+)
+"""The one refusal a contended restore lock gets outside admission (#1649).
+
+A fixed sentence through `die(..., 1)`, as `CHECKPOINT_RESTORE_MOVED` is, so
+no path enters it and `CHECKPOINT_ARCHIVE_REFUSALS` keeps its classes. Archive
+admission refuses the same contention as `destination-occupied`. A lock that
+cannot be taken for any other reason refuses with this sentence too, before
+the write the lock guards.
+"""
+
+
+class _CheckpointRestoreLock:
+    """One lock a restore holds (#1649).
+
+    `descriptor` carries the `flock`. For a lock file, `directory` is an open
+    descriptor on the directory holding `name`, so release works through it
+    and never resolves a destination path again, and `created` says whether
+    this restore made the file: the only file it ever removes.
+    """
+
+    def __init__(self, descriptor: int, directory=None, name=None, created=False):
+        self.descriptor = descriptor
+        self.directory = directory
+        self.name = name
+        self.created = created
+
+
+_CHECKPOINT_RESTORE_LOCKS: list = []
+"""The restore locks this process holds, oldest first (#1649).
+
+L1 for `--from` is the origin descriptor; archive restore's L1 is the
+anchor's descriptor, which its own `finally` closes. L2 and L3 are the `lock`
+files in the origin's and the worktree's state roots.
+`_checkpoint_restore_release_locks` empties this on every exit of a restore.
+"""
+
+
+def _checkpoint_restore_flock(descriptor: int) -> bool:
+    """Take one exclusive lock without waiting; False if another holds it.
+
+    No restore acquisition waits, so no order among them can deadlock. Any
+    other `flock` failure, such as a filesystem without it, raises `OSError`
+    for the caller to refuse.
+    """
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return False
+    return True
+
+
+def _checkpoint_restore_hold_lock(directory: int, *, exclusive: bool) -> None:
+    """Hold the `lock` file under one open directory, as `held_lock` does.
+
+    The file is created, or opened when `exclusive` is false and it exists,
+    without following a link, and must be a regular file with one link. The
+    holder record is `held_lock`'s, naming `cmd_checkpoint_restore`, so a
+    refused `init` or mutating command names the restore. Every failure
+    refuses with `CHECKPOINT_RESTORE_HELD`. A file this call created but
+    another process locked first is that process's now, so it is left alone.
+    """
+    flags = os.O_RDWR | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = None
+    held_directory = None
+    created = False
+    try:
+        try:
+            descriptor = os.open(
+                "lock", flags | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=directory
+            )
+            created = True
+        except FileExistsError:
+            if exclusive:
+                raise
+            descriptor = os.open("lock", flags, dir_fd=directory)
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+            raise OSError("checkpoint restore lock is not a safe regular file")
+        held_directory = os.dup(directory)
+        acquired = _checkpoint_restore_flock(descriptor)
+    except OSError:
+        acquired = False
+    if not acquired:
+        for item in (held_directory, descriptor):
+            if item is not None:
+                with contextlib.suppress(OSError):
+                    os.close(item)
+        die(CHECKPOINT_RESTORE_HELD, 1)
+    _CHECKPOINT_RESTORE_LOCKS.append(
+        _CheckpointRestoreLock(descriptor, held_directory, "lock", created)
+    )
+    try:
+        os.ftruncate(descriptor, 0)
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        _checkpoint_write_all(
+            descriptor,
+            json.dumps(
+                {"pid": os.getpid(), "command": "cmd_checkpoint_restore", "ts": now()}
+            ).encode()
+            + b"\n",
+        )
+        os.fsync(descriptor)
+    except OSError:
+        die(CHECKPOINT_RESTORE_HELD, 1)
+
+
+def _checkpoint_restore_hold_lock_in(path: str, *, exclusive: bool) -> None:
+    """Open the directory at `path` without following a link; hold its lock.
+
+    An anchored restore passes a path relative to the anchor, so the lock file
+    lands in the admitted directory and no destination name is resolved.
+    """
+    try:
+        directory = os.open(
+            path,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+    except OSError:
+        die(CHECKPOINT_RESTORE_HELD, 1)
+    try:
+        if not _checkpoint_directory_still_at_path(path, directory):
+            die(CHECKPOINT_RESTORE_HELD, 1)
+        _checkpoint_restore_hold_lock(directory, exclusive=exclusive)
+    finally:
+        os.close(directory)
+
+
+def _checkpoint_restore_release_locks() -> None:
+    """Release every restore lock this process holds, newest first (#1649).
+
+    A lock file this restore created is unlinked while it is still held, as
+    `held_lock`'s teardown does, and only while its name still reaches the
+    held inode; any other lock file is truncated. Each is then unlocked and
+    closed. So an uncontended restore leaves no lock file behind. A killed
+    restore never gets here: the kernel releases its locks, and the files keep
+    stale holders that the marker's allowed set and `read_live_holder` accept.
+    """
+    while _CHECKPOINT_RESTORE_LOCKS:
+        held = _CHECKPOINT_RESTORE_LOCKS.pop()
+        try:
+            if held.name is not None:
+                with contextlib.suppress(OSError):
+                    if held.created:
+                        named = os.stat(
+                            held.name, dir_fd=held.directory, follow_symlinks=False
+                        )
+                        opened = os.fstat(held.descriptor)
+                        if (named.st_dev, named.st_ino) == (
+                            opened.st_dev,
+                            opened.st_ino,
+                        ):
+                            os.unlink(held.name, dir_fd=held.directory)
+                    else:
+                        os.ftruncate(held.descriptor, 0)
+                        os.fsync(held.descriptor)
+                with contextlib.suppress(OSError):
+                    fcntl.flock(held.descriptor, fcntl.LOCK_UN)
+        finally:
+            for item in (held.descriptor, held.directory):
+                if item is not None:
+                    with contextlib.suppress(OSError):
+                        os.close(item)
+
+
 _CHECKPOINT_RESTORE_ANCHOR = None
 """The archive-restore anchor active in this process, or None (#1648).
 
@@ -27606,9 +27792,36 @@ def _checkpoint_restore_worktree_link(anchor, worktree: str) -> None:
 
 
 def _checkpoint_restore_origin(base_dir: str) -> str:
-    """Admit one clean, top-level Git worktree as the new origin."""
+    """Admit one clean, top-level Git worktree as the new origin.
+
+    #1649 L1: the origin is opened without following a link and locked before
+    the checks below, and the lock is held until `cmd_checkpoint_restore`
+    returns. Archive admission locks the directory it admits the same way, so
+    two restores of one directory, by either mode, cannot both pass here.
+    """
     origin = os.path.abspath(base_dir)
+    try:
+        descriptor = os.open(
+            origin,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+    except OSError:
+        descriptor = None
+    if descriptor is not None:
+        try:
+            acquired = _checkpoint_restore_flock(descriptor)
+        except OSError:
+            acquired = False
+        if not acquired:
+            os.close(descriptor)
+            die(CHECKPOINT_RESTORE_HELD, 1)
+        _CHECKPOINT_RESTORE_LOCKS.append(_CheckpointRestoreLock(descriptor))
     if os.path.realpath(origin) != origin or repository_root(origin) != origin:
+        die("checkpoint restore requires a fresh top-level Git origin")
+    if descriptor is None or not _checkpoint_directory_still_at_path(origin, descriptor):
         die("checkpoint restore requires a fresh top-level Git origin")
     if bounded_git(origin, ["status", "--porcelain"]).strip():
         die("checkpoint restore requires a clean fresh origin")
@@ -27655,6 +27868,12 @@ def _checkpoint_restore_marker(
     With an anchor (#1648) the record keeps the absolute strings, the reads
     are relative to the anchored working directory, and the marker is
     published through a duplicate of the admitted descriptor after a seal.
+
+    #1649 L2: before the root's names are read the restore holds the root's
+    `lock`, the run lock `init` and every mutating command take, so none of
+    them can write here while the restore runs. An existing root's `lock` is
+    opened, or created, and the allowed set admits it, so a lock left by a
+    killed restore or a refused command never blocks a resume.
     """
     worktree, stage, marker = _checkpoint_restore_marker_paths(
         origin, state, digest, anchor
@@ -27668,7 +27887,8 @@ def _checkpoint_restore_marker(
     if os.path.lexists(root):
         if os.path.islink(root) or not os.path.isdir(root):
             die("checkpoint restore origin state path is occupied")
-        allowed = {".gitignore", CHECKPOINT_RESTORE_MARKER_FILE, WORKTREE_FILE}
+        _checkpoint_restore_hold_lock_in(root, exclusive=False)
+        allowed = {".gitignore", CHECKPOINT_RESTORE_MARKER_FILE, WORKTREE_FILE, "lock"}
         try:
             names = set(os.listdir(root))
         except OSError:
@@ -27712,6 +27932,7 @@ def _checkpoint_restore_marker(
             origin_descriptor, STATE_DIR_NAME, root_descriptor
         ):
             raise OSError("checkpoint restore state path changed")
+        _checkpoint_restore_hold_lock(root_descriptor, exclusive=True)
 
         gitignore_descriptor = os.open(
             ".gitignore", create_flags, 0o600, dir_fd=root_descriptor
@@ -28272,9 +28493,15 @@ def _checkpoint_restore_active_state(
 def _checkpoint_restore_opaque_evidence(
     controller_root: str, inventory: list[dict]
 ) -> None:
-    """Require every non-ledger controller file to retain its capsule bytes."""
+    """Require every non-ledger controller file to retain its capsule bytes.
+
+    #1649: a root-level, regular, single-link `lock` is the run lock the
+    restore holds from its private stage onward, so it is excluded, as
+    `checkpoint export` excludes it. The capsule and stage snapshots stay
+    strict.
+    """
     observed = _checkpoint_snapshot(
-        controller_root, None, exclude_live_lock=False
+        controller_root, None, exclude_live_lock=True
     )
     expected_by_path = {item["path"]: item for item in inventory}
     observed_by_path = {item["path"]: item for item in observed}
@@ -28580,6 +28807,9 @@ def _checkpoint_restore_relocate(
         except OSError:
             final_safe = False
     if resumed and final_safe and os.path.isfile(state_path(local(worktree))):
+        # #1649 L3: the published state root is a run's, so its run lock is
+        # held before anything in it is read.
+        _checkpoint_restore_hold_lock_in(local(final_root), exclusive=False)
         worktree_identity = _checkpoint_restore_worktree_identity(local(worktree))
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
@@ -28713,6 +28943,9 @@ def _checkpoint_restore_relocate(
     _checkpoint_restore_worktree_branch(local(worktree), imported)
     if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed before publication")
+    # #1649 L3: the publishing rename carries this held lock with the stage,
+    # so the worktree's state root never exists without its run lock held.
+    _checkpoint_restore_hold_lock_in(local(stage), exclusive=True)
     _checkpoint_fsync_directories(local(stage))
     seal()
     worktree_descriptor = None
@@ -28859,14 +29092,17 @@ def cmd_checkpoint_restore(args) -> None:
             "checkpoint restore requires --from and --manifest-sha256, or "
             "--archive and --sha256"
         )
-    origin = _checkpoint_restore_origin(args.dir)
-    capsule, manifest, imported, _, ledger_prefix, inventory = (
-        _checkpoint_restore_capsule(source, manifest_sha256)
-    )
-    result = _checkpoint_restore_relocate(
-        origin, capsule, manifest, imported, ledger_prefix, inventory,
-        manifest_sha256,
-    )
+    try:
+        origin = _checkpoint_restore_origin(args.dir)
+        capsule, manifest, imported, _, ledger_prefix, inventory = (
+            _checkpoint_restore_capsule(source, manifest_sha256)
+        )
+        result = _checkpoint_restore_relocate(
+            origin, capsule, manifest, imported, ledger_prefix, inventory,
+            manifest_sha256,
+        )
+    finally:
+        _checkpoint_restore_release_locks()
     print(json.dumps(result, sort_keys=True))
 
 
@@ -28902,6 +29138,12 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
     directory. They remove it themselves, on the caller's own bound: `rmdir`
     only, and only when this call created it, so a directory the operator
     already had and one a racing writer has filled are both left alone.
+
+    #1649 L1: the descriptor is locked before `fstat`, the `realpath` check and
+    the emptiness scan, and the lock lasts as long as the descriptor. A call
+    that finds it held refuses `destination-occupied`, and a call that did not
+    obtain it removes nothing, even a directory its own `mkdir` created: the
+    holder may already have admitted it.
     """
     supplied = os.path.abspath(base_dir)
     name = os.path.basename(supplied)
@@ -28931,9 +29173,14 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
             | getattr(os, "O_NOFOLLOW", 0),
         )
     except OSError:
-        if created:
-            with contextlib.suppress(OSError):
-                os.rmdir(destination)
+        _checkpoint_archive_refuse("destination-occupied")
+    try:
+        acquired = _checkpoint_restore_flock(descriptor)
+    except OSError:
+        os.close(descriptor)
+        die(CHECKPOINT_RESTORE_HELD, 1)
+    if not acquired:
+        os.close(descriptor)
         _checkpoint_archive_refuse("destination-occupied")
     try:
         opened = os.fstat(descriptor)
@@ -28943,10 +29190,10 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
             for _entry in iterator:
                 raise OSError("checkpoint restore destination is occupied")
     except OSError:
-        os.close(descriptor)
         if created:
             with contextlib.suppress(OSError):
                 os.rmdir(destination)
+        os.close(descriptor)
         _checkpoint_archive_refuse("destination-occupied")
     return destination, descriptor, created
 
@@ -29360,6 +29607,9 @@ def _checkpoint_restore_from_archive(
         # refusal, `SystemExit` and any other exception alike.
         if anchor is not None:
             anchor.leave()
+        # #1649: L2 and L3, through the directory descriptors they were taken
+        # in. L1 is the admitted descriptor, closed last below.
+        _checkpoint_restore_release_locks()
         if scratch is not None:
             shutil.rmtree(scratch, ignore_errors=True)
         # S4-R1-04: the destination is admitted before the inspector runs, so a

@@ -415,25 +415,37 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.88.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.89.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v6.88.1")
+        self.assertEqual(latest["version"], "fiat-v6.89.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
             latest["digest"],
             "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
         )
-        self.assertIn("skills#1648", latest["evidence"])
-        self.assertIn("test_checkpoint_restore_binding.py", latest["evidence"])
-        self.assertIn("stays on the directory it admitted", latest["change"])
-        self.assertIn("no longer names the admitted directory", latest["change"])
-        self.assertIn("removed only while a seal passes", latest["change"])
-        self.assertIn("`--from`, the refusal classes", latest["change"])
+        self.assertIn("skills#1649", latest["evidence"])
+        self.assertIn("test_checkpoint_restore_concurrency.py", latest["evidence"])
+        self.assertIn("can no longer interleave with `checkpoint restore`", latest["change"])
+        self.assertIn("is held by another hexctl command", latest["change"])
+        self.assertIn("never removes the destination", latest["change"])
+        self.assertIn("The refusal classes, `MUTATING`", latest["change"])
+        binding = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.88.1"
+        )
+        self.assertEqual(binding["axis"], "generation")
+        self.assertEqual(binding["revision"], "delegated-task-identity")
+        self.assertEqual(binding["digest"], latest["digest"])
+        self.assertIn("skills#1648", binding["evidence"])
+        self.assertIn("test_checkpoint_restore_binding.py", binding["evidence"])
+        self.assertIn("stays on the directory it admitted", binding["change"])
+        self.assertIn("no longer names the admitted directory", binding["change"])
+        self.assertIn("removed only while a seal passes", binding["change"])
+        self.assertIn("`--from`, the refusal classes", binding["change"])
         readers = next(
             row for row in history_rows(ledger) if row["version"] == "fiat-v6.87.1"
         )
