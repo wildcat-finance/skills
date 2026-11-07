@@ -86,7 +86,7 @@ SHA-256 stayed `815abd409e5d7031407d9c4104884e47814da7798e8891917625fa7a18ab9742
 - A racing writer. The binding tests swap the name at fixed points through
   `mock.patch` seams, so each run is deterministic. They prove the refusal at
   those points, not race freedom.
-- Three leads from the Step 2 audit, none of them fixed here:
+- Four leads from the Step 2 audit, none of them fixed here:
   1. The pinned interpreter's `mkstemp` builds the path of verify's
      design-evidence copy from `getcwd()`, which names the admitted inode's
      current location rather than the destination string. A parent writer racing a second rename inside
@@ -97,8 +97,13 @@ SHA-256 stayed `815abd409e5d7031407d9c4104884e47814da7798e8891917625fa7a18ab9742
   3. A swap after the post-`git worktree add` seal and before `repository_root`
      refuses with `checkpoint restore derived worktree changed after Git
      created it` instead of the fixed sentence. Nothing is written.
+  4. The worktree link check also accepts `gitdir: ../../../.git/worktrees/<id>`,
+     the form Git writes under `worktree.useRelativePaths`. A restore with that
+     setting completed during the Step 2 audit, but no test pins the form.
 - The rest of the study's section 9 list: processes running as the restoring
   account, root and administrators, a principal who can write inside the
-  admitted directory, reused readers between seals, the window between the
+  admitted directory, reused readers between seals (they may read the
+  replacement, and a reused Git reader can take Git's own optional index lock
+  in a replacement that is itself a repository), the window between the
   cleanup seal and its `rmdir`, two concurrent restores (skills#1649) and the
   origin of a `--from` restore.

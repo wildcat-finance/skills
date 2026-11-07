@@ -436,7 +436,9 @@ class ConformanceEvidenceTests(unittest.TestCase):
         for phrase in ("Git's own absolute-path window", "`git init` and `git worktree add`",
                        "Linux Git behaviour", "`mkstemp`", "`getcwd()`", "`leave()`",
                        "`repository_root`",
-                       "`checkpoint restore derived worktree changed after Git created it`"):
+                       "`checkpoint restore derived worktree changed after Git created it`",
+                       "`worktree.useRelativePaths`", "no test pins the form",
+                       "optional index lock"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, uncovered)
 
@@ -462,6 +464,7 @@ class ConformanceEvidenceTests(unittest.TestCase):
         text, _ = draft_text()
         consequences = " ".join(text.split("\n## Consequences\n", 1)[1].split())
         self.assertIn("`" + DEMONSTRATION + "`", consequences)
+        self.assertIn("no test pins the relative `gitdir:` form", consequences)
         for criterion in CONFORMANCE_DIGESTS:
             with self.subTest(criterion=criterion):
                 self.assertIn("`" + criterion + "`", consequences)
