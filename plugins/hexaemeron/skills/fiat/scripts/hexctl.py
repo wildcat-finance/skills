@@ -28594,8 +28594,10 @@ def _checkpoint_restore_relocate(
         _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
         _checkpoint_restore_worktree_branch(local(worktree), imported)
         seal()
+        # #1648 S2-R1-01: verify stages a design-evidence copy under the
+        # worktree's state directory, so it takes the relative worktree too.
         verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
-            worktree, manifest, ledger
+            local(worktree), manifest, ledger
         )
         seal()
         _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
@@ -28774,8 +28776,9 @@ def _checkpoint_restore_relocate(
     _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)
     _checkpoint_restore_worktree_branch(local(worktree), imported)
     seal()
+    # S2-R1-01: relative, so verify's staged copy lands in the anchor.
     verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
-        worktree, manifest, ledger
+        local(worktree), manifest, ledger
     )
     seal()
     _checkpoint_restore_worktree_identity(local(worktree), worktree_identity)

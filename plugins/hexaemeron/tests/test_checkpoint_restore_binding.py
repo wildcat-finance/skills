@@ -7,7 +7,8 @@ received the restore. These cases restore one real signed archive in process
 and swap the name at fixed points through `mock.patch` seams, so the order is
 deterministic: right after the inspector, before and after `git init` (or the
 directory carrier's clone), after the relocation marker, after `git worktree
-add`, before publication and before the marker's retirement.
+add`, before publication, while verify stages its design-evidence copy and
+before the marker's retirement.
 
 A swap puts either an empty directory (`replacement`) or a symlink to an empty
 sentinel directory (`symlink_destination`) at the name. Either way the
@@ -318,6 +319,44 @@ class RestoreBindingTests(SignedRunFixture):
         self.assertTrue(os.path.isdir(destination), "cleanup removed the replacement")
         self.assertEqual([], os.listdir(destination))
         self.assertEqual([], os.listdir(os.path.join(root, "away")))
+
+    # -- the run checks inside the transaction ------------------------------
+
+    def test_symlink_destination_during_verify_writes_nothing(self):
+        # verify's design-evidence check stages a temporary copy under the
+        # worktree's state directory. Handed the absolute worktree, it named
+        # that directory through the destination, so a symlink swapped in
+        # during the check received the staged file.
+        root = self.parent()
+        destination = os.path.join(root, "dest")
+        sentinel = os.path.join(root, "sentinel")
+        original = self.module.tempfile.mkstemp
+        staged = []
+
+        def swap_then_stage(*args, **kwargs):
+            directory = kwargs.get("dir")
+            if not staged and kwargs.get("prefix") == "checked-design-evidence-":
+                below = directory
+                if os.path.isabs(below):
+                    below = os.path.relpath(below, destination)
+                os.makedirs(os.path.join(sentinel, below))
+                self.swap(root, symlink=True)
+                descriptor, path = original(*args, **kwargs)
+                staged.append(os.path.realpath(path))
+                return descriptor, path
+            return original(*args, **kwargs)
+
+        self.carrier()
+        with mock.patch.object(self.module.tempfile, "mkstemp", swap_then_stage):
+            outcome = self.restore(destination)
+        self.assertEqual(1, outcome.code, outcome.error)
+        self.assertEqual(MOVED, outcome.error)
+        self.assertEqual(1, len(staged))
+        self.assertFalse(
+            staged[0].startswith(sentinel + os.sep),
+            "verify staged its copy through the swapped-in symlink",
+        )
+        self.assertTrue(staged[0].startswith(os.path.join(root, "away") + os.sep))
 
     # -- the working directory on every exit ----------------------------------
 
