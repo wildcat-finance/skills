@@ -28491,17 +28491,19 @@ def _checkpoint_restore_active_state(
 
 
 def _checkpoint_restore_opaque_evidence(
-    controller_root: str, inventory: list[dict]
+    controller_root: str, inventory: list[dict], *, live_lock: bool = True
 ) -> None:
     """Require every non-ledger controller file to retain its capsule bytes.
 
     #1649: a root-level, regular, single-link `lock` is the run lock the
-    restore holds from its private stage onward, so it is excluded, as
-    `checkpoint export` excludes it. The capsule and stage snapshots stay
-    strict.
+    restore holds from its private stage onward, so the active tree's checks
+    exclude it, as `checkpoint export` excludes it. The private stage is
+    checked with `live_lock=False` before the restore takes its own lock
+    there, so a `lock` already in it refuses, as it does in the capsule and
+    stage snapshots (S2-R1-01).
     """
     observed = _checkpoint_snapshot(
-        controller_root, None, exclude_live_lock=True
+        controller_root, None, exclude_live_lock=live_lock
     )
     expected_by_path = {item["path"]: item for item in inventory}
     observed_by_path = {item["path"]: item for item in observed}
@@ -28939,7 +28941,7 @@ def _checkpoint_restore_relocate(
     ledger, ledger_tail = _checkpoint_restore_write_files(
         local(stage), relocated, ledger_prefix, receipt
     )
-    _checkpoint_restore_opaque_evidence(local(stage), inventory)
+    _checkpoint_restore_opaque_evidence(local(stage), inventory, live_lock=False)
     _checkpoint_restore_worktree_branch(local(worktree), imported)
     if _checkpoint_refs(repository, imported) != refs:
         die("checkpoint restored Git refs changed before publication")

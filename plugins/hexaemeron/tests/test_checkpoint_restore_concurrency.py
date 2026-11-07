@@ -550,6 +550,38 @@ class RestoreConcurrencyTests(SignedRunFixture):
         )
         self.assertEqual([], os.listdir(target))
 
+    # -- the private stage stays strict --------------------------------------
+
+    def test_stage_lock_before_publication_stays_refused(self):
+        # S2-R1-01: only the active tree's recheck admits the restore's live
+        # `lock`. One already in the private stage before the restore takes
+        # its own is not the restore's, so the stage check refuses it as the
+        # capsule check does, and nothing is published.
+        destination = self.destination(create=True)
+        first = self.restore(
+            destination, "_checkpoint_restore_opaque_evidence", "before"
+        )
+        self.wait_ready(first)
+        record = self.marker(destination)
+        self.assertTrue(os.path.isdir(record["stage"]))
+        self.assertFalse(
+            os.path.exists(os.path.join(record["worktree"], ".hexaemeron"))
+        )
+        Path(record["stage"], "lock").write_bytes(b"")
+        code, out, err = self.finish(first)
+        self.assertEqual(
+            (
+                2,
+                "",
+                "hexctl: error: checkpoint capsule contains an excluded run lock\n",
+            ),
+            (code, out, err),
+        )
+        self.assertFalse(
+            os.path.exists(os.path.join(record["worktree"], ".hexaemeron"))
+        )
+        self.assertTrue(os.path.exists(os.path.join(destination, MARKER)))
+
     # -- SC-5: a killed restore ------------------------------------------------
 
     def test_killed_after_marker_releases_locks_and_resumes(self):
