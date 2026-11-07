@@ -1,0 +1,9 @@
+{
+  "candidate": "mutating-set",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate mutating-set --criterion imported-state-excluded --out .hexaemeron/design/reports/selection/mutating-set-imported-state-excluded.json",
+  "criterion": "imported-state-excluded",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

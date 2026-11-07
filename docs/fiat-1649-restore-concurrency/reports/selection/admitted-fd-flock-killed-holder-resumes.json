@@ -1,0 +1,9 @@
+{
+  "candidate": "admitted-fd-flock",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate admitted-fd-flock --criterion killed-holder-resumes --out .hexaemeron/design/reports/selection/admitted-fd-flock-killed-holder-resumes.json",
+  "criterion": "killed-holder-resumes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

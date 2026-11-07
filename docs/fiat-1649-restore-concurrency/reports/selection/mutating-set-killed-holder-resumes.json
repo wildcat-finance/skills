@@ -1,0 +1,9 @@
+{
+  "candidate": "mutating-set",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate mutating-set --criterion killed-holder-resumes --out .hexaemeron/design/reports/selection/mutating-set-killed-holder-resumes.json",
+  "criterion": "killed-holder-resumes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

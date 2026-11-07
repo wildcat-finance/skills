@@ -1,0 +1,672 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "mutating-set",
+      "summary": "Add cmd_checkpoint_restore to MUTATING and keep held_lock unchanged: the run lock is taken only where the --dir already has a state root."
+    },
+    {
+      "id": "destination-kernel-lock",
+      "summary": "Create and flock the run lock at <destination>/.hexaemeron/lock through the admitted descriptor right after admission, re-scan, carry a lock in the private stage, and close held_lock's absent-root window."
+    },
+    {
+      "id": "exclusive-entry",
+      "summary": "Create one O_EXCL entry relative to the admitted descriptor after admission, re-scan, reclaim it when its recorded holder is dead, carry a lock in the private stage, and close held_lock's absent-root window."
+    },
+    {
+      "id": "admitted-fd-flock",
+      "summary": "flock the admitted (or --from origin) directory descriptor before the emptiness scan, take the origin's run lock inside the marker transaction, carry a lock in the private stage through publication, and close held_lock's absent-root window."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "uncontended-restore-completes",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "competing-restores-one-winner",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "live-resume-refused",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "killed-holder-resumes",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "killed-before-write-readmits",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "imported-state-excluded",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "origin-init-excluded",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "concurrent-holders-after-crash",
+      "concern": "correctness",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "lock-acquisitions-per-restore",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "entries-left-after-early-kill",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "restore-contention-guarded",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "imported-state-guarded",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "killed-restore-recovers",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "existing-restores-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "mutating-set",
+      "criterion": "uncontended-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/mutating-set-uncontended-restore-completes.json",
+        "sha256": "96dfb206cc4cba127f6f5e60c5e82320e706ec0b88cdeb2a26577d5fffe1ed06"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "competing-restores-one-winner",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/mutating-set-competing-restores-one-winner.json",
+        "sha256": "85f207d13bde1951bc152dcb0423bc16e29a15dbcb608494da1694b1a5c97116"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "live-resume-refused",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/mutating-set-live-resume-refused.json",
+        "sha256": "bfe8c8df8d395fd17aeb2176853b0e70bf8f85be5fa86206011c764f9f1309ec"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "killed-holder-resumes",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/mutating-set-killed-holder-resumes.json",
+        "sha256": "857c9be74bb51150bcbd951fe539f5ef89d81f0e7ca61fa5ed3dce505477d66a"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "killed-before-write-readmits",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/mutating-set-killed-before-write-readmits.json",
+        "sha256": "c7620e44e795c973023f8146f68b804c01db4c0fb4e9e1ebc554e4c2c29fbaa5"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "imported-state-excluded",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/mutating-set-imported-state-excluded.json",
+        "sha256": "fd0088a9613e84858350081fc95e745dcd4321c28147cfe35699d31a6327ab9c"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "origin-init-excluded",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/mutating-set-origin-init-excluded.json",
+        "sha256": "754e8b5893f309013aa0a4bc8c4f4deb0237ca433ddcfd9ab74888158496ce88"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "concurrent-holders-after-crash",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/mutating-set-concurrent-holders-after-crash.json",
+        "sha256": "e65b31d2e5136361b5844c7b96782bc1dcc4495d9e8c6e00f04701566151857f"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "lock-acquisitions-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/mutating-set-lock-acquisitions-per-restore.json",
+        "sha256": "7249a5af2d14a852f4b7ad6d4fc34eb71bcdc3d4c9989249f9125676385410c1"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "entries-left-after-early-kill",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/mutating-set-entries-left-after-early-kill.json",
+        "sha256": "95a0b7cdf2a7fd3cc0f9275b4327a154e0d276c327f34cb5de0a50eed28daf10"
+      }
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "restore-contention-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate mutating-set --criterion restore-contention-guarded --root . --out .hexaemeron/design/reports/conformance/mutating-set-restore-contention-guarded.json",
+      "report": "design/reports/conformance/mutating-set-restore-contention-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "imported-state-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate mutating-set --criterion imported-state-guarded --root . --out .hexaemeron/design/reports/conformance/mutating-set-imported-state-guarded.json",
+      "report": "design/reports/conformance/mutating-set-imported-state-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "killed-restore-recovers",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate mutating-set --criterion killed-restore-recovers --root . --out .hexaemeron/design/reports/conformance/mutating-set-killed-restore-recovers.json",
+      "report": "design/reports/conformance/mutating-set-killed-restore-recovers.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "mutating-set",
+      "criterion": "existing-restores-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate mutating-set --criterion existing-restores-unchanged --root . --out .hexaemeron/design/reports/conformance/mutating-set-existing-restores-unchanged.json",
+      "report": "design/reports/conformance/mutating-set-existing-restores-unchanged.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "uncontended-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-uncontended-restore-completes.json",
+        "sha256": "1157e078108cc8f8e2ebb69e8a2f13136fa6c3acb0290862e59a6808edfc6e56"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "competing-restores-one-winner",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-competing-restores-one-winner.json",
+        "sha256": "20a8168e533e61f788e506b044450bee9f9875e065027bb3c1e32a93165aaaee"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "live-resume-refused",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-live-resume-refused.json",
+        "sha256": "555d783137264d053045cb9d02a8af3030de75997fa70e406021813a3c83807c"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "killed-holder-resumes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-killed-holder-resumes.json",
+        "sha256": "f202374ea825cd9688c8a5919906e2085d1233507fce33abecba4acb2529e14c"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "killed-before-write-readmits",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-killed-before-write-readmits.json",
+        "sha256": "6955dbdbf895182ebdb7f69588e7be2b20f457c9f5cbff39dbb67bf65e30310a"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "imported-state-excluded",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-imported-state-excluded.json",
+        "sha256": "446c1ac63bbc2af8d0cbbcd5f286eaf189f810ee4d6741d468af03e2e27c3daa"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "origin-init-excluded",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-origin-init-excluded.json",
+        "sha256": "5e068293c93ca0f467ae8ebd5c6776b3ec4fac90544aac8f062f4fa796e89ade"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "concurrent-holders-after-crash",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-concurrent-holders-after-crash.json",
+        "sha256": "89391b88c2ece9e0a7249a014f2df6082529c9f38203bb3617ba665e5e054885"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "lock-acquisitions-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-lock-acquisitions-per-restore.json",
+        "sha256": "101529104339e9322f95cc8ab7a0a8d36b942784b0b5d7a4a583fbfd80c51790"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "entries-left-after-early-kill",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/destination-kernel-lock-entries-left-after-early-kill.json",
+        "sha256": "f4c9b73cacbc4eafc33ee4e7dc5a1c3f3e5e38a89affe477a627d7b8f8a2c9ff"
+      }
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "restore-contention-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate destination-kernel-lock --criterion restore-contention-guarded --root . --out .hexaemeron/design/reports/conformance/destination-kernel-lock-restore-contention-guarded.json",
+      "report": "design/reports/conformance/destination-kernel-lock-restore-contention-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "imported-state-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate destination-kernel-lock --criterion imported-state-guarded --root . --out .hexaemeron/design/reports/conformance/destination-kernel-lock-imported-state-guarded.json",
+      "report": "design/reports/conformance/destination-kernel-lock-imported-state-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "killed-restore-recovers",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate destination-kernel-lock --criterion killed-restore-recovers --root . --out .hexaemeron/design/reports/conformance/destination-kernel-lock-killed-restore-recovers.json",
+      "report": "design/reports/conformance/destination-kernel-lock-killed-restore-recovers.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "destination-kernel-lock",
+      "criterion": "existing-restores-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate destination-kernel-lock --criterion existing-restores-unchanged --root . --out .hexaemeron/design/reports/conformance/destination-kernel-lock-existing-restores-unchanged.json",
+      "report": "design/reports/conformance/destination-kernel-lock-existing-restores-unchanged.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "uncontended-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-uncontended-restore-completes.json",
+        "sha256": "769f31a2c29fa3018e75afdfdc320906ce0fbde79502daf255f8c1873ea5c086"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "competing-restores-one-winner",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-competing-restores-one-winner.json",
+        "sha256": "f9a3a4b7fb4aa912d63fb2e90a0bb7261c0d5a50b9e82c660fe84ab5d3daadc7"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "live-resume-refused",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-live-resume-refused.json",
+        "sha256": "f840bfa15f05e497685a423adb26ec5866c02b03aa5522f4570f7847c88c4e70"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "killed-holder-resumes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-killed-holder-resumes.json",
+        "sha256": "792b29d7312d973ebecca548cd94fdbbcceac8422def59995ebfa0404222cf5e"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "killed-before-write-readmits",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-killed-before-write-readmits.json",
+        "sha256": "e5254f30c723fd87e2c1592a7717322e21a55789ca49a7442cd81ef6869fa098"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "imported-state-excluded",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-imported-state-excluded.json",
+        "sha256": "7feff7155b40a71d800ef2e91cd5fe6ffeec6de74554f4f469d0539706b07b5b"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "origin-init-excluded",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-origin-init-excluded.json",
+        "sha256": "b8146954f2f6f2bec032125e16eccf0752c6a9a4ef0912c03018398a9b1b0da9"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "concurrent-holders-after-crash",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-concurrent-holders-after-crash.json",
+        "sha256": "4afd0ed6cb70e5cf3f06c16b42f16f32a241c1aca6bab09f089c903e96c3b487"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "lock-acquisitions-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-lock-acquisitions-per-restore.json",
+        "sha256": "70c64f6338a51de7d87336e76a3d674dd5d5cd17bc172666e93816381cb4c0e4"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "entries-left-after-early-kill",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/exclusive-entry-entries-left-after-early-kill.json",
+        "sha256": "614f818626c6cb61f269398ac5392ade37eea8acaadb837fbc9fb7decbe9228a"
+      }
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "restore-contention-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate exclusive-entry --criterion restore-contention-guarded --root . --out .hexaemeron/design/reports/conformance/exclusive-entry-restore-contention-guarded.json",
+      "report": "design/reports/conformance/exclusive-entry-restore-contention-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "imported-state-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate exclusive-entry --criterion imported-state-guarded --root . --out .hexaemeron/design/reports/conformance/exclusive-entry-imported-state-guarded.json",
+      "report": "design/reports/conformance/exclusive-entry-imported-state-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "killed-restore-recovers",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate exclusive-entry --criterion killed-restore-recovers --root . --out .hexaemeron/design/reports/conformance/exclusive-entry-killed-restore-recovers.json",
+      "report": "design/reports/conformance/exclusive-entry-killed-restore-recovers.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "exclusive-entry",
+      "criterion": "existing-restores-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate exclusive-entry --criterion existing-restores-unchanged --root . --out .hexaemeron/design/reports/conformance/exclusive-entry-existing-restores-unchanged.json",
+      "report": "design/reports/conformance/exclusive-entry-existing-restores-unchanged.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "uncontended-restore-completes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-uncontended-restore-completes.json",
+        "sha256": "d7ee1009d4fbf64a80d69e5a8a44b1c8a87beff9608e8f30bfae2301f569e34c"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "competing-restores-one-winner",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-competing-restores-one-winner.json",
+        "sha256": "d4d593c3d5526e4cb2e5b074a33284e08e54ba49e501ec046f9c3e2447ee5d5a"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "live-resume-refused",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-live-resume-refused.json",
+        "sha256": "8759564b3c927dfa0b070d9b6826923a86b6b7247e90a5f1f4692bfe56787543"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "killed-holder-resumes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-killed-holder-resumes.json",
+        "sha256": "1d2ffd7318a63679ba17b0dbeebcee2116e455edb66b90d243c0b486f85075bf"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "killed-before-write-readmits",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-killed-before-write-readmits.json",
+        "sha256": "c5e7e92c7cfc5a4564823d33d1e2d499fa127c58255301dfe9bb8cd77ea63151"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "imported-state-excluded",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-imported-state-excluded.json",
+        "sha256": "902c636db2b772b4e479138a6faef62746f26fbe75f5860528c06e91a14e5081"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "origin-init-excluded",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-origin-init-excluded.json",
+        "sha256": "bed42d4dd5f458840b44b305e6230cf0a3fe647e5615dc109ca5d0dc6fb888ae"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "concurrent-holders-after-crash",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-concurrent-holders-after-crash.json",
+        "sha256": "d590dee4c54dd0dd356cdbd36aa0ac88403b6e9b3c573b09046ef1458c353c93"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "lock-acquisitions-per-restore",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-lock-acquisitions-per-restore.json",
+        "sha256": "ce8f02aa988ab8068820549267232b229783ddcb95565da9d00622d0707a0a58"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "entries-left-after-early-kill",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/selection/admitted-fd-flock-entries-left-after-early-kill.json",
+        "sha256": "b31666f41453c76535ae305a08dab827a64f1ad22f82bf9bc490514fd5e0149d"
+      }
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "restore-contention-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate admitted-fd-flock --criterion restore-contention-guarded --root . --out .hexaemeron/design/reports/conformance/admitted-fd-flock-restore-contention-guarded.json",
+      "report": "design/reports/conformance/admitted-fd-flock-restore-contention-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "imported-state-guarded",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate admitted-fd-flock --criterion imported-state-guarded --root . --out .hexaemeron/design/reports/conformance/admitted-fd-flock-imported-state-guarded.json",
+      "report": "design/reports/conformance/admitted-fd-flock-imported-state-guarded.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "killed-restore-recovers",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate admitted-fd-flock --criterion killed-restore-recovers --root . --out .hexaemeron/design/reports/conformance/admitted-fd-flock-killed-restore-recovers.json",
+      "report": "design/reports/conformance/admitted-fd-flock-killed-restore-recovers.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "admitted-fd-flock",
+      "criterion": "existing-restores-unchanged",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate admitted-fd-flock --criterion existing-restores-unchanged --root . --out .hexaemeron/design/reports/conformance/admitted-fd-flock-existing-restores-unchanged.json",
+      "report": "design/reports/conformance/admitted-fd-flock-existing-restores-unchanged.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "admitted-fd-flock",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}
