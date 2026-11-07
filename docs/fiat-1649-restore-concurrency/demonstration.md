@@ -85,13 +85,13 @@ record's own SHA-256 stayed
 ## What this does not cover
 
 - A writer that takes no `hexctl` lock. `checkpoint inspect --scratch` pointed
-  at a restore destination, Git, editors and `rm` are outside the exclusion,
-  as are root and administrators and a process that deletes or replaces a lock
-  file and then races. Advisory locks bind only cooperating callers, and no
+  at a restore destination, Git, editors and `rm` are outside the exclusion.
+  So are root and administrators, and a process that deletes or replaces a
+  lock file and then races. Advisory locks bind only cooperating callers, and no
   test here runs such a writer.
 - Network filesystems. None was measured. Linux emulates `flock` over NFS with
   byte-range locks, which need a writable descriptor, so a directory lock there
-  is expected to fail and the restore to refuse; no command here ran on one.
+  is expected to fail and the restore to refuse. No command here ran on one.
 - Real `hexctl` and Git on Linux. Every command above ran on Darwin. The study
   measured the lock primitives and the selection model in a Linux 6.8.0
   container; it did not run `hexctl` or Git there.
